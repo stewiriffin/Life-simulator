@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- app/src/main/res/drawable/ic_launcher_monochrome.xml (new) — themed icon (API 33+) -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+    <path
+        android:fillColor="#FFFFFFFF"
+        android:pathData="M39,28 L69,28 L54,50 Z" />
+    <path
+        android:fillColor="#FFFFFFFF"
+        android:pathData="M39,80 L69,80 L54,58 Z" />
+    <path
+        android:fillColor="#FFFFFFFF"
+        android:pathData="M48,52 h12 v4 h-12 z" />
+    <path
+        android:fillColor="#FFFFFFFF"
+        android:pathData="M44,66 h20 v8 h-20 z" />
+</vector>

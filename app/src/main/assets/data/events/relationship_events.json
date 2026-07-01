@@ -1,0 +1,179 @@
+{
+  "events": [
+    {
+      "id": "first_date_nerves",
+      "minAge": 18,
+      "maxAge": 45,
+      "text": "You're getting ready for a first date. Your palms are sweaty and you keep changing outfits.",
+      "weight": 5,
+      "tags": ["relationship"],
+      "choices": [
+        {
+          "label": "Take a deep breath and go",
+          "statEffects": { "happiness": 5 },
+          "resultText": "The date goes fine. You laugh at your own nervousness."
+        },
+        {
+          "label": "Cancel at the last minute",
+          "statEffects": { "happiness": -3 },
+          "resultText": "You stay home. Relief mixes with a twinge of regret."
+        }
+      ]
+    },
+    {
+      "id": "meet_the_family",
+      "minAge": 18,
+      "maxAge": 55,
+      "text": "Your partner wants you to meet their parents over Sunday lunch. The table is set and everyone is watching.",
+      "weight": 4,
+      "tags": ["relationship", "requires_spouse"],
+      "choices": [
+        {
+          "label": "Bring a thoughtful gift",
+          "statEffects": { "happiness": 4 },
+          "spouseRelationshipEffect": 8,
+          "resultText": "The parents warm up. Your partner squeezes your hand under the table."
+        },
+        {
+          "label": "Wing it and hope for the best",
+          "statEffects": { "happiness": -2 },
+          "spouseRelationshipEffect": -3,
+          "resultText": "Awkward silences abound. You survive on polite smiles."
+        }
+      ]
+    },
+    {
+      "id": "money_disagreement",
+      "minAge": 20,
+      "maxAge": 60,
+      "text": "You and your partner argue about money — savings, bills, and whether that new purchase was necessary.",
+      "weight": 5,
+      "tags": ["relationship", "requires_spouse"],
+      "choices": [
+        {
+          "label": "Sit down and make a budget together",
+          "statEffects": { "happiness": -2, "money": 5000 },
+          "spouseRelationshipEffect": 5,
+          "resultText": "It's tense but productive. You agree on a plan."
+        },
+        {
+          "label": "Storm off and spend to feel better",
+          "statEffects": { "happiness": 3, "money": -15000 },
+          "spouseRelationshipEffect": -10,
+          "resultText": "Retail therapy feels good briefly. The argument lingers."
+        }
+      ]
+    },
+    {
+      "id": "anniversary_celebration",
+      "minAge": 20,
+      "maxAge": 70,
+      "text": "Your wedding anniversary is coming up. A nice dinner would mark the occasion properly.",
+      "weight": 4,
+      "tags": ["relationship", "requires_married"],
+      "choices": [
+        {
+          "label": "Book a fancy dinner (KSh 12,000)",
+          "statEffects": { "money": -12000, "happiness": 8 },
+          "spouseRelationshipEffect": 10,
+          "resultText": "Candles, good food, and quiet laughter. A night to remember."
+        },
+        {
+          "label": "Cook at home and keep it simple",
+          "statEffects": { "happiness": 4 },
+          "spouseRelationshipEffect": 5,
+          "resultText": "Homemade stew and old stories. Simple and sweet."
+        }
+      ]
+    },
+    {
+      "id": "partner_promotion",
+      "minAge": 22,
+      "maxAge": 60,
+      "text": "Your partner comes home buzzing — they got promoted at work! They're already planning how to celebrate.",
+      "weight": 3,
+      "tags": ["relationship", "requires_spouse"],
+      "choices": [
+        {
+          "label": "Celebrate properly",
+          "statEffects": { "happiness": 10 },
+          "spouseRelationshipEffect": 5,
+          "resultText": "You toast their success. Pride fills the room."
+        },
+        {
+          "label": "Remind them you had a long day too",
+          "statEffects": { "happiness": -4 },
+          "spouseRelationshipEffect": -5,
+          "resultText": "The mood deflates. They wanted more enthusiasm."
+        }
+      ]
+    },
+    {
+      "id": "child_first_school_day",
+      "minAge": 23,
+      "maxAge": 55,
+      "text": "Your child's first day of school arrives. Tiny uniform, oversized backpack, and brave tears at the gate.",
+      "weight": 4,
+      "tags": ["relationship", "requires_child_school_age"],
+      "choices": [
+        {
+          "label": "Walk them to class personally",
+          "statEffects": { "happiness": 8 },
+          "resultText": "They cling to your hand, then wave goodbye. You blink back tears."
+        },
+        {
+          "label": "Let the bus handle it",
+          "statEffects": { "happiness": 2 },
+          "resultText": "The bus pulls away. You hope they made friends by recess."
+        }
+      ]
+    },
+    {
+      "id": "inlaw_tension",
+      "minAge": 22,
+      "maxAge": 65,
+      "text": "Tension flares between your partner and one of your parents. Old habits and new loyalties collide at a family gathering.",
+      "weight": 4,
+      "tags": ["relationship", "requires_spouse", "requires_parent"],
+      "choices": [
+        {
+          "label": "Mediate calmly",
+          "statEffects": { "happiness": -3 },
+          "spouseRelationshipEffect": 5,
+          "familyRelationshipEffect": 3,
+          "resultText": "Nobody wins outright, but the shouting stops."
+        },
+        {
+          "label": "Take your partner's side",
+          "statEffects": { "happiness": -5 },
+          "spouseRelationshipEffect": 8,
+          "familyRelationshipEffect": -8,
+          "resultText": "Your partner appreciates the loyalty. A parent goes quiet."
+        }
+      ]
+    },
+    {
+      "id": "consider_another_child",
+      "minAge": 24,
+      "maxAge": 50,
+      "text": "You and your spouse have been talking about having another child. Diapers, school fees, and sleepless nights loom large.",
+      "weight": 3,
+      "tags": ["relationship", "requires_married"],
+      "choices": [
+        {
+          "label": "Let's do it",
+          "statEffects": { "happiness": 6 },
+          "spouseRelationshipEffect": 5,
+          "triggersHaveChild": true,
+          "resultText": "You agree to expand the family. Excitement and nerves mix together."
+        },
+        {
+          "label": "Not right now",
+          "statEffects": { "happiness": -2 },
+          "spouseRelationshipEffect": -3,
+          "resultText": "You table the idea for later. Relief and disappointment share the room."
+        }
+      ]
+    }
+  ]
+}

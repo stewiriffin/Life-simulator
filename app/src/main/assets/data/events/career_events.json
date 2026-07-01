@@ -1,0 +1,241 @@
+{
+  "events": [
+    {
+      "id": "first_job_interview",
+      "minAge": 18,
+      "maxAge": 25,
+      "text": "You have your first real job interview. Your palms are sweaty in a small office off Moi Avenue.",
+      "weight": 8,
+      "tags": ["one_time", "career"],
+      "choices": [
+        {
+          "label": "Take a deep breath and smile",
+          "statEffects": { "happiness": 3 },
+          "resultText": "You calmed your nerves and made a decent impression."
+        },
+        {
+          "label": "Panic and stumble over answers",
+          "statEffects": { "happiness": -4 },
+          "resultText": "The interview was awkward. You hope for better luck next time."
+        }
+      ]
+    },
+    {
+      "id": "coworker_conflict",
+      "minAge": 18,
+      "maxAge": 45,
+      "text": "A coworker takes credit for your work during a team meeting. The room goes quiet.",
+      "weight": 6,
+      "tags": ["career"],
+      "choices": [
+        {
+          "label": "Call them out politely",
+          "statEffects": { "happiness": -2, "smarts": 2 },
+          "performanceEffect": 5,
+          "resultText": "Your boss noted your contribution. Tension remains."
+        },
+        {
+          "label": "Let it slide",
+          "statEffects": { "happiness": -5 },
+          "performanceEffect": -8,
+          "resultText": "You swallowed your frustration. It ate at you all week."
+        },
+        {
+          "label": "Confront them privately",
+          "statEffects": { "happiness": 1 },
+          "performanceEffect": 2,
+          "resultText": "They apologised. A fragile truce was reached."
+        }
+      ]
+    },
+    {
+      "id": "slack_or_help_colleague",
+      "minAge": 18,
+      "maxAge": 45,
+      "text": "A struggling colleague asks for help on a deadline. You are already tired from your own workload.",
+      "weight": 5,
+      "tags": ["career"],
+      "choices": [
+        {
+          "label": "Slack off and ignore them",
+          "statEffects": { "happiness": 3 },
+          "performanceEffect": -10,
+          "resultText": "You scrolled on your phone. Your manager noticed."
+        },
+        {
+          "label": "Help them after hours",
+          "statEffects": { "happiness": -2, "health": -2 },
+          "performanceEffect": 10,
+          "resultText": "You stayed late. The team respects you more now."
+        }
+      ]
+    },
+    {
+      "id": "unexpected_bonus",
+      "minAge": 20,
+      "maxAge": 50,
+      "text": "Your employer announces an unexpected performance bonus this quarter.",
+      "weight": 2,
+      "tags": ["career"],
+      "choices": [
+        {
+          "label": "Save the bonus",
+          "statEffects": { "money": 80000, "happiness": 3 },
+          "resultText": "You transferred it straight to your account. Smart move."
+        },
+        {
+          "label": "Treat the family",
+          "statEffects": { "money": 30000, "happiness": 8 },
+          "resultText": "Nyama choma for everyone. Worth every shilling."
+        }
+      ]
+    },
+    {
+      "id": "overtime_offer",
+      "minAge": 18,
+      "maxAge": 45,
+      "text": "Your supervisor asks if you can work overtime this weekend. Extra pay is on the table.",
+      "weight": 5,
+      "tags": ["career"],
+      "choices": [
+        {
+          "label": "Accept the overtime",
+          "statEffects": { "money": 15000, "happiness": -4, "health": -3 },
+          "performanceEffect": 6,
+          "resultText": "You worked Saturday and Sunday. Exhausting but lucrative."
+        },
+        {
+          "label": "Decline and rest",
+          "statEffects": { "happiness": 4, "health": 3 },
+          "performanceEffect": -3,
+          "resultText": "You slept in and watched football. Your body thanked you."
+        }
+      ]
+    },
+    {
+      "id": "work_approach_year",
+      "minAge": 18,
+      "maxAge": 55,
+      "text": "A new work year begins. How are you approaching your job this year?",
+      "weight": 7,
+      "tags": ["career", "work_effort"],
+      "choices": [
+        {
+          "label": "Coast and do the minimum",
+          "statEffects": { "happiness": 4 },
+          "resultText": "You clocked in, clocked out, and avoided extra effort."
+        },
+        {
+          "label": "Keep a steady pace",
+          "statEffects": { "happiness": 1 },
+          "resultText": "Reliable and consistent. Nothing flashy."
+        },
+        {
+          "label": "Grind for a promotion",
+          "statEffects": { "smarts": 2, "happiness": -2 },
+          "resultText": "You arrived early and left late. Management took note."
+        }
+      ]
+    },
+    {
+      "id": "side_hustle_matatu",
+      "minAge": 20,
+      "maxAge": 40,
+      "restrictedToCountry": "KE",
+      "text": "A cousin offers you a chance to invest in a matatu route. It could pay off — or flop.",
+      "weight": 3,
+      "tags": ["one_time", "career"],
+      "choices": [
+        {
+          "label": "Invest KSh 50,000",
+          "statEffects": { "money": 120000, "happiness": 5 },
+          "resultText": "The route was profitable. Your phone buzzes with M-Pesa alerts."
+        },
+        {
+          "label": "Invest cautiously KSh 20,000",
+          "statEffects": { "money": 15000, "happiness": 1 },
+          "resultText": "Modest returns, but you kept most of your savings safe."
+        },
+        {
+          "label": "Pass on the opportunity",
+          "statEffects": { "happiness": -1 },
+          "resultText": "You heard later the route struggled. Dodged a bullet, maybe."
+        }
+      ]
+    },
+    {
+      "id": "side_hustle_delivery",
+      "minAge": 20,
+      "maxAge": 40,
+      "text": "A friend offers you a chance to invest in a local delivery route. It could pay off — or flop.",
+      "weight": 3,
+      "tags": ["one_time", "career"],
+      "choices": [
+        {
+          "label": "Invest heavily",
+          "statEffects": { "money": 120000, "happiness": 5 },
+          "resultText": "The route was profitable. Orders kept coming in."
+        },
+        {
+          "label": "Invest cautiously",
+          "statEffects": { "money": 15000, "happiness": 1 },
+          "resultText": "Modest returns, but you kept most of your savings safe."
+        },
+        {
+          "label": "Pass on the opportunity",
+          "statEffects": { "happiness": -1 },
+          "resultText": "You heard later the route struggled. Dodged a bullet, maybe."
+        }
+      ]
+    },
+    {
+      "id": "side_hustle_shop",
+      "minAge": 22,
+      "maxAge": 45,
+      "text": "You spot a chance to run a small kiosk selling airtime and snacks near your estate.",
+      "weight": 4,
+      "tags": ["career"],
+      "choices": [
+        {
+          "label": "Rent the kiosk space",
+          "statEffects": { "money": 40000, "happiness": 3 },
+          "performanceEffect": -2,
+          "resultText": "Weekend sales boosted your income. Juggling two ventures is tiring."
+        },
+        {
+          "label": "Partner with a friend",
+          "statEffects": { "money": 25000, "happiness": 4 },
+          "resultText": "You split profits but shared the workload. Fair deal."
+        },
+        {
+          "label": "Focus on your main job",
+          "statEffects": { "happiness": 1 },
+          "performanceEffect": 3,
+          "resultText": "You gave your employer full attention. Steady progress."
+        }
+      ]
+    },
+    {
+      "id": "workplace_gossip",
+      "minAge": 19,
+      "maxAge": 40,
+      "text": "Office gossip spreads about layoffs. Colleagues whisper in the stairwell.",
+      "weight": 4,
+      "tags": ["career"],
+      "choices": [
+        {
+          "label": "Work harder to stand out",
+          "statEffects": { "happiness": -2 },
+          "performanceEffect": 8,
+          "resultText": "You doubled your output. Hopefully it is enough."
+        },
+        {
+          "label": "Join the gossip circle",
+          "statEffects": { "happiness": 2 },
+          "performanceEffect": -5,
+          "resultText": "You learned rumours, not facts. Productivity dipped."
+        }
+      ]
+    }
+  ]
+}

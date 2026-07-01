@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- res/drawable/ill_asset_car.xml (new) — placeholder car silhouette, swap-ready -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="48dp"
+    android:height="48dp"
+    android:viewportWidth="48"
+    android:viewportHeight="48">
+    <path android:fillColor="#1A8A8A" android:pathData="M6,30 L42,30 L38,18 L10,18 Z" />
+    <path android:fillColor="#152238" android:pathData="M14,22 L34,22 L32,18 L16,18 Z" />
+    <path android:fillColor="#F4B942" android:pathData="M14,30 m-5,0 a5,5 0 1,1 10,0 a5,5 0 1,1 -10,0" />
+    <path android:fillColor="#F4B942" android:pathData="M34,30 m-5,0 a5,5 0 1,1 10,0 a5,5 0 1,1 -10,0" />
+</vector>

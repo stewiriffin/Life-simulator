@@ -1,0 +1,194 @@
+{
+  "events": [
+    {
+      "id": "car_breakdown",
+      "minAge": 18,
+      "maxAge": 55,
+      "text": "Your car won't start on a rainy morning. The mechanic says the alternator needs replacing.",
+      "weight": 6,
+      "tags": ["finance"],
+      "choices": [
+        {
+          "label": "Pay for the repair (KSh 25,000)",
+          "statEffects": { "money": -25000 },
+          "conditionEffect": 15,
+          "targetAssetType": "CAR",
+          "resultText": "The car runs smoothly again. Expensive but necessary."
+        },
+        {
+          "label": "Patch it up cheaply",
+          "statEffects": { "money": -8000, "happiness": -3 },
+          "conditionEffect": -12,
+          "targetAssetType": "CAR",
+          "resultText": "It limps along for now. You worry about the next breakdown."
+        }
+      ]
+    },
+    {
+      "id": "house_roof_leak",
+      "minAge": 22,
+      "maxAge": 60,
+      "text": "Heavy rains expose a leak in your roof. Water drips into the sitting room.",
+      "weight": 5,
+      "tags": ["finance"],
+      "choices": [
+        {
+          "label": "Hire a proper roofer",
+          "statEffects": { "money": -40000, "happiness": 2 },
+          "conditionEffect": 20,
+          "targetAssetType": "HOUSE",
+          "resultText": "The roof is sealed. You sleep dry tonight."
+        },
+        {
+          "label": "Place buckets and wait",
+          "statEffects": { "happiness": -5 },
+          "conditionEffect": -15,
+          "targetAssetType": "HOUSE",
+          "resultText": "Mould starts forming. The problem grows worse."
+        }
+      ]
+    },
+    {
+      "id": "windfall_inheritance",
+      "minAge": 18,
+      "maxAge": 60,
+      "text": "A distant relative leaves you a modest inheritance. The lawyer calls with good news.",
+      "weight": 2,
+      "tags": ["finance", "one_time"],
+      "choices": [
+        {
+          "label": "Accept gratefully",
+          "statEffects": { "money": 150000, "happiness": 10 },
+          "resultText": "The funds clear. You whisper a prayer of thanks."
+        },
+        {
+          "label": "Donate part to charity",
+          "statEffects": { "money": 100000, "happiness": 12 },
+          "resultText": "You kept some and gave back. It feels right."
+        }
+      ]
+    },
+    {
+      "id": "petty_theft",
+      "minAge": 18,
+      "maxAge": 50,
+      "text": "You return from work to find your gate open and some belongings missing.",
+      "weight": 2,
+      "tags": ["finance"],
+      "choices": [
+        {
+          "label": "Report to police",
+          "statEffects": { "money": -15000, "happiness": -4 },
+          "resultText": "Paperwork and patience. Little is recovered."
+        },
+        {
+          "label": "Accept the loss and move on",
+          "statEffects": { "money": -30000, "happiness": -6 },
+          "resultText": "You replace what you can and double-check the locks."
+        }
+      ]
+    },
+    {
+      "id": "investment_tip",
+      "minAge": 20,
+      "maxAge": 50,
+      "text": "A friend swears they have a hot tip on a small chama investment. They want you in.",
+      "weight": 4,
+      "tags": ["finance"],
+      "choices": [
+        {
+          "label": "Invest KSh 30,000",
+          "statEffects": { "money": 45000, "happiness": 5 },
+          "resultText": "The chama pays out modestly. A pleasant surprise."
+        },
+        {
+          "label": "Invest KSh 10,000 cautiously",
+          "statEffects": { "money": 5000, "happiness": 1 },
+          "resultText": "Small gain, small risk. Not bad."
+        },
+        {
+          "label": "Decline politely",
+          "statEffects": { "happiness": 1 },
+          "resultText": "You heard later it went sideways. Bullet dodged."
+        }
+      ]
+    },
+    {
+      "id": "family_borrow_money",
+      "minAge": 18,
+      "maxAge": 55,
+      "text": "A family member calls asking to borrow money for school fees. They sound desperate.",
+      "weight": 5,
+      "tags": ["finance"],
+      "choices": [
+        {
+          "label": "Lend them KSh 20,000",
+          "statEffects": { "money": -20000, "happiness": 3 },
+          "familyRelationshipEffect": 12,
+          "resultText": "They thank you profusely. Family comes first."
+        },
+        {
+          "label": "Offer half — KSh 10,000",
+          "statEffects": { "money": -10000 },
+          "familyRelationshipEffect": 5,
+          "resultText": "They accept, a little disappointed but grateful."
+        },
+        {
+          "label": "Refuse — you need the money",
+          "statEffects": { "happiness": -2 },
+          "familyRelationshipEffect": -10,
+          "resultText": "An awkward silence on the phone. They understand, maybe."
+        }
+      ]
+    },
+    {
+      "id": "motorbike_repair",
+      "minAge": 18,
+      "maxAge": 45,
+      "restrictedToCountry": "KE",
+      "text": "Your boda's chain snaps on a dusty road. A fundi nearby offers a quick fix.",
+      "weight": 4,
+      "tags": ["finance"],
+      "choices": [
+        {
+          "label": "Pay for a full service",
+          "statEffects": { "money": -5000 },
+          "conditionEffect": 18,
+          "targetAssetType": "MOTORBIKE",
+          "resultText": "The bike purrs again. Worth every shilling."
+        },
+        {
+          "label": "Just fix the chain",
+          "statEffects": { "money": -1500 },
+          "conditionEffect": -8,
+          "targetAssetType": "MOTORBIKE",
+          "resultText": "It works for now. Other parts look worn."
+        }
+      ]
+    },
+    {
+      "id": "scooter_repair",
+      "minAge": 18,
+      "maxAge": 45,
+      "text": "Your scooter's chain snaps on a quiet road. A mechanic nearby offers a quick fix.",
+      "weight": 4,
+      "tags": ["finance"],
+      "choices": [
+        {
+          "label": "Pay for a full service",
+          "statEffects": { "money": -5000 },
+          "conditionEffect": 18,
+          "targetAssetType": "MOTORBIKE",
+          "resultText": "The scooter purrs again. Worth every coin."
+        },
+        {
+          "label": "Just fix the chain",
+          "statEffects": { "money": -1500 },
+          "conditionEffect": -8,
+          "targetAssetType": "MOTORBIKE",
+          "resultText": "It works for now. Other parts look worn."
+        }
+      ]
+    }
+  ]
+}

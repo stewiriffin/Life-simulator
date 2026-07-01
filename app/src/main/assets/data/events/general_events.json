@@ -1,0 +1,393 @@
+{
+  "events": [
+    {
+      "id": "childhood_pet_puppy",
+      "minAge": 5,
+      "maxAge": 12,
+      "text": "A neighbour offers you a playful puppy. Your parents debate whether the house is ready for a pet.",
+      "weight": 4,
+      "tags": ["general"],
+      "choices": [
+        { "label": "Beg to keep it", "statEffects": { "happiness": 8 }, "resultText": "The puppy becomes your best friend." },
+        { "label": "Let your parents decide", "statEffects": { "happiness": 2 }, "resultText": "They said maybe next year." }
+      ]
+    },
+    {
+      "id": "sibling_remote_battle",
+      "minAge": 6,
+      "maxAge": 14,
+      "text": "You and your sibling fight over the TV remote during a big match.",
+      "weight": 4,
+      "tags": ["general"],
+      "choices": [
+        { "label": "Share peacefully", "siblingRelationshipEffect": 5, "resultText": "You compromised like grown-ups." },
+        { "label": "Argue loudly", "siblingRelationshipEffect": -8, "statEffects": { "happiness": -3 }, "resultText": "Mum confiscated the remote." }
+      ]
+    },
+    {
+      "id": "family_road_trip",
+      "minAge": 4,
+      "maxAge": 16,
+      "text": "Your family plans a road trip upcountry to visit relatives.",
+      "weight": 3,
+      "tags": ["general"],
+      "choices": [
+        { "label": "Help pack snacks", "statEffects": { "happiness": 5 }, "familyRelationshipEffect": 4, "resultText": "The journey was chaotic but fun." },
+        { "label": "Complain about the heat", "statEffects": { "happiness": -2 }, "resultText": "You survived the dusty ride anyway." }
+      ]
+    },
+    {
+      "id": "school_drama_club",
+      "minAge": 8,
+      "maxAge": 15,
+      "text": "Your school starts a drama club. The teacher asks if anyone wants to audition.",
+      "weight": 3,
+      "tags": ["general"],
+      "choices": [
+        { "label": "Audition", "statEffects": { "happiness": 6, "smarts": 2 }, "resultText": "You landed a small role and loved it." },
+        { "label": "Watch from the audience", "statEffects": { "happiness": 2 }, "resultText": "The show was surprisingly good." }
+      ]
+    },
+    {
+      "id": "teen_matatu_wash",
+      "minAge": 14,
+      "maxAge": 18,
+      "restrictedToCountry": "KE",
+      "text": "A matatu conductor offers you a few shillings to help wash vehicles on a Saturday.",
+      "weight": 4,
+      "tags": ["general"],
+      "choices": [
+        { "label": "Take the hustle", "statEffects": { "money": 800, "happiness": 3, "health": -2 }, "resultText": "Hard work, honest pay." },
+        { "label": "Focus on school instead", "statEffects": { "smarts": 2 }, "resultText": "You studied while others hustled." }
+      ]
+    },
+    {
+      "id": "teen_car_wash",
+      "minAge": 14,
+      "maxAge": 18,
+      "text": "A local garage offers you pocket money to help wash cars on a Saturday.",
+      "weight": 4,
+      "tags": ["general"],
+      "choices": [
+        { "label": "Take the job", "statEffects": { "money": 800, "happiness": 3, "health": -2 }, "resultText": "Hard work, honest pay." },
+        { "label": "Focus on school instead", "statEffects": { "smarts": 2 }, "resultText": "You studied while others worked." }
+      ]
+    },
+    {
+      "id": "teen_vending_chips",
+      "minAge": 13,
+      "maxAge": 18,
+      "text": "A friend suggests selling snacks outside school after classes.",
+      "weight": 3,
+      "tags": ["general"],
+      "choices": [
+        { "label": "Try small vending", "statEffects": { "money": 1200, "smarts": 1 }, "resultText": "You sold out by dusk." },
+        { "label": "Pass", "statEffects": { "happiness": 1 }, "resultText": "You had a quiet afternoon." }
+      ]
+    },
+    {
+      "id": "teen_peer_pressure",
+      "minAge": 13,
+      "maxAge": 18,
+      "text": "Friends pressure you to skip class and hang out downtown.",
+      "weight": 5,
+      "tags": ["general"],
+      "choices": [
+        { "label": "Stay in school", "statEffects": { "smarts": 3, "happiness": -1 }, "resultText": "Your grades thanked you later." },
+        { "label": "Skip once", "statEffects": { "happiness": 4, "smarts": -3 }, "resultText": "Fun day, guilty conscience." }
+      ]
+    },
+    {
+      "id": "teen_social_media_drama",
+      "minAge": 14,
+      "maxAge": 22,
+      "text": "A post about you circulates on social media. People are talking.",
+      "weight": 4,
+      "tags": ["general"],
+      "choices": [
+        { "label": "Laugh it off", "statEffects": { "happiness": -2 }, "resultText": "It blew over in a week." },
+        { "label": "Clap back online", "statEffects": { "happiness": -5, "looks": -1 }, "resultText": "The drama escalated briefly." }
+      ]
+    },
+    {
+      "id": "teen_first_heartbreak",
+      "minAge": 15,
+      "maxAge": 20,
+      "text": "Someone you liked starts spending time with someone else. It stings.",
+      "weight": 4,
+      "tags": ["general"],
+      "choices": [
+        { "label": "Talk to a friend", "statEffects": { "happiness": 3 }, "resultText": "A good chat helped you heal." },
+        { "label": "Bottle it up", "statEffects": { "happiness": -6 }, "resultText": "You moped for a while." }
+      ]
+    },
+    {
+      "id": "adult_mid_career_doubt",
+      "minAge": 28,
+      "maxAge": 50,
+      "text": "You wonder if your current path is really what you wanted at 18.",
+      "weight": 4,
+      "tags": ["general"],
+      "choices": [
+        { "label": "Take an evening course", "statEffects": { "smarts": 4, "money": -5000 }, "resultText": "Learning felt refreshing." },
+        { "label": "Push through", "statEffects": { "happiness": -2 }, "resultText": "Bills still need paying." }
+      ]
+    },
+    {
+      "id": "adult_community_cleanup",
+      "minAge": 22,
+      "maxAge": 55,
+      "text": "Neighbours organise a weekend cleanup of a local open space.",
+      "weight": 3,
+      "tags": ["general"],
+      "choices": [
+        { "label": "Volunteer", "statEffects": { "happiness": 6 }, "resultText": "The place looked better by sunset." },
+        { "label": "Donate supplies", "statEffects": { "money": -2000, "happiness": 3 }, "resultText": "Every little bit helped." }
+      ]
+    },
+    {
+      "id": "adult_hobby_photography",
+      "minAge": 20,
+      "maxAge": 45,
+      "text": "You pick up photography as a weekend hobby.",
+      "weight": 3,
+      "tags": ["general"],
+      "choices": [
+        { "label": "Buy a decent camera", "statEffects": { "money": -15000, "happiness": 7 }, "resultText": "Your shots improved fast." },
+        { "label": "Use your phone", "statEffects": { "happiness": 4 }, "resultText": "Creativity beats gear sometimes." }
+      ]
+    },
+    {
+      "id": "adult_parking_fine",
+      "minAge": 22,
+      "maxAge": 60,
+      "text": "You return to your car to find a parking ticket tucked under the wiper.",
+      "weight": 4,
+      "tags": ["general"],
+      "choices": [
+        { "label": "Pay the fine", "statEffects": { "money": -3000, "happiness": -2 }, "resultText": "Lesson learned about signage." },
+        { "label": "Appeal at county offices", "statEffects": { "happiness": -4 }, "resultText": "The queue was longer than the fine." }
+      ]
+    },
+    {
+      "id": "adult_land_dispute_flavor",
+      "minAge": 30,
+      "maxAge": 65,
+      "text": "Extended family members disagree about a small plot of ancestral land.",
+      "weight": 2,
+      "tags": ["general"],
+      "choices": [
+        { "label": "Mediate calmly", "statEffects": { "happiness": -3 }, "familyRelationshipEffect": 5, "resultText": "Tempers cooled for now." },
+        { "label": "Stay out of it", "statEffects": { "happiness": -1 }, "resultText": "The argument continued without you." }
+      ]
+    },
+    {
+      "id": "senior_retirement_party",
+      "minAge": 60,
+      "maxAge": 75,
+      "text": "Colleagues throw a modest retirement send-off for you.",
+      "weight": 3,
+      "tags": ["general"],
+      "choices": [
+        { "label": "Give a short speech", "statEffects": { "happiness": 8 }, "resultText": "There were tears and laughter." },
+        { "label": "Keep it brief", "statEffects": { "happiness": 5 }, "resultText": "You shook hands and headed home." }
+      ]
+    },
+    {
+      "id": "senior_grandchild_visit",
+      "minAge": 55,
+      "maxAge": 85,
+      "text": "A young grandchild visits and asks you to tell stories about the old days.",
+      "weight": 3,
+      "tags": ["general", "requires_child"],
+      "choices": [
+        { "label": "Share your best tales", "statEffects": { "happiness": 10 }, "resultText": "Their eyes went wide with wonder." },
+        { "label": "Teach them a board game", "statEffects": { "happiness": 7 }, "resultText": "You lost on purpose twice." }
+      ]
+    },
+    {
+      "id": "senior_health_walk",
+      "minAge": 58,
+      "maxAge": 90,
+      "text": "Your doctor suggests daily walks to keep your heart strong.",
+      "weight": 4,
+      "tags": ["general", "health"],
+      "choices": [
+        { "label": "Walk every morning", "statEffects": { "health": 5, "happiness": 3 }, "resultText": "You feel lighter on your feet." },
+        { "label": "Ignore the advice", "statEffects": { "health": -3 }, "resultText": "The couch won again." }
+      ]
+    },
+    {
+      "id": "senior_life_reflection",
+      "minAge": 65,
+      "maxAge": 90,
+      "text": "You sit on the veranda and reflect on the life you've lived so far.",
+      "weight": 3,
+      "tags": ["general"],
+      "choices": [
+        { "label": "Feel grateful", "statEffects": { "happiness": 8 }, "resultText": "Not perfect, but yours." },
+        { "label": "Think about regrets", "statEffects": { "happiness": -4 }, "resultText": "Some chapters still sting." }
+      ]
+    },
+    {
+      "id": "crime_pickpocket_chance",
+      "minAge": 16,
+      "maxAge": 40,
+      "text": "You're low on cash and spot an easy-looking wallet in a crowded market.",
+      "weight": 2,
+      "tags": ["general", "crime"],
+      "choices": [
+        { "label": "Try to lift it", "triggersCrime": "PICKPOCKET", "resultText": "You made a risky choice in the crowd." },
+        { "label": "Walk away", "statEffects": { "happiness": 2 }, "resultText": "Your conscience stayed clean." }
+      ]
+    },
+    {
+      "id": "crime_shoplift_temptation",
+      "minAge": 15,
+      "maxAge": 35,
+      "text": "A shop attendant is distracted. A small item sits near the counter.",
+      "weight": 2,
+      "tags": ["general", "crime"],
+      "choices": [
+        { "label": "Slip it into your bag", "triggersCrime": "SHOPLIFT", "resultText": "You tried your luck at the shop." },
+        { "label": "Pay like everyone else", "statEffects": { "happiness": 1 }, "resultText": "You left with a clear head." }
+      ]
+    },
+    {
+      "id": "health_caught_rain",
+      "minAge": 8,
+      "maxAge": 70,
+      "text": "You're caught in a heavy downpour without an umbrella.",
+      "weight": 4,
+      "tags": ["general", "health"],
+      "choices": [
+        { "label": "Run for shelter", "statEffects": { "health": -3 }, "triggersIllnessRoll": true, "resultText": "You got soaked to the bone." },
+        { "label": "Wait it out under an awning", "statEffects": { "happiness": -1 }, "resultText": "You stayed mostly dry." }
+      ]
+    },
+    {
+      "id": "health_feeling_unwell",
+      "minAge": 12,
+      "maxAge": 80,
+      "text": "You've been feeling run-down for days. A fever creeps in.",
+      "weight": 4,
+      "tags": ["general", "health"],
+      "choices": [
+        { "label": "Visit a public clinic", "doctorCareTier": "public", "resultText": "You queued at the local clinic." },
+        { "label": "Try home remedies", "statEffects": { "health": -4 }, "triggersIllnessRoll": true, "resultText": "Rest and tea only helped a little." },
+        { "label": "Book Nairobi Hospital", "doctorCareTier": "private", "resultText": "You sought private care." }
+      ]
+    },
+    {
+      "id": "childhood_lost_toy",
+      "minAge": 3,
+      "maxAge": 9,
+      "text": "You lose your favourite toy on the way home from the shops.",
+      "weight": 3,
+      "tags": ["general"],
+      "choices": [
+        { "label": "Retrace your steps", "statEffects": { "happiness": 4 }, "resultText": "You found it near the gate!" },
+        { "label": "Cry to your parent", "statEffects": { "happiness": -3 }, "familyRelationshipEffect": 2, "resultText": "They promised to look tomorrow." }
+      ]
+    },
+    {
+      "id": "adult_fraud_scam_email",
+      "minAge": 20,
+      "maxAge": 55,
+      "text": "An email promises easy money if you 'help process a transfer'.",
+      "weight": 2,
+      "tags": ["general", "crime"],
+      "choices": [
+        { "label": "Report it as spam", "statEffects": { "smarts": 2 }, "resultText": "Classic scam avoided." },
+        { "label": "See if you can flip it", "triggersCrime": "FRAUD", "resultText": "You waded into shady waters." }
+      ]
+    },
+    {
+      "id": "teen_sports_day",
+      "minAge": 10,
+      "maxAge": 17,
+      "text": "Sports day arrives at school. Which event will you enter?",
+      "weight": 3,
+      "tags": ["general"],
+      "choices": [
+        { "label": "Sprint race", "statEffects": { "health": 3, "happiness": 5 }, "resultText": "You placed mid-pack but tried hard." },
+        { "label": "Cheer from the sidelines", "statEffects": { "happiness": 3 }, "resultText": "The atmosphere was electric." }
+      ]
+    },
+    {
+      "id": "adult_wedding_invite",
+      "minAge": 24,
+      "maxAge": 50,
+      "text": "A cousin invites you to a big wedding across town.",
+      "weight": 3,
+      "tags": ["general"],
+      "choices": [
+        { "label": "Attend and gift generously", "statEffects": { "money": -8000, "happiness": 7 }, "resultText": "Dancing until midnight." },
+        { "label": "Send regrets and a card", "statEffects": { "money": -2000, "happiness": 2 }, "resultText": "They understood you were busy." }
+      ]
+    },
+    {
+      "id": "senior_church_mosque_neutral",
+      "minAge": 50,
+      "maxAge": 85,
+      "text": "Your community gathers for a special service. Friends invite you along.",
+      "weight": 3,
+      "tags": ["general"],
+      "choices": [
+        { "label": "Attend and contribute", "statEffects": { "money": -1500, "happiness": 6 }, "resultText": "A peaceful morning together." },
+        { "label": "Send a donation instead", "statEffects": { "money": -3000, "happiness": 4 }, "resultText": "You supported from afar." }
+      ]
+    },
+    {
+      "id": "adult_gym_membership",
+      "minAge": 20,
+      "maxAge": 45,
+      "text": "A gym near your workplace offers a discounted annual membership.",
+      "weight": 3,
+      "tags": ["general", "health"],
+      "choices": [
+        { "label": "Sign up", "statEffects": { "money": -12000, "health": 6, "happiness": 3 }, "resultText": "Sore muscles, good progress." },
+        { "label": "Jog for free instead", "statEffects": { "health": 2 }, "resultText": "The road is always open." }
+      ]
+    },
+    {
+      "id": "ng_nollywood_premiere",
+      "minAge": 16,
+      "maxAge": 40,
+      "text": "Friends invite you to a Nollywood premiere night in Lagos.",
+      "weight": 3,
+      "restrictedToCountry": "NG",
+      "tags": ["general", "family"],
+      "choices": [
+        { "label": "Dress up and go", "statEffects": { "money": -5000, "happiness": 8, "looks": 2 }, "resultText": "You spotted a famous actor on the red carpet." },
+        { "label": "Watch the stream at home", "statEffects": { "happiness": 3 }, "resultText": "Popcorn and group chat instead." }
+      ]
+    },
+    {
+      "id": "za_braai_weekend",
+      "minAge": 18,
+      "maxAge": 55,
+      "text": "Your family plans a weekend braai in the backyard.",
+      "weight": 3,
+      "restrictedToCountry": "ZA",
+      "tags": ["family"],
+      "choices": [
+        { "label": "Help with the grill", "statEffects": { "happiness": 6 }, "familyRelationshipEffect": 5, "resultText": "Stories and smoke filled the air." },
+        { "label": "Bring drinks only", "statEffects": { "money": -2000, "happiness": 4 }, "resultText": "You still had a great time." }
+      ]
+    },
+    {
+      "id": "in_festival_sweets",
+      "minAge": 8,
+      "maxAge": 25,
+      "text": "The neighbourhood celebrates a festival with sweets and music.",
+      "weight": 3,
+      "restrictedToCountry": "IN",
+      "tags": ["family"],
+      "choices": [
+        { "label": "Join the dancing", "statEffects": { "happiness": 7 }, "familyRelationshipEffect": 4, "resultText": "Your relatives cheered you on." },
+        { "label": "Stay home and study", "statEffects": { "smarts": 3, "happiness": -2 }, "resultText": "You heard the drums from your window." }
+      ]
+    }
+  ]
+}

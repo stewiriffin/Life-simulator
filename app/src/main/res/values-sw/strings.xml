@@ -1,0 +1,441 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">Maisha</string>
+    <string name="admob_app_id">ca-app-pub-3940256099942544~3347511713</string>
+
+    <!-- App -->
+    <string name="tagline">Ishi hadithi yako. Mwaka mmoja kwa wakati.</string>
+
+    <!-- Onboarding -->
+    <string name="onboarding_skip">Ruka</string>
+    <string name="onboarding_welcome_body">Ishi maisha, fanya maamuzi, na uone hadithi yako inaenda wapi — mwaka mmoja kwa wakati.</string>
+    <string name="onboarding_age_up_title">Ongeza Umri kuishi kila mwaka</string>
+    <string name="onboarding_age_up_body">Bonyeza Ongeza Umri kukomaa, kukutana na matukio, na kuunda takwimu zako.</string>
+    <string name="onboarding_choices_title">Maamuzi yako huunda maisha yako</string>
+    <string name="onboarding_choices_body">Familia, kazi, pesa, na afya zote zinajibu unachofanya — huna haja kujua kila kitu siku ya kwanza.</string>
+    <string name="onboarding_ready_title">Uko tayari kuanza?</string>
+    <string name="onboarding_ready_body">Unda mhusika wako uanze maisha yako ya kwanza. Unaweza kuhifadhi maisha zaidi baadaye.</string>
+    <string name="onboarding_start_first_life">Anza Maisha Yako ya Kwanza</string>
+    <string name="content_desc_dismiss_tip">Futa kidokezo</string>
+    <string name="tip_family_dating">Ukifika miaka 18, unaweza kutafuta mwenzi hapa.</string>
+    <string name="tip_first_death_achievements">Mafanikio yako hubaki kwa maisha yako yanayofuata.</string>
+
+    <!-- Share life card -->
+    <string name="btn_share_my_life">Shiriki Maisha Yangu</string>
+    <string name="share_preview_title">Shiriki maisha yako</string>
+    <string name="share_preview_subtitle">Angalia jinsi kadi yako itakavyoonekana</string>
+    <string name="btn_share">Shiriki</string>
+    <string name="share_chooser_title">Shiriki kadi ya maisha yako</string>
+    <string name="share_default_caption">Nimeishi maisha kamili! Unaweza kushinda takwimu zangu? 🌍</string>
+    <string name="share_error">Imeshindwa kushiriki kadi yako. Jaribu tena.</string>
+    <string name="share_card_life_span">%1$d – %2$d</string>
+    <string name="share_card_footer">Imechezwa kwenye Maisha — ishi hadithi yako</string>
+    <string name="share_career_job_level">%1$s, Kiwango %2$d</string>
+    <string name="share_career_former">Aliwahi kuwa %1$s</string>
+    <string name="share_career_freespirit">Aliishi maisha kwa masharti yake</string>
+    <string name="share_family_married_kids">Ameoa/ameolewa na %1$s · watoto %2$d</string>
+    <string name="share_family_married">Ameoa/ameolewa na %1$s</string>
+    <string name="share_family_kids_only">Watoto %d, bila mwenzi</string>
+    <string name="share_family_never_settled">Hakujikita kamwe</string>
+
+    <!-- Notifications -->
+    <string name="notification_channel_name">Ukumbusho wa maisha</string>
+    <string name="notification_channel_description">Ukumbusho wa kirafiki wa kuangalia maisha yako ya Maisha</string>
+    <string name="notification_daily_title">Maisha</string>
+    <string name="notification_daily_body_1">Hadithi yako inakusubiri — ingia ukiwa na dakika.</string>
+    <string name="notification_daily_body_2">Mwaka mpya unaweza kuwa bonyeza moja tu.</string>
+    <string name="notification_daily_body_3">Maisha yanakutendeaje leo?</string>
+    <string name="notification_daily_body_4">Uko tayari kwa sura nyingine?</string>
+    <string name="notification_daily_body_named_1">%1$s anaendelea vipi leo?</string>
+    <string name="notification_daily_body_named_2">Hadithi ya %1$s inaendelea — unataka kuona kinachofuata?</string>
+    <string name="notification_daily_body_named_3">Angalia hali ya %1$s ukifika nafasi.</string>
+    <string name="notification_nudge_health_title">Angalia afya</string>
+    <string name="notification_nudge_health_body">%1$s amekuwa na %2$s kwa muda — daktari anaweza kusaidia.</string>
+    <string name="notification_nudge_decision_title">Chaguo linakusubiri</string>
+    <string name="notification_nudge_decision_body">%1$s ana uamuzi wa kufanya. Utachagua nini?</string>
+    <string name="notification_nudge_comeback_title">Tumekukosa</string>
+    <string name="notification_nudge_comeback_body">Maisha ya %1$s yamesimama — endelea ulipoishia.</string>
+
+    <!-- Navigation -->
+    <string name="nav_life">Maisha</string>
+    <string name="nav_family">Familia</string>
+    <string name="nav_career">Kazi</string>
+    <string name="nav_assets">Mali</string>
+    <string name="nav_actions">Vitendo</string>
+
+    <!-- Common buttons -->
+    <string name="btn_confirm">Thibitisha</string>
+    <string name="btn_cancel">Ghairi</string>
+    <string name="btn_buy">Nunua</string>
+    <string name="btn_sell">Uza</string>
+    <string name="btn_continue">Endelea</string>
+    <string name="btn_overwrite">Badilisha</string>
+    <string name="btn_start_new_life">Anza Maisha Mapya</string>
+    <string name="btn_new_life">Maisha Mapya</string>
+    <string name="btn_view_summary">Angalia Muhtasari</string>
+    <string name="btn_start_life">Anza Maisha</string>
+    <string name="btn_starting">Inaanza…</string>
+    <string name="btn_random_name">Jina la Bahati</string>
+    <string name="btn_apply">Omba</string>
+    <string name="btn_locked">Imefungwa</string>
+    <string name="btn_quit_job">Acha Kazi</string>
+    <string name="btn_attempt">Jaribu</string>
+    <string name="btn_visit_doctor">Tembelea daktari</string>
+    <string name="btn_find_date">Tafuta Mpenzi</string>
+    <string name="btn_start_dating">Anza Kuchumbiana</string>
+    <string name="btn_play_together">Cheza Pamoja</string>
+    <string name="btn_spend_time">Tumia Muda</string>
+    <string name="btn_scold">Kemea</string>
+    <string name="btn_argue">Gombana</string>
+    <string name="btn_ask_for_money">Omba Pesa</string>
+    <string name="btn_ask_for_money_locked">Omba Pesa (inahitaji 60+)</string>
+    <string name="btn_propose_marriage">Omba Ndoa</string>
+    <string name="btn_propose_locked">Omba (inahitaji %d+)</string>
+    <string name="btn_have_child">Pata Mtoto</string>
+    <string name="btn_divorce">Talaka</string>
+    <string name="btn_break_up">Achana</string>
+    <string name="btn_view_achievements">Angalia Mafanikio</string>
+    <string name="btn_watch_second_wind">Tazama Tangazo kwa Second Wind</string>
+    <string name="btn_age_up">+ Ongeza Umri</string>
+    <string name="btn_aging">Inaongezeka…</string>
+    <string name="btn_nice">Safi!</string>
+
+    <!-- Content descriptions -->
+    <string name="content_desc_back">Rudi</string>
+    <string name="content_desc_view_full_life">Angalia maisha kamili</string>
+    <string name="content_desc_settings">Mipangilio</string>
+
+    <!-- Settings -->
+    <string name="settings_screen_title">Mipangilio</string>
+    <string name="settings_sound">Sauti</string>
+    <string name="settings_haptics">Mtetemo</string>
+    <string name="settings_notifications">Arifa</string>
+    <string name="settings_language">Lugha</string>
+    <string name="settings_language_english">English</string>
+    <string name="settings_language_swahili">Kiswahili</string>
+    <string name="settings_reset_all_data">Weka upya data zote</string>
+    <string name="settings_reset_warning">Hii itafuta kabisa maisha yote yaliyohifadhiwa, maendeleo ya mafanikio, na kuweka mipangilio chaguomsingi. Haiwezi kutenduliwa.</string>
+    <string name="settings_version">Toleo %s</string>
+
+    <!-- Slot picker -->
+    <string name="screen_slot_picker_title">Maisha Yako</string>
+    <string name="screen_slot_picker_subtitle">Chagua nafasi ya kuhifadhi ili kuendelea au kuanza upya.</string>
+    <string name="dialog_overwrite_slot_title">Badilisha nafasi hii?</string>
+    <string name="dialog_overwrite_slot_body">Kuanza maisha mapya kwenye Nafasi %1$d kutafuta kabisa %2$s. Haiwezi kutenduliwa.</string>
+    <string name="format_slot_named_save">uhifadhi wa %s</string>
+    <string name="dialog_overwrite_existing_save">uhifadhi uliopo</string>
+    <string name="format_slot_number">Nafasi %d</string>
+    <string name="slot_empty">Nafasi tupu</string>
+    <string name="format_slot_deceased">%s (amefariki)</string>
+    <string name="format_died_at_age">Alifariki akiwa na %s</string>
+
+    <!-- Character creation -->
+    <string name="second_wind_bonus_active">Bonasi ya Second Wind imewashwa: %s kwenye maisha yako mapya!</string>
+    <string name="label_your_name">Jina lako</string>
+    <string name="label_gender">Jinsia</string>
+    <string name="gender_male">Mwanaume</string>
+    <string name="gender_female">Mwanamke</string>
+    <string name="error_name_required">Tafadhali weka jina</string>
+
+    <!-- Life screen -->
+    <string name="empty_no_character">Hakuna mhusika aliyehifadhiwa.</string>
+    <string name="section_event_log">Kumbukumbu za Matukio</string>
+    <string name="empty_event_log_life">Hakuna matukio bado. Gusa Ongeza Umri ili kuishi maisha yako.</string>
+    <string name="empty_event_log">Hakuna matukio bado.</string>
+    <string name="label_years">MIAKA</string>
+    <string name="label_net_worth">Thamani Halisi</string>
+    <string name="label_education">Elimu</string>
+    <string name="label_career">Kazi</string>
+    <string name="label_family">Familia</string>
+    <string name="label_children">Watoto</string>
+    <string name="label_gpa">GPA</string>
+    <string name="format_gpa">GPA: %.1f</string>
+    <string name="format_character_birth_info">%1$s · Alizaliwa %2$d</string>
+    <string name="format_character_stats_header">%1$s · Umri %2$d · Alizaliwa %3$d</string>
+    <string name="value_none">Hakuna</string>
+    <string name="status_living">Anaishi</string>
+
+    <!-- Screen titles -->
+    <string name="screen_family">Familia</string>
+    <string name="screen_career">Kazi</string>
+    <string name="screen_assets">Mali</string>
+    <string name="screen_actions">Vitendo</string>
+    <string name="screen_full_life">Maisha Kamili</string>
+    <string name="screen_achievements">Mafanikio</string>
+
+    <!-- Family -->
+    <string name="format_family_member_count">Wanachama %d</string>
+    <string name="empty_family">Hakuna wanafamilia waliopatikana.</string>
+    <string name="section_parents">Wazazi</string>
+    <string name="section_siblings">Ndugu</string>
+    <string name="section_partner">Mpenzi</string>
+    <string name="section_children">Watoto</string>
+    <string name="section_friends">Marafiki</string>
+    <string name="section_other">Wengine</string>
+    <string name="sheet_dating_prospects_title">Wapenzi Wanaowezekana</string>
+    <string name="sheet_dating_prospects_subtitle">Chagua mtu wa kuanza kuchumbiana naye.</string>
+    <string name="format_prospect_chemistry">%1$s · Chemistry %2$d</string>
+    <string name="label_bond">Uhusiano</string>
+    <string name="avatar_unknown_initials">?</string>
+
+    <!-- Relations -->
+    <string name="relation_mother">Mama</string>
+    <string name="relation_father">Baba</string>
+    <string name="relation_sibling">Ndugu</string>
+    <string name="relation_spouse">Mwenzi</string>
+    <string name="relation_partner">Mpenzi</string>
+    <string name="relation_partner_dating">Mpenzi (wanachumbiana)</string>
+    <string name="relation_child">Mtoto</string>
+    <string name="relation_friend">Rafiki</string>
+
+    <!-- Career -->
+    <string name="section_job_listings">Kazi Zinazopatikana</string>
+    <string name="format_job_history">Historia: %s</string>
+    <string name="label_current_job">Kazi ya Sasa</string>
+    <string name="format_job_level_salary">Kiwango %1$d · %2$s</string>
+    <string name="format_years_at_job">Miaka kwenye kazi: %d</string>
+    <string name="format_job_salary_from">Kuanzia %s/mwaka</string>
+    <string name="career_unemployed">Hana kazi</string>
+    <string name="career_job_level">%1$s — Kiwango %2$d</string>
+    <string name="format_salary_per_year">%s/mwaka</string>
+    <string name="format_career_formerly">Hapo awali: %s</string>
+    <string name="career_never_held_job">Hajawahi kufanya kazi</string>
+    <string name="edu_req_primary">Elimu ya msingi</string>
+    <string name="edu_req_secondary">Elimu ya sekondari</string>
+    <string name="edu_req_university">Elimu ya chuo kikuu</string>
+    <string name="edu_req_degree">Shahada ya chuo kikuu</string>
+    <string name="edu_req_none">Hakuna elimu</string>
+    <string name="job_ineligible_employed">Tayari ana kazi</string>
+    <string name="job_ineligible_age">Inahitaji: Umri wa miaka 18+</string>
+    <string name="job_ineligible_education">Inahitaji: %s</string>
+
+    <!-- Education formatter -->
+    <string name="edu_expelled">Alifukuzwa</string>
+    <string name="edu_not_enrolled">Hajasajiliwa</string>
+    <string name="edu_primary_school_fallback">Shule ya Msingi</string>
+    <string name="edu_primary_class">Darasa %1$d — %2$s</string>
+    <string name="edu_secondary_school_fallback">Shule ya Sekondari</string>
+    <string name="edu_secondary_form">Kidato %1$d — %2$s</string>
+    <string name="edu_general_studies">Masomo ya Jumla</string>
+    <string name="edu_university_fallback">Chuo Kikuu</string>
+    <string name="edu_university_year">Mwaka %1$d — %2$s (%3$s)</string>
+    <string name="edu_your_studies">masomo yako</string>
+    <string name="edu_graduated">Amemaliza — %s</string>
+    <string name="edu_expelled_from_school">Alifukuzwa shuleni</string>
+    <string name="edu_university_in_progress">Chuo Kikuu — %s (bado anaendelea)</string>
+    <string name="edu_secondary_school">Shule ya sekondari</string>
+    <string name="edu_primary_school">Shule ya msingi</string>
+    <string name="edu_no_formal_education">Hakuna elimu rasmi</string>
+
+    <!-- Assets -->
+    <string name="dialog_confirm_purchase_title">Thibitisha ununuzi</string>
+    <string name="dialog_confirm_purchase_body">Nunua %1$s kwa %2$s? Matengenezo: %3$s/mwezi</string>
+    <string name="format_cash_net_worth">Fedha taslimu: %1$s · Thamani halisi: %2$s</string>
+    <string name="section_owned_count">Zinazomilikiwa (%d)</string>
+    <string name="empty_assets">Hakuna mali bado. Angalia duka hapa chini.</string>
+    <string name="section_shop">Duka</string>
+    <string name="format_upkeep_monthly">Matengenezo: %s/mwezi</string>
+    <string name="format_asset_price_upkeep">%1$s · %2$s/mwezi</string>
+    <string name="label_insufficient_funds">Fedha hazitoshi</string>
+
+    <!-- Actions / health / crime -->
+    <string name="msg_in_prison">Gerezani — miaka %d iliyobaki</string>
+    <string name="msg_incarcerated">Kwa sasa gerezani — miaka %d iliyobaki</string>
+    <string name="section_health">Afya</string>
+    <string name="section_opportunities">Fursa</string>
+    <string name="care_public_clinic">Kliniki ya umma</string>
+    <string name="care_nairobi_hospital">Nairobi Hospital</string>
+    <string name="format_treatment_cost">Gharama: %s</string>
+    <string name="hint_public_clinic_success">Gharama ndogo, mafanikio ya wastani</string>
+    <string name="hint_private_hospital_success">Gharama kubwa, mafanikio bora zaidi</string>
+    <string name="crime_pickpocket_title">Kuiba mfukoni</string>
+    <string name="crime_pickpocket_desc">Chukua pochi kwenye matatu au soko lenye watu wengi.</string>
+    <string name="crime_shoplift_title">Kuiba dukani</string>
+    <string name="crime_shoplift_desc">Chukua bidhaa kutoka dukani bila kulipa.</string>
+    <string name="crime_fraud_title">Udanganyifu</string>
+    <string name="crime_fraud_desc">Fanya ulaghai mdogo kwa faida kubwa.</string>
+    <string name="crime_type_pickpocket">kuiba mfukoni</string>
+    <string name="crime_type_shoplift">kuiba dukani</string>
+    <string name="crime_type_fraud">udanganyifu</string>
+    <string name="risk_moderate">Hatari: Wastani</string>
+    <string name="risk_high">Hatari: Kubwa</string>
+    <string name="dialog_seek_treatment_title">Tafuta matibabu?</string>
+    <string name="dialog_seek_treatment_desc">Tibu %1$s kwenye %2$s. %3$s. %4$s.</string>
+    <string name="empty_actions_title">Hakuna cha kufanya sasa hivi</string>
+    <string name="empty_actions_body">Uko mzima na unaepuka matatizo. Rudi tena maisha yanavyoendelea.</string>
+    <string name="dialog_crime_pickpocket_title">Jaribu kuiba mfukoni?</string>
+    <string name="dialog_crime_pickpocket_desc">Unaweza kutoroka na pesa kidogo, lakini kukamatwa kunamaanisha kukamatwa na rekodi ya uhalifu.</string>
+    <string name="dialog_crime_shoplift_title">Jaribu kuiba dukani?</string>
+    <string name="dialog_crime_shoplift_desc">Pesa haraka kutoka bidhaa zilizoibiwa — lakini ulinzi wa duka au polisi wanaweza kukukamata.</string>
+    <string name="dialog_crime_fraud_title">Jaribu udanganyifu?</string>
+    <string name="dialog_crime_fraud_desc">Faida kubwa ikiendelea vizuri, lakini udanganyifu una adhabu kali zaidi ukikamatwa.</string>
+
+    <!-- Severity -->
+    <string name="severity_minor">Kidogo</string>
+    <string name="severity_moderate">Wastani</string>
+    <string name="severity_serious">Mbaya</string>
+
+    <!-- Stats -->
+    <string name="stat_health">Afya</string>
+    <string name="stat_happiness">Furaha</string>
+    <string name="stat_smarts">Akili</string>
+    <string name="stat_looks">Urembo</string>
+    <string name="stat_money">Pesa</string>
+    <string name="stat_relationship">Uhusiano</string>
+    <string name="stat_condition">Hali</string>
+    <string name="stat_performance">Utendaji</string>
+    <string name="label_has_record">Ana rekodi</string>
+
+    <!-- Character stats sections -->
+    <string name="section_active_conditions">Hali za Sasa</string>
+    <string name="section_current_stats">Takwimu za Sasa</string>
+    <string name="section_life_overview">Muhtasari wa Maisha</string>
+
+    <!-- Life summary -->
+    <string name="section_final_stats">Takwimu za Mwisho</string>
+    <string name="section_life_recap">Muhtasari wa Maisha</string>
+    <string name="section_life_highlights">Matukio Muhimu</string>
+    <string name="format_life_span">%1$d – %2$d · %3$s</string>
+    <string name="format_married_to">Ameoa/ameolewa na %s</string>
+    <string name="format_partner_name">Mpenzi: %s</string>
+    <string name="family_no_spouse">Hana mwenzi</string>
+
+    <!-- Death -->
+    <string name="death_cause_old_age">Alifariki kwa amani kwa uzee</string>
+    <string name="death_cause_health_failure">Alifariki kutokana na afya kudhoofika</string>
+    <string name="death_cause_accident">Alifariki katika ajali isiyotarajiwa</string>
+    <string name="death_cause_illness">Alifariki baada ya ugonjwa mrefu</string>
+    <string name="death_flavor_old_age">Alifariki kwa amani nyumbani akiwa amelala usingizi.</string>
+    <string name="death_flavor_health_failure">Afya yako ilikata tamaa. Familia ilikusanyika kusema kwaheri.</string>
+    <string name="death_flavor_accident">Maisha yalikoma ghafla katika ajali isiyotarajiwa.</string>
+    <string name="death_flavor_illness">Baada ya ugonjwa mrefu, ulifariki ukiwa na wapendwa wako.</string>
+
+    <!-- Second wind / meta bonus -->
+    <string name="second_wind_bonus_health">+5 Afya</string>
+    <string name="second_wind_bonus_happiness">+5 Furaha</string>
+    <string name="second_wind_bonus_smarts">+5 Akili</string>
+    <string name="second_wind_bonus_looks">+5 Urembo</string>
+    <string name="second_wind_bonus_random">+5 kwenye takwimu ya bahati</string>
+    <string name="msg_second_wind_earned">Second Wind imepatikana! Maisha yako yajayo yanaanza na %s.</string>
+    <string name="msg_second_wind_no_bonus">Hakuna bonasi. Bado unaweza kuanza maisha mapya.</string>
+
+    <!-- Event dialog -->
+    <string name="event_dialog_subtitle">Tukio la Maisha</string>
+    <string name="event_category_education">Elimu</string>
+    <string name="event_category_career">Kazi</string>
+    <string name="event_category_finance">Fedha</string>
+    <string name="event_category_relationships">Mahusiano</string>
+    <string name="event_category_family">Familia</string>
+    <string name="event_category_life">Maisha</string>
+
+    <!-- Achievements -->
+    <string name="achievement_unlocked_title">Mafanikio Yamefunguliwa</string>
+    <string name="format_achievement_unlocked_date">Imefunguliwa %s</string>
+    <string name="achievement_category_career">Kazi</string>
+    <string name="achievement_category_education">Elimu</string>
+    <string name="achievement_category_family">Familia</string>
+    <string name="achievement_category_wealth">Mali</string>
+    <string name="achievement_category_longevity">Umri Mrefu</string>
+    <string name="achievement_category_mischief">Ujanja</string>
+
+    <string name="achievement_first_job_title">Kazi ya Kwanza</string>
+    <string name="achievement_first_job_description">Pata kazi yako ya kwanza na uanze kupata kipato.</string>
+    <string name="achievement_corner_office_title">Ofisi ya Kona</string>
+    <string name="achievement_corner_office_description">Fikia kiwango cha 3 au zaidi katika kazi yako.</string>
+    <string name="achievement_career_changer_title">Mbadilishaji wa Kazi</string>
+    <string name="achievement_career_changer_description">Fanya kazi tatu au zaidi tofauti katika maisha yako.</string>
+    <string name="achievement_graduate_title">Mhitimu</string>
+    <string name="achievement_graduate_description">Maliza chuo kikuu na upate shahada yako.</string>
+    <string name="achievement_straight_as_title">Alama za Juu</string>
+    <string name="achievement_straight_as_description">Dumisha GPA ya 3.7 au zaidi.</string>
+    <string name="achievement_dropout_title">Aliacha Shule</string>
+    <string name="achievement_dropout_description">Acha shule kabla ya kumaliza — njia isiyo ya kawaida.</string>
+    <string name="achievement_tied_the_knot_title">Funga Ndoa</string>
+    <string name="achievement_tied_the_knot_description">Oa au olewe na mpenzi wako.</string>
+    <string name="achievement_first_child_title">Mtoto wa Kwanza</string>
+    <string name="achievement_first_child_description">Karibisha mtoto wako wa kwanza kwenye familia.</string>
+    <string name="achievement_growing_family_title">Familia Inayokua</string>
+    <string name="achievement_growing_family_description">Lea watoto watatu au zaidi.</string>
+    <string name="achievement_family_person_title">Mtu wa Familia</string>
+    <string name="achievement_family_person_description">Dumisha uhusiano imara — 70+ na kila mwanafamilia aliye hai.</string>
+    <string name="achievement_six_figures_title">Nambari Sita</string>
+    <string name="achievement_six_figures_description">Fikia thamani halisi ya KSh 100,000.</string>
+    <string name="achievement_first_million_title">Milioni ya Kwanza</string>
+    <string name="achievement_first_million_description">Fikia thamani halisi ya KSh 1,000,000.</string>
+    <string name="achievement_property_owner_title">Mmiliki wa Nyumba</string>
+    <string name="achievement_property_owner_description">Kuwa na nyumba yako mwenyewe.</string>
+    <string name="achievement_multiple_streams_title">Vyanzo Vingi</string>
+    <string name="achievement_multiple_streams_description">Kuwa na mali tatu au zaidi kwa wakati mmoja.</string>
+    <string name="achievement_half_century_title">Nusu Karne</string>
+    <string name="achievement_half_century_description">Ishi hadi umri wa miaka 50.</string>
+    <string name="achievement_golden_years_title">Miaka ya Dhahabu</string>
+    <string name="achievement_golden_years_description">Fikia umri wa miaka 80.</string>
+    <string name="achievement_centenarian_title">Mmia Mia</string>
+    <string name="achievement_centenarian_description">Ishi hadi umri wa miaka 100 — jambo adimu sana.</string>
+    <string name="achievement_brush_with_law_title">Mgongano na Sheria</string>
+    <string name="achievement_brush_with_law_description">Kamatwa kwa mara ya kwanza.</string>
+    <string name="achievement_repeat_offender_title">Mhalifu wa Mara kwa Mara</string>
+    <string name="achievement_repeat_offender_description">Kamatwa mara tatu au zaidi.</string>
+    <string name="achievement_clean_record_title">Rekodi Safi</string>
+    <string name="achievement_clean_record_description">Fikia umri wa miaka 60 bila rekodi ya uhalifu.</string>
+
+    <!-- ViewModel / snackbar messages -->
+    <string name="msg_hired">Ameajiriwa kama %s!</string>
+    <string name="msg_job_rejected">Ombi limekataliwa. Jaribu tena au jenga ujuzi wako.</string>
+    <string name="msg_quit_job">Umeacha kazi yako.</string>
+    <string name="msg_purchase_success">Ununuzi umefanikiwa!</string>
+    <string name="msg_purchase_insufficient">Fedha hazitoshi kwa ununuzi huu.</string>
+    <string name="msg_asset_sold">Mali imeuzwa.</string>
+    <string name="msg_date_too_young">Lazima uwe na umri wa miaka 18 ili kuchumbiana.</string>
+    <string name="msg_already_in_relationship">Tayari una uhusiano.</string>
+    <string name="msg_no_prospects">Hakuna wapenzi wanaopatikana sasa hivi.</string>
+    <string name="msg_started_dating">Umeanza kuchumbiana na %s.</string>
+    <string name="msg_proposal_accepted">Wamesema ndiyo! Umeoa/umeolewa!</string>
+    <string name="msg_proposal_rejected">Wamesema hapana. Uhusiano umeathirika.</string>
+    <string name="msg_breakup">Uhusiano umekwisha.</string>
+    <string name="msg_child_welcome">Karibu kwenye familia, mtoto mdogo!</string>
+    <string name="msg_child_need_marriage">Unahitaji kuwa na ndoa ili kupata mtoto.</string>
+    <string name="msg_crime_got_away_log">Alitoroka na %1$s na akapata KSh %2$d.</string>
+    <string name="msg_crime_success">Imefanikiwa! Umepata KSh %d.</string>
+    <string name="msg_crime_caught">Umekamatwa! Adhabu ya miaka %d.</string>
+    <string name="msg_treatment_success">Matibabu yamefanikiwa. Unajisikia vizuri zaidi.</string>
+    <string name="msg_treatment_failed">Matibabu yameshindwa au hukuweza kumudu gharama.</string>
+
+    <!-- Family interaction messages -->
+    <string name="msg_person_not_found">Mtu hajapatikana.</string>
+    <string name="msg_spend_time_spouse">Umetumia muda mzuri na %s.</string>
+    <string name="msg_spend_time_child">Ulicheza na %s.</string>
+    <string name="msg_spend_time_other">Umetumia muda mzuri na %s.</string>
+    <string name="msg_argue_spouse">Uligombana na %s.</string>
+    <string name="msg_scold_child">Ulimkemea %s.</string>
+    <string name="msg_argue_other">Uligombana na %s.</string>
+    <string name="msg_ask_money_not_applicable">Hiyo haifai hapa.</string>
+    <string name="msg_ask_money_not_close">%s hako karibu vya kutosha kuomba pesa.</string>
+    <string name="msg_ask_money_success">%1$s amekupa KSh %2$d.</string>
+    <string name="msg_ask_money_refused">%s amekataa kukupa pesa.</string>
+
+    <string name="tier_estranged">Mbali sana</string>
+    <string name="tier_distant">Mbali</string>
+    <string name="tier_cool">Baridi</string>
+    <string name="tier_friendly">Urafiki</string>
+    <string name="tier_close">Karibu</string>
+    <string name="tier_inseparable">Tofauti</string>
+    <string name="tip_family_detail">Gusa mwanafamilia kuona kiwango cha uhusiano, kumbukumbu, na mwingiliano. Uhusiano hupungua ukipuuzia.</string>
+    <string name="msg_relationship_decay">Wewe na %1$s mmekuwa %2$s.</string>
+    <string name="onboarding_world_title">Mwonekano wako na ulimwengu wako</string>
+    <string name="onboarding_world_body">Binafsisha avatar yako na cheza katika nchi mbalimbali — uhusiano na bendera hufanya kila maisha kuwa ya kipekee.</string>
+
+    <!-- Format strings -->
+    <string name="format_age">Umri %d</string>
+
+    <!-- Plurals -->
+    <plurals name="child_count">
+        <item quantity="zero">Hakuna watoto</item>
+        <item quantity="one">Mtoto %d</item>
+        <item quantity="other">Watoto %d</item>
+    </plurals>
+    <plurals name="years_remaining">
+        <item quantity="one">Mwaka %d uliobaki</item>
+        <item quantity="other">Miaka %d iliyobaki</item>
+    </plurals>
+</resources>

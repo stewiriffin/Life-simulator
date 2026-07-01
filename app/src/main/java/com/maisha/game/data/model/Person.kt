@@ -1,0 +1,37 @@
+// app/src/main/java/com/maisha/game/data/model/Person.kt (modified — milestones + country + interaction tracking)
+package com.maisha.game.data.model
+
+import kotlinx.serialization.Serializable
+
+@Serializable
+enum class RelationType {
+    MOTHER,
+    FATHER,
+    SIBLING,
+    SPOUSE,
+    CHILD,
+    FRIEND
+}
+
+@Serializable
+data class Person(
+    val id: String,
+    val name: String,
+    val relation: RelationType,
+    val gender: Gender = Gender.MALE,
+    val age: Int,
+    val alive: Boolean = true,
+    val relationshipLevel: Int = 50,
+    val stats: Stats = Stats(),
+    val dateOfPartnership: Int? = null,
+    val isMarried: Boolean = false,
+    val avatarConfig: AvatarConfig = AvatarConfig.DEFAULT,
+    val complimentsThisYear: Int = 0,
+    val countryCode: String = "KE",
+    val milestones: List<RelationshipMilestone> = emptyList(),
+    val interactedThisYear: Boolean = false
+) {
+    fun coerceRelationship(): Person = copy(
+        relationshipLevel = relationshipLevel.coerceIn(0, 100)
+    )
+}

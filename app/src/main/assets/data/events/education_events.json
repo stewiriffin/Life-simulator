@@ -1,0 +1,299 @@
+{
+  "events": [
+    {
+      "id": "primary_first_day",
+      "minAge": 6,
+      "maxAge": 7,
+      "text": "Your first day of primary school. You clutch a new exercise book while Mama adjusts your uniform outside the school gate.",
+      "weight": 10,
+      "tags": ["one_time", "education", "milestone"],
+      "choices": [
+        {
+          "label": "Wave goodbye bravely",
+          "statEffects": { "happiness": 3, "smarts": 2 },
+          "resultText": "You walked into class with your head held high."
+        },
+        {
+          "label": "Cry and hold Mama's hand",
+          "statEffects": { "happiness": -2 },
+          "resultText": "Mama stayed a few minutes until you settled in."
+        }
+      ]
+    },
+    {
+      "id": "school_bullying",
+      "minAge": 8,
+      "maxAge": 14,
+      "text": "Older pupils mock your accent in the playground. A crowd gathers while you stand frozen.",
+      "weight": 6,
+      "tags": ["education"],
+      "choices": [
+        {
+          "label": "Tell a teacher",
+          "statEffects": { "happiness": 2, "smarts": 1 },
+          "resultText": "The teacher intervened. The bullies were warned."
+        },
+        {
+          "label": "Ask your sibling for backup",
+          "statEffects": { "happiness": 1 },
+          "siblingRelationshipEffect": 5,
+          "resultText": "Your sibling stood up for you. You felt less alone."
+        },
+        {
+          "label": "Fight back",
+          "statEffects": { "happiness": -3, "health": -2 },
+          "siblingRelationshipEffect": -3,
+          "resultText": "A scuffle broke out. Everyone got in trouble."
+        }
+      ]
+    },
+    {
+      "id": "cheating_temptation",
+      "minAge": 10,
+      "maxAge": 17,
+      "text": "During a class test, your deskmate slides their answer sheet toward you and whispers an offer.",
+      "weight": 5,
+      "tags": ["education"],
+      "choices": [
+        {
+          "label": "Copy the answers",
+          "statEffects": { "happiness": 2, "smarts": -2 },
+          "gpaEffect": -0.3,
+          "resultText": "You passed the test but felt guilty. The teacher almost caught you."
+        },
+        {
+          "label": "Refuse and focus on your own paper",
+          "statEffects": { "smarts": 2, "happiness": 1 },
+          "gpaEffect": 0.1,
+          "resultText": "You did your best honestly. It felt right."
+        }
+      ]
+    },
+    {
+      "id": "choose_secondary_school",
+      "minAge": 14,
+      "maxAge": 15,
+      "restrictedToCountry": "KE",
+      "text": "After KCPE, your family debates where you should attend secondary school — a nearby day school or a boarding school upcountry.",
+      "weight": 9,
+      "tags": ["one_time", "education", "milestone"],
+      "choices": [
+        {
+          "label": "Day scholar near home",
+          "statEffects": { "happiness": 4, "money": 10 },
+          "resultText": "You commute daily by matatu. Mama packs lunch every morning."
+        },
+        {
+          "label": "Boarding school upcountry",
+          "statEffects": { "smarts": 3, "happiness": -1 },
+          "gpaEffect": 0.15,
+          "resultText": "Term one was lonely, but the library was excellent."
+        }
+      ]
+    },
+    {
+      "id": "choose_secondary_school_world",
+      "minAge": 14,
+      "maxAge": 15,
+      "text": "After your leaving exam, your family debates where you should attend secondary school — a nearby day school or a boarding school farther away.",
+      "weight": 9,
+      "tags": ["one_time", "education", "milestone"],
+      "choices": [
+        {
+          "label": "Day scholar near home",
+          "statEffects": { "happiness": 4, "money": 10 },
+          "resultText": "You commute daily by bus. Home-cooked lunch every morning."
+        },
+        {
+          "label": "Boarding school away from home",
+          "statEffects": { "smarts": 3, "happiness": -1 },
+          "gpaEffect": 0.15,
+          "resultText": "Term one was lonely, but the library was excellent."
+        }
+      ]
+    },
+    {
+      "id": "sports_day",
+      "minAge": 7,
+      "maxAge": 16,
+      "text": "Inter-house sports day! The whole school gathers on the dusty field for races and cheers.",
+      "weight": 4,
+      "tags": ["education"],
+      "choices": [
+        {
+          "label": "Run the 100m race",
+          "statEffects": { "health": 4, "happiness": 5 },
+          "resultText": "You came third but the crowd cheered your effort."
+        },
+        {
+          "label": "Cheer from the sidelines",
+          "statEffects": { "happiness": 2 },
+          "resultText": "You painted your face in house colours and shouted yourself hoarse."
+        }
+      ]
+    },
+    {
+      "id": "class_election",
+      "minAge": 12,
+      "maxAge": 17,
+      "text": "Class representative elections are announced. Nominations open at the front of the classroom.",
+      "weight": 5,
+      "tags": ["education"],
+      "choices": [
+        {
+          "label": "Run for class rep",
+          "statEffects": { "happiness": 3, "smarts": 2 },
+          "resultText": "You gave a speech and won by a handful of votes."
+        },
+        {
+          "label": "Campaign for a friend",
+          "statEffects": { "happiness": 2 },
+          "resultText": "Your friend won. They owe you a soda."
+        },
+        {
+          "label": "Stay out of politics",
+          "statEffects": { "happiness": 1 },
+          "resultText": "You avoided drama and focused on homework."
+        }
+      ]
+    },
+    {
+      "id": "first_crush",
+      "minAge": 13,
+      "maxAge": 17,
+      "text": "You notice someone in your class laughing at a joke you made. Your heart beats a little faster.",
+      "weight": 4,
+      "tags": ["education", "one_time"],
+      "choices": [
+        {
+          "label": "Daydream about them",
+          "statEffects": { "happiness": 5 },
+          "resultText": "You floated through the week on a cloud of butterflies."
+        },
+        {
+          "label": "Focus on your studies",
+          "statEffects": { "smarts": 2, "happiness": -1 },
+          "gpaEffect": 0.1,
+          "resultText": "Books before feelings. Wise, if a little boring."
+        }
+      ]
+    },
+    {
+      "id": "study_approach_year",
+      "minAge": 8,
+      "maxAge": 17,
+      "text": "A new school year begins. How are you approaching your studies this year?",
+      "weight": 6,
+      "tags": ["education", "study_effort"],
+      "choices": [
+        {
+          "label": "Coast through (Slack)",
+          "statEffects": { "happiness": 3 },
+          "resultText": "You spent more time on the pitch than in the library."
+        },
+        {
+          "label": "Keep a steady pace (Normal)",
+          "statEffects": { "smarts": 1, "happiness": 1 },
+          "resultText": "You balanced homework and play reasonably well."
+        },
+        {
+          "label": "Grind hard (Hard)",
+          "statEffects": { "smarts": 2, "happiness": -1 },
+          "resultText": "Late nights with a kerosene lamp. Your notebooks are full."
+        }
+      ]
+    },
+    {
+      "id": "study_approach_exams",
+      "minAge": 12,
+      "maxAge": 17,
+      "text": "Exam season looms. The revision timetable is pinned to the classroom wall.",
+      "weight": 7,
+      "tags": ["education", "study_effort"],
+      "choices": [
+        {
+          "label": "Slack off and hope for the best",
+          "statEffects": { "happiness": 4 },
+          "resultText": "You winged it. Not your finest academic hour."
+        },
+        {
+          "label": "Study normally",
+          "statEffects": { "smarts": 2 },
+          "resultText": "Consistent revision paid off modestly."
+        },
+        {
+          "label": "Grind every night",
+          "statEffects": { "smarts": 3, "happiness": -2, "health": -1 },
+          "resultText": "You sacrificed sleep for past papers. Worth it, probably."
+        }
+      ]
+    },
+    {
+      "id": "university_course_fair",
+      "minAge": 17,
+      "maxAge": 19,
+      "text": "A university careers fair visits your school. Booths line the hall for Law, Medicine, Engineering, and more.",
+      "weight": 8,
+      "tags": ["one_time", "education"],
+      "choices": [
+        {
+          "label": "Explore the Medicine booth",
+          "statEffects": { "smarts": 2, "happiness": 2 },
+          "resultText": "You pictured yourself in a white coat someday."
+        },
+        {
+          "label": "Explore the Law booth",
+          "statEffects": { "smarts": 2, "happiness": 1 },
+          "resultText": "Courtroom dramas suddenly felt within reach."
+        },
+        {
+          "label": "Skip the fair",
+          "statEffects": { "happiness": -1 },
+          "resultText": "You hung out behind the hall instead."
+        }
+      ]
+    },
+    {
+      "id": "prefect_duties",
+      "minAge": 14,
+      "maxAge": 17,
+      "text": "As a senior student, you are asked to help maintain order during lunch break.",
+      "weight": 3,
+      "tags": ["education"],
+      "choices": [
+        {
+          "label": "Enforce the rules strictly",
+          "statEffects": { "smarts": 1, "happiness": -1 },
+          "gpaEffect": 0.05,
+          "resultText": "Some students grumbled, but the teachers approved."
+        },
+        {
+          "label": "Let small things slide",
+          "statEffects": { "happiness": 3 },
+          "resultText": "You gained popularity for being fair and relaxed."
+        }
+      ]
+    },
+    {
+      "id": "library_discovery",
+      "minAge": 9,
+      "maxAge": 16,
+      "text": "You discover the school library has novels beyond the syllabus. The librarian shushes you as you enter.",
+      "weight": 4,
+      "tags": ["education"],
+      "choices": [
+        {
+          "label": "Read voraciously",
+          "statEffects": { "smarts": 4, "happiness": 3 },
+          "gpaEffect": 0.1,
+          "resultText": "Stories expanded your vocabulary and imagination."
+        },
+        {
+          "label": "Borrow one book only",
+          "statEffects": { "smarts": 2 },
+          "resultText": "A small habit formed. One book became two."
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,371 @@
+{
+  "events": [
+  {
+    "id": "birth",
+    "minAge": 0,
+    "maxAge": 0,
+    "restrictedToCountry": "KE",
+    "text": "You are born in a busy Nairobi hospital. Your family gathers around, ululating with joy as you take your first breath.",
+    "weight": 10,
+    "tags": ["one_time", "milestone"],
+    "choices": [
+      {
+        "label": "Cry loudly",
+        "statEffects": { "health": 2 },
+        "resultText": "You announced your arrival with a strong cry. The nurses smiled — a healthy baby."
+      },
+      {
+        "label": "Stay quiet",
+        "statEffects": { "smarts": 1 },
+        "resultText": "You observed the room quietly. Mama said you were a thoughtful child from day one."
+      }
+    ]
+  },
+  {
+    "id": "birth_world",
+    "minAge": 0,
+    "maxAge": 0,
+    "text": "You are born at the local hospital. Your family gathers around, celebrating as you take your first breath.",
+    "weight": 10,
+    "tags": ["one_time", "milestone"],
+    "choices": [
+      {
+        "label": "Cry loudly",
+        "statEffects": { "health": 2 },
+        "resultText": "You announced your arrival with a strong cry. The nurses smiled — a healthy baby."
+      },
+      {
+        "label": "Stay quiet",
+        "statEffects": { "smarts": 1 },
+        "resultText": "You observed the room quietly. Your family said you were thoughtful from day one."
+      }
+    ]
+  },
+  {
+    "id": "first_steps",
+    "minAge": 1,
+    "maxAge": 2,
+    "text": "At home in the compound, you wobble on unsteady legs while chickens scatter. Baba cheers you on.",
+    "weight": 8,
+    "tags": ["one_time", "milestone"],
+    "choices": [
+      {
+        "label": "Run to Mama",
+        "statEffects": { "happiness": 5, "health": 2 },
+        "resultText": "You stumbled into Mama's arms. The whole family clapped."
+      },
+      {
+        "label": "Chase the chickens",
+        "statEffects": { "happiness": 3, "health": 3 },
+        "resultText": "The chickens fled. You laughed until you fell over."
+      }
+    ]
+  },
+  {
+    "id": "first_words",
+    "minAge": 2,
+    "maxAge": 3,
+    "text": "You said your first word at the dinner table. Everyone leaned in to listen.",
+    "weight": 7,
+    "tags": ["one_time"],
+    "choices": [
+      {
+        "label": "Say \"Mama\"",
+        "statEffects": { "happiness": 4 },
+        "resultText": "Mama's eyes welled up. She pulled you into a tight hug."
+      },
+      {
+        "label": "Say \"Chapati\"",
+        "statEffects": { "happiness": 3, "smarts": 1 },
+        "resultText": "The table erupted in laughter. Food was always on your mind."
+      }
+    ]
+  },
+  {
+    "id": "starting_school",
+    "minAge": 4,
+    "maxAge": 5,
+    "text": "Your first day at nursery school. You clutch a new school bag while a school bus rumbles past on the road outside.",
+    "weight": 9,
+    "tags": ["one_time", "milestone", "school"],
+    "choices": [
+      {
+        "label": "Wave goodbye bravely",
+        "statEffects": { "smarts": 3, "happiness": 2 },
+        "resultText": "You marched into class like a big kid. The teacher was impressed."
+      },
+      {
+        "label": "Cry and hold Mama's leg",
+        "statEffects": { "happiness": -2 },
+        "resultText": "Mama stayed a few extra minutes. You settled in eventually."
+      },
+      {
+        "label": "Make friends immediately",
+        "statEffects": { "happiness": 5, "smarts": 1 },
+        "resultText": "You shared your biscuits with a classmate. A friendship was born."
+      }
+    ]
+  },
+  {
+    "id": "matatu_ride",
+    "minAge": 6,
+    "maxAge": 8,
+    "restrictedToCountry": "KE",
+    "text": "You ride a matatu to primary school for the first time. Loud music blares and the conductor shouts seat prices.",
+    "weight": 6,
+    "tags": ["school"],
+    "choices": [
+      {
+        "label": "Sing along to the music",
+        "statEffects": { "happiness": 4 },
+        "resultText": "You bobbed your head to the beat. Commuters grinned at you."
+      },
+      {
+        "label": "Count the fare carefully",
+        "statEffects": { "smarts": 3, "money": 5 },
+        "resultText": "You handed the conductor exact change. He gave you a thumbs up."
+      }
+    ]
+  },
+  {
+    "id": "school_bus_ride",
+    "minAge": 6,
+    "maxAge": 8,
+    "text": "You ride a school bus for the first time. Kids chatter and the driver waves you aboard.",
+    "weight": 6,
+    "tags": ["school"],
+    "choices": [
+      {
+        "label": "Sing along with classmates",
+        "statEffects": { "happiness": 4 },
+        "resultText": "You joined a silly song. Everyone laughed."
+      },
+      {
+        "label": "Watch the route carefully",
+        "statEffects": { "smarts": 3, "money": 5 },
+        "resultText": "You memorized every stop. Useful knowledge."
+      }
+    ]
+  },
+  {
+    "id": "first_friendship",
+    "minAge": 7,
+    "maxAge": 10,
+    "text": "A classmate shares their lunch with you when you forget yours at home.",
+    "weight": 7,
+    "tags": ["one_time"],
+    "choices": [
+      {
+        "label": "Share yours tomorrow",
+        "statEffects": { "happiness": 6 },
+        "resultText": "You became lunch buddies. A friendship grew over shared meals."
+      },
+      {
+        "label": "Thank them shyly",
+        "statEffects": { "happiness": 3 },
+        "resultText": "They smiled and said it was nothing. You felt grateful."
+      }
+    ]
+  },
+  {
+    "id": "sibling_rivalry",
+    "minAge": 5,
+    "maxAge": 12,
+    "text": "Your sibling takes the remote and won't let you watch your favourite cartoon.",
+    "weight": 5,
+    "tags": [],
+    "choices": [
+      {
+        "label": "Fight for the remote",
+        "statEffects": { "happiness": -3, "health": -1 },
+        "resultText": "Mama separated you both. Nobody won the argument."
+      },
+      {
+        "label": "Negotiate a time share",
+        "statEffects": { "smarts": 3, "happiness": 2 },
+        "resultText": "You worked out a schedule. Surprisingly mature."
+      },
+      {
+        "label": "Tell Mama",
+        "statEffects": { "happiness": 1 },
+        "resultText": "Mama ruled in your favour. Your sibling stuck out their tongue."
+      }
+    ]
+  },
+  {
+    "id": "minor_illness",
+    "minAge": 3,
+    "maxAge": 15,
+    "text": "You wake up with a fever and a sore throat. Mama takes you to the local clinic.",
+    "weight": 5,
+    "tags": [],
+    "choices": [
+      {
+        "label": "Take the medicine",
+        "statEffects": { "health": 5 },
+        "resultText": "The bitter syrup worked. You were back on your feet in two days."
+      },
+      {
+        "label": "Refuse the medicine",
+        "statEffects": { "health": -5, "happiness": -2 },
+        "resultText": "The fever lingered longer. You regretted being stubborn."
+      }
+    ]
+  },
+  {
+    "id": "losing_tooth",
+    "minAge": 6,
+    "maxAge": 8,
+    "text": "Your first baby tooth falls out while eating githeri at lunch.",
+    "weight": 6,
+    "tags": ["one_time"],
+    "choices": [
+      {
+        "label": "Put it under your pillow",
+        "statEffects": { "happiness": 4, "money": 20 },
+        "resultText": "Baba left you twenty shillings. The tooth fairy visited Kenya."
+      },
+      {
+        "label": "Show everyone at school",
+        "statEffects": { "happiness": 3, "looks": -1 },
+        "resultText": "Classmates were fascinated. You felt like a celebrity for a day."
+      }
+    ]
+  },
+  {
+    "id": "first_phone",
+    "minAge": 12,
+    "maxAge": 15,
+    "text": "Your parents give you a basic smartphone for keeping in touch after school.",
+    "weight": 8,
+    "tags": ["one_time", "milestone"],
+    "choices": [
+      {
+        "label": "Use it responsibly",
+        "statEffects": { "smarts": 2, "happiness": 3 },
+        "resultText": "You called Mama after practice and did homework on it. Sensible."
+      },
+      {
+        "label": "Stay up late on social media",
+        "statEffects": { "happiness": 5, "health": -3, "smarts": -2 },
+        "resultText": "You discovered memes at 2 AM. Teachers noticed you yawning."
+      },
+      {
+        "label": "Sell airtime to classmates",
+        "statEffects": { "money": 50, "smarts": 3 },
+        "resultText": "You ran a small airtime business. Entrepreneurial spirit."
+      }
+    ]
+  },
+  {
+    "id": "high_school_entry",
+    "minAge": 14,
+    "maxAge": 15,
+    "text": "You receive your high school admission letter. The name of the school is printed in bold on the envelope.",
+    "weight": 10,
+    "tags": ["one_time", "milestone", "school"],
+    "choices": [
+      {
+        "label": "Celebrate with family",
+        "statEffects": { "happiness": 8 },
+        "resultText": "Chapati and soda at home. Your aunties called to congratulate you."
+      },
+      {
+        "label": "Worry about fees",
+        "statEffects": { "happiness": -3, "smarts": 2 },
+        "resultText": "Baba reassured you they'd find a way. You started thinking seriously about the future."
+      }
+    ]
+  },
+  {
+    "id": "playing_football",
+    "minAge": 8,
+    "maxAge": 14,
+    "text": "After school, you join a dusty football game in the neighbourhood field.",
+    "weight": 4,
+    "tags": [],
+    "choices": [
+      {
+        "label": "Play striker",
+        "statEffects": { "health": 4, "happiness": 5, "looks": 2 },
+        "resultText": "You scored a goal between two stones serving as goalposts. Hero of the day."
+      },
+      {
+        "label": "Sit and watch",
+        "statEffects": { "happiness": 1 },
+        "resultText": "You cheered from the sidelines. Maybe next time."
+      }
+    ]
+  },
+  {
+    "id": "church_sunday",
+    "minAge": 5,
+    "maxAge": 16,
+    "text": "Sunday morning. The family dresses up for church. You can smell mandazi frying next door.",
+    "weight": 3,
+    "tags": [],
+    "choices": [
+      {
+        "label": "Sing in the choir",
+        "statEffects": { "happiness": 4 },
+        "resultText": "Your voice joined the hymns. Mama beamed with pride."
+      },
+      {
+        "label": "Doze off during sermon",
+        "statEffects": { "happiness": -1, "health": 2 },
+        "resultText": "The pastor's voice became a lullaby. Baba nudged you awake."
+      },
+      {
+        "label": "Help serve tea after service",
+        "statEffects": { "happiness": 3, "smarts": 1 },
+        "resultText": "You carried cups for the elders. They blessed you."
+      }
+    ]
+  },
+  {
+    "id": "rainy_season",
+    "minAge": 6,
+    "maxAge": 12,
+    "text": "Heavy rains flood the path to school. Your shoes are soaked.",
+    "weight": 4,
+    "tags": [],
+    "choices": [
+      {
+        "label": "Walk through the puddles",
+        "statEffects": { "happiness": 3, "health": -2 },
+        "resultText": "You arrived drenched but laughing. The teacher sent you to dry off."
+      },
+      {
+        "label": "Wait for the rain to ease",
+        "statEffects": { "smarts": 2, "happiness": -1 },
+        "resultText": "You were late but dry. A practical choice."
+      }
+    ]
+  },
+  {
+    "id": "helping_at_home",
+    "minAge": 9,
+    "maxAge": 16,
+    "text": "Mama asks you to help fetch water from the tap down the road.",
+    "weight": 4,
+    "tags": [],
+    "choices": [
+      {
+        "label": "Go willingly",
+        "statEffects": { "happiness": 2, "health": 3 },
+        "resultText": "You balanced the jerrycan like a pro. Mama gave you extra ugali."
+      },
+      {
+        "label": "Complain but go",
+        "statEffects": { "happiness": -2 },
+        "resultText": "You grumbled all the way. The chore still got done."
+      },
+      {
+        "label": "Pay your sibling to do it",
+        "statEffects": { "money": -10, "happiness": 3, "smarts": 1 },
+        "resultText": "A ten-shilling deal. Early lessons in outsourcing."
+      }
+    ]
+  }
+  ]
+}

@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- res/drawable/ill_asset_motorbike.xml (new) — placeholder motorbike silhouette -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="48dp"
+    android:height="48dp"
+    android:viewportWidth="48"
+    android:viewportHeight="48">
+    <path android:fillColor="#1A8A8A" android:pathData="M12,28 L36,28 L32,20 L16,20 Z" />
+    <path android:fillColor="#152238" android:pathData="M20,16 L28,16 L30,20 L18,20 Z" />
+    <path android:fillColor="#F4B942" android:pathData="M14,28 m-5,0 a5,5 0 1,1 10,0 a5,5 0 1,1 -10,0" />
+    <path android:fillColor="#F4B942" android:pathData="M34,28 m-5,0 a5,5 0 1,1 10,0 a5,5 0 1,1 -10,0" />
+</vector>
