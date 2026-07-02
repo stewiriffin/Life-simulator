@@ -50,7 +50,8 @@ class GameEngine @Inject constructor(
     private val crimeEngine: CrimeEngine,
     private val healthEngine: HealthEngine,
     private val achievementEngine: AchievementEngine,
-    private val notificationScheduler: NotificationScheduler
+    private val notificationScheduler: NotificationScheduler,
+    private val relocationEngine: RelocationEngine
 ) {
 
     fun ageUp(
@@ -243,6 +244,11 @@ class GameEngine @Inject constructor(
                 updatedCharacter,
                 choice.performanceEffect
             )
+        }
+
+        if (choice.relocateToCountry != null) {
+            val destination = com.maisha.game.data.CountryCatalog.getCountry(choice.relocateToCountry)
+            updatedCharacter = relocationEngine.relocate(updatedCharacter, destination)
         }
 
         if (choice.conditionEffect != 0) {
@@ -481,14 +487,25 @@ class GameEngine @Inject constructor(
         }
         if (eventCount == 0) return emptyList()
 
+        val pickedEvents = mutableListOf<LifeEvent>()
+
+        if (relocationEngine.shouldOfferRelocation(character, triggeredEventIds)) {
+            val destinations = relocationEngine.getRelocationOpportunities(character)
+            if (destinations.isNotEmpty()) {
+                pickedEvents.add(
+                    relocationEngine.buildRelocationOpportunityEvent(character, destinations)
+                )
+                if (pickedEvents.size >= eventCount) return pickedEvents
+            }
+        }
+
         val eligible = eventRepository.getEligibleEvents(
             age = character.age,
             usedIds = triggeredEventIds,
             character = character
         ).toMutableList()
-        val pickedEvents = mutableListOf<LifeEvent>()
 
-        repeat(eventCount) {
+        repeat(eventCount - pickedEvents.size) {
             if (eligible.isEmpty()) return@repeat
             val event = eventRepository.pickRandomEvent(eligible) ?: return@repeat
             pickedEvents.add(event)

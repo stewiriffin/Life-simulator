@@ -138,6 +138,17 @@ private val MIGRATION_9_10 = object : Migration(9, 10) {
     }
 }
 
+private val MIGRATION_10_11 = object : Migration(10, 11) {
+    override fun migrate(db: SupportSQLiteDatabase) {
+        db.execSQL(
+            "ALTER TABLE character_save ADD COLUMN birthCountryCode TEXT NOT NULL DEFAULT 'KE'"
+        )
+        db.execSQL(
+            "UPDATE character_save SET birthCountryCode = countryCode"
+        )
+    }
+}
+
 @Module
 @InstallIn(SingletonComponent::class)
 object DatabaseModule {
@@ -159,7 +170,8 @@ object DatabaseModule {
                 MIGRATION_6_7,
                 MIGRATION_7_8,
                 MIGRATION_8_9,
-                MIGRATION_9_10
+                MIGRATION_9_10,
+                MIGRATION_10_11
             )
             .build()
     }

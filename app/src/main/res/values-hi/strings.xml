@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- UI chrome only — spot-check by a fluent speaker before release. -->
+<resources>
+    <string name="app_name">Maisha</string>
+    <string name="tagline">अपनी कहानी जिएँ। एक साल में एक कदम।</string>
+    <string name="onboarding_skip">छोड़ें</string>
+    <string name="onboarding_welcome_body">एक जीवन जिएँ, फैसले करें और देखें कि आपकी कहानी कहाँ जाती है — साल दर साल।</string>
+    <string name="onboarding_age_up_title">हर साल जीने के लिए उम्र बढ़ाएँ</string>
+    <string name="onboarding_age_up_body">बड़े होने, घटनाओं का सामना करने और अपने आँकड़े बनाने के लिए उम्र बढ़ाएँ पर टैप करें।</string>
+    <string name="onboarding_choices_title">आपके फैसले आपका जीवन बनाते हैं</string>
+    <string name="onboarding_choices_body">परिवार, दोस्त, करियर और विरासत आपके चुनावों पर प्रतिक्रिया करते हैं — उपलब्धियाँ आपके मील के पत्थर दर्ज करती हैं।</string>
+    <string name="onboarding_ready_title">शुरू करने के लिए तैयार?</string>
+    <string name="onboarding_ready_body">अपना पात्र बनाएँ और अपना पहला जीवन शुरू करें। तीन स्लॉट अलग-अलग पारिवारिक शाखाओं के लिए।</string>
+    <string name="onboarding_start_first_life">अपना पहला जीवन शुरू करें</string>
+    <string name="nav_life">जीवन</string>
+    <string name="nav_family">परिवार</string>
+    <string name="nav_career">करियर</string>
+    <string name="nav_assets">संपत्ति</string>
+    <string name="nav_actions">कार्य</string>
+    <string name="btn_confirm">पुष्टि करें</string>
+    <string name="btn_cancel">रद्द करें</string>
+    <string name="btn_continue">जारी रखें</string>
+    <string name="btn_start_new_life">नया जीवन</string>
+    <string name="btn_view_summary">सारांश देखें</string>
+    <string name="btn_age_up">+ उम्र बढ़ाएँ</string>
+    <string name="content_desc_back">वापस</string>
+    <string name="content_desc_settings">सेटिंग्स</string>
+    <string name="settings_screen_title">सेटिंग्स</string>
+    <string name="settings_sound">ध्वनि</string>
+    <string name="settings_haptics">कंपन</string>
+    <string name="settings_notifications">सूचनाएँ</string>
+    <string name="settings_language">भाषा</string>
+    <string name="settings_language_english">English</string>
+    <string name="settings_language_swahili">Kiswahili</string>
+    <string name="settings_language_french">Français</string>
+    <string name="settings_language_portuguese">Português</string>
+    <string name="settings_language_spanish">Español</string>
+    <string name="settings_language_hindi">हिन्दी</string>
+    <string name="settings_reset_all_data">सभी डेटा रीसेट करें</string>
+    <string name="settings_reset_warning">यह सभी सहेजे गए जीवन और उपलब्धियाँ स्थायी रूप से हटा देगा। इसे पूर्ववत नहीं किया जा सकता।</string>
+    <string name="settings_version">संस्करण %s</string>
+    <string name="screen_slot_picker_title">आपके जीवन</string>
+    <string name="screen_slot_picker_subtitle">जारी रखने या नए सिरे से शुरू करने के लिए एक स्लॉट चुनें।</string>
+</resources>

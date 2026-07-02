@@ -95,14 +95,14 @@
       "id": "choose_secondary_school_world",
       "minAge": 14,
       "maxAge": 15,
-      "text": "After your leaving exam, your family debates where you should attend secondary school — a nearby day school or a boarding school farther away.",
+      "text": "After your {secondaryExam} results, your family debates where you should attend secondary school — a nearby day school or a boarding school farther away.",
       "weight": 9,
       "tags": ["one_time", "education", "milestone"],
       "choices": [
         {
           "label": "Day scholar near home",
           "statEffects": { "happiness": 4, "money": 10 },
-          "resultText": "You commute daily by bus. Home-cooked lunch every morning."
+          "resultText": "You commute daily by {transportMode}. Home-cooked lunch every morning."
         },
         {
           "label": "Boarding school away from home",
@@ -199,7 +199,7 @@
         {
           "label": "Grind hard (Hard)",
           "statEffects": { "smarts": 2, "happiness": -1 },
-          "resultText": "Late nights with a kerosene lamp. Your notebooks are full."
+          "resultText": "Late nights at your desk. Your notebooks are full."
         }
       ]
     },
@@ -207,7 +207,7 @@
       "id": "study_approach_exams",
       "minAge": 12,
       "maxAge": 17,
-      "text": "Exam season looms. The revision timetable is pinned to the classroom wall.",
+      "text": "{secondaryExam} season looms. The revision timetable is pinned to the classroom wall.",
       "weight": 7,
       "tags": ["education", "study_effort"],
       "choices": [

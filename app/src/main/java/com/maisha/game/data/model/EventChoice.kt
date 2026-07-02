@@ -19,5 +19,6 @@ data class EventChoice(
     val triggersHaveChild: Boolean = false,
     val triggersCrime: String? = null,
     val triggersIllnessRoll: Boolean = false,
-    val doctorCareTier: String? = null
+    val doctorCareTier: String? = null,
+    val relocateToCountry: String? = null
 )

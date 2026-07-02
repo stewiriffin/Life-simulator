@@ -45,7 +45,7 @@
     "id": "first_steps",
     "minAge": 1,
     "maxAge": 2,
-    "text": "At home in the compound, you wobble on unsteady legs while chickens scatter. Baba cheers you on.",
+    "text": "At home in the yard, you wobble on unsteady legs while the dog barks. Your parent cheers you on.",
     "weight": 8,
     "tags": ["one_time", "milestone"],
     "choices": [
@@ -75,7 +75,7 @@
         "resultText": "Mama's eyes welled up. She pulled you into a tight hug."
       },
       {
-        "label": "Say \"Chapati\"",
+        "label": "Say \"Cookie\"",
         "statEffects": { "happiness": 3, "smarts": 1 },
         "resultText": "The table erupted in laughter. Food was always on your mind."
       }
@@ -85,7 +85,7 @@
     "id": "starting_school",
     "minAge": 4,
     "maxAge": 5,
-    "text": "Your first day at nursery school. You clutch a new school bag while a school bus rumbles past on the road outside.",
+    "text": "Your first day at nursery school. You clutch a new school bag while a {transportMode} rumbles past on the road outside.",
     "weight": 9,
     "tags": ["one_time", "milestone", "school"],
     "choices": [
@@ -131,7 +131,7 @@
     "id": "school_bus_ride",
     "minAge": 6,
     "maxAge": 8,
-    "text": "You ride a school bus for the first time. Kids chatter and the driver waves you aboard.",
+    "text": "You ride a {transportMode} to primary school for the first time. Loud music blares and the driver waves you aboard.",
     "weight": 6,
     "tags": ["school"],
     "choices": [
@@ -216,6 +216,7 @@
     "id": "losing_tooth",
     "minAge": 6,
     "maxAge": 8,
+    "restrictedToCountry": "KE",
     "text": "Your first baby tooth falls out while eating githeri at lunch.",
     "weight": 6,
     "tags": ["one_time"],
@@ -223,7 +224,27 @@
       {
         "label": "Put it under your pillow",
         "statEffects": { "happiness": 4, "money": 20 },
-        "resultText": "Baba left you twenty shillings. The tooth fairy visited Kenya."
+        "resultText": "Your parent left a small coin. The tooth fairy visited Kenya."
+      },
+      {
+        "label": "Show everyone at school",
+        "statEffects": { "happiness": 3, "looks": -1 },
+        "resultText": "Classmates were fascinated. You felt like a celebrity for a day."
+      }
+    ]
+  },
+  {
+    "id": "losing_tooth_world",
+    "minAge": 6,
+    "maxAge": 8,
+    "text": "Your first baby tooth falls out during lunch at school.",
+    "weight": 6,
+    "tags": ["one_time"],
+    "choices": [
+      {
+        "label": "Put it under your pillow",
+        "statEffects": { "happiness": 4, "money": 20 },
+        "resultText": "Your parent left a small gift. The tooth fairy paid a visit."
       },
       {
         "label": "Show everyone at school",
@@ -251,9 +272,9 @@
         "resultText": "You discovered memes at 2 AM. Teachers noticed you yawning."
       },
       {
-        "label": "Sell airtime to classmates",
+        "label": "Sell {moneyApp} credit to classmates",
         "statEffects": { "money": 50, "smarts": 3 },
-        "resultText": "You ran a small airtime business. Entrepreneurial spirit."
+        "resultText": "You ran a small phone-credit business. Entrepreneurial spirit."
       }
     ]
   },
@@ -261,14 +282,14 @@
     "id": "high_school_entry",
     "minAge": 14,
     "maxAge": 15,
-    "text": "You receive your high school admission letter. The name of the school is printed in bold on the envelope.",
+    "text": "Your {secondaryExam} results arrive with your high school admission letter. The name of the school is printed in bold on the envelope.",
     "weight": 10,
     "tags": ["one_time", "milestone", "school"],
     "choices": [
       {
         "label": "Celebrate with family",
         "statEffects": { "happiness": 8 },
-        "resultText": "Chapati and soda at home. Your aunties called to congratulate you."
+        "resultText": "Cake and soda at home. Relatives called to congratulate you."
       },
       {
         "label": "Worry about fees",
@@ -301,6 +322,7 @@
     "id": "church_sunday",
     "minAge": 5,
     "maxAge": 16,
+    "restrictedToCountry": "KE",
     "text": "Sunday morning. The family dresses up for church. You can smell mandazi frying next door.",
     "weight": 3,
     "tags": [],
@@ -313,7 +335,7 @@
       {
         "label": "Doze off during sermon",
         "statEffects": { "happiness": -1, "health": 2 },
-        "resultText": "The pastor's voice became a lullaby. Baba nudged you awake."
+        "resultText": "The pastor's voice became a lullaby. Your parent nudged you awake."
       },
       {
         "label": "Help serve tea after service",
@@ -323,10 +345,35 @@
     ]
   },
   {
+    "id": "church_sunday_world",
+    "minAge": 5,
+    "maxAge": 16,
+    "text": "Sunday morning. The family dresses up for a community service. You can smell fresh pastries from the kitchen.",
+    "weight": 3,
+    "tags": [],
+    "choices": [
+      {
+        "label": "Sing in the choir",
+        "statEffects": { "happiness": 4 },
+        "resultText": "Your voice joined the hymns. Your family beamed with pride."
+      },
+      {
+        "label": "Doze off during the sermon",
+        "statEffects": { "happiness": -1, "health": 2 },
+        "resultText": "The speaker's voice became a lullaby. Someone nudged you awake."
+      },
+      {
+        "label": "Help serve refreshments after",
+        "statEffects": { "happiness": 3, "smarts": 1 },
+        "resultText": "You carried cups for the elders. They thanked you warmly."
+      }
+    ]
+  },
+  {
     "id": "rainy_season",
     "minAge": 6,
     "maxAge": 12,
-    "text": "Heavy rains flood the path to school. Your shoes are soaked.",
+    "text": "Heavy rains flood the path to school. You miss the {transportMode} and your shoes are soaked.",
     "weight": 4,
     "tags": [],
     "choices": [
@@ -346,6 +393,7 @@
     "id": "helping_at_home",
     "minAge": 9,
     "maxAge": 16,
+    "restrictedToCountry": "KE",
     "text": "Mama asks you to help fetch water from the tap down the road.",
     "weight": 4,
     "tags": [],
@@ -363,7 +411,32 @@
       {
         "label": "Pay your sibling to do it",
         "statEffects": { "money": -10, "happiness": 3, "smarts": 1 },
-        "resultText": "A ten-shilling deal. Early lessons in outsourcing."
+        "resultText": "A small coin changed hands. Early lessons in outsourcing."
+      }
+    ]
+  },
+  {
+    "id": "helping_at_home_world",
+    "minAge": 9,
+    "maxAge": 16,
+    "text": "Your parent asks you to help carry groceries home from the shop.",
+    "weight": 4,
+    "tags": [],
+    "choices": [
+      {
+        "label": "Go willingly",
+        "statEffects": { "happiness": 2, "health": 3 },
+        "resultText": "You carried the bags like a pro. Dinner tasted extra good."
+      },
+      {
+        "label": "Complain but go",
+        "statEffects": { "happiness": -2 },
+        "resultText": "You grumbled all the way. The chore still got done."
+      },
+      {
+        "label": "Pay your sibling to do it",
+        "statEffects": { "money": -10, "happiness": 3, "smarts": 1 },
+        "resultText": "A small bribe changed hands. Early lessons in delegation."
       }
     ]
   }

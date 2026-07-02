@@ -59,6 +59,7 @@ class LegacyEngine @Inject constructor() {
             birthYear = currentYear - heir.age,
             alive = true,
             countryCode = heir.countryCode,
+            birthCountryCode = heir.countryCode,
             avatarConfig = heir.avatarConfig,
             generationNumber = deceased.generationNumber + 1,
             family = newFamily,

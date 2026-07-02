@@ -1,4 +1,4 @@
-// app/src/main/java/com/maisha/game/ui/summary/CharacterStatsScreen.kt
+// app/src/main/java/com/maisha/game/ui/summary/CharacterStatsScreen.kt (modified — originally-from label after relocation)
 package com.maisha.game.ui.summary
 
 import androidx.compose.foundation.layout.Arrangement
@@ -34,6 +34,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import com.maisha.game.data.CountryCatalog
 import com.maisha.game.R
 import com.maisha.game.data.model.Character
 import com.maisha.game.data.model.Gender
@@ -233,6 +234,28 @@ private fun CurrentLifeHeader(character: Character) {
                 maxLines = 2,
                 overflow = TextOverflow.Ellipsis
             )
+        }
+        if (character.birthCountryCode != character.countryCode) {
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(6.dp)
+            ) {
+                com.maisha.game.ui.components.CountryFlag(
+                    countryCode = character.birthCountryCode,
+                    size = 16.dp
+                )
+                Text(
+                    text = stringResource(
+                        R.string.format_originally_from,
+                        CountryCatalog.getCountry(character.birthCountryCode).displayName
+                    ),
+                    style = MaterialTheme.typography.labelMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    textAlign = TextAlign.Center,
+                    maxLines = 2,
+                    overflow = TextOverflow.Ellipsis
+                )
+            }
         }
         Text(
             text = stringResource(

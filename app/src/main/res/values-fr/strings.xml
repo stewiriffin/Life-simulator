@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- UI chrome only — spot-check by a fluent speaker before release (same caveat as values-sw). -->
+<resources>
+    <string name="app_name">Maisha</string>
+    <string name="tagline">Vivez votre histoire. Une année à la fois.</string>
+    <string name="onboarding_skip">Passer</string>
+    <string name="onboarding_welcome_body">Vivez une vie, faites des choix et voyez où mène votre histoire — une année à la fois.</string>
+    <string name="onboarding_age_up_title">Vieillir pour vivre chaque année</string>
+    <string name="onboarding_age_up_body">Appuyez sur Vieillir pour grandir, affronter des événements et façonner vos stats.</string>
+    <string name="onboarding_choices_title">Vos choix façonnent votre vie</string>
+    <string name="onboarding_choices_body">Famille, amis, carrière et héritage réagissent à vos choix — les succès suivent vos étapes.</string>
+    <string name="onboarding_ready_title">Prêt à commencer ?</string>
+    <string name="onboarding_ready_body">Créez votre personnage et commencez votre première vie. Trois emplacements pour différentes lignées familiales.</string>
+    <string name="onboarding_start_first_life">Commencer votre première vie</string>
+    <string name="nav_life">Vie</string>
+    <string name="nav_family">Famille</string>
+    <string name="nav_career">Carrière</string>
+    <string name="nav_assets">Biens</string>
+    <string name="nav_actions">Actions</string>
+    <string name="btn_confirm">Confirmer</string>
+    <string name="btn_cancel">Annuler</string>
+    <string name="btn_continue">Continuer</string>
+    <string name="btn_start_new_life">Nouvelle vie</string>
+    <string name="btn_view_summary">Voir le résumé</string>
+    <string name="btn_age_up">+ Vieillir</string>
+    <string name="content_desc_back">Retour</string>
+    <string name="content_desc_settings">Paramètres</string>
+    <string name="settings_screen_title">Paramètres</string>
+    <string name="settings_sound">Son</string>
+    <string name="settings_haptics">Vibrations</string>
+    <string name="settings_notifications">Notifications</string>
+    <string name="settings_language">Langue</string>
+    <string name="settings_language_english">English</string>
+    <string name="settings_language_swahili">Kiswahili</string>
+    <string name="settings_language_french">Français</string>
+    <string name="settings_language_portuguese">Português</string>
+    <string name="settings_language_spanish">Español</string>
+    <string name="settings_language_hindi">हिन्दी</string>
+    <string name="settings_reset_all_data">Réinitialiser toutes les données</string>
+    <string name="settings_reset_warning">Cela supprimera définitivement toutes les vies sauvegardées et les succès. Irréversible.</string>
+    <string name="settings_version">Version %s</string>
+    <string name="screen_slot_picker_title">Vos vies</string>
+    <string name="screen_slot_picker_subtitle">Choisissez un emplacement pour continuer ou recommencer.</string>
+</resources>

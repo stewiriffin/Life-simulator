@@ -2,6 +2,7 @@
 package com.maisha.game.data.events
 
 import android.content.Context
+import com.maisha.game.data.FlavorInterpolator
 import com.maisha.game.data.model.Character
 import com.maisha.game.data.model.LifeEvent
 import com.maisha.game.data.model.LifeEventList
@@ -10,6 +11,7 @@ import com.maisha.game.domain.CareerEngine
 import com.maisha.game.domain.EducationEngine
 import com.maisha.game.domain.FinanceEngine
 import com.maisha.game.domain.RelationshipEngine
+import com.maisha.game.domain.RelocationEngine
 import com.maisha.game.domain.hasChild
 import com.maisha.game.domain.hasSpouse
 import com.maisha.game.domain.isMarried
@@ -52,10 +54,23 @@ class EventRepository @Inject constructor(
                 (ONE_TIME_TAG !in event.tags || event.id !in usedIds) &&
                 EducationEngine.EXAM_SYSTEM_TAG !in event.tags &&
                 CareerEngine.CAREER_SYSTEM_TAG !in event.tags &&
+                RelocationEngine.RELOCATION_SYSTEM_TAG !in event.tags &&
                 passesFinanceGate(event, character) &&
                 passesRelationshipGate(event, character) &&
-                passesCountryGate(event, character)
-        }
+                passesCountryGate(event, character) &&
+                passesRelocationGate(event, character)
+        }.map { event -> resolveFlavorForCharacter(event, character) }
+    }
+
+    private fun resolveFlavorForCharacter(event: LifeEvent, character: Character?): LifeEvent {
+        if (character == null) return event
+        return FlavorInterpolator.resolveEvent(event, character.countryCode)
+    }
+
+    private fun passesRelocationGate(event: LifeEvent, character: Character?): Boolean {
+        if (RelocationEngine.REQUIRES_RELOCATION_TAG !in event.tags) return true
+        if (character == null) return false
+        return character.birthCountryCode != character.countryCode
     }
 
     private fun passesCountryGate(event: LifeEvent, character: Character?): Boolean {

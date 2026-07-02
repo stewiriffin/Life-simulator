@@ -120,6 +120,10 @@
     <string name="settings_language">Language</string>
     <string name="settings_language_english">English</string>
     <string name="settings_language_swahili">Kiswahili</string>
+    <string name="settings_language_french">Français</string>
+    <string name="settings_language_portuguese">Português</string>
+    <string name="settings_language_spanish">Español</string>
+    <string name="settings_language_hindi">हिन्दी</string>
     <string name="settings_reset_all_data">Reset all data</string>
     <string name="settings_reset_warning">This will permanently delete all saved lives, achievement progress, and reset settings to defaults. This cannot be undone.</string>
     <string name="settings_version">Version %s</string>
@@ -160,6 +164,7 @@
     <string name="format_gpa">GPA: %.1f</string>
     <string name="format_character_birth_info">%1$s · Born %2$d</string>
     <string name="format_character_stats_header">%1$s · Age %2$d · Born %3$d</string>
+    <string name="format_originally_from">Originally from %1$s</string>
     <string name="value_none">None</string>
     <string name="status_living">Living</string>
 

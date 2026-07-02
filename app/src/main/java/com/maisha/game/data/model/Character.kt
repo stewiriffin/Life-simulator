@@ -1,4 +1,4 @@
-// app/src/main/java/com/maisha/game/data/model/Character.kt (modified — country + avatar)
+// app/src/main/java/com/maisha/game/data/model/Character.kt (modified — birthCountryCode for relocation)
 package com.maisha.game.data.model
 
 data class Character(
@@ -9,6 +9,7 @@ data class Character(
     val birthYear: Int,
     val alive: Boolean = true,
     val countryCode: String = "KE",
+    val birthCountryCode: String = "KE",
     val avatarConfig: AvatarConfig = AvatarConfig.DEFAULT,
     val eventLog: List<String> = emptyList(),
     val family: List<Person> = emptyList(),

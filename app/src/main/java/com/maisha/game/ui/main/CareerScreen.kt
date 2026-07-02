@@ -119,7 +119,7 @@ fun CareerScreen(
                     modifier = Modifier.fillMaxSize(),
                     verticalArrangement = Arrangement.spacedBy(MaishaSpacing.sm)
                 ) {
-                    items(JobPool.jobs, key = { it.id }) { job ->
+                    items(JobPool.getJobsForCountry(character.countryCode), key = { it.id }) { job ->
                         val isEligible = job.id in eligibleIds
                         val reason = jobIneligibilityReason(character, job)
                         JobListingCard(

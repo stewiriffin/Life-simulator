@@ -112,9 +112,10 @@ class SettingsRepository @Inject constructor(
     }
 
     suspend fun setLanguage(lang: String) {
-        val normalized = when (lang) {
-            LocaleManager.LANG_SW -> LocaleManager.LANG_SW
-            else -> LocaleManager.LANG_EN
+        val normalized = if (lang in LocaleManager.supportedLanguages.map { it.code }) {
+            lang
+        } else {
+            LocaleManager.LANG_EN
         }
         dataStore.edit { it[LANGUAGE_KEY] = normalized }
         LocaleManager.applyLocale(normalized)

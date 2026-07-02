@@ -2,6 +2,8 @@
 package com.maisha.game.ui.settings
 
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
@@ -48,7 +50,7 @@ import com.maisha.game.ui.theme.CoralNegative
 import com.maisha.game.ui.theme.TealPrimary
 import com.maisha.game.util.LocaleManager
 
-@OptIn(ExperimentalMaterial3Api::class)
+@OptIn(ExperimentalMaterial3Api::class, ExperimentalLayoutApi::class)
 @Composable
 fun SettingsScreen(
     uiState: SettingsUiState,
@@ -142,17 +144,17 @@ fun SettingsScreen(
                         style = MaterialTheme.typography.titleSmall,
                         fontWeight = FontWeight.SemiBold
                     )
-                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                        FilterChip(
-                            selected = uiState.language != LocaleManager.LANG_SW,
-                            onClick = { onLanguageSelected(LocaleManager.LANG_EN) },
-                            label = { Text(stringResource(R.string.settings_language_english)) }
-                        )
-                        FilterChip(
-                            selected = uiState.language == LocaleManager.LANG_SW,
-                            onClick = { onLanguageSelected(LocaleManager.LANG_SW) },
-                            label = { Text(stringResource(R.string.settings_language_swahili)) }
-                        )
+                    FlowRow(
+                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                        verticalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        LocaleManager.supportedLanguages.forEach { language ->
+                            FilterChip(
+                                selected = uiState.language == language.code,
+                                onClick = { onLanguageSelected(language.code) },
+                                label = { Text(stringResource(language.labelRes)) }
+                            )
+                        }
                     }
                 }
             }

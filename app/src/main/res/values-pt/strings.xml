@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- UI chrome only — spot-check by a fluent speaker before release. -->
+<resources>
+    <string name="app_name">Maisha</string>
+    <string name="tagline">Viva sua história. Um ano de cada vez.</string>
+    <string name="onboarding_skip">Pular</string>
+    <string name="onboarding_welcome_body">Viva uma vida, faça escolhas e veja para onde sua história vai — um ano de cada vez.</string>
+    <string name="onboarding_age_up_title">Envelhecer para viver cada ano</string>
+    <string name="onboarding_age_up_body">Toque em Envelhecer para crescer, enfrentar eventos e moldar seus atributos.</string>
+    <string name="onboarding_choices_title">Suas escolhas moldam sua vida</string>
+    <string name="onboarding_choices_body">Família, amigos, carreira e legado reagem às suas escolhas — conquistas marcam seus marcos.</string>
+    <string name="onboarding_ready_title">Pronto para começar?</string>
+    <string name="onboarding_ready_body">Crie seu personagem e comece sua primeira vida. Três slots para linhagens familiares diferentes.</string>
+    <string name="onboarding_start_first_life">Começar sua primeira vida</string>
+    <string name="nav_life">Vida</string>
+    <string name="nav_family">Família</string>
+    <string name="nav_career">Carreira</string>
+    <string name="nav_assets">Bens</string>
+    <string name="nav_actions">Ações</string>
+    <string name="btn_confirm">Confirmar</string>
+    <string name="btn_cancel">Cancelar</string>
+    <string name="btn_continue">Continuar</string>
+    <string name="btn_start_new_life">Nova vida</string>
+    <string name="btn_view_summary">Ver resumo</string>
+    <string name="btn_age_up">+ Envelhecer</string>
+    <string name="content_desc_back">Voltar</string>
+    <string name="content_desc_settings">Configurações</string>
+    <string name="settings_screen_title">Configurações</string>
+    <string name="settings_sound">Som</string>
+    <string name="settings_haptics">Vibração</string>
+    <string name="settings_notifications">Notificações</string>
+    <string name="settings_language">Idioma</string>
+    <string name="settings_language_english">English</string>
+    <string name="settings_language_swahili">Kiswahili</string>
+    <string name="settings_language_french">Français</string>
+    <string name="settings_language_portuguese">Português</string>
+    <string name="settings_language_spanish">Español</string>
+    <string name="settings_language_hindi">हिन्दी</string>
+    <string name="settings_reset_all_data">Redefinir todos os dados</string>
+    <string name="settings_reset_warning">Isso apagará permanentemente todas as vidas salvas e conquistas. Não pode ser desfeito.</string>
+    <string name="settings_version">Versão %s</string>
+    <string name="screen_slot_picker_title">Suas vidas</string>
+    <string name="screen_slot_picker_subtitle">Escolha um slot para continuar ou começar de novo.</string>
+</resources>

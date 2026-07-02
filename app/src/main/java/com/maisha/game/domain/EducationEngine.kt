@@ -29,7 +29,7 @@ class EducationEngine @Inject constructor() {
                         stage = SchoolStage.PRIMARY,
                         currentGrade = 1,
                         gpa = 2.0f,
-                        schoolName = randomPrimarySchool()
+                        schoolName = randomPrimarySchool(character.countryCode)
                     )
                 )
             }
@@ -41,7 +41,7 @@ class EducationEngine @Inject constructor() {
                     education = education.copy(
                         stage = SchoolStage.SECONDARY,
                         currentGrade = 1,
-                        schoolName = randomSecondarySchool()
+                        schoolName = randomSecondarySchool(character.countryCode)
                     )
                 )
             }
@@ -172,7 +172,7 @@ class EducationEngine @Inject constructor() {
                 stage = SchoolStage.UNIVERSITY,
                 currentGrade = 1,
                 courseOfStudy = course,
-                schoolName = "University of Nairobi"
+                schoolName = universityNameFor(character.countryCode)
             )
         )
     }
@@ -264,7 +264,7 @@ class EducationEngine @Inject constructor() {
             choices += EventChoice(
                 label = "Celebrate with family",
                 statEffects = mapOf("happiness" to 8),
-                resultText = "Chapati and soda at home. Everyone is proud of you."
+                resultText = "A family meal at home. Everyone is proud of you."
             )
         } else {
             choices += EventChoice(
@@ -285,19 +285,19 @@ class EducationEngine @Inject constructor() {
                 label = "Apply for Law at university",
                 statEffects = mapOf("smarts" to 2, "happiness" to 5),
                 universityCourse = "Law",
-                resultText = "You enrolled in Law at the University of Nairobi."
+                resultText = "You enrolled in Law at ${universityNameFor(character.countryCode)}."
             )
             choices += EventChoice(
                 label = "Apply for Medicine at university",
                 statEffects = mapOf("smarts" to 3, "happiness" to 4),
                 universityCourse = "Medicine",
-                resultText = "You enrolled in Medicine at the University of Nairobi."
+                resultText = "You enrolled in Medicine at ${universityNameFor(character.countryCode)}."
             )
             choices += EventChoice(
                 label = "Apply for Computer Science",
                 statEffects = mapOf("smarts" to 3, "happiness" to 5),
                 universityCourse = "Computer Science",
-                resultText = "You enrolled in Computer Science at the University of Nairobi."
+                resultText = "You enrolled in Computer Science at ${universityNameFor(character.countryCode)}."
             )
         }
 
@@ -342,9 +342,20 @@ class EducationEngine @Inject constructor() {
         else -> 1
     }
 
-    private fun randomPrimarySchool(): String = PRIMARY_SCHOOLS.random()
+    private fun randomPrimarySchool(countryCode: String): String =
+        if (countryCode == "KE") PRIMARY_SCHOOLS_KE.random() else PRIMARY_SCHOOLS_WORLD.random()
 
-    private fun randomSecondarySchool(): String = SECONDARY_SCHOOLS.random()
+    private fun randomSecondarySchool(countryCode: String): String =
+        if (countryCode == "KE") SECONDARY_SCHOOLS_KE.random() else SECONDARY_SCHOOLS_WORLD.random()
+
+    private fun universityNameFor(countryCode: String): String = when (countryCode) {
+        "KE" -> "University of Nairobi"
+        "NG" -> "University of Lagos"
+        "ZA" -> "University of Cape Town"
+        "IN" -> "Delhi University"
+        "MX" -> "UNAM"
+        else -> "the local university"
+    }
 
     companion object {
         const val KCPE_RESULT_EVENT_ID = "kcpe_results_system"
@@ -362,7 +373,7 @@ class EducationEngine @Inject constructor() {
         private const val KCSE_PASS_SCORE = 45f
         private const val UNIVERSITY_MIN_POINTS = 7 // C+ equivalent
 
-        private val PRIMARY_SCHOOLS = listOf(
+        private val PRIMARY_SCHOOLS_KE = listOf(
             "Mwiki Primary",
             "Kawangware Primary",
             "Buruburu Primary",
@@ -370,12 +381,28 @@ class EducationEngine @Inject constructor() {
             "Westlands Primary"
         )
 
-        private val SECONDARY_SCHOOLS = listOf(
+        private val PRIMARY_SCHOOLS_WORLD = listOf(
+            "Central Primary",
+            "Hillview Primary",
+            "Riverside Primary",
+            "Oakwood Primary",
+            "Greenfield Primary"
+        )
+
+        private val SECONDARY_SCHOOLS_KE = listOf(
             "Nairobi Secondary School",
             "Alliance High School",
             "Mang'u High School",
             "Lenana School",
             "Kenya High School"
+        )
+
+        private val SECONDARY_SCHOOLS_WORLD = listOf(
+            "Central Secondary",
+            "Hillview High",
+            "Riverside Academy",
+            "Oakwood High",
+            "Greenfield Secondary"
         )
     }
 }

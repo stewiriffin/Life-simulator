@@ -36,7 +36,7 @@ class CareerEngine @Inject constructor() {
     fun getEligibleJobs(character: Character): List<Job> {
         if (!isJobEligible(character) || character.career.currentJob != null) return emptyList()
 
-        return JobPool.jobs.filter { job ->
+        return JobPool.getJobsForCountry(character.countryCode).filter { job ->
             meetsEducationRequirement(character.education.stage, job.minEducation)
         }
     }

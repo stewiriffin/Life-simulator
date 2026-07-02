@@ -140,6 +140,7 @@ class CharacterCreationViewModel @Inject constructor(
                 birthYear = Calendar.getInstance().get(Calendar.YEAR),
                 alive = true,
                 countryCode = state.selectedCountryCode,
+                birthCountryCode = state.selectedCountryCode,
                 avatarConfig = state.avatarConfig,
                 eventLog = emptyList(),
                 family = familyGenerator.generateFamily(

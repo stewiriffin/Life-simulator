@@ -4,7 +4,7 @@
       "id": "first_job_interview",
       "minAge": 18,
       "maxAge": 25,
-      "text": "You have your first real job interview. Your palms are sweaty in a small office off Moi Avenue.",
+      "text": "You have your first real job interview. Your palms are sweaty in a small office downtown.",
       "weight": 8,
       "tags": ["one_time", "career"],
       "choices": [
@@ -86,7 +86,7 @@
         {
           "label": "Treat the family",
           "statEffects": { "money": 30000, "happiness": 8 },
-          "resultText": "Nyama choma for everyone. Worth every shilling."
+          "resultText": "A big meal out for everyone. Worth every penny."
         }
       ]
     },
@@ -123,16 +123,19 @@
         {
           "label": "Coast and do the minimum",
           "statEffects": { "happiness": 4 },
+          "performanceEffect": -5,
           "resultText": "You clocked in, clocked out, and avoided extra effort."
         },
         {
           "label": "Keep a steady pace",
           "statEffects": { "happiness": 1 },
+          "performanceEffect": 3,
           "resultText": "Reliable and consistent. Nothing flashy."
         },
         {
           "label": "Grind for a promotion",
           "statEffects": { "smarts": 2, "happiness": -2 },
+          "performanceEffect": 8,
           "resultText": "You arrived early and left late. Management took note."
         }
       ]
@@ -167,14 +170,14 @@
       "id": "side_hustle_delivery",
       "minAge": 20,
       "maxAge": 40,
-      "text": "A friend offers you a chance to invest in a local delivery route. It could pay off — or flop.",
+      "text": "A friend offers you a chance to invest in a {transportMode} route. It could pay off — or flop.",
       "weight": 3,
       "tags": ["one_time", "career"],
       "choices": [
         {
           "label": "Invest heavily",
           "statEffects": { "money": 120000, "happiness": 5 },
-          "resultText": "The route was profitable. Orders kept coming in."
+          "resultText": "The route was profitable. {moneyApp} alerts kept buzzing on your phone."
         },
         {
           "label": "Invest cautiously",
@@ -192,7 +195,7 @@
       "id": "side_hustle_shop",
       "minAge": 22,
       "maxAge": 45,
-      "text": "You spot a chance to run a small kiosk selling airtime and snacks near your estate.",
+      "text": "You spot a chance to run a small corner shop selling {moneyApp} credit and snacks near your neighbourhood.",
       "weight": 4,
       "tags": ["career"],
       "choices": [

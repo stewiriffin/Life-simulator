@@ -9,7 +9,7 @@
       "tags": ["finance"],
       "choices": [
         {
-          "label": "Pay for the repair (KSh 25,000)",
+          "label": "Pay for the full repair",
           "statEffects": { "money": -25000 },
           "conditionEffect": 15,
           "targetAssetType": "CAR",
@@ -92,17 +92,17 @@
       "id": "investment_tip",
       "minAge": 20,
       "maxAge": 50,
-      "text": "A friend swears they have a hot tip on a small chama investment. They want you in.",
+      "text": "A friend swears they have a hot tip on a local savings group — pay in easily with {moneyApp}. They want you in.",
       "weight": 4,
       "tags": ["finance"],
       "choices": [
         {
-          "label": "Invest KSh 30,000",
+          "label": "Invest a solid amount",
           "statEffects": { "money": 45000, "happiness": 5 },
-          "resultText": "The chama pays out modestly. A pleasant surprise."
+          "resultText": "The group paid out modestly. A pleasant surprise."
         },
         {
-          "label": "Invest KSh 10,000 cautiously",
+          "label": "Invest cautiously",
           "statEffects": { "money": 5000, "happiness": 1 },
           "resultText": "Small gain, small risk. Not bad."
         },
@@ -117,18 +117,18 @@
       "id": "family_borrow_money",
       "minAge": 18,
       "maxAge": 55,
-      "text": "A family member calls asking to borrow money for school fees. They sound desperate.",
+      "text": "A family member calls asking to borrow money for school fees. They want it sent through {moneyApp} and sound desperate.",
       "weight": 5,
       "tags": ["finance"],
       "choices": [
         {
-          "label": "Lend them KSh 20,000",
+          "label": "Lend them generously",
           "statEffects": { "money": -20000, "happiness": 3 },
           "familyRelationshipEffect": 12,
           "resultText": "They thank you profusely. Family comes first."
         },
         {
-          "label": "Offer half — KSh 10,000",
+          "label": "Offer half the amount",
           "statEffects": { "money": -10000 },
           "familyRelationshipEffect": 5,
           "resultText": "They accept, a little disappointed but grateful."

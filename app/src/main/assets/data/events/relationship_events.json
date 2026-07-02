@@ -73,7 +73,7 @@
       "tags": ["relationship", "requires_married"],
       "choices": [
         {
-          "label": "Book a fancy dinner (KSh 12,000)",
+          "label": "Book a fancy dinner out",
           "statEffects": { "money": -12000, "happiness": 8 },
           "spouseRelationshipEffect": 10,
           "resultText": "Candles, good food, and quiet laughter. A night to remember."
@@ -122,9 +122,9 @@
           "resultText": "They cling to your hand, then wave goodbye. You blink back tears."
         },
         {
-          "label": "Let the bus handle it",
+          "label": "Let the {transportMode} handle it",
           "statEffects": { "happiness": 2 },
-          "resultText": "The bus pulls away. You hope they made friends by recess."
+          "resultText": "The {transportMode} pulls away. You hope they made friends by recess."
         }
       ]
     },

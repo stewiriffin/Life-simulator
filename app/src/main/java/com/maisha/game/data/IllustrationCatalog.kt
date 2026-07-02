@@ -20,14 +20,18 @@ object IllustrationCatalog {
 
     private val jobIllustrations: Map<String, IllustrationRef> = mapOf(
         "matatu_conductor" to vector("job_matatu_conductor", "ill_job_transport"),
+        "danfo_conductor" to vector("job_danfo_conductor", "ill_job_transport"),
+        "jeepney_driver" to vector("job_jeepney_driver", "ill_job_transport"),
+        "auto_rickshaw_driver" to vector("job_auto_rickshaw_driver", "ill_job_transport"),
+        "angkot_driver" to vector("job_angkot_driver", "ill_job_transport"),
+        "mototaxi_rider" to vector("job_mototaxi_rider", "ill_job_transport"),
+        "driver" to vector("job_driver", "ill_job_transport"),
         "shop_attendant" to vector("job_shop_attendant", "ill_job_retail"),
         "security_guard" to vector("job_security_guard", "ill_job_security"),
-        "waiter" to vector("job_waiter", "ill_job_service"),
         "teacher" to vector("job_teacher", "ill_job_teacher"),
         "software_developer" to vector("job_software_developer", "ill_job_tech"),
         "nurse" to vector("job_nurse", "ill_job_medical"),
         "accountant" to vector("job_accountant", "ill_job_finance"),
-        "bank_clerk" to vector("job_bank_clerk", "ill_job_finance"),
         "journalist" to vector("job_journalist", "ill_job_media"),
         "engineer" to vector("job_engineer", "ill_job_engineering"),
         "civil_servant" to vector("job_civil_servant", "ill_job_government")

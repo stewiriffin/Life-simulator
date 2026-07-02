@@ -16,7 +16,7 @@
       "id": "sibling_remote_battle",
       "minAge": 6,
       "maxAge": 14,
-      "text": "You and your sibling fight over the TV remote during a big match.",
+      "text": "You and your sibling fight over the TV remote during the championship final.",
       "weight": 4,
       "tags": ["general"],
       "choices": [
@@ -28,7 +28,7 @@
       "id": "family_road_trip",
       "minAge": 4,
       "maxAge": 16,
-      "text": "Your family plans a road trip upcountry to visit relatives.",
+      "text": "Your family plans a road trip out of town to visit relatives.",
       "weight": 3,
       "tags": ["general"],
       "choices": [
@@ -65,7 +65,7 @@
       "id": "teen_car_wash",
       "minAge": 14,
       "maxAge": 18,
-      "text": "A local garage offers you pocket money to help wash cars on a Saturday.",
+      "text": "A local garage offers you pocket money to help wash cars on a Saturday — paid through {moneyApp}.",
       "weight": 4,
       "tags": ["general"],
       "choices": [
@@ -77,7 +77,7 @@
       "id": "teen_vending_chips",
       "minAge": 13,
       "maxAge": 18,
-      "text": "A friend suggests selling snacks outside school after classes.",
+      "text": "A friend suggests selling snacks outside school after classes — classmates pay with {moneyApp}.",
       "weight": 3,
       "tags": ["general"],
       "choices": [
@@ -166,7 +166,7 @@
       "tags": ["general"],
       "choices": [
         { "label": "Pay the fine", "statEffects": { "money": -3000, "happiness": -2 }, "resultText": "Lesson learned about signage." },
-        { "label": "Appeal at county offices", "statEffects": { "happiness": -4 }, "resultText": "The queue was longer than the fine." }
+        { "label": "Appeal at the local office", "statEffects": { "happiness": -4 }, "resultText": "The queue was longer than the fine." }
       ]
     },
     {
@@ -275,7 +275,7 @@
       "choices": [
         { "label": "Visit a public clinic", "doctorCareTier": "public", "resultText": "You queued at the local clinic." },
         { "label": "Try home remedies", "statEffects": { "health": -4 }, "triggersIllnessRoll": true, "resultText": "Rest and tea only helped a little." },
-        { "label": "Book Nairobi Hospital", "doctorCareTier": "private", "resultText": "You sought private care." }
+        { "label": "Book private hospital care", "doctorCareTier": "private", "resultText": "You sought private care without the long wait." }
       ]
     },
     {
@@ -306,12 +306,12 @@
       "id": "teen_sports_day",
       "minAge": 10,
       "maxAge": 17,
-      "text": "Sports day arrives at school. Which event will you enter?",
+      "text": "Sports day arrives at school. Will you enter the relay or try the long jump?",
       "weight": 3,
       "tags": ["general"],
       "choices": [
-        { "label": "Sprint race", "statEffects": { "health": 3, "happiness": 5 }, "resultText": "You placed mid-pack but tried hard." },
-        { "label": "Cheer from the sidelines", "statEffects": { "happiness": 3 }, "resultText": "The atmosphere was electric." }
+        { "label": "Enter the relay", "statEffects": { "health": 3, "happiness": 5 }, "resultText": "Your team finished mid-pack but you ran your heart out." },
+        { "label": "Try the long jump", "statEffects": { "health": 2, "happiness": 4, "looks": 1 }, "resultText": "You stuck the landing on your best attempt." },
       ]
     },
     {
@@ -387,6 +387,54 @@
       "choices": [
         { "label": "Join the dancing", "statEffects": { "happiness": 7 }, "familyRelationshipEffect": 4, "resultText": "Your relatives cheered you on." },
         { "label": "Stay home and study", "statEffects": { "smarts": 3, "happiness": -2 }, "resultText": "You heard the drums from your window." }
+      ]
+    },
+    {
+      "id": "relocation_arrival",
+      "minAge": 19,
+      "maxAge": 55,
+      "text": "You step into your new city for the first time. Shop signs greet you with {greeting}, and {transportMode} routes crisscross streets you do not yet know.",
+      "weight": 5,
+      "tags": ["one_time", "requires_relocation"],
+      "choices": [
+        { "label": "Explore the neighbourhood", "statEffects": { "happiness": 6, "smarts": 2 }, "resultText": "You found a corner café and a friendly face." },
+        { "label": "Unpack and rest", "statEffects": { "happiness": 3, "health": 2 }, "resultText": "Tomorrow you will figure out the commute." }
+      ]
+    },
+    {
+      "id": "relocation_culture_shock",
+      "minAge": 20,
+      "maxAge": 55,
+      "text": "Small things feel different abroad — the pace of a {transportMode} ride, how people queue, even what counts as a normal lunch hour.",
+      "weight": 4,
+      "tags": ["requires_relocation"],
+      "choices": [
+        { "label": "Laugh it off and adapt", "statEffects": { "happiness": 4, "smarts": 2 }, "resultText": "You picked up a local habit or two." },
+        { "label": "Call family back home", "statEffects": { "happiness": 2 }, "familyRelationshipEffect": 6, "resultText": "Their voices steadied you." }
+      ]
+    },
+    {
+      "id": "relocation_family_video_call",
+      "minAge": 21,
+      "maxAge": 60,
+      "text": "Your family schedules a video call across time zones. Everyone wants to hear how the move is going.",
+      "weight": 4,
+      "tags": ["requires_relocation"],
+      "choices": [
+        { "label": "Share the highlights", "statEffects": { "happiness": 5 }, "familyRelationshipEffect": 8, "resultText": "They cheered your bravery." },
+        { "label": "Admit you miss home", "statEffects": { "happiness": 1 }, "familyRelationshipEffect": 10, "resultText": "They promised to visit when they can." }
+      ]
+    },
+    {
+      "id": "relocation_new_job_hunt",
+      "minAge": 19,
+      "maxAge": 50,
+      "text": "Your qualifications from back home need local paperwork. You start browsing job listings in your new country.",
+      "weight": 5,
+      "tags": ["one_time", "requires_relocation"],
+      "choices": [
+        { "label": "Apply widely", "statEffects": { "smarts": 3, "happiness": -2 }, "resultText": "Rejection emails arrived — but so did one interview." },
+        { "label": "Take a starter role to get established", "statEffects": { "happiness": 2, "money": 5000 }, "resultText": "It is not your dream job yet, but it pays the rent." }
       ]
     }
   ]

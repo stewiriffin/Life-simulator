@@ -170,7 +170,7 @@ fun AssetsScreen(
             )
         }
 
-        items(AssetCatalog.items, key = { it.id }) { catalogItem ->
+        items(AssetCatalog.getAssetsForCountry(character.countryCode), key = { it.id }) { catalogItem ->
             ShopAssetCard(
                 item = catalogItem,
                 countryCode = character.countryCode,

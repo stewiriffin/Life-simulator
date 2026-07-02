@@ -113,6 +113,10 @@
     <string name="settings_language">Lugha</string>
     <string name="settings_language_english">English</string>
     <string name="settings_language_swahili">Kiswahili</string>
+    <string name="settings_language_french">Français</string>
+    <string name="settings_language_portuguese">Português</string>
+    <string name="settings_language_spanish">Español</string>
+    <string name="settings_language_hindi">हिन्दी</string>
     <string name="settings_reset_all_data">Weka upya data zote</string>
     <string name="settings_reset_warning">Hii itafuta kabisa maisha yote yaliyohifadhiwa, maendeleo ya mafanikio, na kuweka mipangilio chaguomsingi. Haiwezi kutenduliwa.</string>
     <string name="settings_version">Toleo %s</string>
@@ -152,6 +156,7 @@
     <string name="format_gpa">GPA: %.1f</string>
     <string name="format_character_birth_info">%1$s · Alizaliwa %2$d</string>
     <string name="format_character_stats_header">%1$s · Umri %2$d · Alizaliwa %3$d</string>
+    <string name="format_originally_from">Asili %1$s</string>
     <string name="value_none">Hakuna</string>
     <string name="status_living">Anaishi</string>
 
