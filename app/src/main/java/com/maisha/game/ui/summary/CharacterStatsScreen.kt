@@ -1,6 +1,7 @@
 // app/src/main/java/com/maisha/game/ui/summary/CharacterStatsScreen.kt (modified — originally-from label after relocation)
 package com.maisha.game.ui.summary
 
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -50,6 +51,7 @@ import com.maisha.game.ui.components.StatBar
 import com.maisha.game.ui.components.StatType
 import com.maisha.game.ui.main.CareerFormatter
 import com.maisha.game.ui.main.EducationFormatter
+import com.maisha.game.domain.AncestrySummary
 import com.maisha.game.ui.theme.GoldAccent
 import com.maisha.game.ui.theme.TealPrimary
 import com.maisha.game.util.formatMoney
@@ -61,6 +63,7 @@ fun CharacterStatsScreen(
     netWorth: Int,
     onBack: () -> Unit,
     onViewAchievements: () -> Unit,
+    onViewFamilyHeritage: () -> Unit,
     modifier: Modifier = Modifier
 ) {
     Scaffold(
@@ -99,6 +102,25 @@ fun CharacterStatsScreen(
             item {
                 Spacer(modifier = Modifier.height(4.dp))
                 CurrentLifeHeader(character = character)
+            }
+
+            if (character.ancestryHistory.isNotEmpty()) {
+                item {
+                    HeritageSummaryLine(
+                        character = character,
+                        onClick = onViewFamilyHeritage
+                    )
+                }
+            }
+
+            item {
+                OutlinedButton(
+                    onClick = onViewFamilyHeritage,
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(10.dp)
+                ) {
+                    Text(stringResource(R.string.btn_view_family_heritage), maxLines = 1)
+                }
             }
 
             item {
@@ -201,6 +223,37 @@ fun CharacterStatsScreen(
 
             item { Spacer(modifier = Modifier.height(12.dp)) }
         }
+    }
+}
+
+@Composable
+private fun HeritageSummaryLine(
+    character: Character,
+    onClick: () -> Unit
+) {
+    val countryCount = AncestrySummary.distinctCountriesLived(character)
+    Card(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable(onClick = onClick),
+        shape = RoundedCornerShape(10.dp),
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.7f)
+        )
+    ) {
+        Text(
+            text = stringResource(
+                R.string.format_heritage_summary_line,
+                character.generationNumber,
+                countryCount
+            ),
+            style = MaterialTheme.typography.bodySmall,
+            color = TealPrimary,
+            fontWeight = FontWeight.Medium,
+            modifier = Modifier.padding(horizontal = 12.dp, vertical = 10.dp),
+            maxLines = 2,
+            overflow = TextOverflow.Ellipsis
+        )
     }
 }
 

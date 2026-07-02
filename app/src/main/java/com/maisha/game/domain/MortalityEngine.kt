@@ -60,25 +60,25 @@ class MortalityEngine @Inject constructor() {
 
     fun applyDeath(character: Character, cause: DeathCause, ageAtDeath: Int): Character {
         val flavor = flavorText(cause)
-        val marker = "$DEATH_MARKER_PREFIX${cause.name}::$flavor"
+        val marker = "${EventLogCap.DEATH_MARKER_PREFIX}${cause.name}::$flavor"
         return character.copy(
             alive = false,
             age = ageAtDeath,
-            eventLog = listOf(marker) + character.eventLog
+            eventLog = EventLogCap.prepend(character.eventLog, marker)
         )
     }
 
     fun parseDeathCause(character: Character): DeathCause? {
         if (character.alive) return null
         val line = character.eventLog.firstOrNull() ?: return DeathCause.OLD_AGE
-        if (!line.startsWith(DEATH_MARKER_PREFIX)) return DeathCause.OLD_AGE
-        val causeName = line.removePrefix(DEATH_MARKER_PREFIX).substringBefore("::")
+        if (!line.startsWith(EventLogCap.DEATH_MARKER_PREFIX)) return DeathCause.OLD_AGE
+        val causeName = line.removePrefix(EventLogCap.DEATH_MARKER_PREFIX).substringBefore("::")
         return runCatching { DeathCause.valueOf(causeName) }.getOrElse { DeathCause.OLD_AGE }
     }
 
     fun deathFlavorText(character: Character): String {
         val line = character.eventLog.firstOrNull() ?: return gentleCauseLabel(DeathCause.OLD_AGE)
-        return if (line.startsWith(DEATH_MARKER_PREFIX)) {
+        return if (line.startsWith(EventLogCap.DEATH_MARKER_PREFIX)) {
             line.substringAfter("::", gentleCauseLabel(parseDeathCause(character) ?: DeathCause.OLD_AGE))
         } else {
             line
@@ -112,7 +112,6 @@ class MortalityEngine @Inject constructor() {
     }
 
     companion object {
-        private const val DEATH_MARKER_PREFIX = "::DEATH:"
         private const val ACCIDENT_CHANCE = 0.004f
         private const val CRITICAL_HEALTH_THRESHOLD = 10
         private const val LOW_HEALTH_THRESHOLD = 25

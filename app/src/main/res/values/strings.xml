@@ -350,6 +350,7 @@
     <string name="achievement_category_wealth">Wealth</string>
     <string name="achievement_category_longevity">Longevity</string>
     <string name="achievement_category_mischief">Mischief</string>
+    <string name="achievement_category_worldly">Worldly</string>
 
     <string name="achievement_first_job_title">First Job</string>
     <string name="achievement_first_job_description">Land your first job and start earning a living.</string>
@@ -520,6 +521,27 @@
     <string name="achievement_true_friend_description">Build a close bond (70+) with a friend.</string>
     <string name="achievement_social_circle_title">Social Circle</string>
     <string name="achievement_social_circle_description">Have two or more living friends in your life.</string>
+    <string name="achievement_passport_stamped_title">Passport Stamped</string>
+    <string name="achievement_passport_stamped_description">Relocate to a new country at least once.</string>
+    <string name="achievement_global_family_title">Global Family</string>
+    <string name="achievement_global_family_description">Raise a child with mixed heritage from two countries.</string>
+    <string name="achievement_home_away_from_home_title">Home Away From Home</string>
+    <string name="achievement_home_away_from_home_description">Reach an inseparable bond with someone from outside your birth country.</string>
+    <string name="achievement_world_traveler_title">World Traveler</string>
+    <string name="achievement_world_traveler_description">Relocate at least twice in a single life.</string>
+    <string name="achievement_deep_roots_title">Deep Roots</string>
+    <string name="achievement_deep_roots_description">Reach the fifth generation of a family legacy in one slot.</string>
+
+    <string name="screen_family_heritage">Family Heritage</string>
+    <string name="btn_view_family_heritage">View Family Heritage</string>
+    <string name="ancestry_timeline_subtitle">Your family story across generations — oldest at top.</string>
+    <string name="ancestry_you_are_here">You are here</string>
+    <string name="format_generation_label">Generation %1$d</string>
+    <string name="format_heritage_summary_line">Generation %1$d — family has lived in %2$d countries</string>
+    <string name="format_ancestry_death_summary">Passed away at age %1$d. %2$s</string>
+    <string name="format_ancestry_living_summary">Living — age %1$d in %2$s</string>
+    <string name="empty_ancestry_title">Your story is just beginning</string>
+    <string name="empty_ancestry_message">Live a full life, raise children, and continue as an heir to start a family legacy worth remembering.</string>
     <string name="btn_continue_legacy">Continue Your Legacy</string>
     <string name="btn_choose_heir">Choose</string>
     <string name="heir_selection_title">Choose Your Heir</string>

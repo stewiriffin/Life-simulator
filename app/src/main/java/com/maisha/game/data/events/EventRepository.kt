@@ -2,6 +2,7 @@
 package com.maisha.game.data.events
 
 import android.content.Context
+import com.maisha.game.data.CountryCatalog
 import com.maisha.game.data.FlavorInterpolator
 import com.maisha.game.data.model.Character
 import com.maisha.game.data.model.LifeEvent
@@ -13,6 +14,8 @@ import com.maisha.game.domain.FinanceEngine
 import com.maisha.game.domain.RelationshipEngine
 import com.maisha.game.domain.RelocationEngine
 import com.maisha.game.domain.hasChild
+import com.maisha.game.domain.hasMixedHeritageChild
+import com.maisha.game.domain.hasMixedHeritageContext
 import com.maisha.game.domain.hasSpouse
 import com.maisha.game.domain.isMarried
 import dagger.hilt.android.qualifiers.ApplicationContext
@@ -35,7 +38,8 @@ class EventRepository @Inject constructor(
         val finance = loadEventsFromAsset("data/events/finance_events.json")
         val relationship = loadEventsFromAsset("data/events/relationship_events.json")
         val general = loadEventsFromAsset("data/events/general_events.json")
-        starter + education + career + finance + relationship + general
+        val holidays = loadEventsFromAsset("data/events/holiday_events.json")
+        starter + education + career + finance + relationship + general + holidays
     }
 
     private fun loadEventsFromAsset(path: String): List<LifeEvent> {
@@ -58,19 +62,43 @@ class EventRepository @Inject constructor(
                 passesFinanceGate(event, character) &&
                 passesRelationshipGate(event, character) &&
                 passesCountryGate(event, character) &&
-                passesRelocationGate(event, character)
-        }.map { event -> resolveFlavorForCharacter(event, character) }
+                passesRelocationGate(event, character) &&
+                passesHolidayGate(event, character) &&
+                passesMixedHeritageGate(event, character)
+        }.mapNotNull { event -> resolveFlavorForCharacter(event, character) }
     }
 
-    private fun resolveFlavorForCharacter(event: LifeEvent, character: Character?): LifeEvent {
+    private fun resolveFlavorForCharacter(event: LifeEvent, character: Character?): LifeEvent? {
         if (character == null) return event
+        if (FlavorInterpolator.HOLIDAY_TAG in event.tags) {
+            return FlavorInterpolator.resolveHolidayEvent(event, character.countryCode)
+        }
         return FlavorInterpolator.resolveEvent(event, character.countryCode)
+    }
+
+    private fun passesHolidayGate(event: LifeEvent, character: Character?): Boolean {
+        if (FlavorInterpolator.HOLIDAY_TAG !in event.tags) return true
+        if (character == null) return false
+        if (!CountryCatalog.hasHolidayEvents(character.countryCode)) return false
+        val lastAge = character.lastHolidayAge ?: return true
+        return character.age - lastAge >= HOLIDAY_COOLDOWN_YEARS
+    }
+
+    private fun passesMixedHeritageGate(event: LifeEvent, character: Character?): Boolean {
+        val needsMixed = RelationshipEngine.REQUIRES_MIXED_HERITAGE_TAG in event.tags
+        val needsMixedChild = RelationshipEngine.REQUIRES_MIXED_HERITAGE_CHILD_TAG in event.tags
+        if (!needsMixed && !needsMixedChild) return true
+        if (character == null) return false
+        if (needsMixed && !character.hasMixedHeritageContext()) return false
+        if (needsMixedChild && !character.hasMixedHeritageChild()) return false
+        return true
     }
 
     private fun passesRelocationGate(event: LifeEvent, character: Character?): Boolean {
         if (RelocationEngine.REQUIRES_RELOCATION_TAG !in event.tags) return true
         if (character == null) return false
-        return character.birthCountryCode != character.countryCode
+        return character.relocationCount > 0 ||
+            character.birthCountryCode != character.countryCode
     }
 
     private fun passesCountryGate(event: LifeEvent, character: Character?): Boolean {
@@ -143,5 +171,6 @@ class EventRepository @Inject constructor(
         const val WORK_EFFORT_TAG = "work_effort"
         private const val CHILD_SCHOOL_MIN_AGE = 5
         private const val CHILD_SCHOOL_MAX_AGE = 7
+        private const val HOLIDAY_COOLDOWN_YEARS = 3
     }
 }

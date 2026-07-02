@@ -460,6 +460,7 @@ object AppIcons {
         AchievementCategory.WEALTH -> Wealth
         AchievementCategory.LONGEVITY -> Longevity
         AchievementCategory.MISCHIEF -> Mischief
+        AchievementCategory.WORLDLY -> Family
     }
 
     fun forMainTab(tab: MainTab): ImageVector = when (tab) {

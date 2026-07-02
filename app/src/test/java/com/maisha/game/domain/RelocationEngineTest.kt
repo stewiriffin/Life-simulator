@@ -43,6 +43,9 @@ class RelocationEngineTest {
 
         assertEquals("CA", relocated.countryCode)
         assertEquals("KE", relocated.birthCountryCode)
+        assertEquals(1, relocated.relocationCount)
+        assertEquals(listOf("CA"), relocated.relocationHistory)
+        assertEquals(25, relocated.lastRelocationAge)
         assertNull(relocated.career.currentJob)
         assertTrue(relocated.career.jobHistory.contains("Matatu Conductor"))
         assertTrue(relocated.stats.happiness < character.stats.happiness)

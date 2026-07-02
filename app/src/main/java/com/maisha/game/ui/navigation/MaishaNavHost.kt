@@ -29,6 +29,7 @@ import com.maisha.game.ui.settings.SettingsViewModel
 import com.maisha.game.ui.onboarding.OnboardingScreen
 import com.maisha.game.ui.onboarding.OnboardingViewModel
 import com.maisha.game.ui.notifications.NotificationPermissionEffect
+import com.maisha.game.ui.legacy.AncestryScreen
 import com.maisha.game.ui.summary.CharacterStatsScreen
 import com.maisha.game.ui.summary.LifeSummaryScreen
 import com.maisha.game.ui.summary.LifeSummaryViewModel
@@ -41,6 +42,7 @@ object Routes {
     const val LIFE = "life/{slotId}"
     const val LIFE_SUMMARY = "life_summary/{slotId}"
     const val CHARACTER_STATS = "character_stats/{slotId}"
+    const val ANCESTRY = "ancestry/{slotId}"
     const val ACHIEVEMENTS = "achievements"
     const val SETTINGS = "settings"
 
@@ -49,6 +51,7 @@ object Routes {
     fun life(slotId: Int) = "life/$slotId"
     fun lifeSummary(slotId: Int) = "life_summary/$slotId"
     fun characterStats(slotId: Int) = "character_stats/$slotId"
+    fun ancestry(slotId: Int) = "ancestry/$slotId"
 }
 
 private val slotIdArgument = navArgument("slotId") { type = NavType.IntType }
@@ -318,7 +321,28 @@ fun MaishaNavHost(
                     character = character,
                     netWorth = uiState.netWorth,
                     onBack = { navController.popBackStack() },
-                    onViewAchievements = { navController.navigate(Routes.ACHIEVEMENTS) }
+                    onViewAchievements = { navController.navigate(Routes.ACHIEVEMENTS) },
+                    onViewFamilyHeritage = { navController.navigate(Routes.ancestry(slotId)) }
+                )
+            }
+        }
+
+        composable(
+            route = Routes.ANCESTRY,
+            arguments = listOf(slotIdArgument)
+        ) {
+            val slotId = it.arguments?.getInt("slotId") ?: 0
+            val parentEntry = remember(navController) {
+                navController.getBackStackEntry(Routes.life(slotId))
+            }
+            val viewModel: LifeViewModel = hiltViewModel(parentEntry)
+            val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+            val character = uiState.character
+
+            if (character != null && character.alive) {
+                AncestryScreen(
+                    character = character,
+                    onBack = { navController.popBackStack() }
                 )
             }
         }

@@ -226,7 +226,10 @@ class RelationshipEngine @Inject constructor() {
             stats = character.stats.copy(
                 happiness = (character.stats.happiness - happinessPenalty).coerceIn(0, 100)
             ),
-            eventLog = character.eventLog + "$label ${partner.name} at age ${character.age}."
+            eventLog = EventLogCap.prepend(
+                character.eventLog,
+                "$label ${partner.name} at age ${character.age}."
+            )
         )
     }
 
@@ -236,9 +239,15 @@ class RelationshipEngine @Inject constructor() {
         } ?: return character
 
         val gender = if (Random.nextBoolean()) Gender.MALE else Gender.FEMALE
+        val isCrossCountry = character.countryCode != spouse.countryCode
+        val childName = if (isCrossCountry) {
+            mixedHeritageChildName(gender, character.countryCode, spouse.countryCode)
+        } else {
+            NamePool.randomFullName(gender, character.countryCode)
+        }
         val child = Person(
             id = UUID.randomUUID().toString(),
-            name = NamePool.randomFullName(gender, character.countryCode),
+            name = childName,
             relation = RelationType.CHILD,
             gender = gender,
             age = 0,
@@ -248,7 +257,8 @@ class RelationshipEngine @Inject constructor() {
                 happiness = Random.nextInt(50, 81)
             ),
             avatarConfig = AvatarConfig.random(),
-            countryCode = character.countryCode
+            countryCode = character.countryCode,
+            secondaryCountryCode = if (isCrossCountry) spouse.countryCode else null
         )
         return character.copy(
             family = character.family + child,
@@ -256,6 +266,18 @@ class RelationshipEngine @Inject constructor() {
                 happiness = (character.stats.happiness + 5).coerceIn(0, 100)
             )
         )
+    }
+
+    private fun mixedHeritageChildName(
+        gender: Gender,
+        primaryCountry: String,
+        secondaryCountry: String
+    ): String {
+        // First name from one parent's pool, surname from the other — reads naturally on cards.
+        val firstFromSecondary = Random.nextBoolean()
+        val firstPool = NamePool.getNamePool(if (firstFromSecondary) secondaryCountry else primaryCountry)
+        val surnamePool = NamePool.getNamePool(if (firstFromSecondary) primaryCountry else secondaryCountry)
+        return "${firstPool.randomFirstName(gender)} ${surnamePool.randomSurname()}"
     }
 
     fun applySpouseRelationshipEffect(character: Character, delta: Int): Character {
@@ -644,6 +666,8 @@ class RelationshipEngine @Inject constructor() {
         const val REQUIRES_PARENT_TAG = "requires_parent"
         const val REQUIRES_CHILD_SCHOOL_AGE_TAG = "requires_child_school_age"
         const val REQUIRES_SINGLE_TAG = "requires_single"
+        const val REQUIRES_MIXED_HERITAGE_TAG = "requires_mixed_heritage"
+        const val REQUIRES_MIXED_HERITAGE_CHILD_TAG = "requires_mixed_heritage_child"
 
         const val PROPOSAL_THRESHOLD = 70
         const val TRAVEL_MIN_RELATIONSHIP = 40
@@ -673,3 +697,18 @@ fun Character.isMarried(): Boolean =
 
 fun Character.hasChild(): Boolean =
     family.any { it.relation == RelationType.CHILD }
+
+fun Character.hasMixedHeritageParents(): Boolean {
+    val mother = family.find { it.relation == RelationType.MOTHER }
+    val father = family.find { it.relation == RelationType.FATHER }
+    return mother != null && father != null && mother.countryCode != father.countryCode
+}
+
+fun Character.hasMixedHeritageContext(): Boolean {
+    if (secondaryCountryCode != null) return true
+    if (family.any { it.secondaryCountryCode != null }) return true
+    return hasMixedHeritageParents()
+}
+
+fun Character.hasMixedHeritageChild(): Boolean =
+    family.any { it.relation == RelationType.CHILD && it.secondaryCountryCode != null }

@@ -2,6 +2,7 @@
 package com.maisha.game.domain
 
 import com.maisha.game.data.events.EventRepository
+import com.maisha.game.data.FlavorInterpolator
 import com.maisha.game.data.model.AssetType
 import com.maisha.game.data.model.AchievementProgress
 import com.maisha.game.data.model.Character
@@ -251,6 +252,10 @@ class GameEngine @Inject constructor(
             updatedCharacter = relocationEngine.relocate(updatedCharacter, destination)
         }
 
+        if (FlavorInterpolator.HOLIDAY_TAG in event.tags) {
+            updatedCharacter = updatedCharacter.copy(lastHolidayAge = updatedCharacter.age)
+        }
+
         if (choice.conditionEffect != 0) {
             updatedCharacter = if (choice.targetAssetType != null) {
                 runCatching {
@@ -275,7 +280,7 @@ class GameEngine @Inject constructor(
         }
 
         val updatedStats = updatedCharacter.stats.applyEffects(choice.statEffects)
-        val updatedLog = listOf(choice.resultText) + updatedCharacter.eventLog
+        val updatedLog = EventLogCap.prepend(updatedCharacter.eventLog, choice.resultText)
         return updatedCharacter.copy(stats = updatedStats, eventLog = updatedLog)
     }
 
@@ -346,9 +351,10 @@ class GameEngine @Inject constructor(
         }.getOrNull() ?: return character
         return when (val result = crimeEngine.attemptCrime(character, crimeType)) {
             is CrimeResult.Success -> result.character.copy(
-                eventLog = listOf(
+                eventLog = EventLogCap.prepend(
+                    result.character.eventLog,
                     "Got away with ${crimeType.name.lowercase()} and gained KSh ${result.moneyGained}."
-                ) + result.character.eventLog
+                )
             )
             is CrimeResult.Caught -> result.character
         }

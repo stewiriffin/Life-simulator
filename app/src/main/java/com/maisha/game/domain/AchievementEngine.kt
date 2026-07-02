@@ -60,6 +60,11 @@ class AchievementEngine @Inject constructor(
             "dynasty_builder" -> checkDynastyBuilder(character)
             "true_friend" -> checkTrueFriend(character)
             "social_circle" -> checkSocialCircle(character)
+            "passport_stamped" -> checkPassportStamped(character)
+            "global_family" -> checkGlobalFamily(character)
+            "home_away_from_home" -> checkHomeAwayFromHome(character)
+            "world_traveler" -> checkWorldTraveler(character)
+            "deep_roots" -> checkDeepRoots(character)
             else -> false
         }
 
@@ -150,6 +155,29 @@ class AchievementEngine @Inject constructor(
 
     private fun checkSocialCircle(character: Character): Boolean =
         character.family.count { it.relation == RelationType.FRIEND && it.alive } >= 2
+
+    private fun checkPassportStamped(character: Character): Boolean =
+        character.relocationCount >= 1
+
+    private fun checkGlobalFamily(character: Character): Boolean =
+        character.family.any {
+            it.relation == RelationType.CHILD && it.secondaryCountryCode != null
+        }
+
+    private fun checkHomeAwayFromHome(character: Character): Boolean {
+        val origin = character.birthCountryCode
+        return character.family.any { person ->
+            person.alive &&
+                person.countryCode != origin &&
+                relationshipTierFor(person.relationshipLevel) == RelationshipTier.INSEPARABLE
+        }
+    }
+
+    private fun checkWorldTraveler(character: Character): Boolean =
+        character.relocationCount >= 2
+
+    private fun checkDeepRoots(character: Character): Boolean =
+        character.generationNumber >= 5
 
     private fun distinctJobCount(character: Character): Int {
         val titles = character.career.jobHistory.toMutableSet()

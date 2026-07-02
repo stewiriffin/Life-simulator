@@ -311,7 +311,7 @@
       "tags": ["general"],
       "choices": [
         { "label": "Enter the relay", "statEffects": { "health": 3, "happiness": 5 }, "resultText": "Your team finished mid-pack but you ran your heart out." },
-        { "label": "Try the long jump", "statEffects": { "health": 2, "happiness": 4, "looks": 1 }, "resultText": "You stuck the landing on your best attempt." },
+        { "label": "Try the long jump", "statEffects": { "health": 2, "happiness": 4, "looks": 1 }, "resultText": "You stuck the landing on your best attempt." }
       ]
     },
     {
@@ -435,6 +435,42 @@
       "choices": [
         { "label": "Apply widely", "statEffects": { "smarts": 3, "happiness": -2 }, "resultText": "Rejection emails arrived — but so did one interview." },
         { "label": "Take a starter role to get established", "statEffects": { "happiness": 2, "money": 5000 }, "resultText": "It is not your dream job yet, but it pays the rent." }
+      ]
+    },
+    {
+      "id": "heritage_phrases_childhood",
+      "minAge": 7,
+      "maxAge": 14,
+      "text": "A parent teaches you cheerful phrases from both sides of your family. You love surprising relatives with them.",
+      "weight": 4,
+      "tags": ["requires_mixed_heritage"],
+      "choices": [
+        { "label": "Practice with siblings", "statEffects": { "happiness": 5, "smarts": 2 }, "familyRelationshipEffect": 5, "resultText": "Everyone giggled at your accent attempts." },
+        { "label": "Write them in your notebook", "statEffects": { "smarts": 3, "happiness": 3 }, "resultText": "A small treasure of words from two homes." }
+      ]
+    },
+    {
+      "id": "heritage_kitchen_childhood",
+      "minAge": 8,
+      "maxAge": 16,
+      "text": "Someone in your family shows you a favourite dish from both sides of your heritage. The kitchen smells wonderful.",
+      "weight": 3,
+      "tags": ["requires_mixed_heritage"],
+      "choices": [
+        { "label": "Help cook together", "statEffects": { "happiness": 6 }, "familyRelationshipEffect": 6, "resultText": "You stirred, tasted, and told stories." },
+        { "label": "Take notes for later", "statEffects": { "smarts": 2, "happiness": 4 }, "resultText": "You promised to master the recipe someday." }
+      ]
+    },
+    {
+      "id": "heritage_child_curious",
+      "minAge": 25,
+      "maxAge": 60,
+      "text": "Your child asks about traditions from both sides of their heritage. You smile — two cultures, one family.",
+      "weight": 4,
+      "tags": ["requires_mixed_heritage_child"],
+      "choices": [
+        { "label": "Share stories from both sides", "statEffects": { "happiness": 6 }, "familyRelationshipEffect": 8, "resultText": "Their eyes lit up with every detail." },
+        { "label": "Plan a celebration together", "statEffects": { "happiness": 5, "money": -2000 }, "familyRelationshipEffect": 6, "resultText": "You picked music and food from each heritage." }
       ]
     }
   ]

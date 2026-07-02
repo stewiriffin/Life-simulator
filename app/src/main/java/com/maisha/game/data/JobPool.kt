@@ -14,8 +14,11 @@ import com.maisha.game.data.model.SchoolStage
  * - IN: auto-rickshaw driver (urban informal transport)
  * - ID: angkot driver (shared minivan transport)
  * - BR: mototaxi rider (mototaxista — informal motorcycle taxi)
+ * - ZA: minibus taxi conductor (DBE/News24 — dominant informal PSV)
+ * - EG: microbus driver (AUC/Cairo transport research — informal paratransit)
  *
- * Countries without a verified local transport-job title use universal tier only.
+ * US, CA, GB, FR, DE, MX: no single dominant informal transport-job title;
+ * universal tier only (verified P35).
  */
 object JobPool {
 
@@ -129,6 +132,22 @@ object JobPool {
                 title = "Mototaxi Rider",
                 minEducation = SchoolStage.SECONDARY,
                 baseSalary = 180_000
+            )
+        ),
+        "ZA" to listOf(
+            Job(
+                id = "minibus_taxi_conductor",
+                title = "Minibus Taxi Conductor",
+                minEducation = SchoolStage.SECONDARY,
+                baseSalary = 185_000
+            )
+        ),
+        "EG" to listOf(
+            Job(
+                id = "microbus_driver",
+                title = "Microbus Driver",
+                minEducation = SchoolStage.SECONDARY,
+                baseSalary = 175_000
             )
         )
     )

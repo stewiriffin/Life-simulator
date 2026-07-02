@@ -49,7 +49,8 @@ object IllustrationCatalog {
         AchievementCategory.FAMILY to vector("achievement_family", "ill_achievement_family"),
         AchievementCategory.WEALTH to vector("achievement_wealth", "ill_achievement_wealth"),
         AchievementCategory.LONGEVITY to vector("achievement_longevity", "ill_achievement_longevity"),
-        AchievementCategory.MISCHIEF to vector("achievement_mischief", "ill_achievement_mischief")
+        AchievementCategory.MISCHIEF to vector("achievement_mischief", "ill_achievement_mischief"),
+        AchievementCategory.WORLDLY to vector("achievement_worldly", "ill_achievement_family")
     )
 
     private val defaultJob = vector("job_default", "ill_job_service")

@@ -124,7 +124,13 @@ fun PersonDetailSheet(
                         verticalAlignment = Alignment.CenterVertically,
                         horizontalArrangement = Arrangement.spacedBy(6.dp)
                     ) {
-                        if (member.countryCode != playerCountryCode) {
+                        if (member.secondaryCountryCode != null) {
+                            HeritageCountryFlags(
+                                primaryCountryCode = member.countryCode,
+                                secondaryCountryCode = member.secondaryCountryCode,
+                                size = 18.dp
+                            )
+                        } else if (member.countryCode != playerCountryCode) {
                             CountryFlag(countryCode = member.countryCode, size = 18.dp)
                         }
                         Text(

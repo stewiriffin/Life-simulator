@@ -4,6 +4,7 @@ import com.maisha.game.data.model.LifeEvent
 import com.maisha.game.data.model.EventChoice
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
+import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
@@ -59,6 +60,50 @@ class FlavorInterpolatorTest {
                 CountryCatalog.hasResearchedFlavor(country.code)
             )
         }
+    }
+
+    @Test
+    fun `interpolates United Kingdom Monzo`() {
+        val text = "Pay with {moneyApp}."
+        val resolved = FlavorInterpolator.interpolate(text, CountryCatalog.flavorFor("GB"))
+        assertEquals("Pay with Monzo.", resolved)
+    }
+
+    @Test
+    fun `interpolates Japan verified exam names`() {
+        val text = "After {secondaryExam}, you prepare for {primaryExam}."
+        val resolved = FlavorInterpolator.interpolate(text, CountryCatalog.flavorFor("JP"))
+        assertEquals(
+            "After Common Test for University Admissions, you prepare for Junior High Entrance Exam.",
+            resolved
+        )
+    }
+
+    @Test
+    fun `Kenya flavor includes Jamhuri Day holiday`() {
+        val holidays = CountryCatalog.flavorFor("KE").notableHolidays
+        assertTrue(holidays.any { it.name == "Jamhuri Day" })
+    }
+
+    @Test
+    fun `holiday event resolves placeholders for Kenya`() {
+        val event = com.maisha.game.data.model.LifeEvent(
+            id = "test_holiday",
+            minAge = 10,
+            maxAge = 20,
+            text = "{holidayDescription} Celebrate {holidayName}.",
+            choices = listOf(
+                com.maisha.game.data.model.EventChoice(
+                    label = "Join in",
+                    resultText = "You enjoyed {holidayName}.",
+                    statEffects = emptyMap()
+                )
+            ),
+            tags = listOf(FlavorInterpolator.HOLIDAY_TAG)
+        )
+        val resolved = FlavorInterpolator.resolveHolidayEvent(event, "KE")
+        assertNotNull(resolved)
+        assertTrue(resolved!!.text.contains("Jamhuri Day") || resolved.text.contains("Madaraka Day"))
     }
 
     @Test

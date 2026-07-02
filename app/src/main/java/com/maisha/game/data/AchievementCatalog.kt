@@ -189,6 +189,41 @@ object AchievementCatalog {
             descriptionRes = R.string.achievement_social_circle_description,
             category = AchievementCategory.FAMILY,
             iconName = "friends"
+        ),
+        Achievement(
+            id = "passport_stamped",
+            titleRes = R.string.achievement_passport_stamped_title,
+            descriptionRes = R.string.achievement_passport_stamped_description,
+            category = AchievementCategory.WORLDLY,
+            iconName = "passport"
+        ),
+        Achievement(
+            id = "global_family",
+            titleRes = R.string.achievement_global_family_title,
+            descriptionRes = R.string.achievement_global_family_description,
+            category = AchievementCategory.WORLDLY,
+            iconName = "heritage"
+        ),
+        Achievement(
+            id = "home_away_from_home",
+            titleRes = R.string.achievement_home_away_from_home_title,
+            descriptionRes = R.string.achievement_home_away_from_home_description,
+            category = AchievementCategory.WORLDLY,
+            iconName = "bond"
+        ),
+        Achievement(
+            id = "world_traveler",
+            titleRes = R.string.achievement_world_traveler_title,
+            descriptionRes = R.string.achievement_world_traveler_description,
+            category = AchievementCategory.WORLDLY,
+            iconName = "globe_travel"
+        ),
+        Achievement(
+            id = "deep_roots",
+            titleRes = R.string.achievement_deep_roots_title,
+            descriptionRes = R.string.achievement_deep_roots_description,
+            category = AchievementCategory.WORLDLY,
+            iconName = "tree_deep"
         )
     )
 

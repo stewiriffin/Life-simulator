@@ -113,3 +113,24 @@ fun emojiRendersOnDevice(emoji: String): Boolean {
 
 fun countryDisplayName(countryCode: String): String =
     CountryCatalog.getCountry(countryCode).displayName
+
+@Composable
+fun HeritageCountryFlags(
+    primaryCountryCode: String,
+    secondaryCountryCode: String?,
+    modifier: Modifier = Modifier,
+    size: Dp = 16.dp
+) {
+    if (secondaryCountryCode != null && secondaryCountryCode != primaryCountryCode) {
+        androidx.compose.foundation.layout.Row(
+            modifier = modifier,
+            horizontalArrangement = androidx.compose.foundation.layout.Arrangement.spacedBy(2.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            CountryFlag(countryCode = primaryCountryCode, size = size)
+            CountryFlag(countryCode = secondaryCountryCode, size = size)
+        }
+    } else {
+        CountryFlag(countryCode = primaryCountryCode, size = size, modifier = modifier)
+    }
+}

@@ -79,7 +79,13 @@ fun PersonCard(
                     verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.spacedBy(MaishaSpacing.xs)
                 ) {
-                    if (playerCountryCode != null && person.countryCode != playerCountryCode) {
+                    if (person.secondaryCountryCode != null) {
+                        HeritageCountryFlags(
+                            primaryCountryCode = person.countryCode,
+                            secondaryCountryCode = person.secondaryCountryCode,
+                            size = 16.dp
+                        )
+                    } else if (playerCountryCode != null && person.countryCode != playerCountryCode) {
                         CountryFlag(countryCode = person.countryCode, size = 16.dp)
                     }
                     Text(

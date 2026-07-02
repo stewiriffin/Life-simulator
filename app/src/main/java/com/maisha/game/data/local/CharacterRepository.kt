@@ -2,6 +2,7 @@
 package com.maisha.game.data.local
 
 import com.maisha.game.data.model.AvatarConfig
+import com.maisha.game.data.model.AncestryEntry
 import com.maisha.game.data.model.Asset
 import com.maisha.game.data.model.CareerState
 import com.maisha.game.data.model.Character
@@ -11,6 +12,7 @@ import com.maisha.game.data.model.Gender
 import com.maisha.game.data.model.HealthCondition
 import com.maisha.game.data.model.Person
 import com.maisha.game.data.model.Stats
+import com.maisha.game.domain.EventLogCap
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
 import kotlinx.serialization.encodeToString
@@ -122,8 +124,14 @@ class CharacterRepository @Inject constructor(
             alive = alive,
             countryCode = countryCode,
             birthCountryCode = birthCountryCode,
+            secondaryCountryCode = secondaryCountryCode,
+            relocationCount = relocationCount,
+            lastRelocationAge = lastRelocationAge,
+            lastHolidayAge = lastHolidayAge,
+            relocationHistoryJson = json.encodeToString(relocationHistory),
+            ancestryHistoryJson = json.encodeToString(ancestryHistory),
             avatarConfigJson = json.encodeToString(avatarConfig),
-            eventLogJson = json.encodeToString(eventLog),
+            eventLogJson = json.encodeToString(EventLogCap.trim(eventLog)),
             triggeredEventIdsJson = json.encodeToString(triggeredEventIds.toList()),
             familyJson = json.encodeToString(family),
             educationJson = json.encodeToString(education),
@@ -159,6 +167,12 @@ class CharacterRepository @Inject constructor(
         val avatar: AvatarConfig = runCatching {
             json.decodeFromString<AvatarConfig>(avatarConfigJson)
         }.getOrDefault(AvatarConfig.DEFAULT)
+        val relocationHistory: List<String> = runCatching {
+            json.decodeFromString<List<String>>(relocationHistoryJson)
+        }.getOrDefault(emptyList())
+        val ancestryHistory: List<AncestryEntry> = runCatching {
+            json.decodeFromString<List<AncestryEntry>>(ancestryHistoryJson)
+        }.getOrDefault(emptyList())
         return SavedGame(
             character = Character(
                 name = name,
@@ -175,6 +189,12 @@ class CharacterRepository @Inject constructor(
                 alive = alive,
                 countryCode = countryCode,
                 birthCountryCode = birthCountryCode,
+                secondaryCountryCode = secondaryCountryCode,
+                relocationCount = relocationCount,
+                lastRelocationAge = lastRelocationAge,
+                lastHolidayAge = lastHolidayAge,
+                relocationHistory = relocationHistory,
+                ancestryHistory = ancestryHistory,
                 avatarConfig = avatar,
                 eventLog = log,
                 family = family,

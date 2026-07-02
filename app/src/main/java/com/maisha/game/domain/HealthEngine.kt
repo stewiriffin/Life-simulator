@@ -40,7 +40,7 @@ class HealthEngine @Inject constructor() {
         if (character.activeConditions.any { it.id == condition.id }) return character
         return character.copy(
             activeConditions = character.activeConditions + condition,
-            eventLog = listOf("Fell ill with ${condition.name}.") + character.eventLog
+            eventLog = EventLogCap.prepend(character.eventLog, "Fell ill with ${condition.name}.")
         )
     }
 
@@ -93,19 +93,21 @@ class HealthEngine @Inject constructor() {
             DoctorResult.Treated(
                 afterPayment.copy(
                     activeConditions = updatedConditions,
-                    eventLog = listOf(
+                    eventLog = EventLogCap.prepend(
+                        afterPayment.eventLog,
                         "Recovered from ${condition.name} after treatment at $facility."
-                    ) + afterPayment.eventLog
+                    )
                 )
             )
         } else {
             DoctorResult.Failed(
                 afterPayment.copy(
-                    eventLog = listOf(
+                    eventLog = EventLogCap.prepend(
+                        afterPayment.eventLog,
                         "Treatment for ${condition.name} at the " +
                             (if (usePrivateCare) "hospital" else "clinic") +
                             " did not fully work."
-                    ) + afterPayment.eventLog
+                    )
                 )
             )
         }

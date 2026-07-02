@@ -1,9 +1,10 @@
-// app/src/main/java/com/maisha/game/data/model/CountryFlavor.kt (new)
+// app/src/main/java/com/maisha/game/data/model/CountryFlavor.kt (modified — notableHolidays)
 package com.maisha.game.data.model
 
 /**
- * Light cultural texture per country — exam names, everyday transport, and familiar
- * payment/greeting references. Researched terms; see CountryCatalog for sources.
+ * Light cultural texture per country — exam names, everyday transport, familiar
+ * payment/greeting references, and verified national/cultural holidays.
+ * Researched terms; see CountryCatalog for sources.
  */
 data class CountryFlavor(
     val countryCode: String,
@@ -11,5 +12,6 @@ data class CountryFlavor(
     val secondaryExamName: String,
     val commonTransportMode: String,
     val popularMoneyAppOrBank: String? = null,
-    val greetingPhrase: String? = null
+    val greetingPhrase: String? = null,
+    val notableHolidays: List<HolidayFlavor> = emptyList()
 )

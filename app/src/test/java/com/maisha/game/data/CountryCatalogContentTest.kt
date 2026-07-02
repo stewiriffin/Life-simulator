@@ -49,6 +49,18 @@ class CountryCatalogContentTest {
     }
 
     @Test
+    fun `Nigeria asset catalog uses self-contain naming`() {
+        val assets = AssetCatalog.getAssetsForCountry("NG")
+        assertTrue(assets.any { it.name == "Self-Contain" })
+    }
+
+    @Test
+    fun `South Africa job pool includes minibus taxi conductor`() {
+        val jobs = JobPool.getJobsForCountry("ZA")
+        assertTrue(jobs.any { it.id == "minibus_taxi_conductor" })
+    }
+
+    @Test
     fun `findById resolves country-specific and universal entries`() {
         assertEquals("Matatu Conductor", JobPool.findById("matatu_conductor")?.title)
         assertEquals("Used Boda Boda", AssetCatalog.findById("boda_basic")?.name)

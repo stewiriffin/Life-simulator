@@ -63,7 +63,7 @@ class CrimeEngine @Inject constructor() {
                     jobHistory = character.career.jobHistory + job.title
                 )
             } ?: character.career,
-            eventLog = listOf(logEntry) + character.eventLog,
+            eventLog = EventLogCap.prepend(character.eventLog, logEntry),
             stats = character.stats.copy(
                 happiness = (character.stats.happiness - 12).coerceIn(0, 100)
             )
@@ -81,7 +81,7 @@ class CrimeEngine @Inject constructor() {
             currentlyIncarcerated = stillInside
         )
         val releaseLog = if (!stillInside) {
-            listOf("Released from prison.") + character.eventLog
+            EventLogCap.prepend(character.eventLog, "Released from prison.")
         } else {
             character.eventLog
         }

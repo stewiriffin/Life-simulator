@@ -31,6 +31,7 @@ import com.maisha.game.domain.CareerEngine
 import com.maisha.game.domain.CareerResult
 import com.maisha.game.domain.CrimeResult
 import com.maisha.game.domain.DoctorResult
+import com.maisha.game.domain.EventLogCap
 import com.maisha.game.domain.FinanceEngine
 import com.maisha.game.domain.GameEngine
 import com.maisha.game.domain.GiftTier
@@ -556,13 +557,14 @@ class LifeViewModel @Inject constructor(
             when (val result = gameEngine.attemptCrime(character, crimeType)) {
                 is CrimeResult.Success -> {
                     val updated = result.character.copy(
-                        eventLog = listOf(
+                        eventLog = EventLogCap.prepend(
+                            result.character.eventLog,
                             context.getString(
                                 R.string.msg_crime_got_away_log,
                                 crimeTypeLabel(crimeType),
                                 result.moneyGained
                             )
-                        ) + result.character.eventLog
+                        )
                     )
                     persist(updated)
                     processMidLifeAchievements(updated)

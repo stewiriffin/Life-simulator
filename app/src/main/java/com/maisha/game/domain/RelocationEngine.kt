@@ -1,4 +1,4 @@
-// app/src/main/java/com/maisha/game/domain/RelocationEngine.kt (new)
+// app/src/main/java/com/maisha/game/domain/RelocationEngine.kt (modified — repeatable relocation for World Traveler)
 package com.maisha.game.domain
 
 import com.maisha.game.data.CountryCatalog
@@ -14,21 +14,28 @@ import kotlin.random.Random
 class RelocationEngine @Inject constructor() {
 
     fun hasRelocated(character: Character): Boolean =
-        character.birthCountryCode != character.countryCode
+        character.relocationCount > 0 || character.birthCountryCode != character.countryCode
+
+    fun relocationOpportunityEventId(relocationCount: Int): String =
+        "${RELOCATION_OPPORTUNITY_EVENT_ID}_$relocationCount"
 
     fun getRelocationOpportunities(character: Character): List<Country> {
         val current = character.countryCode
-        val candidates = CountryCatalog.all()
+        return CountryCatalog.all()
             .filter { it.code != current }
             .shuffled()
-        return candidates.take(RELOCATION_DESTINATION_COUNT)
+            .take(RELOCATION_DESTINATION_COUNT)
     }
 
     fun shouldOfferRelocation(character: Character, triggeredEventIds: Set<String>): Boolean {
         if (character.age < MIN_RELOCATION_AGE || character.age > MAX_RELOCATION_AGE) return false
-        if (hasRelocated(character)) return false
-        if (RELOCATION_OPPORTUNITY_EVENT_ID in triggeredEventIds) return false
         if (character.criminalRecord.currentlyIncarcerated) return false
+        val eventId = relocationOpportunityEventId(character.relocationCount)
+        if (eventId in triggeredEventIds) return false
+        if (character.relocationCount > 0) {
+            val lastAge = character.lastRelocationAge ?: return false
+            if (character.age - lastAge < MIN_YEARS_BETWEEN_RELOCATIONS) return false
+        }
         return Random.nextFloat() < RELOCATION_OFFER_CHANCE
     }
 
@@ -36,7 +43,7 @@ class RelocationEngine @Inject constructor() {
         character: Character,
         destinations: List<Country>
     ): LifeEvent {
-        val originName = CountryCatalog.getCountry(character.birthCountryCode).displayName
+        val originName = CountryCatalog.getCountry(character.countryCode).displayName
         val destinationChoices = destinations.map { country ->
             EventChoice(
                 label = "Move to ${country.displayName}",
@@ -53,7 +60,7 @@ class RelocationEngine @Inject constructor() {
             resultText = "Home still feels right. You tucked the idea away for another year."
         )
         return LifeEvent(
-            id = RELOCATION_OPPORTUNITY_EVENT_ID,
+            id = relocationOpportunityEventId(character.relocationCount),
             minAge = character.age,
             maxAge = character.age,
             text = "An opportunity opens abroad — work contacts, a study pathway, or family already settled " +
@@ -79,6 +86,9 @@ class RelocationEngine @Inject constructor() {
         val happinessDip = Random.nextInt(RELOCATION_HAPPINESS_DIP_MIN, RELOCATION_HAPPINESS_DIP_MAX + 1)
         return character.copy(
             countryCode = newCountry.code,
+            relocationCount = character.relocationCount + 1,
+            lastRelocationAge = character.age,
+            relocationHistory = character.relocationHistory + newCountry.code,
             career = updatedCareer,
             stats = character.stats.copy(
                 happiness = (character.stats.happiness - happinessDip).coerceIn(0, 100)
@@ -93,10 +103,11 @@ class RelocationEngine @Inject constructor() {
         private const val ONE_TIME_TAG = "one_time"
 
         private const val MIN_RELOCATION_AGE = 18
-        private const val MAX_RELOCATION_AGE = 50
+        private const val MAX_RELOCATION_AGE = 55
         private const val RELOCATION_DESTINATION_COUNT = 3
         private const val RELOCATION_OFFER_CHANCE = 0.035f
         private const val RELOCATION_HAPPINESS_DIP_MIN = 6
         private const val RELOCATION_HAPPINESS_DIP_MAX = 10
+        private const val MIN_YEARS_BETWEEN_RELOCATIONS = 4
     }
 }

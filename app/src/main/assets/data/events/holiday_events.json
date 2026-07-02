@@ -1,0 +1,51 @@
+{
+  "events": [
+    {
+      "id": "national_holiday_celebration",
+      "minAge": 6,
+      "maxAge": 90,
+      "text": "{holidayDescription} Families gather to mark {holidayName}.",
+      "weight": 2,
+      "tags": ["holiday"],
+      "choices": [
+        {
+          "label": "Celebrate with family",
+          "statEffects": { "happiness": 6, "money": -3000 },
+          "familyRelationshipEffect": 6,
+          "resultText": "You shared food, stories, and laughter together."
+        },
+        {
+          "label": "Keep it low-key at home",
+          "statEffects": { "happiness": 3 },
+          "resultText": "A quiet but meaningful observance."
+        },
+        {
+          "label": "Skip the festivities",
+          "statEffects": { "money": 500 },
+          "resultText": "You saved your energy and cash for another day."
+        }
+      ]
+    },
+    {
+      "id": "national_holiday_community",
+      "minAge": 10,
+      "maxAge": 90,
+      "text": "The neighbourhood buzzes for {holidayName}. {holidayDescription}",
+      "weight": 2,
+      "tags": ["holiday"],
+      "choices": [
+        {
+          "label": "Join the community events",
+          "statEffects": { "happiness": 7, "money": -2000 },
+          "familyRelationshipEffect": 4,
+          "resultText": "Music, colour, and friendly faces everywhere."
+        },
+        {
+          "label": "Watch from the sidelines",
+          "statEffects": { "happiness": 4 },
+          "resultText": "You enjoyed the atmosphere without spending much."
+        }
+      ]
+    }
+  ]
+}

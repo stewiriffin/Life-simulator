@@ -19,12 +19,14 @@ data class CatalogAsset(
  *
  * Flavor naming (verified terms):
  * - KE: bedsitter (East African studio rental), boda boda (motorcycle taxi)
+ * - NG: self-contain (Lagos/Nigeria studio rental — Mixta Africa, Respicio legal guides)
+ * - PH: bedspace (boarding-house rental — Respicio & Co. Philippines)
  * - IN: PG room (paying-guest accommodation)
  * - GB: bedsit (British studio rental term)
  * - BR: kitnet (Brazilian studio apartment)
  * - JP: 1K apartment (one room + kitchen — standard Japanese listing term)
  *
- * Other roster countries use universal names only.
+ * US, CA, FR, DE, ZA, EG, MX, ID: universal housing/vehicle names only (verified P35).
  */
 object AssetCatalog {
 
@@ -175,6 +177,8 @@ object AssetCatalog {
     )
 
     private val housingNameOverrides: Map<String, Map<String, String>> = mapOf(
+        "NG" to mapOf("apartment_studio" to "Self-Contain"),
+        "PH" to mapOf("apartment_studio" to "Bedspace"),
         "IN" to mapOf("apartment_studio" to "PG Room"),
         "GB" to mapOf("apartment_studio" to "Bedsit"),
         "BR" to mapOf("apartment_studio" to "Kitnet"),

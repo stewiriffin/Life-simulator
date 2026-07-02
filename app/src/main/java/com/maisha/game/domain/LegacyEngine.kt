@@ -1,5 +1,7 @@
+// app/src/main/java/com/maisha/game/domain/LegacyEngine.kt (modified — append ancestry on legacy continuation)
 package com.maisha.game.domain
 
+import com.maisha.game.data.model.AncestryEntry
 import com.maisha.game.data.model.CareerState
 import com.maisha.game.data.model.Character
 import com.maisha.game.data.model.CriminalRecord
@@ -13,7 +15,9 @@ import javax.inject.Inject
 import javax.inject.Singleton
 
 @Singleton
-class LegacyEngine @Inject constructor() {
+class LegacyEngine @Inject constructor(
+    private val mortalityEngine: MortalityEngine
+) {
 
     fun eligibleHeirs(deceased: Character): List<Person> =
         deceased.family
@@ -50,6 +54,8 @@ class LegacyEngine @Inject constructor() {
         }
 
         val currentYear = Calendar.getInstance().get(Calendar.YEAR)
+        val deceasedEntry = buildAncestryEntry(deceased)
+        val carriedHistory = deceased.ancestryHistory + deceasedEntry
 
         return Character(
             name = heir.name,
@@ -62,6 +68,7 @@ class LegacyEngine @Inject constructor() {
             birthCountryCode = heir.countryCode,
             avatarConfig = heir.avatarConfig,
             generationNumber = deceased.generationNumber + 1,
+            ancestryHistory = carriedHistory,
             family = newFamily,
             education = educationForAge(heir.age),
             career = CareerState(),
@@ -71,6 +78,18 @@ class LegacyEngine @Inject constructor() {
             eventLog = listOf(
                 "Continued the family legacy as ${deceased.name}'s heir at age ${heir.age}."
             )
+        )
+    }
+
+    fun buildAncestryEntry(deceased: Character): AncestryEntry {
+        val cause = mortalityEngine.parseDeathCause(deceased) ?: DeathCause.OLD_AGE
+        return AncestryEntry(
+            generationNumber = deceased.generationNumber,
+            characterName = deceased.name,
+            countryCode = deceased.birthCountryCode,
+            relocatedTo = deceased.relocationHistory,
+            ageAtDeath = deceased.age,
+            cause = mortalityEngine.gentleCauseLabel(cause)
         )
     }
 

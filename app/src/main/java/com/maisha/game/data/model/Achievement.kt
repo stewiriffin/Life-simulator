@@ -17,7 +17,8 @@ enum class AchievementCategory {
     FAMILY,
     WEALTH,
     LONGEVITY,
-    MISCHIEF
+    MISCHIEF,
+    WORLDLY
 }
 
 data class AchievementProgress(

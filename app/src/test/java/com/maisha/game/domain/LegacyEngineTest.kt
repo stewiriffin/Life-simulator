@@ -14,7 +14,7 @@ import org.junit.Test
 
 class LegacyEngineTest {
 
-    private val engine = LegacyEngine()
+    private val engine = LegacyEngine(MortalityEngine())
 
     @Test
     fun `deceased father maps surviving spouse to mother`() {

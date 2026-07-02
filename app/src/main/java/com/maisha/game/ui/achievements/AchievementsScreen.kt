@@ -233,4 +233,5 @@ private fun categoryLabelRes(category: AchievementCategory): Int = when (categor
     AchievementCategory.WEALTH -> R.string.achievement_category_wealth
     AchievementCategory.LONGEVITY -> R.string.achievement_category_longevity
     AchievementCategory.MISCHIEF -> R.string.achievement_category_mischief
+    AchievementCategory.WORLDLY -> R.string.achievement_category_worldly
 }
