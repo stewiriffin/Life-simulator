@@ -163,7 +163,11 @@ class GameEngine @Inject constructor(
             }
             DeathResult.Alive -> character to result
         }
-        val newlyUnlocked = achievementEngine.checkAchievements(finalCharacter, achievementProgress)
+        val newlyUnlocked = if (finalCharacter.alive) {
+            achievementEngine.checkAchievements(finalCharacter, achievementProgress)
+        } else {
+            emptyList()
+        }
         return AgeUpOutcome(finalCharacter, finalResult, newlyUnlocked)
     }
 

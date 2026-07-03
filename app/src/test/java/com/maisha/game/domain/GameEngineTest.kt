@@ -94,10 +94,18 @@ class GameEngineTest {
     }
 
     @Test
-    fun ageUp_deadCharacter_returnsUnchanged() {
-        val dead = TestFixtures.character(age = 80, alive = false)
-        val outcome = engine.ageUp(dead, emptySet(), emptyList(), slotId = 0)
-        assertFalse(outcome.character.alive)
-        assertEquals(80, outcome.character.age)
+    fun ageUp_doesNotUnlockAchievementsOnDeathYear() {
+        var unlocksOnDeath = 0
+        repeat(200) {
+            val character = TestFixtures.character(
+                age = 49,
+                stats = com.maisha.game.data.model.Stats(health = 3, happiness = 3, smarts = 3, looks = 3)
+            )
+            val outcome = engine.ageUp(character, emptySet(), emptyList(), slotId = 0)
+            if (!outcome.character.alive && outcome.newlyUnlockedAchievements.isNotEmpty()) {
+                unlocksOnDeath++
+            }
+        }
+        assertEquals(0, unlocksOnDeath)
     }
 }

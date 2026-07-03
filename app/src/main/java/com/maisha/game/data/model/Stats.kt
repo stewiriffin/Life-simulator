@@ -15,7 +15,8 @@ data class Stats(
         health = health.coerceIn(0, 100),
         happiness = happiness.coerceIn(0, 100),
         smarts = smarts.coerceIn(0, 100),
-        looks = looks.coerceIn(0, 100)
+        looks = looks.coerceIn(0, 100),
+        money = money.coerceAtLeast(0)
     )
 
     fun applyEffects(effects: Map<String, Int>): Stats {

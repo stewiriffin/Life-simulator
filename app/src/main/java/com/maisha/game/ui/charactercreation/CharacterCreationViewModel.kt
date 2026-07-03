@@ -70,7 +70,8 @@ class CharacterCreationViewModel @Inject constructor(
     fun filteredCountries() = CountryCatalog.search(_uiState.value.countrySearchQuery)
 
     fun onNameChange(name: String) {
-        _uiState.update { it.copy(name = name, nameError = null) }
+        val trimmed = name.take(MAX_NAME_LENGTH)
+        _uiState.update { it.copy(name = trimmed, nameError = null) }
     }
 
     fun onGenderSelected(gender: Gender) {
@@ -181,5 +182,9 @@ class CharacterCreationViewModel @Inject constructor(
         MetaBonusRepository.STAT_SMARTS -> context.getString(R.string.second_wind_bonus_smarts)
         MetaBonusRepository.STAT_LOOKS -> context.getString(R.string.second_wind_bonus_looks)
         else -> context.getString(R.string.second_wind_bonus_random)
+    }
+
+    companion object {
+        const val MAX_NAME_LENGTH = 40
     }
 }
