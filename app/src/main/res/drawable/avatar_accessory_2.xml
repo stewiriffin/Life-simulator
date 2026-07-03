@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="100dp"
+    android:height="100dp"
+    android:viewportWidth="100"
+    android:viewportHeight="100">
+    <!-- Face mask / band -->
+    <path
+        android:fillColor="#00000000"
+        android:strokeColor="#FF37474F"
+        android:strokeWidth="2.2"
+        android:pathData="M28,48 L72,48 L72,58 L28,58 Z" />
+</vector>

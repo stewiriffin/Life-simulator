@@ -234,6 +234,102 @@
         { "label": "Send money this week", "statEffects": { "money": -15000, "happiness": 4 }, "familyRelationshipEffect": 10, "resultText": "Gratitude poured through the phone. Duty felt like love." },
         { "label": "Offer emotional support only", "statEffects": { "happiness": -3 }, "familyRelationshipEffect": -6, "resultText": "They thanked you stiffly. The bills remained." }
       ]
+    },
+    {
+      "id": "parenting_toddler_tantrum",
+      "minAge": 20,
+      "maxAge": 50,
+      "text": "Your toddler melts down in the middle of the market — screaming, kicking, and drawing stares from every stall.",
+      "weight": 5,
+      "tags": ["relationship", "requires_child_toddler"],
+      "choices": [
+        { "label": "Kneel and calm them patiently", "statEffects": { "happiness": -2, "health": -1 }, "childRelationshipEffect": 10, "resultText": "It took forever, but they clung to you and the storm passed." },
+        { "label": "Snap and drag them home", "statEffects": { "happiness": -6, "health": -2 }, "childRelationshipEffect": -8, "resultText": "Quiet at last — and a cold silence between you." }
+      ]
+    },
+    {
+      "id": "parenting_bedtime_battle",
+      "minAge": 20,
+      "maxAge": 48,
+      "text": "Bedtime has become a negotiation. Your toddler wants one more story, then water, then the light on.",
+      "weight": 4,
+      "tags": ["relationship", "requires_child_toddler"],
+      "choices": [
+        { "label": "Read one more story", "statEffects": { "happiness": 3, "health": -1 }, "childRelationshipEffect": 6, "resultText": "They fell asleep mid-sentence. Worth every yawn." },
+        { "label": "Hold the line firmly", "statEffects": { "happiness": -3 }, "childRelationshipEffect": -4, "resultText": "Lights out. Tears, then silence. You both need sleep." }
+      ]
+    },
+    {
+      "id": "parenting_school_play",
+      "minAge": 24,
+      "maxAge": 55,
+      "text": "Your child has a role in the school play. Rehearsals run late and they beg you to come opening night.",
+      "weight": 5,
+      "tags": ["relationship", "requires_child_primary"],
+      "choices": [
+        { "label": "Clear your evening and go", "statEffects": { "happiness": 8, "money": -2000 }, "childRelationshipEffect": 12, "resultText": "They spotted you in the crowd and beamed through every line." },
+        { "label": "Send money for the costume only", "statEffects": { "money": -5000, "happiness": -4 }, "childRelationshipEffect": -6, "resultText": "The costume was perfect. Your empty seat was not." }
+      ]
+    },
+    {
+      "id": "parenting_report_card",
+      "minAge": 24,
+      "maxAge": 55,
+      "text": "Report cards are out. Your child's marks are mixed — strong in one subject, struggling in another.",
+      "weight": 4,
+      "tags": ["relationship", "requires_child_primary"],
+      "choices": [
+        { "label": "Hire a tutor", "statEffects": { "money": -15000, "happiness": 2 }, "childRelationshipEffect": 8, "resultText": "Extra lessons helped. They felt supported, not scolded." },
+        { "label": "Push them harder at home", "statEffects": { "happiness": -5, "health": -2 }, "childRelationshipEffect": -5, "resultText": "Homework nights got tense. Progress was uneven." }
+      ]
+    },
+    {
+      "id": "parenting_birthday_party",
+      "minAge": 22,
+      "maxAge": 50,
+      "text": "Your child wants a birthday party with classmates. The guest list and cake budget keep growing.",
+      "weight": 4,
+      "tags": ["relationship", "requires_child"],
+      "choices": [
+        { "label": "Throw the full party", "statEffects": { "money": -20000, "happiness": 6 }, "childRelationshipEffect": 10, "resultText": "Chaos, cake, and a memory they will talk about for years." },
+        { "label": "Keep it small at home", "statEffects": { "money": -5000, "happiness": 1 }, "childRelationshipEffect": 2, "resultText": "A quiet cake with family. Sweet, if a little underwhelming." }
+      ]
+    },
+    {
+      "id": "parenting_teenage_rebellion",
+      "minAge": 30,
+      "maxAge": 60,
+      "text": "Your teenager comes home past curfew, phone glowing, attitude sharp. The house feels like a battlefield.",
+      "weight": 5,
+      "tags": ["relationship", "requires_child_teen"],
+      "choices": [
+        { "label": "Talk it through calmly", "statEffects": { "happiness": -3, "health": -1 }, "childRelationshipEffect": 8, "resultText": "They rolled their eyes — then admitted they were scared you would not listen." },
+        { "label": "Ground them for a month", "statEffects": { "happiness": -8, "health": -2 }, "childRelationshipEffect": -12, "resultText": "Doors slammed. The silence afterward was louder." }
+      ]
+    },
+    {
+      "id": "parenting_teen_peer_pressure",
+      "minAge": 32,
+      "maxAge": 58,
+      "text": "You overhear your teen planning something risky with friends. They insist everyone else is doing it.",
+      "weight": 4,
+      "tags": ["relationship", "requires_child_teen"],
+      "choices": [
+        { "label": "Set a firm boundary", "statEffects": { "happiness": -4 }, "childRelationshipEffect": -3, "resultText": "They called you unfair. You slept a little easier." },
+        { "label": "Trust them and stay available", "statEffects": { "happiness": -2, "health": -1 }, "childRelationshipEffect": 6, "resultText": "They texted you later. Trust held — barely." }
+      ]
+    },
+    {
+      "id": "parenting_first_day_school",
+      "minAge": 22,
+      "maxAge": 50,
+      "text": "It is your child's first day at a new school. They cling to your hand at the gate.",
+      "weight": 4,
+      "tags": ["relationship", "requires_child_school_age"],
+      "choices": [
+        { "label": "Walk them in and stay a minute", "statEffects": { "happiness": 4 }, "childRelationshipEffect": 8, "resultText": "A brave wave goodbye. You both made it." },
+        { "label": "A quick hug and go", "statEffects": { "happiness": -2 }, "childRelationshipEffect": -2, "resultText": "Efficient — and a little heartbreaking." }
+      ]
     }
   ]
 }

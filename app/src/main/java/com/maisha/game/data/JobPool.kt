@@ -3,6 +3,10 @@ package com.maisha.game.data
 
 import com.maisha.game.data.model.Job
 import com.maisha.game.data.model.SchoolStage
+import com.maisha.game.data.model.AssetType
+import com.maisha.game.data.model.Character
+import com.maisha.game.data.model.HustleType
+import com.maisha.game.data.model.SkillType
 
 /**
  * Job catalog: universal tier (works in any country) plus optional verified local titles.
@@ -63,13 +67,41 @@ object JobPool {
             id = "software_developer",
             title = "Software Developer",
             minEducation = SchoolStage.GRADUATED,
-            baseSalary = 900_000
+            baseSalary = 900_000,
+            skillBypass = SkillType.PROGRAMMING,
+            minSkillLevel = 70
         ),
         Job(
             id = "journalist",
             title = "Journalist",
             minEducation = SchoolStage.GRADUATED,
-            baseSalary = 500_000
+            baseSalary = 500_000,
+            skillBypass = SkillType.WRITING,
+            minSkillLevel = 70
+        ),
+        Job(
+            id = "chef",
+            title = "Chef",
+            minEducation = SchoolStage.GRADUATED,
+            baseSalary = 520_000,
+            skillBypass = SkillType.COOKING,
+            minSkillLevel = 65
+        ),
+        Job(
+            id = "session_musician",
+            title = "Session Musician",
+            minEducation = SchoolStage.GRADUATED,
+            baseSalary = 480_000,
+            skillBypass = SkillType.GUITAR,
+            minSkillLevel = 65
+        ),
+        Job(
+            id = "martial_arts_instructor",
+            title = "Martial Arts Instructor",
+            minEducation = SchoolStage.GRADUATED,
+            baseSalary = 450_000,
+            skillBypass = SkillType.MARTIAL_ARTS,
+            minSkillLevel = 65
         ),
         Job(
             id = "engineer",
@@ -82,6 +114,27 @@ object JobPool {
             title = "Civil Servant",
             minEducation = SchoolStage.GRADUATED,
             baseSalary = 450_000
+        ),
+        Job(
+            id = "brand_ambassador",
+            title = "Brand Ambassador",
+            minEducation = SchoolStage.SECONDARY,
+            baseSalary = 700_000,
+            minFollowers = 50_000
+        ),
+        Job(
+            id = "professional_streamer",
+            title = "Professional Streamer",
+            minEducation = SchoolStage.SECONDARY,
+            baseSalary = 850_000,
+            minFollowers = 100_000
+        ),
+        Job(
+            id = "content_creator",
+            title = "Content Creator",
+            minEducation = SchoolStage.SECONDARY,
+            baseSalary = 600_000,
+            minFollowers = 25_000
         )
     )
 
@@ -164,4 +217,74 @@ object JobPool {
         countryCode in countryFlavorJobs
 
     fun findById(jobId: String): Job? = jobs.find { it.id == jobId }
+
+    data class SideHustleSpec(
+        val type: HustleType,
+        val basePayoutMin: Int,
+        val basePayoutMax: Int,
+        val minAge: Int = 18,
+        val minSmarts: Int = 0,
+        val requiresVehicle: Boolean = false,
+        val requiresIctDegree: Boolean = false,
+        val requiresGraduated: Boolean = false
+    )
+
+    private val sideHustleSpecs: List<SideHustleSpec> = listOf(
+        SideHustleSpec(
+            type = HustleType.RIDE_SHARE,
+            basePayoutMin = 8_000,
+            basePayoutMax = 28_000,
+            requiresVehicle = true
+        ),
+        SideHustleSpec(
+            type = HustleType.FREELANCE_CODING,
+            basePayoutMin = 15_000,
+            basePayoutMax = 45_000,
+            minSmarts = 75,
+            requiresIctDegree = true
+        ),
+        SideHustleSpec(
+            type = HustleType.TUTORING,
+            basePayoutMin = 6_000,
+            basePayoutMax = 18_000,
+            requiresGraduated = true
+        ),
+        SideHustleSpec(
+            type = HustleType.FOOD_DELIVERY,
+            basePayoutMin = 4_000,
+            basePayoutMax = 14_000,
+            minAge = 16
+        ),
+        SideHustleSpec(
+            type = HustleType.RESELLING,
+            basePayoutMin = 3_000,
+            basePayoutMax = 12_000,
+            minSmarts = 40
+        )
+    )
+
+    fun getSideHustleSpec(type: HustleType): SideHustleSpec? =
+        sideHustleSpecs.find { it.type == type }
+
+    fun getAllSideHustleTypes(): List<HustleType> = sideHustleSpecs.map { it.type }
+
+    fun meetsSideHustlePrerequisites(character: Character, type: HustleType): Boolean {
+        val spec = getSideHustleSpec(type) ?: return false
+        if (character.age < spec.minAge) return false
+        if (spec.requiresVehicle && !ownsVehicle(character)) return false
+        if (spec.requiresGraduated && character.education.stage != SchoolStage.GRADUATED) return false
+        if (spec.requiresIctDegree) {
+            val hasIct = character.education.courseOfStudy
+                ?.equals(ICT_COURSE_NAME, ignoreCase = true) == true
+            if (!hasIct && character.stats.smarts < spec.minSmarts) return false
+        } else if (character.stats.smarts < spec.minSmarts) {
+            return false
+        }
+        return true
+    }
+
+    private fun ownsVehicle(character: Character): Boolean =
+        character.assets.any { it.type == AssetType.CAR || it.type == AssetType.MOTORBIKE }
+
+    private const val ICT_COURSE_NAME = "Computer Science"
 }

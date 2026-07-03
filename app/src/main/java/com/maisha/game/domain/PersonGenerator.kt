@@ -76,7 +76,8 @@ object PersonGenerator {
         stats: Stats,
         gender: Gender = if (Random.nextBoolean()) Gender.MALE else Gender.FEMALE,
         isMarried: Boolean = false,
-        secondaryCountryCode: String? = null
+        secondaryCountryCode: String? = null,
+        avatarConfig: AvatarConfig = AvatarConfig.random()
     ): Person = Person(
         id = UUID.randomUUID().toString(),
         name = name,
@@ -86,7 +87,7 @@ object PersonGenerator {
         relationshipLevel = relationshipLevel,
         stats = stats,
         isMarried = isMarried,
-        avatarConfig = AvatarConfig.random(),
+        avatarConfig = avatarConfig,
         countryCode = countryCode,
         secondaryCountryCode = secondaryCountryCode
     )

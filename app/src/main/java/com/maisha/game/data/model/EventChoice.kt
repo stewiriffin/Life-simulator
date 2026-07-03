@@ -19,6 +19,7 @@ data class EventChoice(
     val targetAssetType: String? = null,
     val familyRelationshipEffect: Int = 0,
     val spouseRelationshipEffect: Int = 0,
+    val childRelationshipEffect: Int = 0,
     val triggersHaveChild: Boolean = false,
     val triggersCrime: String? = null,
     val triggersIllnessRoll: Boolean = false,
@@ -33,5 +34,11 @@ data class EventChoice(
     /** Prison-only: positive boosts parole chance; negative marks bad behavior. */
     val paroleEffect: Int = 0,
     /** Grants a catalog heirloom id (see [com.maisha.game.data.AssetCatalog]). */
-    val grantHeirloom: String? = null
+    val grantHeirloom: String? = null,
+    /** Delta applied to [SocialMediaState.followers] when the player has an account. */
+    val followerEffect: Int = 0,
+    /** Delta applied to each owned business valuation. */
+    val businessValuationEffect: Int = 0,
+    /** Delta applied to each owned business annual revenue. */
+    val businessRevenueEffect: Int = 0
 )

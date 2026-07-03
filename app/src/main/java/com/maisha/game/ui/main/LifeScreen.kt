@@ -9,11 +9,14 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.safeDrawing
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.material.icons.Icons
@@ -38,6 +41,7 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.blur
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
@@ -104,6 +108,9 @@ fun LifeScreen(
     onRetire: () -> Unit,
     retirementPensionEstimate: Int,
     onDropOut: () -> Unit,
+    onStartBusiness: (String, com.maisha.game.data.model.BusinessIndustry, Int) -> Unit,
+    onSellBusiness: (String) -> Unit,
+    businessInvestmentTiers: List<Int>,
     onCareerMessageDismissed: () -> Unit,
     onPurchaseAsset: (String) -> Unit,
     onSellAsset: (String) -> Unit,
@@ -118,6 +125,13 @@ fun LifeScreen(
     lawyerExpensiveAffordable: Boolean,
     onVisitDoctor: (String, CareType) -> Unit,
     onSetLifestyleOption: (com.maisha.game.data.model.LifestyleOption, Boolean) -> Unit,
+    onExecuteSideHustle: (com.maisha.game.data.model.HustleType) -> Unit,
+    onAdoptPet: (com.maisha.game.data.model.PetSpecies) -> Unit,
+    onCreateSocialAccount: () -> Unit,
+    onPostSocialContent: () -> Unit,
+    onMonetizeSocialAccount: () -> Unit,
+    onPracticeSkill: (com.maisha.game.data.model.SkillType) -> Unit,
+    onTakeMasterclass: (com.maisha.game.data.model.SkillType) -> Unit,
     onActionMessageDismissed: () -> Unit,
     onViewCharacterStats: () -> Unit,
     onOpenSettings: () -> Unit,
@@ -230,12 +244,18 @@ fun LifeScreen(
     val snackbarHostState = rememberFamilySnackbarHostState()
     val prisonBackground = if (incarcerated) NavyElevated else MaterialTheme.colorScheme.background
 
+    val eventActive = uiState.currentEvent != null
     Box(
         modifier = Modifier
             .fillMaxSize()
+            .windowInsetsPadding(WindowInsets.safeDrawing)
             .background(if (incarcerated) NavyDeep else MaterialTheme.colorScheme.background)
     ) {
     Scaffold(
+        modifier = Modifier.then(
+            if (eventActive) Modifier.blur(16.dp) else Modifier
+        ),
+        contentWindowInsets = WindowInsets(0, 0, 0, 0),
         containerColor = prisonBackground,
         snackbarHost = { SnackbarHost(snackbarHostState) },
         bottomBar = {
@@ -293,6 +313,9 @@ fun LifeScreen(
                 onRetire = onRetire,
                 retirementPensionEstimate = retirementPensionEstimate,
                 onDropOut = onDropOut,
+                onStartBusiness = onStartBusiness,
+                onSellBusiness = onSellBusiness,
+                investmentTiers = businessInvestmentTiers,
                 onCareerMessageDismissed = onCareerMessageDismissed,
                 modifier = Modifier.padding(innerPadding)
             )
@@ -314,6 +337,13 @@ fun LifeScreen(
                 onAttemptCrime = onAttemptCrime,
                 onVisitDoctor = onVisitDoctor,
                 onSetLifestyleOption = onSetLifestyleOption,
+                onExecuteSideHustle = onExecuteSideHustle,
+                onAdoptPet = onAdoptPet,
+                onCreateSocialAccount = onCreateSocialAccount,
+                onPostSocialContent = onPostSocialContent,
+                onMonetizeSocialAccount = onMonetizeSocialAccount,
+                onPracticeSkill = onPracticeSkill,
+                onTakeMasterclass = onTakeMasterclass,
                 onActionMessageDismissed = onActionMessageDismissed,
                 modifier = Modifier.padding(innerPadding)
             )
@@ -367,6 +397,8 @@ private fun LifeTabContent(
                                 StatType.LOOKS -> stringResource(R.string.stat_looks)
                                 StatType.MONEY -> stringResource(R.string.stat_money)
                                 StatType.NET_WORTH -> stringResource(R.string.label_net_worth)
+                                StatType.FOLLOWERS -> stringResource(R.string.stat_followers)
+                                StatType.SKILL -> stringResource(R.string.stat_skill)
                                 else -> ""
                             }
                         },

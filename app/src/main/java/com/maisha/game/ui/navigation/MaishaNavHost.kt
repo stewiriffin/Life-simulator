@@ -133,6 +133,8 @@ fun MaishaNavHost(
                 onConfirmOverwrite = viewModel::onConfirmOverwrite,
                 onDismissOverwrite = viewModel::onDismissOverwrite,
                 onClearCorruptedSlot = viewModel::onClearCorruptedSlot,
+                onConfirmClearCorrupted = viewModel::onConfirmClearCorrupted,
+                onDismissClearCorrupted = viewModel::onDismissClearCorrupted,
                 onOpenSettings = { navController.navigate(Routes.SETTINGS) }
             )
         }
@@ -255,6 +257,9 @@ fun MaishaNavHost(
                 onRetire = viewModel::onRetire,
                 retirementPensionEstimate = viewModel.retirementPensionEstimate(),
                 onDropOut = viewModel::onDropOut,
+                onStartBusiness = viewModel::onStartBusiness,
+                onSellBusiness = viewModel::onSellBusiness,
+                businessInvestmentTiers = viewModel.businessInvestmentTiers(),
                 onCareerMessageDismissed = viewModel::onCareerMessageDismissed,
                 onPurchaseAsset = viewModel::onPurchaseAsset,
                 onSellAsset = viewModel::onSellAsset,
@@ -269,6 +274,13 @@ fun MaishaNavHost(
                 lawyerExpensiveAffordable = viewModel.canAffordLawyer(com.maisha.game.data.model.LawyerTier.EXPENSIVE),
                 onVisitDoctor = viewModel::onVisitDoctor,
                 onSetLifestyleOption = viewModel::onSetLifestyleOption,
+                onExecuteSideHustle = viewModel::onExecuteSideHustle,
+                onAdoptPet = viewModel::onAdoptPet,
+                onCreateSocialAccount = viewModel::onCreateSocialAccount,
+                onPostSocialContent = viewModel::onPostSocialContent,
+                onMonetizeSocialAccount = viewModel::onMonetizeSocialAccount,
+                onPracticeSkill = viewModel::onPracticeSkill,
+                onTakeMasterclass = viewModel::onTakeMasterclass,
                 onActionMessageDismissed = viewModel::onActionMessageDismissed,
                 onViewCharacterStats = {
                     navController.navigate(Routes.characterStats(slotId))

@@ -113,7 +113,7 @@ class LifeSummaryViewModel @Inject constructor(
                     val showAchievementsTip =
                         OnboardingTips.FIRST_DEATH_ACHIEVEMENTS !in seenTips
                     val netWorth = financeEngine.calculateNetWorth(character)
-                    val deathLabel = deathCauseLabel(cause)
+                    val deathLabel = mortalityEngine.gentleCauseLabel(cause)
                     val achievementProgress = achievementRepository.getProgressSnapshot()
 
                     _uiState.update {
@@ -122,7 +122,7 @@ class LifeSummaryViewModel @Inject constructor(
                             slotId = slotId,
                             character = character,
                             deathCauseLabel = deathLabel,
-                            deathFlavorText = deathFlavorText(cause),
+                            deathFlavorText = mortalityEngine.deathFlavorText(character),
                             netWorth = netWorth,
                             careerRecap = buildCareerRecap(character),
                             educationRecap = EducationFormatter.formatHighestEducation(
@@ -297,7 +297,7 @@ class LifeSummaryViewModel @Inject constructor(
         val (topStatLabel, topStatValue) = topStatForShare(character)
         val badges = unlockedAchievementIds
             .mapNotNull { id -> AchievementCatalog.byId(id) }
-            .take(2)
+            .take(6)
             .map { achievement ->
                 ShareAchievementBadge(
                     titleRes = achievement.titleRes,
@@ -309,6 +309,7 @@ class LifeSummaryViewModel @Inject constructor(
         val topAsset = character.assets.maxByOrNull { it.currentValue }
         val topAssetType = topAsset?.type
         val topAssetSummary = topAsset?.name
+        val careerHeadline = buildShareCareerHeadline(character)
         return ShareCardData(
             characterName = character.name,
             avatarConfig = character.avatarConfig,
@@ -320,13 +321,34 @@ class LifeSummaryViewModel @Inject constructor(
             topStatLabel = topStatLabel,
             topStatValue = topStatValue,
             netWorthFormatted = formatMoney(netWorth, character.countryCode),
-            careerHeadline = buildShareCareerHeadline(character),
+            careerHeadline = careerHeadline,
             careerJobId = careerJobId,
             topAssetType = topAssetType,
             topAssetSummary = topAssetSummary,
             familySummary = buildShareFamilySummary(character),
             closestBondSummary = buildClosestBondRecap(character),
+            legacySentence = buildLegacySentence(
+                character = character,
+                netWorthFormatted = formatMoney(netWorth, character.countryCode),
+                careerHeadline = careerHeadline
+            ),
             achievementBadges = badges
+        )
+    }
+
+    private fun buildLegacySentence(
+        character: Character,
+        netWorthFormatted: String,
+        careerHeadline: String
+    ): String {
+        val children = character.family.count { it.relation == RelationType.CHILD }
+        return context.getString(
+            R.string.share_card_legacy_sentence,
+            character.name,
+            character.age,
+            careerHeadline,
+            netWorthFormatted,
+            children
         )
     }
 
@@ -421,20 +443,6 @@ class LifeSummaryViewModel @Inject constructor(
             RelationshipTier.INSEPARABLE -> context.getString(R.string.tier_inseparable)
         }
         return context.getString(R.string.recap_closest_bond, closest.name, tierName)
-    }
-
-    private fun deathCauseLabel(cause: DeathCause): String = when (cause) {
-        DeathCause.OLD_AGE -> context.getString(R.string.death_cause_old_age)
-        DeathCause.HEALTH_FAILURE -> context.getString(R.string.death_cause_health_failure)
-        DeathCause.ACCIDENT -> context.getString(R.string.death_cause_accident)
-        DeathCause.ILLNESS -> context.getString(R.string.death_cause_illness)
-    }
-
-    private fun deathFlavorText(cause: DeathCause): String = when (cause) {
-        DeathCause.OLD_AGE -> context.getString(R.string.death_flavor_old_age)
-        DeathCause.HEALTH_FAILURE -> context.getString(R.string.death_flavor_health_failure)
-        DeathCause.ACCIDENT -> context.getString(R.string.death_flavor_accident)
-        DeathCause.ILLNESS -> context.getString(R.string.death_flavor_illness)
     }
 
     private fun secondWindBonusLabel(statKey: String): String = when (statKey) {

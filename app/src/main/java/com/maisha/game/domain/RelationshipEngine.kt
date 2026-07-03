@@ -5,11 +5,14 @@ import com.maisha.game.data.CountryCatalog
 import com.maisha.game.data.DatingPool
 import com.maisha.game.data.EconomyScaler
 import com.maisha.game.data.NamePool
+import com.maisha.game.data.PetCatalog
 import com.maisha.game.data.model.AvatarConfig
 import com.maisha.game.data.model.Character
 import com.maisha.game.data.model.Gender
 import com.maisha.game.data.model.MilestoneKind
 import com.maisha.game.data.model.Person
+import com.maisha.game.data.model.Pet
+import com.maisha.game.data.model.PetSpecies
 import com.maisha.game.data.model.RelationType
 import com.maisha.game.data.model.RelationshipDecayNotice
 import com.maisha.game.data.model.RelationshipMilestone
@@ -29,8 +32,19 @@ sealed class ProposalResult {
     data object Rejected : ProposalResult()
 }
 
+sealed class AdoptPetResult {
+    data class Success(val character: Character) : AdoptPetResult()
+    data object InsufficientFunds : AdoptPetResult()
+    data object MaxPetsReached : AdoptPetResult()
+    data object Ineligible : AdoptPetResult()
+}
+
+data class PetYearTickResult(val character: Character)
+
 @Singleton
-class RelationshipEngine @Inject constructor() {
+class RelationshipEngine @Inject constructor(
+    private val financeEngine: FinanceEngine
+) {
 
     /** Maps [Person.relationshipLevel] to a display tier (ESTRANGED through INSEPARABLE). */
     fun getRelationshipTier(person: Person): RelationshipTier =
@@ -57,12 +71,141 @@ class RelationshipEngine @Inject constructor() {
     }
 
     /**
+     * Adopts a shelter pet: deducts scaled adoption fee and appends to [Character.pets].
+     * Capped at [MAX_PETS]; blocked when incarcerated or awaiting trial.
+     */
+    fun adoptPet(character: Character, species: PetSpecies, name: String): AdoptPetResult {
+        if (!character.alive ||
+            character.criminalRecord.currentlyIncarcerated ||
+            character.criminalRecord.awaitingTrial
+        ) {
+            return AdoptPetResult.Ineligible
+        }
+        if (character.pets.size >= MAX_PETS) {
+            return AdoptPetResult.MaxPetsReached
+        }
+        val catalogEntry = PetCatalog.findBySpecies(species) ?: return AdoptPetResult.Ineligible
+        val adoptionFee = EconomyScaler.scaleAmount(catalogEntry.adoptionFee, character.countryCode)
+        if (character.stats.money < adoptionFee) {
+            return AdoptPetResult.InsufficientFunds
+        }
+
+        val trimmedName = name.trim().ifEmpty { catalogEntry.defaultName }
+        val pet = Pet(
+            id = UUID.randomUUID().toString(),
+            name = trimmedName,
+            species = species
+        )
+        val updated = character.copy(
+            stats = character.stats.copy(money = character.stats.money - adoptionFee),
+            pets = character.pets + pet,
+            eventLog = EventLogCap.prepend(
+                character.eventLog,
+                "Adopted ${catalogEntry.displayName.lowercase()} $trimmedName."
+            )
+        )
+        return AdoptPetResult.Success(updated)
+    }
+
+    /**
+     * Ages pets, applies species mortality rolls, and applies happiness loss when a companion dies.
+     */
+    fun tickPetsYear(character: Character): PetYearTickResult {
+        if (character.pets.isEmpty()) return PetYearTickResult(character)
+
+        var happiness = character.stats.happiness
+        var eventLog = character.eventLog
+        val survivors = mutableListOf<Pet>()
+
+        for (pet in character.pets) {
+            val aged = pet.copy(
+                age = pet.age + 1,
+                health = clampStat(pet.health - healthDecayForAge(pet.age + 1))
+            )
+            if (rollsPetDeathThisYear(aged)) {
+                happiness = clampStat(happiness - PET_DEATH_HAPPINESS_PENALTY)
+                eventLog = EventLogCap.prepend(
+                    eventLog,
+                    "${aged.name} (${speciesLabel(aged.species)}) passed away at age ${aged.age}."
+                )
+            } else {
+                survivors += aged.copy(
+                    relationshipLevel = driftPetBond(aged.relationshipLevel)
+                )
+            }
+        }
+
+        return PetYearTickResult(
+            character.copy(
+                pets = survivors,
+                stats = character.stats.copy(happiness = happiness),
+                eventLog = eventLog
+            )
+        )
+    }
+
+    /** Public for unit tests — species-specific mortality probability for one yearly roll. */
+    fun rollsPetDeathThisYear(pet: Pet): Boolean {
+        val chance = petMortalityChance(pet)
+        if (chance <= 0f) return false
+        return Random.nextFloat() < chance
+    }
+
+    fun petMortalityChance(pet: Pet): Float = when (pet.species) {
+        PetSpecies.FISH -> when {
+            pet.age < 2 -> 0.03f
+            pet.age == 2 -> 0.40f
+            else -> 0.95f
+        }
+        PetSpecies.BIRD -> when {
+            pet.age < 8 -> 0.02f + pet.age * 0.01f
+            pet.age < 12 -> 0.10f + (pet.age - 8) * 0.18f
+            else -> 0.92f
+        }
+        PetSpecies.DOG, PetSpecies.CAT -> when {
+            pet.age < 10 -> 0.01f + pet.age * 0.005f
+            pet.age < 15 -> 0.08f + (pet.age - 10) * 0.16f
+            else -> 0.93f
+        }
+        PetSpecies.EXOTIC -> when {
+            pet.age < 12 -> 0.02f + pet.age * 0.008f
+            pet.age < 18 -> 0.10f + (pet.age - 12) * 0.12f
+            else -> 0.90f
+        }
+    }
+
+    private fun healthDecayForAge(age: Int): Int = when {
+        age < 5 -> 0
+        age < 10 -> 1
+        else -> 2
+    }
+
+    private fun driftPetBond(level: Int): Int {
+        val step = 1
+        return when {
+            level > 55 -> (level - step).coerceAtLeast(55)
+            level < 55 -> (level + step).coerceAtMost(55)
+            else -> 55
+        }
+    }
+
+    private fun speciesLabel(species: PetSpecies): String = when (species) {
+        PetSpecies.DOG -> "dog"
+        PetSpecies.CAT -> "cat"
+        PetSpecies.BIRD -> "bird"
+        PetSpecies.FISH -> "fish"
+        PetSpecies.EXOTIC -> "exotic pet"
+    }
+
+    /**
      * Gentle annual drift toward neutral (50) for family not interacted with this year.
      * Spouse/child: 1 pt/year; others: 2 pts/year.
      */
     fun tickFamilyYear(character: Character): FamilyYearTickResult {
         val notices = mutableListOf<RelationshipDecayNotice>()
-        val family = character.family.map { person ->
+        // Support costs use pre-tick ages (care for the year just lived).
+        val withSupport = financeEngine.applyChildSupport(character)
+        val family = withSupport.family.map { person ->
             val beforeTier = relationshipTierFor(person.relationshipLevel)
             val decayed = if (!person.interactedThisYear) {
                 person.copy(relationshipLevel = driftTowardNeutral(person.relationshipLevel, person.relation))
@@ -83,7 +226,11 @@ class RelationshipEngine @Inject constructor() {
                 interactedThisYear = false
             ).coerceRelationship()
         }
-        return FamilyYearTickResult(family = family, decayNotices = notices)
+        return FamilyYearTickResult(
+            family = family,
+            decayNotices = notices,
+            stats = withSupport.stats
+        )
     }
 
     /** True when relationship is CLOSE or INSEPARABLE and person is alive. */
@@ -177,6 +324,12 @@ class RelationshipEngine @Inject constructor() {
                 message = "You can't travel while incarcerated."
             )
         }
+        if (isParentingAction(interactionType) && !Companion.isMinorChild(member)) {
+            return FamilyInteractionResult(
+                character = character,
+                message = "That only works with your children under 18."
+            )
+        }
         return when (interactionType) {
             InteractionType.SPEND_TIME -> applySpendTime(character, memberIndex, member)
             InteractionType.ARGUE -> applyArgue(character, memberIndex, member)
@@ -188,6 +341,9 @@ class RelationshipEngine @Inject constructor() {
             InteractionType.ASK_FOR_ADVICE -> applyAskForAdvice(character, memberIndex, member)
             InteractionType.PRANK -> applyPrank(character, memberIndex, member)
             InteractionType.SET_UP_ON_DATE -> applySetUpOnDate(character, memberIndex, member)
+            InteractionType.HELP_WITH_HOMEWORK -> applyHelpWithHomework(character, memberIndex, member)
+            InteractionType.PAY_ALLOWANCE -> applyPayAllowance(character, memberIndex, member)
+            InteractionType.DISCIPLINE -> applyDiscipline(character, memberIndex, member)
         }
     }
 
@@ -285,7 +441,10 @@ class RelationshipEngine @Inject constructor() {
                 health = Random.nextInt(50, 81),
                 happiness = Random.nextInt(50, 81)
             ),
-            avatarConfig = AvatarConfig.random(),
+            avatarConfig = FamilyGenerator.inheritAvatarConfig(
+                character.avatarConfig,
+                spouse.avatarConfig
+            ),
             countryCode = character.countryCode,
             secondaryCountryCode = if (isCrossCountry) spouse.countryCode else null
         )
@@ -642,6 +801,90 @@ class RelationshipEngine @Inject constructor() {
         )
     }
 
+    private fun applyHelpWithHomework(
+        character: Character,
+        memberIndex: Int,
+        member: Person
+    ): FamilyInteractionResult {
+        val updatedMember = member.copy(
+            relationshipLevel = clampRelationshipLevel(
+                member.relationshipLevel + HOMEWORK_RELATIONSHIP_BOOST
+            ),
+            stats = member.stats.copy(
+                smarts = clampStat(member.stats.smarts + HOMEWORK_CHILD_SMARTS_BOOST)
+            )
+        ).coerceRelationship()
+        return FamilyInteractionResult(
+            character = commitMemberUpdate(
+                character, memberIndex, updatedMember,
+                interactionType = InteractionType.HELP_WITH_HOMEWORK
+            ).copy(
+                stats = character.stats.copy(
+                    happiness = clampStat(character.stats.happiness + HOMEWORK_HAPPINESS_DELTA),
+                    health = clampStat(character.stats.health + HOMEWORK_HEALTH_DELTA)
+                )
+            ),
+            message = "You helped ${member.name} with homework. They seem more confident."
+        )
+    }
+
+    private fun applyPayAllowance(
+        character: Character,
+        memberIndex: Int,
+        member: Person
+    ): FamilyInteractionResult {
+        val cost = allowanceCost(character)
+        if (character.stats.money < cost) {
+            return FamilyInteractionResult(
+                character = character,
+                message = "You can't afford allowance (${formatMoney(cost, character.countryCode)})."
+            )
+        }
+        val updatedMember = member.copy(
+            relationshipLevel = clampRelationshipLevel(
+                member.relationshipLevel + ALLOWANCE_RELATIONSHIP_BOOST
+            )
+        ).coerceRelationship()
+        return FamilyInteractionResult(
+            character = commitMemberUpdate(
+                character, memberIndex, updatedMember,
+                interactionType = InteractionType.PAY_ALLOWANCE
+            ).copy(
+                stats = character.stats.copy(
+                    money = character.stats.money - cost,
+                    happiness = clampStat(character.stats.happiness + ALLOWANCE_HAPPINESS_DELTA)
+                )
+            ),
+            message = "You gave ${member.name} ${formatMoney(cost, character.countryCode)} allowance."
+        )
+    }
+
+    private fun applyDiscipline(
+        character: Character,
+        memberIndex: Int,
+        member: Person
+    ): FamilyInteractionResult {
+        val updatedMember = member.copy(
+            relationshipLevel = clampRelationshipLevel(
+                member.relationshipLevel + DISCIPLINE_RELATIONSHIP_DELTA
+            )
+        ).coerceRelationship()
+        return FamilyInteractionResult(
+            character = commitMemberUpdate(
+                character, memberIndex, updatedMember,
+                interactionType = InteractionType.DISCIPLINE,
+                milestoneKind = MilestoneKind.BIG_ARGUMENT,
+                subjectName = member.name
+            ).copy(
+                stats = character.stats.copy(
+                    happiness = clampStat(character.stats.happiness + DISCIPLINE_HAPPINESS_DELTA),
+                    health = clampStat(character.stats.health + DISCIPLINE_HEALTH_DELTA)
+                )
+            ),
+            message = "You disciplined ${member.name}. The house is quieter — and tenser."
+        )
+    }
+
     private fun commitMemberUpdate(
         character: Character,
         memberIndex: Int,
@@ -686,11 +929,19 @@ class RelationshipEngine @Inject constructor() {
         return when (interactionType) {
             InteractionType.ARGUE,
             InteractionType.INSULT,
+            InteractionType.DISCIPLINE,
             InteractionType.TRAVEL_TOGETHER,
             InteractionType.SET_UP_ON_DATE -> true
             InteractionType.GIFT -> giftTier == GiftTier.MEDIUM || giftTier == GiftTier.LARGE
             else -> false
         }
+    }
+
+    private fun isParentingAction(type: InteractionType): Boolean = when (type) {
+        InteractionType.HELP_WITH_HOMEWORK,
+        InteractionType.PAY_ALLOWANCE,
+        InteractionType.DISCIPLINE -> true
+        else -> false
     }
 
     private fun driftTowardNeutral(level: Int, relation: RelationType): Int {
@@ -726,9 +977,34 @@ class RelationshipEngine @Inject constructor() {
         const val REQUIRES_CHILD_TAG = "requires_child"
         const val REQUIRES_PARENT_TAG = "requires_parent"
         const val REQUIRES_CHILD_SCHOOL_AGE_TAG = "requires_child_school_age"
+        const val REQUIRES_CHILD_TODDLER_TAG = "requires_child_toddler"
+        const val REQUIRES_CHILD_PRIMARY_TAG = "requires_child_primary"
+        const val REQUIRES_CHILD_TEEN_TAG = "requires_child_teen"
         const val REQUIRES_SINGLE_TAG = "requires_single"
         const val REQUIRES_MIXED_HERITAGE_TAG = "requires_mixed_heritage"
         const val REQUIRES_MIXED_HERITAGE_CHILD_TAG = "requires_mixed_heritage_child"
+        const val REQUIRES_PET_TAG = "requires_pet"
+
+        const val MAX_PETS = 5
+        const val PET_DEATH_HAPPINESS_PENALTY = 25
+        const val MINOR_CHILD_MAX_AGE = 18
+        const val ALLOWANCE_BASE_COST_KENYA = 3_000
+        const val CHILD_TODDLER_MIN_AGE = 2
+        const val CHILD_TODDLER_MAX_AGE = 4
+        const val CHILD_PRIMARY_MIN_AGE = 6
+        const val CHILD_PRIMARY_MAX_AGE = 10
+        const val CHILD_TEEN_MIN_AGE = 14
+        const val CHILD_TEEN_MAX_AGE = 17
+
+        private const val HOMEWORK_RELATIONSHIP_BOOST = 8
+        private const val HOMEWORK_CHILD_SMARTS_BOOST = 2
+        private const val HOMEWORK_HAPPINESS_DELTA = 2
+        private const val HOMEWORK_HEALTH_DELTA = -1
+        private const val ALLOWANCE_RELATIONSHIP_BOOST = 10
+        private const val ALLOWANCE_HAPPINESS_DELTA = 2
+        private const val DISCIPLINE_RELATIONSHIP_DELTA = -8
+        private const val DISCIPLINE_HAPPINESS_DELTA = -4
+        private const val DISCIPLINE_HEALTH_DELTA = -1
 
         const val PROPOSAL_THRESHOLD = 70
         const val TRAVEL_MIN_RELATIONSHIP = 40
@@ -753,7 +1029,15 @@ class RelationshipEngine @Inject constructor() {
         private const val ASK_MONEY_SUCCESS_CHANCE = 0.7f
         private const val DECAY_POINTS_PER_YEAR = 1
         private const val DECAY_POINTS_COHABITING = 1
+
+        fun allowanceCost(character: Character): Int =
+            EconomyScaler.scaleAmount(ALLOWANCE_BASE_COST_KENYA, character.countryCode)
+
+        fun isMinorChild(person: Person): Boolean =
+            person.relation == RelationType.CHILD && person.alive && person.age < MINOR_CHILD_MAX_AGE
     }
+
+    fun allowanceCost(character: Character): Int = Companion.allowanceCost(character)
 }
 
 fun Character.hasSpouse(): Boolean =
@@ -767,6 +1051,8 @@ fun Character.isMarried(): Boolean =
 
 fun Character.hasChild(): Boolean =
     family.any { it.relation == RelationType.CHILD }
+
+fun Character.hasPet(): Boolean = pets.isNotEmpty()
 
 fun Character.hasMixedHeritageParents(): Boolean {
     val mother = family.find { it.relation == RelationType.MOTHER }

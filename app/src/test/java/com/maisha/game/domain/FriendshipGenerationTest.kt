@@ -12,7 +12,7 @@ import org.junit.Test
 
 class FriendshipGenerationTest {
 
-    private val engine = RelationshipEngine()
+    private val engine = RelationshipEngine(FinanceEngine())
 
     @Test
     fun tooYoung_returnsNull() {

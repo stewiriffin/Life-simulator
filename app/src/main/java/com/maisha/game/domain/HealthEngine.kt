@@ -162,13 +162,18 @@ class HealthEngine @Inject constructor() {
      * Work-effort stress from [CareerEngine.workYear] or [CareerEngine.applyWorkEffort].
      * [WorkEffort.GRIND] doubles the penalty versus normal effort.
      */
-    fun applyWorkEffortStress(character: Character, effort: WorkEffort): Character {
+    fun applyWorkEffortStress(
+        character: Character,
+        effort: WorkEffort,
+        extraMultiplier: Float = 1f
+    ): Character {
         if (character.career.currentJob == null || effort == WorkEffort.COAST) return character
-        val multiplier = when (effort) {
+        val effortMultiplier = when (effort) {
             WorkEffort.GRIND -> 2f
             WorkEffort.NORMAL -> 1f
             WorkEffort.COAST -> 0f
         }
+        val multiplier = effortMultiplier * extraMultiplier.coerceAtLeast(1f)
         val healthDrain = (WORK_EFFORT_STRESS_HEALTH * multiplier).roundToInt()
         val happinessDrain = (WORK_EFFORT_STRESS_HAPPINESS * multiplier).roundToInt()
         return character.copy(
@@ -355,7 +360,7 @@ class HealthEngine @Inject constructor() {
     }
 
     private fun illnessName(severity: Int): String {
-        val minor = listOf("Common cold", "Mild flu", "Stomach bug")
+        val minor = listOf("Common cold", "Mild flu", "Stomach bug", POOR_EYESIGHT_CONDITION)
         val moderate = listOf("Typhoid", "Malaria", "Persistent infection")
         val serious = listOf("Severe pneumonia", "Complicated malaria", "Major infection")
         return when (severity) {
@@ -368,6 +373,7 @@ class HealthEngine @Inject constructor() {
     companion object {
         const val HEALTH_TAG = "health"
         const val CRIME_TAG = "crime"
+        const val POOR_EYESIGHT_CONDITION = "Poor Eyesight"
         private const val BASE_ILLNESS_CHANCE = 0.035f
 
         const val GYM_YEARLY_COST = 24_000

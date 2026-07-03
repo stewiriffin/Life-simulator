@@ -452,6 +452,8 @@ object AppIcons {
         StatType.RELATIONSHIP -> Relationship
         StatType.CONDITION -> Condition
         StatType.PERFORMANCE -> Performance
+        StatType.FOLLOWERS -> Looks
+        StatType.SKILL -> Smarts
     }
 
     fun forAchievementCategory(category: AchievementCategory): ImageVector = when (category) {
@@ -489,6 +491,9 @@ object AppIcons {
         InteractionType.PRANK -> Prank
         InteractionType.SET_UP_ON_DATE -> SetUpDate
         InteractionType.INSULT -> Insult
+        InteractionType.HELP_WITH_HOMEWORK -> Advice
+        InteractionType.PAY_ALLOWANCE -> AskMoney
+        InteractionType.DISCIPLINE -> Argue
     }
 
     private fun icon(name: String, block: androidx.compose.ui.graphics.vector.PathBuilder.() -> Unit): ImageVector {

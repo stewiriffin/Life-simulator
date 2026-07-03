@@ -3,9 +3,10 @@ package com.maisha.game.domain
 
 import com.maisha.game.data.model.Person
 import com.maisha.game.data.model.RelationshipDecayNotice
-import com.maisha.game.data.model.RelationshipTier
+import com.maisha.game.data.model.Stats
 
 data class FamilyYearTickResult(
     val family: List<Person>,
-    val decayNotices: List<RelationshipDecayNotice> = emptyList()
+    val decayNotices: List<RelationshipDecayNotice> = emptyList(),
+    val stats: Stats
 )

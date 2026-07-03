@@ -59,7 +59,9 @@ enum class StatType {
     NET_WORTH,
     RELATIONSHIP,
     CONDITION,
-    PERFORMANCE
+    PERFORMANCE,
+    FOLLOWERS,
+    SKILL
 }
 
 fun StatType.color(): Color = when (this) {
@@ -72,6 +74,8 @@ fun StatType.color(): Color = when (this) {
     StatType.RELATIONSHIP -> StatRelationship
     StatType.CONDITION -> StatCondition
     StatType.PERFORMANCE -> StatPerformance
+    StatType.FOLLOWERS -> StatLooks
+    StatType.SKILL -> StatSmarts
 }
 
 fun StatType.icon(): ImageVector = AppIcons.forStat(this)
@@ -87,6 +91,8 @@ private fun StatType.defaultLabel(): String = when (this) {
     StatType.RELATIONSHIP -> stringResource(R.string.stat_relationship)
     StatType.CONDITION -> stringResource(R.string.stat_condition)
     StatType.PERFORMANCE -> stringResource(R.string.stat_performance)
+    StatType.FOLLOWERS -> stringResource(R.string.stat_followers)
+    StatType.SKILL -> stringResource(R.string.stat_skill)
 }
 
 @Composable

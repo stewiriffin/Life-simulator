@@ -1,4 +1,4 @@
-// app/src/main/java/com/maisha/game/ui/share/ShareCardComposable.kt (modified — object illustrations)
+// app/src/main/java/com/maisha/game/ui/share/ShareCardComposable.kt
 package com.maisha.game.ui.share
 
 import androidx.compose.foundation.background
@@ -26,15 +26,19 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.maisha.game.R
 import com.maisha.game.data.IllustrationCatalog
+import com.maisha.game.data.model.AchievementCategory
+import com.maisha.game.data.model.AvatarConfig
 import com.maisha.game.data.model.IllustrationRef
+import com.maisha.game.ui.avatar.AvatarImage
 import com.maisha.game.ui.components.CountryFlag
 import com.maisha.game.ui.components.IllustrationImage
-import com.maisha.game.ui.avatar.AvatarImage
 import com.maisha.game.ui.theme.GoldAccent
+import com.maisha.game.ui.theme.MaishaTheme
 import com.maisha.game.ui.theme.NavyDeep
 import com.maisha.game.ui.theme.NavyElevated
 import com.maisha.game.ui.theme.NavySurface
@@ -51,82 +55,79 @@ fun ShareCardComposable(
 ) {
     Box(
         modifier = modifier
-            .clip(RoundedCornerShape(24.dp))
+            .clip(RoundedCornerShape(28.dp))
             .background(
-                brush = Brush.linearGradient(
+                brush = Brush.verticalGradient(
                     colors = listOf(
                         NavyDeep,
                         NavySurface,
-                        NavyElevated.copy(alpha = 0.95f)
+                        NavyElevated,
+                        NavyDeep
                     )
                 )
             )
             .border(
-                width = 1.5.dp,
+                width = 2.dp,
                 brush = Brush.linearGradient(
                     colors = listOf(
-                        TealPrimary.copy(alpha = 0.6f),
-                        GoldAccent.copy(alpha = 0.35f),
-                        TealLight.copy(alpha = 0.2f)
+                        TealPrimary.copy(alpha = 0.7f),
+                        GoldAccent.copy(alpha = 0.45f),
+                        TealLight.copy(alpha = 0.25f)
                     )
                 ),
-                shape = RoundedCornerShape(24.dp)
+                shape = RoundedCornerShape(28.dp)
             )
     ) {
         Box(
             modifier = Modifier
-                .align(Alignment.TopEnd)
-                .padding(20.dp)
-                .size(120.dp)
+                .align(Alignment.TopCenter)
+                .padding(top = 40.dp)
+                .size(220.dp)
                 .clip(CircleShape)
-                .background(TealPrimary.copy(alpha = 0.08f))
+                .background(TealPrimary.copy(alpha = 0.1f))
         )
         Box(
             modifier = Modifier
-                .align(Alignment.BottomStart)
-                .padding(16.dp)
-                .size(80.dp)
+                .align(Alignment.BottomEnd)
+                .padding(24.dp)
+                .size(140.dp)
                 .clip(CircleShape)
-                .background(GoldAccent.copy(alpha = 0.06f))
+                .background(GoldAccent.copy(alpha = 0.08f))
         )
 
         Column(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(horizontal = 28.dp, vertical = 32.dp),
+                .padding(horizontal = 32.dp, vertical = 40.dp),
+            horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.SpaceBetween
         ) {
-            Column {
+            Column(horizontalAlignment = Alignment.CenterHorizontally) {
                 ShareWordmark()
-                Spacer(modifier = Modifier.height(16.dp))
+                Spacer(modifier = Modifier.height(28.dp))
+                AvatarImage(
+                    config = data.avatarConfig,
+                    size = 120.dp,
+                    age = data.ageAtDeath
+                )
+                Spacer(modifier = Modifier.height(18.dp))
                 Row(
                     verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(16.dp)
+                    horizontalArrangement = Arrangement.spacedBy(10.dp)
                 ) {
-                    AvatarImage(
-                        config = data.avatarConfig,
-                        size = 72.dp,
-                        age = data.ageAtDeath
+                    CountryFlag(countryCode = data.countryCode, size = 28.dp)
+                    Text(
+                        text = data.characterName,
+                        color = TextPrimary,
+                        fontSize = 34.sp,
+                        fontWeight = FontWeight.Bold,
+                        maxLines = 2,
+                        overflow = TextOverflow.Ellipsis,
+                        textAlign = TextAlign.Center,
+                        lineHeight = 38.sp
                     )
-                    Column(modifier = Modifier.weight(1f)) {
-                        Row(
-                            verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.spacedBy(8.dp)
-                        ) {
-                            CountryFlag(countryCode = data.countryCode, size = 24.dp)
-                            Text(
-                                text = data.characterName,
-                                color = TextPrimary,
-                                fontSize = 32.sp,
-                                fontWeight = FontWeight.Bold,
-                                maxLines = 2,
-                                overflow = TextOverflow.Ellipsis,
-                                lineHeight = 36.sp
-                            )
-                        }
-                    }
                 }
-                Spacer(modifier = Modifier.height(12.dp))
+                Spacer(modifier = Modifier.height(10.dp))
                 Text(
                     text = stringResource(
                         R.string.share_card_life_span,
@@ -134,37 +135,42 @@ fun ShareCardComposable(
                         data.deathYear
                     ),
                     color = TextSecondary,
-                    fontSize = 16.sp,
+                    fontSize = 18.sp,
                     fontWeight = FontWeight.Medium
                 )
-                Spacer(modifier = Modifier.height(4.dp))
                 Text(
                     text = stringResource(R.string.format_age, data.ageAtDeath),
                     color = TealLight,
-                    fontSize = 15.sp,
+                    fontSize = 16.sp,
                     fontWeight = FontWeight.SemiBold
                 )
-                Spacer(modifier = Modifier.height(14.dp))
+                Spacer(modifier = Modifier.height(16.dp))
                 Box(
                     modifier = Modifier
-                        .clip(RoundedCornerShape(12.dp))
-                        .background(Color.White.copy(alpha = 0.06f))
-                        .padding(horizontal = 14.dp, vertical = 10.dp)
+                        .fillMaxWidth()
+                        .clip(RoundedCornerShape(14.dp))
+                        .background(Color.White.copy(alpha = 0.07f))
+                        .padding(horizontal = 16.dp, vertical = 12.dp)
                 ) {
                     Text(
                         text = data.deathCauseLabel,
-                        color = TextPrimary.copy(alpha = 0.9f),
-                        fontSize = 14.sp,
-                        textAlign = TextAlign.Start,
-                        lineHeight = 18.sp
+                        color = TextPrimary.copy(alpha = 0.92f),
+                        fontSize = 15.sp,
+                        textAlign = TextAlign.Center,
+                        lineHeight = 20.sp,
+                        modifier = Modifier.fillMaxWidth()
                     )
                 }
             }
 
-            Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+            Column(
+                modifier = Modifier.fillMaxWidth(),
+                verticalArrangement = Arrangement.spacedBy(12.dp),
+                horizontalAlignment = Alignment.CenterHorizontally
+            ) {
                 Row(
                     modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(10.dp)
+                    horizontalArrangement = Arrangement.spacedBy(12.dp)
                 ) {
                     ShareStatChip(
                         label = data.topStatLabel,
@@ -184,16 +190,24 @@ fun ShareCardComposable(
                     },
                     text = data.careerHeadline
                 )
-                if (data.topAssetType != null && data.topAssetSummary != null) {
-                    ShareHighlightLine(
-                        illustration = IllustrationCatalog.getIllustrationForAsset(data.topAssetType),
-                        text = data.topAssetSummary
-                    )
-                }
                 ShareHighlightLine(
                     illustration = null,
                     text = data.familySummary
                 )
+                if (data.legacySentence.isNotBlank()) {
+                    Text(
+                        text = data.legacySentence,
+                        color = TextSecondary,
+                        fontSize = 14.sp,
+                        textAlign = TextAlign.Center,
+                        lineHeight = 20.sp,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clip(RoundedCornerShape(12.dp))
+                            .background(GoldAccent.copy(alpha = 0.1f))
+                            .padding(horizontal = 14.dp, vertical = 12.dp)
+                    )
+                }
                 if (data.achievementBadges.isNotEmpty()) {
                     Row(
                         modifier = Modifier.fillMaxWidth(),
@@ -206,13 +220,23 @@ fun ShareCardComposable(
                 }
             }
 
-            Text(
-                text = stringResource(R.string.share_card_footer),
-                color = TextMuted,
-                fontSize = 11.sp,
-                textAlign = TextAlign.Center,
-                modifier = Modifier.fillMaxWidth()
-            )
+            Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                Text(
+                    text = stringResource(R.string.share_card_watermark),
+                    color = GoldAccent.copy(alpha = 0.75f),
+                    fontSize = 12.sp,
+                    fontWeight = FontWeight.Bold,
+                    letterSpacing = 1.5.sp,
+                    textAlign = TextAlign.Center
+                )
+                Text(
+                    text = stringResource(R.string.share_card_footer),
+                    color = TextMuted,
+                    fontSize = 11.sp,
+                    textAlign = TextAlign.Center,
+                    modifier = Modifier.padding(top = 4.dp)
+                )
+            }
         }
     }
 }
@@ -245,20 +269,21 @@ private fun ShareStatChip(
         modifier = modifier
             .clip(RoundedCornerShape(14.dp))
             .background(NavyDeep.copy(alpha = 0.45f))
-            .padding(horizontal = 12.dp, vertical = 12.dp),
-        verticalArrangement = Arrangement.spacedBy(4.dp)
+            .padding(horizontal = 12.dp, vertical = 14.dp),
+        verticalArrangement = Arrangement.spacedBy(4.dp),
+        horizontalAlignment = Alignment.CenterHorizontally
     ) {
         Text(
             text = label,
             color = TextMuted,
-            fontSize = 11.sp,
+            fontSize = 12.sp,
             maxLines = 1,
             overflow = TextOverflow.Ellipsis
         )
         Text(
             text = value,
             color = accent,
-            fontSize = 17.sp,
+            fontSize = 20.sp,
             fontWeight = FontWeight.Bold,
             maxLines = 1,
             overflow = TextOverflow.Ellipsis
@@ -276,7 +301,7 @@ private fun ShareHighlightLine(
             .fillMaxWidth()
             .clip(RoundedCornerShape(10.dp))
             .background(Color.White.copy(alpha = 0.04f))
-            .padding(horizontal = 12.dp, vertical = 8.dp),
+            .padding(horizontal = 12.dp, vertical = 10.dp),
         horizontalArrangement = Arrangement.spacedBy(8.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
@@ -289,10 +314,10 @@ private fun ShareHighlightLine(
         Text(
             text = text,
             color = TextSecondary,
-            fontSize = 13.sp,
+            fontSize = 14.sp,
             maxLines = 2,
             overflow = TextOverflow.Ellipsis,
-            lineHeight = 16.sp,
+            lineHeight = 18.sp,
             modifier = Modifier.weight(1f, fill = false)
         )
     }
@@ -355,4 +380,36 @@ fun achievementEmoji(iconName: String): String = when (iconName) {
     "handshake" -> "🤝"
     "friends" -> "👥"
     else -> "🏆"
+}
+
+@Preview(showBackground = true, widthDp = 270, heightDp = 480)
+@Composable
+private fun ShareCardPreview() {
+    MaishaTheme {
+        ShareCardComposable(
+            data = ShareCardData(
+                characterName = "Amina Otieno",
+                avatarConfig = AvatarConfig.DEFAULT,
+                birthYear = 1965,
+                deathYear = 2040,
+                ageAtDeath = 75,
+                countryCode = "KE",
+                deathCauseLabel = "Passed away peacefully in old age",
+                topStatLabel = "Happiness",
+                topStatValue = 88,
+                netWorthFormatted = "KES 2.4M",
+                careerHeadline = "Teacher · Level 4",
+                familySummary = "Married with 2 children",
+                legacySentence = "Amina Otieno lived 75 years as a Teacher, built KES 2.4M, and raised 2 children.",
+                achievementBadges = listOf(
+                    ShareAchievementBadge(
+                        titleRes = R.string.app_name,
+                        emoji = "🏆",
+                        category = AchievementCategory.FAMILY
+                    )
+                )
+            ),
+            modifier = Modifier.fillMaxSize()
+        )
+    }
 }

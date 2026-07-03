@@ -33,8 +33,12 @@ data class CharacterEntity(
     val educationJson: String = "{}",
     val careerJson: String = "{}",
     val assetsJson: String = "[]",
+    val petsJson: String = "[]",
     val criminalRecordJson: String = "{}",
     val healthConditionsJson: String = "[]",
     val generationNumber: Int = 1,
-    val lifestyleJson: String = "{}"
+    val lifestyleJson: String = "{}",
+    val socialMediaJson: String = "{}",
+    val skillsJson: String = "[]",
+    val businessesJson: String = "[]"
 )

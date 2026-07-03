@@ -19,6 +19,9 @@ import com.maisha.game.data.model.Character
 import com.maisha.game.data.model.CrimeType
 import com.maisha.game.data.model.Expression
 import com.maisha.game.data.model.EventChoice
+import com.maisha.game.data.PetCatalog
+import com.maisha.game.data.model.HustleType
+import com.maisha.game.data.model.PetSpecies
 import com.maisha.game.data.model.Job
 import com.maisha.game.data.model.LawyerTier
 import com.maisha.game.data.model.LifeEvent
@@ -27,6 +30,7 @@ import com.maisha.game.data.model.RelationshipDecayNotice
 import com.maisha.game.data.model.RelationshipTier
 import com.maisha.game.data.model.SchoolStage
 import com.maisha.game.data.model.Stats
+import com.maisha.game.domain.AdoptPetResult
 import com.maisha.game.domain.AgeUpResult
 import com.maisha.game.domain.AchievementEngine
 import com.maisha.game.domain.CareerEngine
@@ -42,6 +46,16 @@ import com.maisha.game.domain.ProposalResult
 import com.maisha.game.domain.PurchaseResult
 import com.maisha.game.domain.RepairResult
 import com.maisha.game.domain.RetirementResult
+import com.maisha.game.domain.SideHustleFailure
+import com.maisha.game.domain.SideHustleResult
+import com.maisha.game.domain.BusinessFailure
+import com.maisha.game.domain.BusinessResult
+import com.maisha.game.domain.SkillFailure
+import com.maisha.game.domain.SkillResult
+import com.maisha.game.data.model.BusinessIndustry
+import com.maisha.game.domain.SocialMediaFailure
+import com.maisha.game.domain.SocialMediaResult
+import com.maisha.game.data.model.SkillType
 import com.maisha.game.domain.TrialResult
 import com.maisha.game.domain.hasSpouse
 import com.maisha.game.feedback.FeedbackCue
@@ -412,6 +426,78 @@ class LifeViewModel @Inject constructor(
                     eligibleJobs = careerEngine.getEligibleJobs(updatedCharacter),
                     netWorth = financeEngine.calculateNetWorth(updatedCharacter)
                 )
+            }
+        }
+    }
+
+    fun businessInvestmentTiers(): List<Int> {
+        val character = _uiState.value.character ?: return emptyList()
+        return gameEngine.businessInvestmentTiers(character)
+    }
+
+    fun onStartBusiness(name: String, industry: BusinessIndustry, investment: Int) {
+        val character = _uiState.value.character ?: return
+        viewModelScope.launch {
+            val statsBefore = character.stats
+            when (val result = gameEngine.startBusiness(character, name, industry, investment)) {
+                is BusinessResult.Success -> {
+                    persist(result.character)
+                    processMidLifeAchievements(result.character)
+                    appendStatDeltas(buildStatDeltas(statsBefore, result.character.stats))
+                    _uiState.update {
+                        it.copy(
+                            character = result.character,
+                            careerMessage = context.getString(
+                                R.string.msg_business_started,
+                                result.business?.name ?: name
+                            ),
+                            netWorth = financeEngine.calculateNetWorth(result.character)
+                        )
+                    }
+                }
+                is BusinessResult.Failed -> {
+                    val message = when (result.reason) {
+                        BusinessFailure.INSUFFICIENT_FUNDS ->
+                            context.getString(R.string.msg_business_insufficient)
+                        BusinessFailure.MAX_BUSINESSES ->
+                            context.getString(R.string.msg_business_max)
+                        else -> context.getString(R.string.msg_business_ineligible)
+                    }
+                    _uiState.update { it.copy(careerMessage = message) }
+                }
+            }
+        }
+    }
+
+    fun onSellBusiness(businessId: String) {
+        val character = _uiState.value.character ?: return
+        viewModelScope.launch {
+            val statsBefore = character.stats
+            when (val result = gameEngine.sellBusiness(character, businessId)) {
+                is BusinessResult.Success -> {
+                    persist(result.character)
+                    processMidLifeAchievements(result.character)
+                    appendStatDeltas(buildStatDeltas(statsBefore, result.character.stats))
+                    _uiState.update {
+                        it.copy(
+                            character = result.character,
+                            careerMessage = context.getString(
+                                R.string.msg_business_sold,
+                                result.business?.name.orEmpty(),
+                                formatMoney(
+                                    result.business?.valuation ?: 0,
+                                    result.character.countryCode
+                                )
+                            ),
+                            netWorth = financeEngine.calculateNetWorth(result.character)
+                        )
+                    }
+                }
+                is BusinessResult.Failed -> {
+                    _uiState.update {
+                        it.copy(careerMessage = context.getString(R.string.msg_business_ineligible))
+                    }
+                }
             }
         }
     }
@@ -803,6 +889,268 @@ class LifeViewModel @Inject constructor(
                     ),
                     netWorth = financeEngine.calculateNetWorth(updated)
                 )
+            }
+        }
+    }
+
+    fun onExecuteSideHustle(hustleType: HustleType) {
+        val character = _uiState.value.character ?: return
+        if (!character.alive || character.criminalRecord.currentlyIncarcerated) return
+
+        viewModelScope.launch {
+            val statsBefore = character.stats
+            when (val result = gameEngine.executeSideHustle(character, hustleType)) {
+                is SideHustleResult.Success -> {
+                    persist(result.character)
+                    processMidLifeAchievements(result.character)
+                    val statDeltas = buildStatDeltas(statsBefore, result.character.stats)
+                    appendStatDeltas(statDeltas)
+                    _uiState.update {
+                        it.copy(
+                            character = result.character,
+                            actionMessage = context.getString(
+                                R.string.msg_side_hustle_success,
+                                formatMoney(result.payout, result.character.countryCode)
+                            ),
+                            netWorth = financeEngine.calculateNetWorth(result.character)
+                        )
+                    }
+                }
+                is SideHustleResult.Failed -> {
+                    val message = when (result.reason) {
+                        SideHustleFailure.ALREADY_DONE_THIS_YEAR ->
+                            context.getString(R.string.msg_side_hustle_already_done)
+                        SideHustleFailure.PREREQUISITES_NOT_MET ->
+                            context.getString(R.string.msg_side_hustle_prerequisites)
+                        SideHustleFailure.INELIGIBLE ->
+                            context.getString(R.string.msg_side_hustle_prerequisites)
+                    }
+                    _uiState.update { it.copy(actionMessage = message) }
+                }
+            }
+        }
+    }
+
+    fun onAdoptPet(species: PetSpecies) {
+        val character = _uiState.value.character ?: return
+        if (!character.alive || character.criminalRecord.currentlyIncarcerated) return
+
+        viewModelScope.launch {
+            val defaultName = PetCatalog.findBySpecies(species)?.defaultName ?: "Pet"
+            val statsBefore = character.stats
+            when (val result = gameEngine.adoptPet(character, species, defaultName)) {
+                is AdoptPetResult.Success -> {
+                    persist(result.character)
+                    processMidLifeAchievements(result.character)
+                    appendStatDeltas(buildStatDeltas(statsBefore, result.character.stats))
+                    _uiState.update {
+                        it.copy(
+                            character = result.character,
+                            actionMessage = context.getString(
+                                R.string.msg_adopt_pet_success,
+                                defaultName
+                            ),
+                            netWorth = financeEngine.calculateNetWorth(result.character)
+                        )
+                    }
+                }
+                AdoptPetResult.InsufficientFunds -> {
+                    _uiState.update {
+                        it.copy(actionMessage = context.getString(R.string.msg_adopt_pet_insufficient))
+                    }
+                }
+                AdoptPetResult.MaxPetsReached -> {
+                    _uiState.update {
+                        it.copy(actionMessage = context.getString(R.string.msg_adopt_pet_max))
+                    }
+                }
+                AdoptPetResult.Ineligible -> Unit
+            }
+        }
+    }
+
+    fun onCreateSocialAccount() {
+        val character = _uiState.value.character ?: return
+        viewModelScope.launch {
+            when (val result = gameEngine.createSocialMediaAccount(character)) {
+                is SocialMediaResult.Success -> {
+                    persist(result.character)
+                    _uiState.update {
+                        it.copy(
+                            character = result.character,
+                            actionMessage = context.getString(R.string.msg_social_account_created),
+                            eligibleJobs = careerEngine.getEligibleJobs(result.character)
+                        )
+                    }
+                }
+                is SocialMediaResult.Failed -> {
+                    val message = when (result.reason) {
+                        SocialMediaFailure.ALREADY_HAS_ACCOUNT ->
+                            context.getString(R.string.msg_social_already_has_account)
+                        else -> context.getString(R.string.msg_social_ineligible)
+                    }
+                    _uiState.update { it.copy(actionMessage = message) }
+                }
+            }
+        }
+    }
+
+    fun onPostSocialContent() {
+        val character = _uiState.value.character ?: return
+        viewModelScope.launch {
+            when (val result = gameEngine.postSocialMediaContent(character)) {
+                is SocialMediaResult.Success -> {
+                    persist(result.character)
+                    if (result.followersGained != 0) {
+                        val sign = if (result.followersGained > 0) "+" else ""
+                        appendStatDeltas(
+                            listOf(
+                                StatDeltaEvent(
+                                    type = StatType.FOLLOWERS,
+                                    delta = result.followersGained,
+                                    displayText = "$sign${result.followersGained}"
+                                )
+                            )
+                        )
+                    }
+                    val message = if (result.wentViral) {
+                        context.getString(R.string.msg_social_post_viral, result.followersGained)
+                    } else {
+                        context.getString(R.string.msg_social_post_success, result.followersGained)
+                    }
+                    _uiState.update {
+                        it.copy(
+                            character = result.character,
+                            actionMessage = message,
+                            eligibleJobs = careerEngine.getEligibleJobs(result.character)
+                        )
+                    }
+                }
+                is SocialMediaResult.Failed -> {
+                    _uiState.update {
+                        it.copy(actionMessage = context.getString(R.string.msg_social_no_account))
+                    }
+                }
+            }
+        }
+    }
+
+    fun onMonetizeSocialAccount() {
+        val character = _uiState.value.character ?: return
+        viewModelScope.launch {
+            val statsBefore = character.stats
+            when (val result = gameEngine.monetizeSocialMediaAccount(character)) {
+                is SocialMediaResult.Success -> {
+                    persist(result.character)
+                    processMidLifeAchievements(result.character)
+                    appendStatDeltas(buildStatDeltas(statsBefore, result.character.stats))
+                    _uiState.update {
+                        it.copy(
+                            character = result.character,
+                            actionMessage = context.getString(
+                                R.string.msg_social_monetize_success,
+                                formatMoney(result.payout, result.character.countryCode)
+                            ),
+                            netWorth = financeEngine.calculateNetWorth(result.character)
+                        )
+                    }
+                }
+                is SocialMediaResult.Failed -> {
+                    val message = when (result.reason) {
+                        SocialMediaFailure.BELOW_MONETIZATION_THRESHOLD ->
+                            context.getString(R.string.msg_social_monetize_threshold)
+                        SocialMediaFailure.ALREADY_MONETIZED_THIS_YEAR ->
+                            context.getString(R.string.msg_social_already_monetized)
+                        SocialMediaFailure.NO_ACCOUNT ->
+                            context.getString(R.string.msg_social_no_account)
+                        else -> context.getString(R.string.msg_social_ineligible)
+                    }
+                    _uiState.update { it.copy(actionMessage = message) }
+                }
+            }
+        }
+    }
+
+    fun onPracticeSkill(skillType: SkillType) {
+        val character = _uiState.value.character ?: return
+        viewModelScope.launch {
+            val statsBefore = character.stats
+            when (val result = gameEngine.practiceSkill(character, skillType)) {
+                is SkillResult.Success -> {
+                    persist(result.character)
+                    processMidLifeAchievements(result.character)
+                    val deltas = buildStatDeltas(statsBefore, result.character.stats).toMutableList()
+                    if (result.levelGained > 0) {
+                        deltas += StatDeltaEvent(
+                            type = StatType.SKILL,
+                            delta = result.levelGained,
+                            displayText = "+${result.levelGained}"
+                        )
+                    }
+                    appendStatDeltas(deltas)
+                    _uiState.update {
+                        it.copy(
+                            character = result.character,
+                            actionMessage = context.getString(
+                                R.string.msg_skill_practice_success,
+                                result.levelGained
+                            ),
+                            eligibleJobs = careerEngine.getEligibleJobs(result.character)
+                        )
+                    }
+                }
+                is SkillResult.Failed -> {
+                    val message = when (result.reason) {
+                        SkillFailure.ALREADY_MASTERED ->
+                            context.getString(R.string.msg_skill_mastered)
+                        else -> context.getString(R.string.msg_skill_ineligible)
+                    }
+                    _uiState.update { it.copy(actionMessage = message) }
+                }
+            }
+        }
+    }
+
+    fun onTakeMasterclass(skillType: SkillType) {
+        val character = _uiState.value.character ?: return
+        viewModelScope.launch {
+            val statsBefore = character.stats
+            when (val result = gameEngine.takeMasterclass(character, skillType)) {
+                is SkillResult.Success -> {
+                    persist(result.character)
+                    processMidLifeAchievements(result.character)
+                    val deltas = buildStatDeltas(statsBefore, result.character.stats).toMutableList()
+                    if (result.levelGained > 0) {
+                        deltas += StatDeltaEvent(
+                            type = StatType.SKILL,
+                            delta = result.levelGained,
+                            displayText = "+${result.levelGained}"
+                        )
+                    }
+                    appendStatDeltas(deltas)
+                    _uiState.update {
+                        it.copy(
+                            character = result.character,
+                            actionMessage = context.getString(
+                                R.string.msg_skill_masterclass_success,
+                                result.levelGained,
+                                formatMoney(result.cost, result.character.countryCode)
+                            ),
+                            eligibleJobs = careerEngine.getEligibleJobs(result.character),
+                            netWorth = financeEngine.calculateNetWorth(result.character)
+                        )
+                    }
+                }
+                is SkillResult.Failed -> {
+                    val message = when (result.reason) {
+                        SkillFailure.INSUFFICIENT_FUNDS ->
+                            context.getString(R.string.msg_skill_cannot_afford)
+                        SkillFailure.ALREADY_MASTERED ->
+                            context.getString(R.string.msg_skill_mastered)
+                        else -> context.getString(R.string.msg_skill_ineligible)
+                    }
+                    _uiState.update { it.copy(actionMessage = message) }
+                }
             }
         }
     }

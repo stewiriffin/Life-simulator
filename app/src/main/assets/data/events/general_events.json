@@ -816,6 +816,270 @@
         { "label": "Invite them in for tea", "statEffects": { "happiness": 10 }, "resultText": "You traded stories until midnight." },
         { "label": "Thank them and keep the door closed", "statEffects": { "happiness": -2 }, "resultText": "Politeness without connection." }
       ]
+    },
+    {
+      "id": "pet_dog_ruined_couch",
+      "minAge": 18,
+      "maxAge": 70,
+      "text": "You come home to find your dog has shredded the living room couch. Stuffing is everywhere.",
+      "weight": 5,
+      "tags": ["general", "requires_pet"],
+      "choices": [
+        { "label": "Pay for professional cleaning", "statEffects": { "money": -12000, "happiness": -3 }, "resultText": "The couch survives, barely." },
+        { "label": "Train them harder", "statEffects": { "happiness": -5, "health": -2 }, "resultText": "Long walks and stern commands — progress is slow." }
+      ]
+    },
+    {
+      "id": "pet_cat_gift",
+      "minAge": 18,
+      "maxAge": 70,
+      "text": "Your cat drops a half-dead mouse at your feet and purrs proudly.",
+      "weight": 5,
+      "tags": ["general", "requires_pet"],
+      "choices": [
+        { "label": "Praise the hunter", "statEffects": { "happiness": 8 }, "resultText": "Your cat struts around the house all week." },
+        { "label": "Scold and dispose quickly", "statEffects": { "happiness": -4 }, "resultText": "The cat sulked on the windowsill for days." }
+      ]
+    },
+    {
+      "id": "pet_exotic_vet",
+      "minAge": 20,
+      "maxAge": 65,
+      "text": "Your exotic pet stops eating. The only specialist vet in town charges a premium.",
+      "weight": 4,
+      "tags": ["general", "requires_pet"],
+      "choices": [
+        { "label": "Pay for the specialist", "statEffects": { "money": -35000, "happiness": 5 }, "resultText": "Expensive medicine, but your companion recovers." },
+        { "label": "Try home remedies", "statEffects": { "happiness": -12, "health": -3 }, "resultText": "You watch nervously as their condition wavers." }
+      ]
+    },
+    {
+      "id": "pet_bird_escape",
+      "minAge": 16,
+      "maxAge": 65,
+      "text": "Someone left the window open. Your bird is perched on the neighbour's roof, chirping defiantly.",
+      "weight": 4,
+      "tags": ["general", "requires_pet"],
+      "choices": [
+        { "label": "Climb up and coax it down", "statEffects": { "happiness": 10, "health": -2 }, "resultText": "A heroic rescue — your bird nuzzles your cheek." },
+        { "label": "Leave food on the sill and wait", "statEffects": { "happiness": -6 }, "resultText": "It returns at dusk, hungry and smug." }
+      ]
+    },
+    {
+      "id": "pet_fish_tank_crack",
+      "minAge": 12,
+      "maxAge": 60,
+      "text": "You notice a hairline crack in the fish tank. A slow leak spreads across the floor.",
+      "weight": 4,
+      "tags": ["general", "requires_pet"],
+      "choices": [
+        { "label": "Buy a new tank immediately", "statEffects": { "money": -8000, "happiness": 3 }, "resultText": "Your fish swim safely in fresh water." },
+        { "label": "Patch it with sealant", "statEffects": { "happiness": -5, "money": -1500 }, "resultText": "It holds for now, but you check it daily." }
+      ]
+    },
+    {
+      "id": "pet_therapy_visit",
+      "minAge": 25,
+      "maxAge": 75,
+      "text": "After a rough year, you spend an afternoon at the park with your pet. Strangers smile as you pass.",
+      "weight": 5,
+      "tags": ["general", "requires_pet"],
+      "choices": [
+        { "label": "Stay until sunset", "statEffects": { "happiness": 15, "health": 3 }, "resultText": "You feel lighter than you have in months." },
+        { "label": "Head home early", "statEffects": { "happiness": 5 }, "resultText": "A brief comfort, but welcome." }
+      ]
+    },
+    {
+      "id": "pet_dog_park_fame",
+      "minAge": 18,
+      "maxAge": 55,
+      "text": "Your dog performs tricks at the local park and a crowd gathers. Someone asks if you do parties.",
+      "weight": 3,
+      "tags": ["general", "requires_pet"],
+      "choices": [
+        { "label": "Take the gig", "statEffects": { "money": 15000, "happiness": 8 }, "resultText": "Birthday parties and pocket money — your dog is a star." },
+        { "label": "Decline politely", "statEffects": { "happiness": 4 }, "resultText": "You keep the joy private." }
+      ]
+    },
+    {
+      "id": "social_viral_meme",
+      "minAge": 13,
+      "maxAge": 45,
+      "text": "Someone turns your post into a meme template. Overnight, strangers are remixing your face across the internet.",
+      "weight": 5,
+      "tags": ["general", "requires_social_media"],
+      "choices": [
+        { "label": "Lean into the fame", "statEffects": { "happiness": 10, "looks": 2 }, "followerEffect": 45000, "resultText": "You rode the wave. Followers poured in." },
+        { "label": "Ask people to stop", "statEffects": { "happiness": -4 }, "followerEffect": 8000, "resultText": "The meme slowed down, but your name stuck around." }
+      ]
+    },
+    {
+      "id": "social_cancel_culture",
+      "minAge": 16,
+      "maxAge": 55,
+      "text": "An old post resurfaces and a cancel-culture mob piles on. Brands and followers are watching.",
+      "weight": 5,
+      "tags": ["general", "requires_social_media"],
+      "choices": [
+        { "label": "Issue a careful apology", "statEffects": { "happiness": -8, "health": -2 }, "followerEffect": -25000, "resultText": "Some left. Some stayed. The storm eventually passed." },
+        { "label": "Double down and clap back", "statEffects": { "happiness": -12, "health": -3 }, "followerEffect": -60000, "resultText": "The pile-on intensified. Your metrics cratered." }
+      ]
+    },
+    {
+      "id": "social_sponsorship_deal",
+      "minAge": 18,
+      "maxAge": 50,
+      "text": "A brand DMs you about a paid sponsorship. The product is fine — the contract is aggressive.",
+      "weight": 5,
+      "tags": ["general", "requires_social_media"],
+      "choices": [
+        { "label": "Take the deal", "statEffects": { "money": 45000, "happiness": 4 }, "followerEffect": 5000, "resultText": "Cash hit your account. Your feed looks a little more commercial." },
+        { "label": "Decline to protect your brand", "statEffects": { "happiness": 2 }, "followerEffect": 2000, "resultText": "You kept creative control. Followers noticed the authenticity." }
+      ]
+    },
+    {
+      "id": "social_algorithm_boost",
+      "minAge": 14,
+      "maxAge": 40,
+      "text": "The algorithm suddenly loves your content. Every post is getting pushed to strangers.",
+      "weight": 4,
+      "tags": ["general", "requires_social_media"],
+      "choices": [
+        { "label": "Post every day this week", "statEffects": { "happiness": 6, "health": -2 }, "followerEffect": 30000, "resultText": "Exhausting, but your numbers exploded." },
+        { "label": "Post carefully and rest", "statEffects": { "happiness": 3 }, "followerEffect": 10000, "resultText": "Steady growth without burning out." }
+      ]
+    },
+    {
+      "id": "social_doxxing_scare",
+      "minAge": 16,
+      "maxAge": 45,
+      "text": "A hostile account tries to leak your personal details. Your DMs fill with threats and concern.",
+      "weight": 4,
+      "tags": ["general", "requires_social_media"],
+      "choices": [
+        { "label": "Lock down privacy settings", "statEffects": { "happiness": -5, "health": -1 }, "followerEffect": -5000, "resultText": "You went quieter online. Safety first." },
+        { "label": "Go public and call it out", "statEffects": { "happiness": -3, "health": -2 }, "followerEffect": 12000, "resultText": "Support flooded in — and so did more attention." }
+      ]
+    },
+    {
+      "id": "social_collab_invite",
+      "minAge": 18,
+      "maxAge": 40,
+      "text": "A bigger creator invites you to collaborate on a live stream. Their audience is huge.",
+      "weight": 4,
+      "tags": ["general", "requires_social_media"],
+      "choices": [
+        { "label": "Jump on the collab", "statEffects": { "happiness": 8, "smarts": 1 }, "followerEffect": 35000, "resultText": "Their audience discovered you. Your follower count jumped." },
+        { "label": "Pass for now", "statEffects": { "happiness": -1 }, "resultText": "You stayed in your lane. Growth remained slow and steady." }
+      ]
+    },
+    {
+      "id": "social_platform_ban_warning",
+      "minAge": 15,
+      "maxAge": 50,
+      "text": "The platform flags your account for community guideline review. A ban would wipe years of work.",
+      "weight": 3,
+      "tags": ["general", "requires_social_media"],
+      "choices": [
+        { "label": "Appeal and clean up your feed", "statEffects": { "happiness": -4, "smarts": 1 }, "followerEffect": -8000, "resultText": "You survived the review, a little smaller and wiser." },
+        { "label": "Rage-post about the warning", "statEffects": { "happiness": -10 }, "followerEffect": -40000, "resultText": "The algorithm punished you. Recovery will take time." }
+      ]
+    },
+    {
+      "id": "hobby_battle_of_the_bands",
+      "minAge": 14,
+      "maxAge": 40,
+      "text": "A local battle of the bands is looking for entrants. Your guitar skills could steal the night.",
+      "weight": 5,
+      "tags": ["general", "requires_skill_guitar_50"],
+      "choices": [
+        { "label": "Enter and give it everything", "statEffects": { "happiness": 12, "looks": 2 }, "resultText": "The crowd roared. Your name is on every flyer in town." },
+        { "label": "Watch from the back", "statEffects": { "happiness": 2 }, "resultText": "You studied the winners and filed ideas for next time." }
+      ]
+    },
+    {
+      "id": "hobby_publishing_deal",
+      "minAge": 20,
+      "maxAge": 60,
+      "text": "An editor emails you about a publishing deal for your manuscript. The advance is modest but real.",
+      "weight": 4,
+      "tags": ["general", "requires_skill_writing_80"],
+      "choices": [
+        { "label": "Sign the deal", "statEffects": { "money": 40000, "happiness": 15, "smarts": 2 }, "resultText": "Your words are going to print. The advance hits your account." },
+        { "label": "Hold out for better terms", "statEffects": { "happiness": -2, "smarts": 1 }, "resultText": "You walked away proud — and still unpublished." }
+      ]
+    },
+    {
+      "id": "hobby_cooking_contest",
+      "minAge": 16,
+      "maxAge": 55,
+      "text": "A community cooking contest offers a cash prize and a restaurant internship. Your kitchen skills are ready.",
+      "weight": 4,
+      "tags": ["general", "requires_skill_cooking_50"],
+      "choices": [
+        { "label": "Compete with your signature dish", "statEffects": { "money": 12000, "happiness": 10 }, "resultText": "Judges asked for seconds. You took home the prize." },
+        { "label": "Volunteer as a judge's assistant", "statEffects": { "happiness": 4, "smarts": 1 }, "resultText": "You learned plating tricks without the pressure." }
+      ]
+    },
+    {
+      "id": "hobby_hackathon",
+      "minAge": 16,
+      "maxAge": 45,
+      "text": "A weekend hackathon is offering sponsorships and job interviews. Your programming chops could win it.",
+      "weight": 5,
+      "tags": ["general", "requires_skill_programming_60"],
+      "choices": [
+        { "label": "Build the prototype", "statEffects": { "money": 20000, "happiness": 8, "smarts": 3, "health": -3 }, "resultText": "Your demo crashed once, then wowed the room." },
+        { "label": "Network and skip the all-nighter", "statEffects": { "happiness": 3, "smarts": 1 }, "resultText": "You collected contacts without burning out." }
+      ]
+    },
+    {
+      "id": "hobby_dojo_tournament",
+      "minAge": 14,
+      "maxAge": 40,
+      "text": "Your dojo enters a regional tournament. Sparring partners look serious.",
+      "weight": 4,
+      "tags": ["general", "requires_skill_martial_arts_50"],
+      "choices": [
+        { "label": "Fight with discipline", "statEffects": { "happiness": 10, "health": -2, "looks": 1 }, "resultText": "You placed well and earned respect in the ring." },
+        { "label": "Sit this one out injured", "statEffects": { "happiness": -3, "health": 2 }, "resultText": "Rest now, train harder later." }
+      ]
+    },
+    {
+      "id": "hobby_open_mic_night",
+      "minAge": 16,
+      "maxAge": 50,
+      "text": "An open mic night needs a last-minute act. Your writing and stage nerves are on the line.",
+      "weight": 4,
+      "tags": ["general", "requires_skill_writing_40"],
+      "choices": [
+        { "label": "Read your best piece", "statEffects": { "happiness": 9, "looks": 1 }, "resultText": "Silence, then applause. Someone asked for your handle." },
+        { "label": "Pass the mic", "statEffects": { "happiness": -1 }, "resultText": "You stayed in the audience and took notes." }
+      ]
+    },
+    {
+      "id": "hobby_street_food_stall",
+      "minAge": 18,
+      "maxAge": 55,
+      "text": "A friend offers you a weekend stall at the market if you can cook for a crowd.",
+      "weight": 3,
+      "tags": ["general", "requires_skill_cooking_70"],
+      "choices": [
+        { "label": "Run the stall", "statEffects": { "money": 18000, "happiness": 6, "health": -2 }, "resultText": "Sold out by afternoon. Your recipes have fans now." },
+        { "label": "Help prep only", "statEffects": { "money": 4000, "happiness": 2 }, "resultText": "Steady work without the chaos of service." }
+      ]
+    },
+    {
+      "id": "hobby_studio_session",
+      "minAge": 18,
+      "maxAge": 45,
+      "text": "A producer invites you to lay down guitar tracks for a local artist. Studio time is expensive — and exciting.",
+      "weight": 3,
+      "tags": ["general", "requires_skill_guitar_70"],
+      "choices": [
+        { "label": "Take the session", "statEffects": { "money": 25000, "happiness": 10 }, "resultText": "Your riffs made the final mix. Payment cleared." },
+        { "label": "Decline and keep practicing", "statEffects": { "happiness": 1 }, "resultText": "You stayed independent, for now." }
+      ]
     }
   ]
 }

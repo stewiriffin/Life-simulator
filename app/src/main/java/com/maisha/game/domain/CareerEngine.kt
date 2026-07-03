@@ -6,6 +6,7 @@ import com.maisha.game.data.JobPool
 import com.maisha.game.data.model.CareerState
 import com.maisha.game.data.model.Character
 import com.maisha.game.data.model.EventChoice
+import com.maisha.game.data.model.HustleType
 import com.maisha.game.data.model.Job
 import com.maisha.game.data.model.LifeEvent
 import com.maisha.game.data.model.SchoolStage
@@ -28,6 +29,17 @@ sealed class RetirementResult {
     data object Ineligible : RetirementResult()
 }
 
+sealed class SideHustleResult {
+    data class Success(val character: Character, val payout: Int) : SideHustleResult()
+    data class Failed(val reason: SideHustleFailure) : SideHustleResult()
+}
+
+enum class SideHustleFailure {
+    PREREQUISITES_NOT_MET,
+    ALREADY_DONE_THIS_YEAR,
+    INELIGIBLE
+}
+
 @Singleton
 class CareerEngine @Inject constructor(
     private val healthEngine: HealthEngine
@@ -40,13 +52,37 @@ class CareerEngine @Inject constructor(
         return meetsEducationRequirement(character, SchoolStage.SECONDARY)
     }
 
-    /** Country-scoped job list filtered by education; empty if already employed, retired, or ineligible. */
+    /**
+     * Per-job eligibility: education (or skill bypass), plus optional [Job.minFollowers] social gate.
+     * High skill in [Job.skillBypass] can substitute for formal [Job.minEducation].
+     */
+    fun isJobEligible(character: Character, job: Job): Boolean {
+        if (!isJobEligible(character)) return false
+        if (job.minFollowers > 0) {
+            if (!character.socialMedia.hasAccount ||
+                character.socialMedia.followers < job.minFollowers
+            ) {
+                return false
+            }
+        }
+        if (meetsEducationRequirement(character, job.minEducation)) return true
+        return meetsSkillBypass(character, job)
+    }
+
+    private fun meetsSkillBypass(character: Character, job: Job): Boolean {
+        val skill = job.skillBypass ?: return false
+        if (job.minSkillLevel <= 0) return false
+        val level = character.skills.find { it.type == skill }?.level ?: 0
+        return level >= job.minSkillLevel
+    }
+
+    /** Country-scoped job list filtered by education and followers; empty if already employed, retired, or ineligible. */
     fun getEligibleJobs(character: Character): List<Job> {
         if (character.career.isRetired) return emptyList()
         if (!isJobEligible(character) || character.career.currentJob != null) return emptyList()
 
         return JobPool.getJobsForCountry(character.countryCode).filter { job ->
-            meetsEducationRequirement(character, job.minEducation)
+            isJobEligible(character, job)
         }
     }
 
@@ -64,7 +100,7 @@ class CareerEngine @Inject constructor(
         }
 
         val jobTemplate = JobPool.findById(jobId) ?: return character to CareerResult.Rejected
-        if (!meetsEducationRequirement(character, jobTemplate.minEducation)) {
+        if (!isJobEligible(character, jobTemplate)) {
             return character to CareerResult.Rejected
         }
 
@@ -102,17 +138,66 @@ class CareerEngine @Inject constructor(
             happiness = clampStat(character.stats.happiness + happinessDelta)
         )
 
-        return healthEngine.applyWorkEffortStress(
+        return applyWorkStress(
             character.copy(
                 stats = updatedStats,
                 career = character.career.copy(
                     currentJob = updatedJob,
-                    yearsAtCurrentJob = character.career.yearsAtCurrentJob + 1
+                    yearsAtCurrentJob = character.career.yearsAtCurrentJob + 1,
+                    workEffortThisYear = effort
                 )
             ),
             effort
         )
     }
+
+    /**
+     * Earns extra cash from a side gig; applies happiness/health burnout.
+     * One hustle per in-game year; blocked when incarcerated, retired, or awaiting trial.
+     */
+    fun executeSideHustle(character: Character, hustleType: HustleType): SideHustleResult {
+        if (!canAttemptSideHustle(character)) {
+            return SideHustleResult.Failed(SideHustleFailure.INELIGIBLE)
+        }
+        if (character.career.sideHustleDoneThisYear) {
+            return SideHustleResult.Failed(SideHustleFailure.ALREADY_DONE_THIS_YEAR)
+        }
+        if (!JobPool.meetsSideHustlePrerequisites(character, hustleType)) {
+            return SideHustleResult.Failed(SideHustleFailure.PREREQUISITES_NOT_MET)
+        }
+
+        val spec = JobPool.getSideHustleSpec(hustleType) ?: return SideHustleResult.Failed(
+            SideHustleFailure.PREREQUISITES_NOT_MET
+        )
+        val payout = calculateSideHustlePayout(character, spec)
+        val (happinessPenalty, healthPenalty) = calculateSideHustleBurnout(character)
+
+        val updated = character.copy(
+            stats = character.stats.copy(
+                money = character.stats.money + payout,
+                happiness = clampStat(character.stats.happiness - happinessPenalty),
+                health = clampStat(character.stats.health - healthPenalty)
+            ),
+            career = character.career.copy(sideHustleDoneThisYear = true),
+            eventLog = EventLogCap.prepend(
+                character.eventLog,
+                "Side hustle (${hustleLabel(hustleType)}): earned ${formatMoney(payout, character.countryCode)}."
+            )
+        )
+        return SideHustleResult.Success(updated, payout)
+    }
+
+    fun canAttemptSideHustle(character: Character): Boolean =
+        character.alive &&
+            character.age >= MIN_SIDE_HUSTLE_AGE &&
+            !character.criminalRecord.currentlyIncarcerated &&
+            !character.criminalRecord.awaitingTrial &&
+            !character.career.isRetired
+
+    fun isSideHustleAvailable(character: Character, hustleType: HustleType): Boolean =
+        canAttemptSideHustle(character) &&
+            !character.career.sideHustleDoneThisYear &&
+            JobPool.meetsSideHustlePrerequisites(character, hustleType)
 
     /** Event-choice variant of work effort — performance/happiness only, no salary or tenure tick. */
     fun applyWorkEffort(character: Character, effort: WorkEffort): Character {
@@ -125,11 +210,12 @@ class CareerEngine @Inject constructor(
             happiness = clampStat(character.stats.happiness + happinessDelta)
         )
 
-        return healthEngine.applyWorkEffortStress(
+        return applyWorkStress(
             character.copy(
                 stats = updatedStats,
                 career = character.career.copy(
-                    currentJob = job.copy(performanceScore = newPerformance)
+                    currentJob = job.copy(performanceScore = newPerformance),
+                    workEffortThisYear = effort
                 )
             ),
             effort
@@ -427,6 +513,44 @@ class CareerEngine @Inject constructor(
     private fun formatSalary(amount: Int): String =
         "%,d".format(amount)
 
+    private fun applyWorkStress(character: Character, effort: WorkEffort): Character {
+        val burnoutMultiplier = if (
+            character.career.sideHustleDoneThisYear && effort == WorkEffort.GRIND
+        ) {
+            SIDE_HUSTLE_BURNOUT_MULTIPLIER
+        } else {
+            1f
+        }
+        return healthEngine.applyWorkEffortStress(character, effort, burnoutMultiplier)
+    }
+
+    private fun calculateSideHustlePayout(
+        character: Character,
+        spec: JobPool.SideHustleSpec
+    ): Int {
+        val smartsFactor = 0.75f + (character.stats.smarts / 100f) * 0.5f
+        val raw = Random.nextInt(spec.basePayoutMin, spec.basePayoutMax + 1)
+        return EconomyScaler.scaleAmount((raw * smartsFactor).roundToInt(), character.countryCode)
+    }
+
+    private fun calculateSideHustleBurnout(character: Character): Pair<Int, Int> {
+        var happinessPenalty = Random.nextInt(SIDE_HUSTLE_HAPPINESS_MIN, SIDE_HUSTLE_HAPPINESS_MAX + 1)
+        var healthPenalty = Random.nextInt(SIDE_HUSTLE_HEALTH_MIN, SIDE_HUSTLE_HEALTH_MAX + 1)
+        if (character.career.workEffortThisYear == WorkEffort.GRIND) {
+            happinessPenalty = (happinessPenalty * SIDE_HUSTLE_BURNOUT_MULTIPLIER).roundToInt()
+            healthPenalty = (healthPenalty * SIDE_HUSTLE_BURNOUT_MULTIPLIER).roundToInt()
+        }
+        return happinessPenalty to healthPenalty
+    }
+
+    private fun hustleLabel(type: HustleType): String = when (type) {
+        HustleType.RIDE_SHARE -> "ride-share"
+        HustleType.FREELANCE_CODING -> "freelance coding"
+        HustleType.TUTORING -> "tutoring"
+        HustleType.FOOD_DELIVERY -> "food delivery"
+        HustleType.RESELLING -> "reselling"
+    }
+
     companion object {
         const val CAREER_SYSTEM_TAG = "career_system"
         const val PROMOTION_EVENT_ID = "career_promotion_system"
@@ -448,5 +572,11 @@ class CareerEngine @Inject constructor(
         private const val CRIMINAL_RECORD_HIRE_PENALTY = 0.15f
         const val CULTURE_SHOCK_YEARS = 3
         const val CULTURE_SHOCK_HIRE_PENALTY = 0.10f
+        private const val MIN_SIDE_HUSTLE_AGE = 16
+        private const val SIDE_HUSTLE_HAPPINESS_MIN = 2
+        private const val SIDE_HUSTLE_HAPPINESS_MAX = 5
+        private const val SIDE_HUSTLE_HEALTH_MIN = 1
+        private const val SIDE_HUSTLE_HEALTH_MAX = 3
+        const val SIDE_HUSTLE_BURNOUT_MULTIPLIER = 2f
     }
 }

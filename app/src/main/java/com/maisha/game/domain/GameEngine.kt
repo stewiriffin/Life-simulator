@@ -3,11 +3,16 @@ package com.maisha.game.domain
 
 import com.maisha.game.data.events.EventRepository
 import com.maisha.game.data.FlavorInterpolator
+import com.maisha.game.data.model.AgingDetails
 import com.maisha.game.data.model.AssetType
 import com.maisha.game.data.model.AchievementProgress
+import com.maisha.game.data.model.AvatarConfig
 import com.maisha.game.data.model.Character
 import com.maisha.game.data.model.EventChoice
 import com.maisha.game.data.model.ExamType
+import com.maisha.game.data.model.EyewearStyle
+import com.maisha.game.data.model.FacialHairStyle
+import com.maisha.game.data.model.Gender
 import com.maisha.game.data.model.LifestyleOption
 import com.maisha.game.data.model.LifeEvent
 import com.maisha.game.data.model.Achievement
@@ -16,6 +21,8 @@ import com.maisha.game.data.model.RelationType
 import com.maisha.game.data.model.SchoolStage
 import com.maisha.game.data.model.StudyEffort
 import com.maisha.game.data.model.WorkEffort
+import com.maisha.game.data.model.ageStageFor
+import com.maisha.game.data.model.AgeStage
 import com.maisha.game.notifications.NotificationScheduler
 import com.maisha.game.notifications.NudgeType
 import com.maisha.game.util.clampRelationshipLevel
@@ -60,7 +67,10 @@ class GameEngine @Inject constructor(
     private val healthEngine: HealthEngine,
     private val achievementEngine: AchievementEngine,
     private val notificationScheduler: NotificationScheduler,
-    private val relocationEngine: RelocationEngine
+    private val relocationEngine: RelocationEngine,
+    private val socialMediaEngine: SocialMediaEngine,
+    private val skillEngine: SkillEngine,
+    private val businessEngine: BusinessEngine
 ) {
 
     /**
@@ -82,11 +92,18 @@ class GameEngine @Inject constructor(
         }
 
         val preStage = character.education.stage
+        val previousAge = character.age
         var updatedCharacter = character.copy(
             age = character.age + 1,
             yearsInCurrentCountry = character.yearsInCurrentCountry + 1,
-            criminalRecord = character.criminalRecord.copy(crimeAttemptsThisYear = 0)
+            criminalRecord = character.criminalRecord.copy(crimeAttemptsThisYear = 0),
+            career = character.career.copy(
+                sideHustleDoneThisYear = false,
+                workEffortThisYear = null
+            )
         )
+        updatedCharacter = applyAvatarVisualEvolution(updatedCharacter, previousAge)
+        updatedCharacter = socialMediaEngine.resetYearlyFlags(updatedCharacter)
         var decayNotices = emptyList<com.maisha.game.data.model.RelationshipDecayNotice>()
 
         val incarceratedAtYearStart = updatedCharacter.criminalRecord.currentlyIncarcerated
@@ -99,18 +116,24 @@ class GameEngine @Inject constructor(
         }
 
         updatedCharacter = processFinanceProgression(updatedCharacter)
+        updatedCharacter = businessEngine.processBusinessYear(updatedCharacter)
 
         updatedCharacter = applyCultureShockPenalty(updatedCharacter)
 
         val tickResult = relationshipEngine.tickFamilyYear(updatedCharacter)
-        updatedCharacter = updatedCharacter.copy(family = tickResult.family)
+        updatedCharacter = updatedCharacter.copy(
+            family = tickResult.family,
+            stats = tickResult.stats
+        )
         decayNotices = tickResult.decayNotices
+        updatedCharacter = relationshipEngine.tickPetsYear(updatedCharacter).character
         updatedCharacter = relationshipEngine.applySpouseRelationshipEffect(
             updatedCharacter,
             netWorth = financeEngine.calculateNetWorth(updatedCharacter)
         )
 
         updatedCharacter = processHealthProgression(updatedCharacter)
+        updatedCharacter = applyAvatarHealthVisuals(updatedCharacter)
 
         var newFriendName: String? = null
         if (!incarceratedAtYearStart) {
@@ -247,6 +270,13 @@ class GameEngine @Inject constructor(
             )
         }
 
+        if (choice.childRelationshipEffect != 0) {
+            updatedCharacter = applyChildRelationshipEffect(
+                updatedCharacter,
+                choice.childRelationshipEffect
+            )
+        }
+
         if (choice.triggersHaveChild) {
             updatedCharacter = relationshipEngine.haveChild(updatedCharacter)
         }
@@ -363,6 +393,27 @@ class GameEngine @Inject constructor(
             updatedCharacter = financeEngine.grantHeirloom(updatedCharacter, choice.grantHeirloom)
         }
 
+        if (choice.followerEffect != 0 && updatedCharacter.socialMedia.hasAccount) {
+            val newFollowers = (updatedCharacter.socialMedia.followers + choice.followerEffect)
+                .coerceAtLeast(0)
+            val isVerified = updatedCharacter.socialMedia.isVerified ||
+                newFollowers >= SocialMediaEngine.VERIFIED_FOLLOWER_THRESHOLD
+            updatedCharacter = updatedCharacter.copy(
+                socialMedia = updatedCharacter.socialMedia.copy(
+                    followers = newFollowers,
+                    isVerified = isVerified
+                )
+            )
+        }
+
+        if (choice.businessValuationEffect != 0 || choice.businessRevenueEffect != 0) {
+            updatedCharacter = businessEngine.applyBusinessEffects(
+                updatedCharacter,
+                choice.businessValuationEffect,
+                choice.businessRevenueEffect
+            )
+        }
+
         val updatedStats = updatedCharacter.stats.applyEffects(choice.statEffects)
         val updatedLog = EventLogCap.prepend(updatedCharacter.eventLog, choice.resultText)
         return updatedCharacter.copy(stats = updatedStats, eventLog = updatedLog)
@@ -385,6 +436,56 @@ class GameEngine @Inject constructor(
     fun retire(character: Character): RetirementResult {
         return careerEngine.retire(character)
     }
+
+    /** Delegates to [CareerEngine.executeSideHustle]. */
+    fun executeSideHustle(
+        character: Character,
+        hustleType: com.maisha.game.data.model.HustleType
+    ): SideHustleResult = careerEngine.executeSideHustle(character, hustleType)
+
+    /** Delegates to [RelationshipEngine.adoptPet]. */
+    fun adoptPet(
+        character: Character,
+        species: com.maisha.game.data.model.PetSpecies,
+        name: String
+    ): AdoptPetResult = relationshipEngine.adoptPet(character, species, name)
+
+    fun createSocialMediaAccount(character: Character): SocialMediaResult =
+        socialMediaEngine.createAccount(character)
+
+    fun deleteSocialMediaAccount(character: Character): SocialMediaResult =
+        socialMediaEngine.deleteAccount(character)
+
+    fun postSocialMediaContent(character: Character): SocialMediaResult =
+        socialMediaEngine.postContent(character)
+
+    fun monetizeSocialMediaAccount(character: Character): SocialMediaResult =
+        socialMediaEngine.monetizeAccount(character)
+
+    fun practiceSkill(
+        character: Character,
+        skillType: com.maisha.game.data.model.SkillType
+    ): SkillResult = skillEngine.practiceSkill(character, skillType)
+
+    fun takeMasterclass(
+        character: Character,
+        skillType: com.maisha.game.data.model.SkillType
+    ): SkillResult = skillEngine.takeMasterclass(character, skillType)
+
+    fun masterclassCost(character: Character): Int = skillEngine.masterclassCost(character)
+
+    fun startBusiness(
+        character: Character,
+        name: String,
+        industry: com.maisha.game.data.model.BusinessIndustry,
+        initialInvestment: Int
+    ): BusinessResult = businessEngine.startBusiness(character, name, industry, initialInvestment)
+
+    fun sellBusiness(character: Character, businessId: String): BusinessResult =
+        businessEngine.sellBusiness(character, businessId)
+
+    fun businessInvestmentTiers(character: Character): List<Int> =
+        businessEngine.investmentTiers(character)
 
     /** Voluntary school leave — delegates to [EducationEngine.processDropout]. */
     fun dropOut(character: Character): Character {
@@ -509,6 +610,53 @@ class GameEngine @Inject constructor(
         }
     }
 
+    /**
+     * Organic avatar changes: senior graying/wrinkles, teen style shifts, adult facial hair.
+     */
+    private fun applyAvatarVisualEvolution(character: Character, previousAge: Int): Character {
+        val previousStage = ageStageFor(previousAge)
+        val stage = ageStageFor(character.age)
+        var config = character.avatarConfig
+
+        if (previousStage != AgeStage.SENIOR && stage == AgeStage.SENIOR) {
+            config = config.copy(
+                hairColor = AvatarConfig.GRAY_HAIR_COLOR_INDEX,
+                agingDetails = AgingDetails.WRINKLES_AND_GRAYING
+            )
+        }
+
+        if (previousStage == AgeStage.CHILD && stage == AgeStage.TEEN &&
+            Random.nextFloat() < TEEN_HAIRSTYLE_CHANGE_CHANCE
+        ) {
+            config = config.copy(hairStyle = Random.nextInt(AvatarConfig.HAIR_STYLE_COUNT))
+        }
+
+        if (character.gender == Gender.MALE &&
+            config.facialHair == null &&
+            stage in listOf(AgeStage.TEEN, AgeStage.ADULT) &&
+            character.age >= FACIAL_HAIR_MIN_AGE &&
+            Random.nextFloat() < FACIAL_HAIR_GROWTH_CHANCE
+        ) {
+            config = config.copy(facialHair = FacialHairStyle.entries.random())
+        }
+
+        return if (config == character.avatarConfig) character
+        else character.copy(avatarConfig = config)
+    }
+
+    /** Equips glasses when the character has untreated Poor Eyesight. */
+    private fun applyAvatarHealthVisuals(character: Character): Character {
+        val hasPoorEyesight = character.activeConditions.any {
+            !it.treated &&
+                it.name.equals(HealthEngine.POOR_EYESIGHT_CONDITION, ignoreCase = true)
+        }
+        if (!hasPoorEyesight) return character
+        if (character.avatarConfig.eyewear != null) return character
+        return character.copy(
+            avatarConfig = character.avatarConfig.copy(eyewear = EyewearStyle.GLASSES)
+        )
+    }
+
     private fun processEducationProgression(
         character: Character,
         preStage: SchoolStage
@@ -538,6 +686,7 @@ class GameEngine @Inject constructor(
     private fun processFinanceProgression(character: Character): Character {
         var updated = financeEngine.applyEconomicShift(character).character
         updated = financeEngine.applyPension(updated)
+        updated = financeEngine.applyPetUpkeep(updated)
         if (updated.assets.isEmpty()) return updated
         updated = financeEngine.applyUpkeep(updated)
         updated = financeEngine.degradeAssets(updated)
@@ -616,6 +765,23 @@ class GameEngine @Inject constructor(
         )
     }
 
+    private fun applyChildRelationshipEffect(
+        character: Character,
+        delta: Int
+    ): Character {
+        if (character.family.none { it.relation == RelationType.CHILD }) return character
+        val updatedFamily = character.family.map { person ->
+            if (person.relation == RelationType.CHILD && person.alive) {
+                person.copy(
+                    relationshipLevel = clampRelationshipLevel(person.relationshipLevel + delta)
+                ).coerceRelationship()
+            } else {
+                person
+            }
+        }
+        return character.copy(family = updatedFamily)
+    }
+
     private fun studyEffortFromChoice(choice: EventChoice): StudyEffort {
         return when {
             choice.label.contains("slack", ignoreCase = true) ||
@@ -684,5 +850,8 @@ class GameEngine @Inject constructor(
 
     private companion object {
         private const val CULTURE_SHOCK_HAPPINESS_PENALTY = 10
+        private const val TEEN_HAIRSTYLE_CHANGE_CHANCE = 0.35f
+        private const val FACIAL_HAIR_GROWTH_CHANCE = 0.12f
+        private const val FACIAL_HAIR_MIN_AGE = 16
     }
 }

@@ -1,4 +1,4 @@
-// app/src/main/java/com/maisha/game/ui/settings/SettingsScreen.kt (new)
+// app/src/main/java/com/maisha/game/ui/settings/SettingsScreen.kt
 package com.maisha.game.ui.settings
 
 import android.content.Intent
@@ -12,11 +12,16 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.Flag
+import androidx.compose.material.icons.filled.MusicNote
+import androidx.compose.material.icons.filled.Notifications
+import androidx.compose.material.icons.filled.Vibration
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
@@ -28,6 +33,7 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Switch
+import androidx.compose.material3.SwitchDefaults
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
@@ -39,6 +45,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
@@ -116,147 +123,168 @@ fun SettingsScreen(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(innerPadding)
-                .padding(horizontal = 12.dp)
+                .padding(horizontal = 12.dp, vertical = 8.dp)
                 .verticalScroll(rememberScrollState()),
-            verticalArrangement = Arrangement.spacedBy(12.dp)
+            verticalArrangement = Arrangement.spacedBy(14.dp)
         ) {
-            SettingsToggleRow(
-                label = stringResource(R.string.settings_sound),
-                checked = uiState.soundEnabled,
-                onCheckedChange = onSoundChanged
-            )
-            SettingsToggleRow(
-                label = stringResource(R.string.settings_haptics),
-                checked = uiState.hapticsEnabled,
-                onCheckedChange = onHapticsChanged
-            )
-            SettingsToggleRow(
-                label = stringResource(R.string.settings_notifications),
-                checked = uiState.notificationsEnabled,
-                onCheckedChange = onNotificationsChanged
-            )
-
-            Card(
-                modifier = Modifier.fillMaxWidth(),
-                shape = RoundedCornerShape(12.dp),
-                colors = CardDefaults.cardColors(
-                    containerColor = MaterialTheme.colorScheme.surfaceVariant
+            SettingsSectionCard(title = stringResource(R.string.settings_section_preferences)) {
+                SettingsToggleRow(
+                    label = stringResource(R.string.settings_sound),
+                    checked = uiState.soundEnabled,
+                    onCheckedChange = onSoundChanged,
+                    thumbIcon = Icons.Filled.MusicNote
                 )
-            ) {
-                Column(
-                    modifier = Modifier.padding(14.dp),
-                    verticalArrangement = Arrangement.spacedBy(10.dp)
-                ) {
-                    Text(
-                        text = stringResource(R.string.settings_language),
-                        style = MaterialTheme.typography.titleSmall,
-                        fontWeight = FontWeight.SemiBold
-                    )
-                    FlowRow(
-                        horizontalArrangement = Arrangement.spacedBy(8.dp),
-                        verticalArrangement = Arrangement.spacedBy(8.dp)
-                    ) {
-                        LocaleManager.supportedLanguages.forEach { language ->
-                            FilterChip(
-                                selected = uiState.language == language.code,
-                                onClick = { onLanguageSelected(language.code) },
-                                label = { Text(stringResource(language.labelRes)) }
-                            )
-                        }
-                    }
-                }
-            }
-
-            SettingsToggleRow(
-                label = stringResource(R.string.settings_flag_fallback),
-                checked = preferIsoFlagFallback,
-                onCheckedChange = onFlagFallbackChanged
-            )
-
-            Card(
-                modifier = Modifier.fillMaxWidth(),
-                shape = RoundedCornerShape(12.dp),
-                colors = CardDefaults.cardColors(
-                    containerColor = MaterialTheme.colorScheme.surfaceVariant
+                SettingsToggleRow(
+                    label = stringResource(R.string.settings_haptics),
+                    checked = uiState.hapticsEnabled,
+                    onCheckedChange = onHapticsChanged,
+                    thumbIcon = Icons.Filled.Vibration
                 )
-            ) {
-                Column(
-                    modifier = Modifier.padding(14.dp),
+                SettingsToggleRow(
+                    label = stringResource(R.string.settings_notifications),
+                    checked = uiState.notificationsEnabled,
+                    onCheckedChange = onNotificationsChanged,
+                    thumbIcon = Icons.Filled.Notifications
+                )
+
+                Text(
+                    text = stringResource(R.string.settings_language),
+                    style = MaterialTheme.typography.titleSmall,
+                    fontWeight = FontWeight.SemiBold,
+                    modifier = Modifier.padding(top = 4.dp)
+                )
+                FlowRow(
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
                     verticalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Column(modifier = Modifier.weight(1f)) {
-                            Text(
-                                text = stringResource(R.string.settings_regions_title),
-                                style = MaterialTheme.typography.titleSmall,
-                                fontWeight = FontWeight.SemiBold
-                            )
-                            Text(
-                                text = stringResource(R.string.settings_regions_subtitle),
-                                style = MaterialTheme.typography.bodySmall,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant
-                            )
-                        }
-                        TextButton(onClick = { regionsExpanded = !regionsExpanded }) {
-                            Text(
-                                text = stringResource(
-                                    if (regionsExpanded) R.string.settings_regions_collapse
-                                    else R.string.settings_regions_expand
-                                )
-                            )
-                        }
+                    LocaleManager.supportedLanguages.forEach { language ->
+                        FilterChip(
+                            selected = uiState.language == language.code,
+                            onClick = { onLanguageSelected(language.code) },
+                            label = { Text(stringResource(language.labelRes)) }
+                        )
                     }
-                    if (regionsExpanded) {
-                        CountryCatalog.all().forEach { country ->
-                            CountryFlagWithName(
-                                countryCode = country.code,
-                                displayName = country.displayName,
-                                preferIsoFallback = preferIsoFlagFallback
+                }
+
+                SettingsToggleRow(
+                    label = stringResource(R.string.settings_flag_fallback),
+                    checked = preferIsoFlagFallback,
+                    onCheckedChange = onFlagFallbackChanged,
+                    thumbIcon = Icons.Filled.Flag
+                )
+
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Column(modifier = Modifier.weight(1f)) {
+                        Text(
+                            text = stringResource(R.string.settings_regions_title),
+                            style = MaterialTheme.typography.titleSmall,
+                            fontWeight = FontWeight.SemiBold
+                        )
+                        Text(
+                            text = stringResource(R.string.settings_regions_subtitle),
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
+                    TextButton(onClick = { regionsExpanded = !regionsExpanded }) {
+                        Text(
+                            text = stringResource(
+                                if (regionsExpanded) R.string.settings_regions_collapse
+                                else R.string.settings_regions_expand
                             )
-                        }
+                        )
+                    }
+                }
+                if (regionsExpanded) {
+                    CountryCatalog.all().forEach { country ->
+                        CountryFlagWithName(
+                            countryCode = country.code,
+                            displayName = country.displayName,
+                            preferIsoFallback = preferIsoFlagFallback
+                        )
                     }
                 }
             }
 
-            Button(
-                onClick = onResetAllDataRequested,
-                modifier = Modifier.fillMaxWidth(),
-                shape = RoundedCornerShape(10.dp),
-                colors = ButtonDefaults.buttonColors(containerColor = CoralNegative)
-            ) {
+            SettingsSectionCard(title = stringResource(R.string.settings_section_data)) {
                 Text(
-                    text = stringResource(R.string.settings_reset_all_data),
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis
+                    text = stringResource(R.string.settings_reset_description),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
+                Button(
+                    onClick = onResetAllDataRequested,
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(10.dp),
+                    colors = ButtonDefaults.buttonColors(containerColor = CoralNegative)
+                ) {
+                    Text(
+                        text = stringResource(R.string.settings_reset_all_data),
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                        fontWeight = FontWeight.Bold
+                    )
+                }
             }
 
+            SettingsSectionCard(title = stringResource(R.string.settings_section_about)) {
+                if (privacyPolicyAvailable) {
+                    Text(
+                        text = stringResource(R.string.settings_privacy_policy),
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = TealPrimary,
+                        fontWeight = FontWeight.Medium,
+                        modifier = Modifier
+                            .clickable {
+                                context.startActivity(
+                                    Intent(Intent.ACTION_VIEW, Uri.parse(privacyPolicyUrl))
+                                )
+                            }
+                            .padding(vertical = 4.dp)
+                    )
+                }
+                Text(
+                    text = stringResource(R.string.settings_version, BuildConfig.VERSION_NAME),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+                Text(
+                    text = stringResource(R.string.settings_developer_credits),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun SettingsSectionCard(
+    title: String,
+    content: @Composable () -> Unit
+) {
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(14.dp),
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.surfaceVariant
+        ),
+        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+    ) {
+        Column(
+            modifier = Modifier.padding(14.dp),
+            verticalArrangement = Arrangement.spacedBy(10.dp)
+        ) {
             Text(
-                text = stringResource(R.string.settings_version, BuildConfig.VERSION_NAME),
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                modifier = Modifier.padding(top = 8.dp)
+                text = title,
+                style = MaterialTheme.typography.titleMedium,
+                fontWeight = FontWeight.Bold
             )
-
-            if (privacyPolicyAvailable) {
-                Text(
-                    text = stringResource(R.string.settings_privacy_policy),
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = TealPrimary,
-                    fontWeight = FontWeight.Medium,
-                    modifier = Modifier
-                        .clickable {
-                            context.startActivity(
-                                Intent(Intent.ACTION_VIEW, Uri.parse(privacyPolicyUrl))
-                            )
-                        }
-                        .padding(vertical = 4.dp)
-                )
-            }
+            content()
         }
     }
 }
@@ -265,30 +293,31 @@ fun SettingsScreen(
 private fun SettingsToggleRow(
     label: String,
     checked: Boolean,
-    onCheckedChange: (Boolean) -> Unit
+    onCheckedChange: (Boolean) -> Unit,
+    thumbIcon: ImageVector
 ) {
-    Card(
+    Row(
         modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(12.dp),
-        colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surfaceVariant
-        )
+        horizontalArrangement = Arrangement.SpaceBetween,
+        verticalAlignment = Alignment.CenterVertically
     ) {
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 14.dp, vertical = 8.dp),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Text(
-                text = label,
-                style = MaterialTheme.typography.bodyLarge,
-                modifier = Modifier.weight(1f),
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis
-            )
-            Switch(checked = checked, onCheckedChange = onCheckedChange)
-        }
+        Text(
+            text = label,
+            style = MaterialTheme.typography.bodyLarge,
+            modifier = Modifier.weight(1f),
+            maxLines = 2,
+            overflow = TextOverflow.Ellipsis
+        )
+        Switch(
+            checked = checked,
+            onCheckedChange = onCheckedChange,
+            thumbContent = {
+                Icon(
+                    imageVector = thumbIcon,
+                    contentDescription = null,
+                    modifier = Modifier.size(SwitchDefaults.IconSize)
+                )
+            }
+        )
     }
 }

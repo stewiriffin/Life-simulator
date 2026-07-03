@@ -14,7 +14,7 @@ import org.junit.Test
 
 class RelationshipEngineTickTest {
 
-    private val engine = RelationshipEngine()
+    private val engine = RelationshipEngine(FinanceEngine())
 
     @Test
     fun neglectedSibling_decaysTowardNeutral() {

@@ -36,9 +36,13 @@ data class Character(
     val education: EducationState = EducationState(),
     val career: CareerState = CareerState(),
     val assets: List<Asset> = emptyList(),
+    val pets: List<Pet> = emptyList(),
     val criminalRecord: CriminalRecord = CriminalRecord(),
     val activeConditions: List<HealthCondition> = emptyList(),
     val generationNumber: Int = 1,
     val economicState: EconomicState = EconomicState(),
-    val lifestyle: LifestyleState = LifestyleState()
+    val lifestyle: LifestyleState = LifestyleState(),
+    val socialMedia: SocialMediaState = SocialMediaState(),
+    val skills: List<SkillProgress> = emptyList(),
+    val businesses: List<Business> = emptyList()
 )

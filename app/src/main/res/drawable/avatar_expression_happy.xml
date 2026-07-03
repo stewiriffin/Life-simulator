@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="utf-8"?>
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="100dp"
+    android:height="100dp"
+    android:viewportWidth="100"
+    android:viewportHeight="100">
+    <!-- Happy eyes (arcs) -->
+    <path
+        android:fillColor="#00000000"
+        android:strokeColor="#FF2A2A2A"
+        android:strokeWidth="2.5"
+        android:pathData="M30,40 Q36,46 42,40" />
+    <path
+        android:fillColor="#00000000"
+        android:strokeColor="#FF2A2A2A"
+        android:strokeWidth="2.5"
+        android:pathData="M58,40 Q64,46 70,40" />
+    <!-- Smile -->
+    <path
+        android:fillColor="#00000000"
+        android:strokeColor="#FF2A2A2A"
+        android:strokeWidth="2.5"
+        android:pathData="M38,52 Q50,64 62,52" />
+</vector>

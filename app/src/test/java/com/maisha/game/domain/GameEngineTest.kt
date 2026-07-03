@@ -1,14 +1,21 @@
 package com.maisha.game.domain
 
+import com.maisha.game.data.model.AgingDetails
+import com.maisha.game.data.model.AvatarConfig
 import com.maisha.game.data.model.CareerState
 import com.maisha.game.data.model.CriminalRecord
 import com.maisha.game.data.model.EducationState
 import com.maisha.game.data.model.EventChoice
+import com.maisha.game.data.model.EyewearStyle
+import com.maisha.game.data.model.HealthCondition
 import com.maisha.game.data.model.LifeEvent
 import com.maisha.game.data.model.SchoolStage
 import com.maisha.game.data.model.Stats
+import com.maisha.game.data.model.AgeStage
+import com.maisha.game.data.model.ageStageFor
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
+import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
@@ -91,6 +98,49 @@ class GameEngineTest {
             if (!outcome.character.alive) deaths++
         }
         assertTrue("Very old, critically ill characters should sometimes die", deaths > 50)
+    }
+
+    @Test
+    fun ageUp_appliesSeniorAgingDetailsWhenReachingSeniorStage() {
+        val character = TestFixtures.character(
+            age = 59,
+            avatarConfig = AvatarConfig.DEFAULT.copy(
+                hairColor = 0,
+                agingDetails = null
+            )
+        )
+        assertEquals(AgeStage.ADULT, ageStageFor(character.age))
+        val outcome = engine.ageUp(character, emptySet(), emptyList(), slotId = 0)
+        assertEquals(60, outcome.character.age)
+        assertEquals(AgeStage.SENIOR, ageStageFor(outcome.character.age))
+        assertNotNull(outcome.character.avatarConfig.agingDetails)
+        assertTrue(
+            outcome.character.avatarConfig.agingDetails == AgingDetails.WRINKLES_AND_GRAYING ||
+                outcome.character.avatarConfig.agingDetails == AgingDetails.WRINKLES ||
+                outcome.character.avatarConfig.agingDetails == AgingDetails.GRAYING
+        )
+        assertEquals(
+            AvatarConfig.GRAY_HAIR_COLOR_INDEX,
+            outcome.character.avatarConfig.hairColor
+        )
+    }
+
+    @Test
+    fun ageUp_equipsGlassesWhenPoorEyesightIsActive() {
+        val character = TestFixtures.character(
+            age = 40,
+            avatarConfig = AvatarConfig.DEFAULT.copy(eyewear = null),
+            activeConditions = listOf(
+                HealthCondition(
+                    id = "eyes",
+                    name = HealthEngine.POOR_EYESIGHT_CONDITION,
+                    severity = 1,
+                    treated = false
+                )
+            )
+        )
+        val outcome = engine.ageUp(character, emptySet(), emptyList(), slotId = 0)
+        assertEquals(EyewearStyle.GLASSES, outcome.character.avatarConfig.eyewear)
     }
 
     @Test

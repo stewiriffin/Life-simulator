@@ -38,6 +38,8 @@ import com.maisha.game.R
 import com.maisha.game.data.local.OnboardingTips
 import com.maisha.game.data.model.Character
 import com.maisha.game.data.model.Person
+import com.maisha.game.data.model.Pet
+import com.maisha.game.data.model.PetSpecies
 import com.maisha.game.data.model.RelationType
 import com.maisha.game.domain.GiftTier
 import com.maisha.game.domain.InteractionType
@@ -53,6 +55,7 @@ import com.maisha.game.ui.illustrations.EmptyStateIllustration
 import com.maisha.game.ui.theme.AppIcons
 import com.maisha.game.ui.components.PersonCard
 import com.maisha.game.ui.components.PersonDetailSheet
+import com.maisha.game.ui.components.PetCard
 import com.maisha.game.ui.theme.AccentPink
 import com.maisha.game.ui.theme.MaishaSpacing
 import com.maisha.game.ui.theme.NavyDeep
@@ -175,7 +178,7 @@ fun FamilyScreen(
             Spacer(modifier = Modifier.height(10.dp))
         }
 
-        if (character.family.isEmpty()) {
+        if (character.family.isEmpty() && character.pets.isEmpty()) {
             EmptyStateCard(
                 illustration = EmptyStateIllustration.FAMILY,
                 title = stringResource(R.string.empty_family_title),
@@ -289,6 +292,21 @@ fun FamilyScreen(
                         )
                     }
                 }
+                if (character.pets.isNotEmpty()) {
+                    item(contentType = FamilyListContentType.SectionHeader) {
+                        FamilySectionHeader(stringResource(R.string.section_pets))
+                    }
+                    items(
+                        character.pets,
+                        key = { it.id },
+                        contentType = { FamilyListContentType.PersonCard }
+                    ) { pet ->
+                        PetCard(
+                            pet = pet,
+                            speciesLabel = petSpeciesLabel(pet.species)
+                        )
+                    }
+                }
             }
         }
     }
@@ -344,6 +362,15 @@ private fun FamilyPersonCard(
             onClick = onClick
         )
     }
+}
+
+@Composable
+private fun petSpeciesLabel(species: PetSpecies): String = when (species) {
+    PetSpecies.DOG -> stringResource(R.string.pet_species_dog)
+    PetSpecies.CAT -> stringResource(R.string.pet_species_cat)
+    PetSpecies.BIRD -> stringResource(R.string.pet_species_bird)
+    PetSpecies.FISH -> stringResource(R.string.pet_species_fish)
+    PetSpecies.EXOTIC -> stringResource(R.string.pet_species_exotic)
 }
 
 @Composable

@@ -3,9 +3,12 @@ package com.maisha.game.domain
 import com.maisha.game.data.model.CareerState
 import com.maisha.game.data.model.CriminalRecord
 import com.maisha.game.data.model.EducationState
+import com.maisha.game.data.model.HustleType
 import com.maisha.game.data.model.SchoolStage
 import com.maisha.game.data.model.Stats
 import com.maisha.game.data.model.WorkEffort
+import com.maisha.game.domain.SideHustleFailure
+import com.maisha.game.domain.SideHustleResult
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
@@ -182,5 +185,102 @@ class CareerEngineTest {
         val after = financeEngine.applyPension(character)
         assertEquals(125_000, after.stats.money)
         assertEquals(125_000, financeEngine.calculateNetWorth(after))
+    }
+
+    @Test
+    fun executeSideHustle_grantsCashAndReducesHappiness() {
+        val character = TestFixtures.character(
+            age = 20,
+            stats = Stats(money = 0, happiness = 80, health = 80, smarts = 50)
+        )
+        when (val result = engine.executeSideHustle(character, HustleType.FOOD_DELIVERY)) {
+            is SideHustleResult.Success -> {
+                assertTrue(result.payout > 0)
+                assertTrue(result.character.stats.money > 0)
+                assertTrue(result.character.stats.happiness < 80)
+                assertTrue(result.character.stats.health < 80)
+                assertTrue(result.character.career.sideHustleDoneThisYear)
+            }
+            is SideHustleResult.Failed -> error("Expected success but got ${result.reason}")
+        }
+    }
+
+    @Test
+    fun isJobEligible_acceptsApplicantWithHighSkillDespiteMissingDegree() {
+        val developerJob = com.maisha.game.data.JobPool.findById("software_developer")!!
+        val noDegreeHighSkill = TestFixtures.character(
+            age = 22,
+            education = EducationState(stage = SchoolStage.SECONDARY),
+            skills = listOf(
+                com.maisha.game.data.model.SkillProgress(
+                    type = com.maisha.game.data.model.SkillType.PROGRAMMING,
+                    level = 80
+                )
+            )
+        )
+        val noDegreeLowSkill = TestFixtures.character(
+            age = 22,
+            education = EducationState(stage = SchoolStage.SECONDARY),
+            skills = listOf(
+                com.maisha.game.data.model.SkillProgress(
+                    type = com.maisha.game.data.model.SkillType.PROGRAMMING,
+                    level = 40
+                )
+            )
+        )
+        assertTrue(engine.isJobEligible(noDegreeHighSkill, developerJob))
+        assertFalse(engine.isJobEligible(noDegreeLowSkill, developerJob))
+        assertTrue(
+            engine.getEligibleJobs(noDegreeHighSkill).any { it.id == "software_developer" }
+        )
+        assertTrue(
+            engine.getEligibleJobs(noDegreeLowSkill).none { it.id == "software_developer" }
+        )
+    }
+
+    @Test
+    fun isJobEligible_rejectsInfluencerJobIfFollowersAreTooLow() {
+        val influencerJob = com.maisha.game.data.JobPool.findById("brand_ambassador")!!
+        val noAccount = TestFixtures.character(
+            age = 22,
+            education = EducationState(stage = SchoolStage.SECONDARY),
+            socialMedia = com.maisha.game.data.model.SocialMediaState()
+        )
+        val lowFollowers = noAccount.copy(
+            socialMedia = com.maisha.game.data.model.SocialMediaState(
+                hasAccount = true,
+                followers = 1_000
+            )
+        )
+        val enoughFollowers = noAccount.copy(
+            socialMedia = com.maisha.game.data.model.SocialMediaState(
+                hasAccount = true,
+                followers = influencerJob.minFollowers
+            )
+        )
+        assertFalse(engine.isJobEligible(noAccount, influencerJob))
+        assertFalse(engine.isJobEligible(lowFollowers, influencerJob))
+        assertTrue(engine.isJobEligible(enoughFollowers, influencerJob))
+        assertTrue(
+            engine.getEligibleJobs(enoughFollowers).any { it.id == "brand_ambassador" }
+        )
+        assertTrue(
+            engine.getEligibleJobs(lowFollowers).none { it.id == "brand_ambassador" }
+        )
+    }
+
+    @Test
+    fun executeSideHustle_failsIfPrerequisitesNotMet() {
+        val noVehicle = TestFixtures.character(
+            age = 25,
+            stats = Stats(smarts = 60),
+            assets = emptyList()
+        )
+        val result = engine.executeSideHustle(noVehicle, HustleType.RIDE_SHARE)
+        assertTrue(result is SideHustleResult.Failed)
+        assertEquals(
+            SideHustleFailure.PREREQUISITES_NOT_MET,
+            (result as SideHustleResult.Failed).reason
+        )
     }
 }

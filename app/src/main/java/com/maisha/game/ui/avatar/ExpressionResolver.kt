@@ -52,12 +52,43 @@ object ExpressionResolver {
         }
     }
 
+    /**
+     * Expression shown while reading an event prompt, before a choice is made.
+     * Uses tags and choice stat effects to infer tone.
+     */
+    fun expressionForEventPrompt(event: com.maisha.game.data.model.LifeEvent): Expression {
+        val tags = event.tags.map { it.lowercase() }
+        when {
+            tags.any { it in setOf("crime", "prison", "death", "illness", "health") } ->
+                return Expression.SAD
+            tags.any { it in setOf("requires_incarcerated") } ->
+                return Expression.SAD
+        }
+        val happinessDeltas = event.choices.mapNotNull { it.statEffects["happiness"] }
+        val moneyDeltas = event.choices.mapNotNull { it.statEffects["money"] }
+        val healthDeltas = event.choices.mapNotNull { it.statEffects["health"] }
+        val worstHappiness = happinessDeltas.minOrNull() ?: 0
+        val bestHappiness = happinessDeltas.maxOrNull() ?: 0
+        val worstMoney = moneyDeltas.minOrNull() ?: 0
+        val worstHealth = healthDeltas.minOrNull() ?: 0
+        return when {
+            worstHealth <= -5 || (worstHappiness <= -8 && bestHappiness <= 2) -> Expression.SAD
+            worstHappiness <= -5 && bestHappiness <= 4 -> Expression.ANGRY
+            bestHappiness >= 8 && worstHappiness >= 0 && worstMoney >= -5_000 -> Expression.HAPPY
+            worstMoney <= -20_000 && bestHappiness <= 2 -> Expression.SURPRISED
+            else -> Expression.NEUTRAL
+        }
+    }
+
     fun outcomeFromInteraction(type: com.maisha.game.domain.InteractionType): EventOutcome = when (type) {
         com.maisha.game.domain.InteractionType.ARGUE,
-        com.maisha.game.domain.InteractionType.INSULT -> EventOutcome.Negative(isConflict = true)
+        com.maisha.game.domain.InteractionType.INSULT,
+        com.maisha.game.domain.InteractionType.DISCIPLINE -> EventOutcome.Negative(isConflict = true)
         com.maisha.game.domain.InteractionType.GIFT,
         com.maisha.game.domain.InteractionType.TRAVEL_TOGETHER,
-        com.maisha.game.domain.InteractionType.SPEND_TIME -> EventOutcome.Positive(1)
+        com.maisha.game.domain.InteractionType.SPEND_TIME,
+        com.maisha.game.domain.InteractionType.HELP_WITH_HOMEWORK,
+        com.maisha.game.domain.InteractionType.PAY_ALLOWANCE -> EventOutcome.Positive(1)
         com.maisha.game.domain.InteractionType.PRANK -> EventOutcome.Surprising(1)
         else -> EventOutcome.Neutral
     }

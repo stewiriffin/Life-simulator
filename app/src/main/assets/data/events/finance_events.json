@@ -410,6 +410,171 @@
           "resultText": "Your name is etched on a small plaque at the entrance."
         }
       ]
+    },
+    {
+      "id": "biz_employee_strike",
+      "minAge": 22,
+      "maxAge": 70,
+      "text": "Your employees walk out over pay and hours. Pickets form outside the office.",
+      "weight": 5,
+      "tags": ["finance", "requires_business"],
+      "choices": [
+        {
+          "label": "Negotiate a raise package",
+          "statEffects": { "money": -35000, "happiness": -2 },
+          "businessRevenueEffect": 8000,
+          "businessValuationEffect": 15000,
+          "resultText": "Costly, but operations resume and morale recovers."
+        },
+        {
+          "label": "Hold the line and wait them out",
+          "statEffects": { "happiness": -8, "health": -2 },
+          "businessRevenueEffect": -25000,
+          "businessValuationEffect": -40000,
+          "resultText": "The strike drags on. Customers leave and revenue tanks."
+        }
+      ]
+    },
+    {
+      "id": "biz_rival_company",
+      "minAge": 22,
+      "maxAge": 65,
+      "text": "A well-funded rival launches in your industry with aggressive pricing.",
+      "weight": 5,
+      "tags": ["finance", "requires_business"],
+      "choices": [
+        {
+          "label": "Invest in a marketing blitz",
+          "statEffects": { "money": -40000, "happiness": 2 },
+          "businessRevenueEffect": 12000,
+          "businessValuationEffect": 20000,
+          "resultText": "You held market share. Valuation ticks up."
+        },
+        {
+          "label": "Ignore them and stay the course",
+          "statEffects": { "happiness": -4 },
+          "businessRevenueEffect": -18000,
+          "businessValuationEffect": -30000,
+          "resultText": "They steal clients. Your books look thinner."
+        }
+      ]
+    },
+    {
+      "id": "biz_vc_buyout",
+      "minAge": 25,
+      "maxAge": 60,
+      "text": "A venture capital firm offers a partial buyout — cash now, less control later.",
+      "weight": 4,
+      "tags": ["finance", "requires_business"],
+      "choices": [
+        {
+          "label": "Accept the investment",
+          "statEffects": { "money": 120000, "happiness": 8 },
+          "businessValuationEffect": 80000,
+          "businessRevenueEffect": 15000,
+          "resultText": "Cash hits your account. The board just got more crowded."
+        },
+        {
+          "label": "Keep full ownership",
+          "statEffects": { "happiness": 2 },
+          "businessValuationEffect": 5000,
+          "resultText": "You stay independent. Growth stays on your terms."
+        }
+      ]
+    },
+    {
+      "id": "biz_supply_chain_crisis",
+      "minAge": 22,
+      "maxAge": 65,
+      "text": "A key supplier fails. Inventory is thin and customers are calling.",
+      "weight": 4,
+      "tags": ["finance", "requires_business"],
+      "choices": [
+        {
+          "label": "Pay premium for emergency stock",
+          "statEffects": { "money": -28000, "happiness": -1 },
+          "businessRevenueEffect": 5000,
+          "businessValuationEffect": 8000,
+          "resultText": "Expensive, but shelves stay full."
+        },
+        {
+          "label": "Delay orders and apologize",
+          "statEffects": { "happiness": -6 },
+          "businessRevenueEffect": -22000,
+          "businessValuationEffect": -35000,
+          "resultText": "Refunds pile up. Trust takes a hit."
+        }
+      ]
+    },
+    {
+      "id": "biz_viral_product",
+      "minAge": 20,
+      "maxAge": 55,
+      "text": "One of your offerings goes viral overnight. Orders flood in faster than you can fulfill.",
+      "weight": 4,
+      "tags": ["finance", "requires_business"],
+      "choices": [
+        {
+          "label": "Hire fast and scale up",
+          "statEffects": { "money": -20000, "happiness": 10 },
+          "businessRevenueEffect": 40000,
+          "businessValuationEffect": 100000,
+          "resultText": "Chaos, then growth. Your valuation soars."
+        },
+        {
+          "label": "Cap orders to protect quality",
+          "statEffects": { "happiness": 4, "money": 15000 },
+          "businessRevenueEffect": 10000,
+          "businessValuationEffect": 25000,
+          "resultText": "Steady gains without burning out the team."
+        }
+      ]
+    },
+    {
+      "id": "biz_tax_audit",
+      "minAge": 25,
+      "maxAge": 70,
+      "text": "Tax authorities open an audit on your company books. Penalties could be steep.",
+      "weight": 3,
+      "tags": ["finance", "requires_business"],
+      "choices": [
+        {
+          "label": "Hire a specialist accountant",
+          "statEffects": { "money": -45000, "happiness": -3 },
+          "businessValuationEffect": -5000,
+          "resultText": "Fees hurt, but you clear the audit cleanly."
+        },
+        {
+          "label": "Handle it yourself",
+          "statEffects": { "money": -15000, "happiness": -10, "health": -2 },
+          "businessRevenueEffect": -10000,
+          "businessValuationEffect": -25000,
+          "resultText": "Mistakes cost more than the specialist would have."
+        }
+      ]
+    },
+    {
+      "id": "biz_franchise_offer",
+      "minAge": 28,
+      "maxAge": 60,
+      "text": "A franchise group wants to license your brand in other cities for an upfront fee.",
+      "weight": 3,
+      "tags": ["finance", "requires_business"],
+      "choices": [
+        {
+          "label": "License the brand",
+          "statEffects": { "money": 80000, "happiness": 6 },
+          "businessValuationEffect": 50000,
+          "businessRevenueEffect": 8000,
+          "resultText": "Your name spreads. Royalty checks will follow."
+        },
+        {
+          "label": "Protect exclusivity",
+          "statEffects": { "happiness": 1 },
+          "businessValuationEffect": 10000,
+          "resultText": "You keep the brand rare — and local."
+        }
+      ]
     }
   ]
 }

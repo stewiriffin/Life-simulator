@@ -25,17 +25,28 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import com.maisha.game.R
+import com.maisha.game.data.JobPool
+import com.maisha.game.data.PetCatalog
+import com.maisha.game.data.EconomyScaler
 import com.maisha.game.data.model.Character
 import com.maisha.game.data.model.CrimeType
 import com.maisha.game.data.model.HealthCondition
+import com.maisha.game.data.model.HustleType
 import com.maisha.game.data.model.LifestyleOption
+import com.maisha.game.data.model.PetSpecies
+import com.maisha.game.data.model.SkillType
 import com.maisha.game.domain.HealthEngine
+import com.maisha.game.domain.RelationshipEngine
+import com.maisha.game.domain.SkillEngine
+import com.maisha.game.domain.SocialMediaEngine
 import com.maisha.game.ui.components.ActionCard
 import com.maisha.game.ui.components.ConditionBadge
 import com.maisha.game.ui.components.ConfirmActionDialog
 import com.maisha.game.ui.components.ConfirmSeverity
 import com.maisha.game.ui.components.ConfirmableActionHost
 import com.maisha.game.ui.components.EmptyStateCard
+import com.maisha.game.ui.components.StatBar
+import com.maisha.game.ui.components.StatType
 import com.maisha.game.ui.components.rememberConfirmableAction
 import com.maisha.game.ui.illustrations.EmptyStateIllustration
 import com.maisha.game.ui.theme.AppIcons
@@ -45,11 +56,18 @@ import com.maisha.game.ui.theme.TealPrimary
 import com.maisha.game.util.formatMoney
 
 private const val CRIME_UI_MIN_AGE = 16
+private const val SIDE_HUSTLE_UI_MIN_AGE = 16
 
 private sealed class PendingAction {
     data class Crime(val type: CrimeType) : PendingAction()
     data class Treatment(val condition: HealthCondition, val careType: CareType) : PendingAction()
     data class Lifestyle(val option: LifestyleOption, val enable: Boolean) : PendingAction()
+    data class SideHustle(val type: HustleType) : PendingAction()
+    data class AdoptPet(val species: PetSpecies) : PendingAction()
+    data object CreateSocialAccount : PendingAction()
+    data object MonetizeSocialAccount : PendingAction()
+    data class PracticeSkill(val type: SkillType) : PendingAction()
+    data class Masterclass(val type: SkillType) : PendingAction()
 }
 
 @Composable
@@ -60,6 +78,13 @@ fun ActionsScreen(
     onAttemptCrime: (CrimeType) -> Unit,
     onVisitDoctor: (String, CareType) -> Unit,
     onSetLifestyleOption: (LifestyleOption, Boolean) -> Unit,
+    onExecuteSideHustle: (HustleType) -> Unit,
+    onAdoptPet: (PetSpecies) -> Unit,
+    onCreateSocialAccount: () -> Unit,
+    onPostSocialContent: () -> Unit,
+    onMonetizeSocialAccount: () -> Unit,
+    onPracticeSkill: (SkillType) -> Unit,
+    onTakeMasterclass: (SkillType) -> Unit,
     onActionMessageDismissed: () -> Unit,
     modifier: Modifier = Modifier
 ) {
@@ -68,7 +93,36 @@ fun ActionsScreen(
     val untreated = character.activeConditions.filter { !it.treated }
     val showCrimeActions = character.age >= CRIME_UI_MIN_AGE && !incarcerated && !awaitingTrial && character.alive
     val showLifestyleActions = character.alive && !incarcerated && !awaitingTrial
-    val hasContent = untreated.isNotEmpty() || showCrimeActions || incarcerated || awaitingTrial || showLifestyleActions
+    val showSideHustleActions = character.alive &&
+        character.age >= SIDE_HUSTLE_UI_MIN_AGE &&
+        !incarcerated &&
+        !awaitingTrial &&
+        !character.career.isRetired
+    val showAdoptPetActions = character.alive &&
+        !incarcerated &&
+        !awaitingTrial &&
+        character.pets.size < RelationshipEngine.MAX_PETS
+    val showSocialMediaActions = character.alive &&
+        character.age >= SocialMediaEngine.MIN_ACCOUNT_AGE &&
+        !incarcerated &&
+        !awaitingTrial
+    val showSkillActions = character.alive &&
+        character.age >= SkillEngine.MIN_SKILL_AGE &&
+        !incarcerated &&
+        !awaitingTrial
+    val masterclassCost = EconomyScaler.scaleAmount(
+        SkillEngine.MASTERCLASS_BASE_COST_KENYA,
+        character.countryCode
+    )
+    val hasContent = untreated.isNotEmpty() ||
+        showCrimeActions ||
+        showSideHustleActions ||
+        showAdoptPetActions ||
+        showSocialMediaActions ||
+        showSkillActions ||
+        incarcerated ||
+        awaitingTrial ||
+        showLifestyleActions
 
     val pendingAction = rememberConfirmableAction<PendingAction>()
     var expandedConditionId by remember { mutableStateOf<String?>(null) }
@@ -224,6 +278,134 @@ fun ActionsScreen(
                     }
                 }
 
+                if (showSideHustleActions) {
+                    item {
+                        SectionHeader(title = stringResource(R.string.section_side_hustles))
+                    }
+                    items(JobPool.getAllSideHustleTypes(), key = { it.name }) { hustleType ->
+                        SideHustleActionCard(
+                            character = character,
+                            hustleType = hustleType,
+                            onClick = {
+                                pendingAction.request(PendingAction.SideHustle(hustleType))
+                            }
+                        )
+                    }
+                }
+
+                if (showSocialMediaActions) {
+                    item {
+                        SectionHeader(title = stringResource(R.string.section_social_media))
+                    }
+                    if (!character.socialMedia.hasAccount) {
+                        item {
+                            ActionCard(
+                                icon = AppIcons.Looks,
+                                title = stringResource(R.string.btn_create_social_account),
+                                description = stringResource(R.string.social_create_desc),
+                                metaLabel = stringResource(R.string.social_create_meta),
+                                onClick = {
+                                    pendingAction.request(PendingAction.CreateSocialAccount)
+                                }
+                            )
+                        }
+                    } else {
+                        item {
+                            ActionCard(
+                                icon = AppIcons.Looks,
+                                title = stringResource(R.string.btn_post_social_update),
+                                description = stringResource(R.string.social_post_desc),
+                                metaLabel = stringResource(
+                                    R.string.format_social_followers,
+                                    character.socialMedia.followers,
+                                    if (character.socialMedia.isVerified) {
+                                        stringResource(R.string.social_verified_badge)
+                                    } else {
+                                        ""
+                                    }
+                                ),
+                                onClick = onPostSocialContent
+                            )
+                        }
+                        item {
+                            val canMonetize = character.socialMedia.followers >=
+                                SocialMediaEngine.MONETIZATION_FOLLOWER_THRESHOLD &&
+                                !character.socialMedia.monetizedThisYear
+                            ActionCard(
+                                icon = AppIcons.Money,
+                                title = stringResource(R.string.btn_monetize_social),
+                                description = stringResource(R.string.social_monetize_desc),
+                                metaLabel = when {
+                                    character.socialMedia.monetizedThisYear ->
+                                        stringResource(R.string.msg_social_already_monetized)
+                                    character.socialMedia.followers <
+                                        SocialMediaEngine.MONETIZATION_FOLLOWER_THRESHOLD ->
+                                        stringResource(
+                                            R.string.format_social_monetize_req,
+                                            SocialMediaEngine.MONETIZATION_FOLLOWER_THRESHOLD
+                                        )
+                                    else -> stringResource(R.string.social_monetize_ready)
+                                },
+                                onClick = {
+                                    if (canMonetize) {
+                                        pendingAction.request(PendingAction.MonetizeSocialAccount)
+                                    }
+                                }
+                            )
+                        }
+                    }
+                }
+
+                if (showAdoptPetActions) {
+                    item {
+                        SectionHeader(title = stringResource(R.string.section_adopt_pet))
+                    }
+                    items(PetCatalog.getAll(), key = { it.species.name }) { entry ->
+                        val adoptionCost = EconomyScaler.scaleAmount(
+                            entry.adoptionFee,
+                            character.countryCode
+                        )
+                        val yearlyCost = EconomyScaler.scaleAmount(
+                            entry.yearlyUpkeep,
+                            character.countryCode
+                        )
+                        ActionCard(
+                            icon = AppIcons.Family,
+                            title = adoptPetTitle(entry.species),
+                            description = adoptPetDescription(entry.species),
+                            metaLabel = stringResource(
+                                R.string.format_pet_adoption_cost,
+                                formatMoney(adoptionCost, character.countryCode),
+                                formatMoney(yearlyCost, character.countryCode)
+                            ),
+                            onClick = {
+                                pendingAction.request(PendingAction.AdoptPet(entry.species))
+                            }
+                        )
+                    }
+                }
+
+                if (showSkillActions) {
+                    item {
+                        SectionHeader(title = stringResource(R.string.section_hobbies_skills))
+                    }
+                    items(SkillType.entries.toList(), key = { it.name }) { skillType ->
+                        val level = character.skills.find { it.type == skillType }?.level ?: 0
+                        SkillActionCard(
+                            skillType = skillType,
+                            level = level,
+                            masterclassCostLabel = formatMoney(masterclassCost, character.countryCode),
+                            canAffordMasterclass = character.stats.money >= masterclassCost,
+                            onPractice = {
+                                pendingAction.request(PendingAction.PracticeSkill(skillType))
+                            },
+                            onMasterclass = {
+                                pendingAction.request(PendingAction.Masterclass(skillType))
+                            }
+                        )
+                    }
+                }
+
                 if (showLifestyleActions) {
                     item {
                         SectionHeader(title = stringResource(R.string.section_lifestyle))
@@ -282,6 +464,12 @@ fun ActionsScreen(
                 is PendingAction.Crime -> onAttemptCrime(action.type)
                 is PendingAction.Treatment -> onVisitDoctor(action.condition.id, action.careType)
                 is PendingAction.Lifestyle -> onSetLifestyleOption(action.option, action.enable)
+                is PendingAction.SideHustle -> onExecuteSideHustle(action.type)
+                is PendingAction.AdoptPet -> onAdoptPet(action.species)
+                PendingAction.CreateSocialAccount -> onCreateSocialAccount()
+                PendingAction.MonetizeSocialAccount -> onMonetizeSocialAccount()
+                is PendingAction.PracticeSkill -> onPracticeSkill(action.type)
+                is PendingAction.Masterclass -> onTakeMasterclass(action.type)
             }
         }
     ) { action, onConfirm, onDismiss ->
@@ -312,6 +500,84 @@ fun ActionsScreen(
                         successHint(action.careType)
                     ),
                     confirmLabel = stringResource(R.string.btn_visit_doctor),
+                    severity = ConfirmSeverity.NEUTRAL,
+                    onConfirm = onConfirm,
+                    onDismiss = onDismiss
+                )
+            }
+            is PendingAction.SideHustle -> {
+                ConfirmActionDialog(
+                    title = stringResource(R.string.dialog_side_hustle_title),
+                    description = stringResource(R.string.dialog_side_hustle_description),
+                    confirmLabel = stringResource(R.string.btn_side_hustle),
+                    severity = ConfirmSeverity.NEUTRAL,
+                    onConfirm = onConfirm,
+                    onDismiss = onDismiss
+                )
+            }
+            is PendingAction.AdoptPet -> {
+                val entry = PetCatalog.findBySpecies(action.species)
+                val adoptionCost = entry?.let {
+                    formatMoney(
+                        EconomyScaler.scaleAmount(it.adoptionFee, character.countryCode),
+                        character.countryCode
+                    )
+                } ?: ""
+                ConfirmActionDialog(
+                    title = stringResource(R.string.dialog_adopt_pet_title),
+                    description = stringResource(
+                        R.string.dialog_adopt_pet_description,
+                        adoptPetTitle(action.species),
+                        adoptionCost
+                    ),
+                    confirmLabel = stringResource(R.string.btn_adopt_pet),
+                    severity = ConfirmSeverity.NEUTRAL,
+                    onConfirm = onConfirm,
+                    onDismiss = onDismiss
+                )
+            }
+            PendingAction.CreateSocialAccount -> {
+                ConfirmActionDialog(
+                    title = stringResource(R.string.dialog_create_social_title),
+                    description = stringResource(R.string.dialog_create_social_description),
+                    confirmLabel = stringResource(R.string.btn_create_social_account),
+                    severity = ConfirmSeverity.NEUTRAL,
+                    onConfirm = onConfirm,
+                    onDismiss = onDismiss
+                )
+            }
+            PendingAction.MonetizeSocialAccount -> {
+                ConfirmActionDialog(
+                    title = stringResource(R.string.dialog_monetize_social_title),
+                    description = stringResource(R.string.dialog_monetize_social_description),
+                    confirmLabel = stringResource(R.string.btn_monetize_social),
+                    severity = ConfirmSeverity.NEUTRAL,
+                    onConfirm = onConfirm,
+                    onDismiss = onDismiss
+                )
+            }
+            is PendingAction.PracticeSkill -> {
+                ConfirmActionDialog(
+                    title = stringResource(R.string.dialog_practice_skill_title),
+                    description = stringResource(
+                        R.string.dialog_practice_skill_description,
+                        skillTypeLabel(action.type)
+                    ),
+                    confirmLabel = stringResource(R.string.btn_practice_skill),
+                    severity = ConfirmSeverity.NEUTRAL,
+                    onConfirm = onConfirm,
+                    onDismiss = onDismiss
+                )
+            }
+            is PendingAction.Masterclass -> {
+                ConfirmActionDialog(
+                    title = stringResource(R.string.dialog_masterclass_title),
+                    description = stringResource(
+                        R.string.dialog_masterclass_description,
+                        skillTypeLabel(action.type),
+                        formatMoney(masterclassCost, character.countryCode)
+                    ),
+                    confirmLabel = stringResource(R.string.btn_take_masterclass),
                     severity = ConfirmSeverity.NEUTRAL,
                     onConfirm = onConfirm,
                     onDismiss = onDismiss
@@ -351,6 +617,123 @@ fun ActionsScreen(
             }
         }
     }
+}
+
+@Composable
+private fun SkillActionCard(
+    skillType: SkillType,
+    level: Int,
+    masterclassCostLabel: String,
+    canAffordMasterclass: Boolean,
+    onPractice: () -> Unit,
+    onMasterclass: () -> Unit
+) {
+    Column(
+        modifier = Modifier.fillMaxWidth(),
+        verticalArrangement = Arrangement.spacedBy(6.dp)
+    ) {
+        StatBar(
+            type = StatType.SKILL,
+            value = level,
+            label = skillTypeLabel(skillType),
+            showIcon = false
+        )
+        ActionCard(
+            icon = AppIcons.Smarts,
+            title = stringResource(R.string.btn_practice_skill),
+            description = stringResource(R.string.skill_practice_desc),
+            metaLabel = stringResource(R.string.skill_practice_meta),
+            onClick = onPractice
+        )
+        ActionCard(
+            icon = AppIcons.Money,
+            title = stringResource(R.string.btn_take_masterclass),
+            description = stringResource(R.string.skill_masterclass_desc),
+            metaLabel = if (canAffordMasterclass) {
+                stringResource(R.string.format_masterclass_cost, masterclassCostLabel)
+            } else {
+                stringResource(R.string.msg_skill_cannot_afford)
+            },
+            onClick = { if (canAffordMasterclass) onMasterclass() }
+        )
+    }
+}
+
+@Composable
+private fun skillTypeLabel(type: SkillType): String = when (type) {
+    SkillType.GUITAR -> stringResource(R.string.skill_guitar)
+    SkillType.COOKING -> stringResource(R.string.skill_cooking)
+    SkillType.MARTIAL_ARTS -> stringResource(R.string.skill_martial_arts)
+    SkillType.PROGRAMMING -> stringResource(R.string.skill_programming)
+    SkillType.WRITING -> stringResource(R.string.skill_writing)
+}
+
+@Composable
+private fun adoptPetTitle(species: PetSpecies): String = when (species) {
+    PetSpecies.DOG -> stringResource(R.string.pet_species_dog)
+    PetSpecies.CAT -> stringResource(R.string.pet_species_cat)
+    PetSpecies.BIRD -> stringResource(R.string.pet_species_bird)
+    PetSpecies.FISH -> stringResource(R.string.pet_species_fish)
+    PetSpecies.EXOTIC -> stringResource(R.string.pet_species_exotic)
+}
+
+@Composable
+private fun adoptPetDescription(species: PetSpecies): String = when (species) {
+    PetSpecies.DOG -> stringResource(R.string.pet_adopt_dog_desc)
+    PetSpecies.CAT -> stringResource(R.string.pet_adopt_cat_desc)
+    PetSpecies.BIRD -> stringResource(R.string.pet_adopt_bird_desc)
+    PetSpecies.FISH -> stringResource(R.string.pet_adopt_fish_desc)
+    PetSpecies.EXOTIC -> stringResource(R.string.pet_adopt_exotic_desc)
+}
+
+@Composable
+private fun SideHustleActionCard(
+    character: Character,
+    hustleType: HustleType,
+    onClick: () -> Unit
+) {
+    val alreadyDone = character.career.sideHustleDoneThisYear
+    val meetsPrerequisites = JobPool.meetsSideHustlePrerequisites(character, hustleType)
+    val available = !alreadyDone && meetsPrerequisites
+    val metaLabel = when {
+        alreadyDone -> stringResource(R.string.msg_side_hustle_already_done)
+        !meetsPrerequisites -> sideHustleRequirementLabel(hustleType)
+        else -> stringResource(R.string.btn_side_hustle)
+    }
+    ActionCard(
+        icon = AppIcons.Money,
+        title = sideHustleTitle(hustleType),
+        description = sideHustleDescription(hustleType),
+        metaLabel = metaLabel,
+        onClick = { if (available) onClick() }
+    )
+}
+
+@Composable
+private fun sideHustleTitle(type: HustleType): String = when (type) {
+    HustleType.RIDE_SHARE -> stringResource(R.string.hustle_ride_share_title)
+    HustleType.FREELANCE_CODING -> stringResource(R.string.hustle_freelance_coding_title)
+    HustleType.TUTORING -> stringResource(R.string.hustle_tutoring_title)
+    HustleType.FOOD_DELIVERY -> stringResource(R.string.hustle_food_delivery_title)
+    HustleType.RESELLING -> stringResource(R.string.hustle_reselling_title)
+}
+
+@Composable
+private fun sideHustleDescription(type: HustleType): String = when (type) {
+    HustleType.RIDE_SHARE -> stringResource(R.string.hustle_ride_share_desc)
+    HustleType.FREELANCE_CODING -> stringResource(R.string.hustle_freelance_coding_desc)
+    HustleType.TUTORING -> stringResource(R.string.hustle_tutoring_desc)
+    HustleType.FOOD_DELIVERY -> stringResource(R.string.hustle_food_delivery_desc)
+    HustleType.RESELLING -> stringResource(R.string.hustle_reselling_desc)
+}
+
+@Composable
+private fun sideHustleRequirementLabel(type: HustleType): String = when (type) {
+    HustleType.RIDE_SHARE -> stringResource(R.string.hustle_ride_share_req)
+    HustleType.FREELANCE_CODING -> stringResource(R.string.hustle_freelance_coding_req)
+    HustleType.TUTORING -> stringResource(R.string.hustle_tutoring_req)
+    HustleType.RESELLING -> stringResource(R.string.hustle_reselling_req)
+    HustleType.FOOD_DELIVERY -> stringResource(R.string.msg_side_hustle_prerequisites)
 }
 
 @Composable

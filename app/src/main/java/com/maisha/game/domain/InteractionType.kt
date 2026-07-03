@@ -11,5 +11,8 @@ enum class InteractionType {
     TRAVEL_TOGETHER,
     ASK_FOR_ADVICE,
     PRANK,
-    SET_UP_ON_DATE
+    SET_UP_ON_DATE,
+    HELP_WITH_HOMEWORK,
+    PAY_ALLOWANCE,
+    DISCIPLINE
 }

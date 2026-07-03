@@ -1,4 +1,4 @@
-// app/src/main/java/com/maisha/game/MaishaApplication.kt (modified — WorkManager + notification channel)
+// app/src/main/java/com/maisha/game/MaishaApplication.kt
 package com.maisha.game
 
 import android.app.Application
@@ -39,7 +39,7 @@ class MaishaApplication : Application(), Configuration.Provider {
     @Inject
     lateinit var eventRepository: EventRepository
 
-    private val applicationScope = CoroutineScope(SupervisorJob() + Dispatchers.Main)
+    private val applicationScope = CoroutineScope(SupervisorJob() + Dispatchers.Main.immediate)
 
     override val workManagerConfiguration: Configuration
         get() = Configuration.Builder()
@@ -48,8 +48,12 @@ class MaishaApplication : Application(), Configuration.Provider {
 
     override fun onCreate() {
         super.onCreate()
-        MobileAds.initialize(this)
         NotificationHelper.createNotificationChannel(this)
+
+        // AdMob SDK init is deferred off the main thread to avoid cold-start hitching.
+        applicationScope.launch(Dispatchers.IO) {
+            MobileAds.initialize(this@MaishaApplication)
+        }
 
         applicationScope.launch(Dispatchers.Default) {
             eventRepository.ensureLoaded()

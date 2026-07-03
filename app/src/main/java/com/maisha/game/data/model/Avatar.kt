@@ -1,4 +1,4 @@
-// app/src/main/java/com/maisha/game/data/model/Avatar.kt (modified — Prompt 26: wider tones/styles + facialFeature)
+// app/src/main/java/com/maisha/game/data/model/Avatar.kt
 package com.maisha.game.data.model
 
 import androidx.compose.runtime.Immutable
@@ -21,6 +21,28 @@ enum class Expression {
     SURPRISED
 }
 
+@Serializable
+enum class FacialHairStyle {
+    STUBBLE,
+    MUSTACHE,
+    BEARD,
+    GOATEE
+}
+
+@Serializable
+enum class EyewearStyle {
+    GLASSES,
+    SUNGLASSES,
+    READING_GLASSES
+}
+
+@Serializable
+enum class AgingDetails {
+    WRINKLES,
+    GRAYING,
+    WRINKLES_AND_GRAYING
+}
+
 fun ageStageFor(age: Int): AgeStage = when {
     age <= 2 -> AgeStage.BABY
     age <= 12 -> AgeStage.CHILD
@@ -30,9 +52,10 @@ fun ageStageFor(age: Int): AgeStage = when {
 }
 
 /**
- * Visual identity indices for [com.maisha.game.ui.avatar.AvatarRenderer] (procedural Canvas art).
+ * Visual identity for layered avatar drawables in [com.maisha.game.ui.avatar.AvatarImage].
  *
  * Index ranges are defined in [Companion]; out-of-range values are coerced at render time.
+ * Optional genetics-driven and age-evolved accessories live in nullable fields.
  */
 @Immutable
 @Serializable
@@ -42,7 +65,10 @@ data class AvatarConfig(
     val hairColor: Int,
     val outfitColor: Int,
     val accessoryId: Int? = null,
-    val facialFeature: Int? = null
+    val facialFeature: Int? = null,
+    val facialHair: FacialHairStyle? = null,
+    val eyewear: EyewearStyle? = null,
+    val agingDetails: AgingDetails? = null
 ) {
     companion object {
         const val SKIN_TONE_COUNT = 8
@@ -51,6 +77,8 @@ data class AvatarConfig(
         const val OUTFIT_COLOR_COUNT = 8
         const val ACCESSORY_COUNT = 3
         const val FACIAL_FEATURE_COUNT = 5
+        /** Index of the gray swatch in the hair-color palette (senior aging). */
+        const val GRAY_HAIR_COLOR_INDEX = 5
 
         fun random(): AvatarConfig = AvatarConfig(
             skinTone = Random.nextInt(SKIN_TONE_COUNT),
@@ -58,7 +86,10 @@ data class AvatarConfig(
             hairColor = Random.nextInt(HAIR_COLOR_COUNT),
             outfitColor = Random.nextInt(OUTFIT_COLOR_COUNT),
             accessoryId = if (Random.nextBoolean()) Random.nextInt(ACCESSORY_COUNT) else null,
-            facialFeature = if (Random.nextFloat() < 0.45f) Random.nextInt(FACIAL_FEATURE_COUNT) else null
+            facialFeature = if (Random.nextFloat() < 0.45f) Random.nextInt(FACIAL_FEATURE_COUNT) else null,
+            facialHair = null,
+            eyewear = null,
+            agingDetails = null
         )
 
         val DEFAULT = AvatarConfig(
@@ -67,7 +98,10 @@ data class AvatarConfig(
             hairColor = 2,
             outfitColor = 3,
             accessoryId = null,
-            facialFeature = null
+            facialFeature = null,
+            facialHair = null,
+            eyewear = null,
+            agingDetails = null
         )
     }
 }

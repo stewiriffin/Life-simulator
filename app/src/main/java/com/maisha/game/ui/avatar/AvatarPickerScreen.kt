@@ -39,6 +39,8 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.maisha.game.R
 import com.maisha.game.data.model.AvatarConfig
+import com.maisha.game.data.model.EyewearStyle
+import com.maisha.game.data.model.FacialHairStyle
 import com.maisha.game.ui.theme.GoldAccent
 import com.maisha.game.ui.theme.NavyDeep
 import com.maisha.game.ui.theme.TealPrimary
@@ -160,6 +162,24 @@ fun AvatarPickerScreen(
             onSelect = { onAvatarChange(avatarConfig.copy(facialFeature = it)) }
         )
         Spacer(modifier = Modifier.height(12.dp))
+        OptionalEnumRow(
+            label = stringResource(R.string.avatar_facial_hair),
+            noneLabel = stringResource(R.string.avatar_none),
+            options = FacialHairStyle.entries,
+            selected = avatarConfig.facialHair,
+            labelFor = { facialHairLabel(it) },
+            onSelect = { onAvatarChange(avatarConfig.copy(facialHair = it)) }
+        )
+        Spacer(modifier = Modifier.height(12.dp))
+        OptionalEnumRow(
+            label = stringResource(R.string.avatar_eyewear),
+            noneLabel = stringResource(R.string.avatar_none),
+            options = EyewearStyle.entries,
+            selected = avatarConfig.eyewear,
+            labelFor = { eyewearLabel(it) },
+            onSelect = { onAvatarChange(avatarConfig.copy(eyewear = it)) }
+        )
+        Spacer(modifier = Modifier.height(12.dp))
         OptionalFeatureRow(
             label = stringResource(R.string.avatar_accessory),
             noneLabel = stringResource(R.string.avatar_none),
@@ -221,6 +241,52 @@ private fun HairStyleRow(
             }
         }
     }
+}
+
+@Composable
+private fun <T> OptionalEnumRow(
+    label: String,
+    noneLabel: String,
+    options: List<T>,
+    selected: T?,
+    labelFor: @Composable (T) -> String,
+    onSelect: (T?) -> Unit
+) {
+    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+        Text(text = label, style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.SemiBold)
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(8.dp)
+        ) {
+            FilterChip(
+                selected = selected == null,
+                onClick = { onSelect(null) },
+                label = { Text(noneLabel) }
+            )
+            options.forEach { option ->
+                FilterChip(
+                    selected = selected == option,
+                    onClick = { onSelect(option) },
+                    label = { Text(labelFor(option)) }
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun facialHairLabel(style: FacialHairStyle): String = when (style) {
+    FacialHairStyle.STUBBLE -> stringResource(R.string.facial_hair_stubble)
+    FacialHairStyle.MUSTACHE -> stringResource(R.string.facial_hair_mustache)
+    FacialHairStyle.BEARD -> stringResource(R.string.facial_hair_beard)
+    FacialHairStyle.GOATEE -> stringResource(R.string.facial_hair_goatee)
+}
+
+@Composable
+private fun eyewearLabel(style: EyewearStyle): String = when (style) {
+    EyewearStyle.GLASSES -> stringResource(R.string.eyewear_glasses)
+    EyewearStyle.SUNGLASSES -> stringResource(R.string.eyewear_sunglasses)
+    EyewearStyle.READING_GLASSES -> stringResource(R.string.eyewear_reading_glasses)
 }
 
 @Composable

@@ -10,7 +10,14 @@ import com.maisha.game.data.model.EducationState
 import com.maisha.game.data.model.Gender
 import com.maisha.game.data.model.Job
 import com.maisha.game.data.model.Person
+import com.maisha.game.data.model.Pet
+import com.maisha.game.data.model.PetSpecies
 import com.maisha.game.data.model.RelationType
+import com.maisha.game.data.model.AvatarConfig
+import com.maisha.game.data.model.Business
+import com.maisha.game.data.model.HealthCondition
+import com.maisha.game.data.model.SkillProgress
+import com.maisha.game.data.model.SocialMediaState
 import com.maisha.game.data.model.SchoolStage
 import com.maisha.game.data.model.Stats
 import com.maisha.game.notifications.NotificationScheduler
@@ -29,6 +36,12 @@ object TestFixtures {
         education: EducationState = EducationState(),
         career: CareerState = CareerState(),
         assets: List<Asset> = emptyList(),
+        pets: List<Pet> = emptyList(),
+        socialMedia: SocialMediaState = SocialMediaState(),
+        skills: List<SkillProgress> = emptyList(),
+        businesses: List<Business> = emptyList(),
+        avatarConfig: AvatarConfig = AvatarConfig.DEFAULT,
+        activeConditions: List<HealthCondition> = emptyList(),
         criminalRecord: CriminalRecord = CriminalRecord(),
         generationNumber: Int = 1,
         relocationCount: Int = 0,
@@ -47,6 +60,12 @@ object TestFixtures {
         education = education,
         career = career,
         assets = assets,
+        pets = pets,
+        socialMedia = socialMedia,
+        skills = skills,
+        businesses = businesses,
+        avatarConfig = avatarConfig,
+        activeConditions = activeConditions,
         criminalRecord = criminalRecord,
         generationNumber = generationNumber,
         relocationCount = relocationCount,
@@ -113,6 +132,22 @@ object TestFixtures {
         generationAcquired = generationAcquired
     )
 
+    fun pet(
+        id: String = "pet1",
+        name: String = "Buddy",
+        species: PetSpecies = PetSpecies.DOG,
+        age: Int = 0,
+        health: Int = 100,
+        relationshipLevel: Int = 60
+    ): Pet = Pet(
+        id = id,
+        name = name,
+        species = species,
+        age = age,
+        health = health,
+        relationshipLevel = relationshipLevel
+    )
+
     fun child(
         id: String,
         age: Int,
@@ -141,13 +176,16 @@ object TestFixtures {
             educationEngine = EducationEngine(),
             careerEngine = CareerEngine(healthEngine),
             financeEngine = financeEngine,
-            relationshipEngine = RelationshipEngine(),
+            relationshipEngine = RelationshipEngine(FinanceEngine()),
             mortalityEngine = MortalityEngine(),
             crimeEngine = CrimeEngine(),
             healthEngine = healthEngine,
             achievementEngine = AchievementEngine(financeEngine),
             notificationScheduler = NotificationScheduler.forTesting(),
-            relocationEngine = RelocationEngine()
+            relocationEngine = RelocationEngine(),
+            socialMediaEngine = SocialMediaEngine(financeEngine),
+            skillEngine = SkillEngine(),
+            businessEngine = BusinessEngine(financeEngine)
         )
     }
 }

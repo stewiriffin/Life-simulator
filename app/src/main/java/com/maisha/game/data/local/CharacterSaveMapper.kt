@@ -12,6 +12,10 @@ import com.maisha.game.data.model.Gender
 import com.maisha.game.data.model.HealthCondition
 import com.maisha.game.data.model.LifestyleState
 import com.maisha.game.data.model.Person
+import com.maisha.game.data.model.Pet
+import com.maisha.game.data.model.Business
+import com.maisha.game.data.model.SkillProgress
+import com.maisha.game.data.model.SocialMediaState
 import com.maisha.game.data.model.Stats
 import com.maisha.game.util.SerializationUtils
 
@@ -65,6 +69,12 @@ internal object CharacterSaveMapper {
                 default = emptyList<Asset>(),
                 slotId = slotId
             )
+            val pets = SerializationUtils.safeDeserialize(
+                entity.petsJson,
+                fieldName = "pets",
+                default = emptyList<Pet>(),
+                slotId = slotId
+            )
             val criminalRecord = SerializationUtils.safeDeserialize(
                 entity.criminalRecordJson,
                 fieldName = "criminalRecord",
@@ -101,6 +111,24 @@ internal object CharacterSaveMapper {
                 default = LifestyleState(),
                 slotId = slotId
             )
+            val socialMedia = SerializationUtils.safeDeserialize(
+                entity.socialMediaJson,
+                fieldName = "socialMedia",
+                default = SocialMediaState(),
+                slotId = slotId
+            )
+            val skills = SerializationUtils.safeDeserialize(
+                entity.skillsJson,
+                fieldName = "skills",
+                default = emptyList<SkillProgress>(),
+                slotId = slotId
+            )
+            val businesses = SerializationUtils.safeDeserialize(
+                entity.businessesJson,
+                fieldName = "businesses",
+                default = emptyList<Business>(),
+                slotId = slotId
+            )
             SavedGameLoadResult.Success(
                 SavedGame(
                     character = Character(
@@ -131,10 +159,14 @@ internal object CharacterSaveMapper {
                         education = education,
                         career = career,
                         assets = assets,
+                        pets = pets,
                         criminalRecord = criminalRecord,
                         activeConditions = healthConditions,
                         generationNumber = entity.generationNumber,
-                        lifestyle = lifestyle
+                        lifestyle = lifestyle,
+                        socialMedia = socialMedia,
+                        skills = skills,
+                        businesses = businesses
                     ),
                     triggeredEventIds = triggeredIds.toSet()
                 )
@@ -158,7 +190,13 @@ internal object CharacterSaveMapper {
                     isCorrupted = false,
                     countryCode = character.countryCode,
                     avatarConfig = character.avatarConfig,
-                    generationNumber = character.generationNumber
+                    generationNumber = character.generationNumber,
+                    netWorth = character.stats.money +
+                        character.assets.sumOf { it.currentValue } +
+                        character.businesses.sumOf { it.valuation },
+                    jobTitle = character.career.currentJob?.title
+                        ?: character.career.jobHistory.lastOrNull(),
+                    isRetired = character.career.isRetired
                 )
             }
             is SavedGameLoadResult.Corrupted -> SlotSummary(

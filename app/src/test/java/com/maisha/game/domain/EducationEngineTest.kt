@@ -225,7 +225,7 @@ class EducationEngineTest {
 
     @Test
     fun processExpulsion_updatesStateAndTriggersFamilyPenalty() {
-        val relationshipEngine = RelationshipEngine()
+        val relationshipEngine = RelationshipEngine(FinanceEngine())
         val mother = TestFixtures.person(
             id = "mom",
             relation = RelationType.MOTHER,

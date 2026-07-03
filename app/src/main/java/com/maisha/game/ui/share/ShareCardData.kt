@@ -29,11 +29,12 @@ data class ShareCardData(
     val topAssetSummary: String? = null,
     val familySummary: String,
     val closestBondSummary: String = "",
+    val legacySentence: String = "",
     val achievementBadges: List<ShareAchievementBadge>
 )
 
 object ShareCardDimensions {
-    /** 4:5 portrait — fits Instagram feed & WhatsApp status without heavy cropping. */
+    /** 9:16 portrait — optimized for Instagram/WhatsApp stories. */
     const val WIDTH_PX = 1080
-    const val HEIGHT_PX = 1350
+    const val HEIGHT_PX = 1920
 }

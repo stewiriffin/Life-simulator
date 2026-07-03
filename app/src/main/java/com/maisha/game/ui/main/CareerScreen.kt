@@ -11,37 +11,52 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.selection.selectable
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Lock
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.FilterChip
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
+import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.RadioButton
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.maisha.game.R
 import com.maisha.game.data.IllustrationCatalog
 import com.maisha.game.data.JobPool
+import com.maisha.game.data.model.Business
+import com.maisha.game.data.model.BusinessIndustry
 import com.maisha.game.data.model.Character
 import com.maisha.game.data.model.EducationState
 import com.maisha.game.data.model.Job
 import com.maisha.game.data.model.SchoolStage
+import com.maisha.game.domain.BusinessEngine
 import com.maisha.game.ui.components.ConfirmActionDialog
 import com.maisha.game.ui.components.ConfirmSeverity
 import com.maisha.game.ui.components.ConfirmableActionHost
@@ -53,9 +68,11 @@ import com.maisha.game.ui.components.StatBar
 import com.maisha.game.ui.components.StatType
 import com.maisha.game.ui.illustrations.EmptyStateIllustration
 import com.maisha.game.ui.illustrations.EmptyStateIllustrationView
+import com.maisha.game.ui.theme.CoralNegative
 import com.maisha.game.ui.theme.GoldAccent
 import com.maisha.game.ui.theme.MaishaRadius
 import com.maisha.game.ui.theme.MaishaSpacing
+import com.maisha.game.ui.theme.SuccessGreen
 import com.maisha.game.ui.theme.TealPrimary
 import com.maisha.game.util.formatMoney
 
@@ -72,11 +89,27 @@ fun CareerScreen(
     onRetire: () -> Unit,
     retirementPensionEstimate: Int,
     onDropOut: () -> Unit,
+    onStartBusiness: (String, BusinessIndustry, Int) -> Unit,
+    onSellBusiness: (String) -> Unit,
+    investmentTiers: List<Int>,
     onCareerMessageDismissed: () -> Unit,
     modifier: Modifier = Modifier
 ) {
     val dropOutConfirm = rememberConfirmableAction<Unit>()
     val retireConfirm = rememberConfirmableAction<Unit>()
+    val startBusinessConfirm = rememberConfirmableAction<Unit>()
+    val sellBusinessConfirm = rememberConfirmableAction<Business>()
+
+    val tiers = investmentTiers.ifEmpty {
+        listOf(
+            BusinessEngine.INVESTMENT_SMALL_KENYA,
+            BusinessEngine.INVESTMENT_MEDIUM_KENYA,
+            BusinessEngine.INVESTMENT_LARGE_KENYA
+        )
+    }
+    var businessName by remember { mutableStateOf("") }
+    var businessIndustry by remember { mutableStateOf(BusinessIndustry.TECH) }
+    var businessInvestment by remember { mutableIntStateOf(tiers.first()) }
 
     ConfirmableActionHost(
         state = dropOutConfirm,
@@ -109,6 +142,45 @@ fun CareerScreen(
         )
     }
 
+    ConfirmableActionHost(
+        state = startBusinessConfirm,
+        onConfirmed = {
+            onStartBusiness(businessName, businessIndustry, businessInvestment)
+        }
+    ) { _, onConfirm, onDismiss ->
+        StartBusinessDialog(
+            name = businessName,
+            onNameChange = { businessName = it },
+            industry = businessIndustry,
+            onIndustryChange = { businessIndustry = it },
+            investment = businessInvestment,
+            onInvestmentChange = { businessInvestment = it },
+            investmentTiers = tiers,
+            countryCode = character.countryCode,
+            playerMoney = character.stats.money,
+            onConfirm = onConfirm,
+            onDismiss = onDismiss
+        )
+    }
+
+    ConfirmableActionHost(
+        state = sellBusinessConfirm,
+        onConfirmed = { business -> onSellBusiness(business.id) }
+    ) { business, onConfirm, onDismiss ->
+        ConfirmActionDialog(
+            title = stringResource(R.string.dialog_sell_business_title),
+            description = stringResource(
+                R.string.dialog_sell_business_description,
+                business.name,
+                formatMoney(business.valuation, character.countryCode)
+            ),
+            confirmLabel = stringResource(R.string.btn_sell_business),
+            severity = ConfirmSeverity.WARNING,
+            onConfirm = onConfirm,
+            onDismiss = onDismiss
+        )
+    }
+
     LaunchedEffect(uiState.careerMessage) {
         uiState.careerMessage?.let { message ->
             snackbarHostState.showSnackbar(message)
@@ -119,10 +191,16 @@ fun CareerScreen(
     val currentJob = character.career.currentJob
     val isRetired = character.career.isRetired
     val eligibleIds = eligibleJobs.map { it.id }.toSet()
+    val canStartBusiness = character.alive &&
+        character.age >= BusinessEngine.MIN_BUSINESS_AGE &&
+        !character.criminalRecord.currentlyIncarcerated &&
+        !character.criminalRecord.awaitingTrial &&
+        character.businesses.size < BusinessEngine.MAX_BUSINESSES
 
     Column(
         modifier = modifier
             .fillMaxSize()
+            .verticalScroll(rememberScrollState())
             .padding(horizontal = MaishaSpacing.md, vertical = MaishaSpacing.sm)
     ) {
         Text(
@@ -151,6 +229,7 @@ fun CareerScreen(
                     pensionAmount = character.career.pensionAmount,
                     countryCode = character.countryCode
                 )
+                Spacer(modifier = Modifier.height(12.dp))
             }
             currentJob != null -> {
                 CurrentJobCard(
@@ -163,7 +242,53 @@ fun CareerScreen(
             }
         }
 
+        Text(
+            text = stringResource(R.string.section_my_businesses),
+            style = MaterialTheme.typography.titleSmall,
+            fontWeight = FontWeight.SemiBold,
+            color = TealPrimary
+        )
+        Spacer(modifier = Modifier.height(MaishaSpacing.sm))
+
+        if (character.businesses.isEmpty()) {
+            Text(
+                text = stringResource(R.string.empty_businesses),
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+        } else {
+            character.businesses.forEach { business ->
+                BusinessCard(
+                    business = business,
+                    countryCode = character.countryCode,
+                    onSell = { sellBusinessConfirm.request(business) }
+                )
+                Spacer(modifier = Modifier.height(MaishaSpacing.sm))
+            }
+        }
+
+        if (canStartBusiness) {
+            Spacer(modifier = Modifier.height(4.dp))
+            Button(
+                onClick = {
+                    businessName = ""
+                    businessIndustry = BusinessIndustry.TECH
+                    businessInvestment = tiers.first()
+                    startBusinessConfirm.request(Unit)
+                },
+                modifier = Modifier.fillMaxWidth(),
+                shape = RoundedCornerShape(14.dp),
+                colors = ButtonDefaults.buttonColors(containerColor = TealPrimary)
+            ) {
+                Text(
+                    text = stringResource(R.string.btn_start_business),
+                    fontWeight = FontWeight.SemiBold
+                )
+            }
+        }
+
         if (!isRetired && currentJob == null) {
+            Spacer(modifier = Modifier.height(16.dp))
             Text(
                 text = stringResource(R.string.section_job_listings),
                 style = MaterialTheme.typography.titleSmall,
@@ -178,11 +303,8 @@ fun CareerScreen(
                     message = stringResource(R.string.empty_career_no_eligible)
                 )
             } else {
-                LazyColumn(
-                    modifier = Modifier.fillMaxSize(),
-                    verticalArrangement = Arrangement.spacedBy(MaishaSpacing.sm)
-                ) {
-                    items(JobPool.getJobsForCountry(character.countryCode), key = { it.id }) { job ->
+                Column(verticalArrangement = Arrangement.spacedBy(MaishaSpacing.sm)) {
+                    JobPool.getJobsForCountry(character.countryCode).forEach { job ->
                         val isEligible = job.id in eligibleIds
                         val reason = jobIneligibilityReason(character, job)
                         JobListingCard(
@@ -211,6 +333,219 @@ fun CareerScreen(
             )
         }
     }
+}
+
+@Composable
+private fun BusinessCard(
+    business: Business,
+    countryCode: String,
+    onSell: () -> Unit
+) {
+    val profitColor = when {
+        business.lastYearProfit > 0 -> SuccessGreen
+        business.lastYearProfit < 0 -> CoralNegative
+        else -> MaterialTheme.colorScheme.onSurfaceVariant
+    }
+    val profitLabel = when {
+        business.lastYearProfit > 0 -> stringResource(
+            R.string.format_business_profit,
+            formatMoney(business.lastYearProfit, countryCode)
+        )
+        business.lastYearProfit < 0 -> stringResource(
+            R.string.format_business_loss,
+            formatMoney(-business.lastYearProfit, countryCode)
+        )
+        else -> stringResource(R.string.label_business_no_profit_yet)
+    }
+
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        shape = MaishaRadius.cardShape,
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.surfaceVariant
+        )
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(MaishaSpacing.md),
+            verticalArrangement = Arrangement.spacedBy(6.dp)
+        ) {
+            Text(
+                text = business.name,
+                style = MaterialTheme.typography.titleSmall,
+                fontWeight = FontWeight.SemiBold,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis
+            )
+            Text(
+                text = businessIndustryLabel(business.industry),
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+            Text(
+                text = stringResource(
+                    R.string.format_business_valuation,
+                    formatMoney(business.valuation, countryCode)
+                ),
+                style = MaterialTheme.typography.labelLarge,
+                color = TealPrimary,
+                fontWeight = FontWeight.SemiBold
+            )
+            Text(
+                text = profitLabel,
+                style = MaterialTheme.typography.labelMedium,
+                color = profitColor
+            )
+            Text(
+                text = stringResource(
+                    R.string.format_business_employees,
+                    business.employeeCount
+                ),
+                style = MaterialTheme.typography.labelSmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+            OutlinedButton(
+                onClick = onSell,
+                modifier = Modifier.fillMaxWidth(),
+                shape = RoundedCornerShape(12.dp)
+            ) {
+                Text(stringResource(R.string.btn_sell_business))
+            }
+        }
+    }
+}
+
+@Composable
+private fun StartBusinessDialog(
+    name: String,
+    onNameChange: (String) -> Unit,
+    industry: BusinessIndustry,
+    onIndustryChange: (BusinessIndustry) -> Unit,
+    investment: Int,
+    onInvestmentChange: (Int) -> Unit,
+    investmentTiers: List<Int>,
+    countryCode: String,
+    playerMoney: Int,
+    onConfirm: () -> Unit,
+    onDismiss: () -> Unit
+) {
+    val canAfford = playerMoney >= investment && name.isNotBlank()
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = {
+            Text(
+                text = stringResource(R.string.dialog_start_business_title),
+                fontWeight = FontWeight.Bold
+            )
+        },
+        text = {
+            Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                Text(
+                    text = stringResource(R.string.dialog_start_business_description),
+                    style = MaterialTheme.typography.bodySmall
+                )
+                OutlinedTextField(
+                    value = name,
+                    onValueChange = onNameChange,
+                    label = { Text(stringResource(R.string.label_business_name)) },
+                    singleLine = true,
+                    modifier = Modifier.fillMaxWidth()
+                )
+                Text(
+                    text = stringResource(R.string.label_business_industry),
+                    style = MaterialTheme.typography.labelMedium,
+                    fontWeight = FontWeight.SemiBold
+                )
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(6.dp)
+                ) {
+                    BusinessIndustry.entries.take(3).forEach { option ->
+                        FilterChip(
+                            selected = industry == option,
+                            onClick = { onIndustryChange(option) },
+                            label = {
+                                Text(
+                                    text = businessIndustryLabel(option),
+                                    maxLines = 1,
+                                    overflow = TextOverflow.Ellipsis
+                                )
+                            }
+                        )
+                    }
+                }
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(6.dp)
+                ) {
+                    BusinessIndustry.entries.drop(3).forEach { option ->
+                        FilterChip(
+                            selected = industry == option,
+                            onClick = { onIndustryChange(option) },
+                            label = {
+                                Text(
+                                    text = businessIndustryLabel(option),
+                                    maxLines = 1,
+                                    overflow = TextOverflow.Ellipsis
+                                )
+                            }
+                        )
+                    }
+                }
+                Text(
+                    text = stringResource(R.string.label_initial_investment),
+                    style = MaterialTheme.typography.labelMedium,
+                    fontWeight = FontWeight.SemiBold
+                )
+                investmentTiers.forEach { tier ->
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .selectable(
+                                selected = investment == tier,
+                                onClick = { onInvestmentChange(tier) },
+                                role = Role.RadioButton
+                            )
+                            .padding(vertical = 2.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        RadioButton(
+                            selected = investment == tier,
+                            onClick = { onInvestmentChange(tier) }
+                        )
+                        Text(
+                            text = formatMoney(tier, countryCode),
+                            style = MaterialTheme.typography.bodyMedium
+                        )
+                    }
+                }
+            }
+        },
+        confirmButton = {
+            Button(
+                onClick = onConfirm,
+                enabled = canAfford,
+                colors = ButtonDefaults.buttonColors(containerColor = TealPrimary)
+            ) {
+                Text(stringResource(R.string.btn_start_business))
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) {
+                Text(stringResource(R.string.btn_cancel))
+            }
+        }
+    )
+}
+
+@Composable
+private fun businessIndustryLabel(industry: BusinessIndustry): String = when (industry) {
+    BusinessIndustry.TECH -> stringResource(R.string.industry_tech)
+    BusinessIndustry.RETAIL -> stringResource(R.string.industry_retail)
+    BusinessIndustry.FOOD -> stringResource(R.string.industry_food)
+    BusinessIndustry.REAL_ESTATE -> stringResource(R.string.industry_real_estate)
+    BusinessIndustry.ENTERTAINMENT -> stringResource(R.string.industry_entertainment)
 }
 
 @Composable

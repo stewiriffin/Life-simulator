@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="utf-8"?>
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="100dp"
+    android:height="100dp"
+    android:viewportWidth="100"
+    android:viewportHeight="100">
+    <!-- Freckles -->
+    <path
+        android:fillColor="#FFC68642"
+        android:fillAlpha="0.7"
+        android:pathData="M42,46 m-1.6,0 a1.6,1.6 0 1,0 3.2,0 a1.6,1.6 0 1,0 -3.2,0" />
+    <path
+        android:fillColor="#FFC68642"
+        android:fillAlpha="0.7"
+        android:pathData="M56,48 m-1.6,0 a1.6,1.6 0 1,0 3.2,0 a1.6,1.6 0 1,0 -3.2,0" />
+    <path
+        android:fillColor="#FFC68642"
+        android:fillAlpha="0.7"
+        android:pathData="M48,52 m-1.6,0 a1.6,1.6 0 1,0 3.2,0 a1.6,1.6 0 1,0 -3.2,0" />
+</vector>

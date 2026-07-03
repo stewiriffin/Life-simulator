@@ -13,7 +13,12 @@ data class Job(
     val minEducation: SchoolStage,
     val baseSalary: Int,
     val level: Int = 1,
-    val performanceScore: Int = 50
+    val performanceScore: Int = 50,
+    /** Minimum [SocialMediaState.followers] required to apply; 0 means no social gate. */
+    val minFollowers: Int = 0,
+    /** Optional skill that can substitute for [minEducation] when [minSkillLevel] is met. */
+    val skillBypass: SkillType? = null,
+    val minSkillLevel: Int = 0
 )
 
 /**
@@ -25,7 +30,9 @@ data class CareerState(
     val jobHistory: List<String> = emptyList(),
     val yearsAtCurrentJob: Int = 0,
     val isRetired: Boolean = false,
-    val pensionAmount: Int = 0
+    val pensionAmount: Int = 0,
+    val sideHustleDoneThisYear: Boolean = false,
+    val workEffortThisYear: WorkEffort? = null
 )
 
 @Serializable
@@ -33,4 +40,13 @@ enum class WorkEffort {
     COAST,
     NORMAL,
     GRIND
+}
+
+@Serializable
+enum class HustleType {
+    RIDE_SHARE,
+    FREELANCE_CODING,
+    TUTORING,
+    FOOD_DELIVERY,
+    RESELLING
 }

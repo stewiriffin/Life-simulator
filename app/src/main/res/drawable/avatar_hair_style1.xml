@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="100dp"
+    android:height="100dp"
+    android:viewportWidth="100"
+    android:viewportHeight="100">
+    <!-- Rounded afro / full crown -->
+    <path
+        android:fillColor="#FFFFFFFF"
+        android:pathData="M50,6 C70,6 84,20 84,40 C84,48 80,54 74,56 C74,34 64,22 50,22 C36,22 26,34 26,56 C20,54 16,48 16,40 C16,20 30,6 50,6 Z" />
+</vector>

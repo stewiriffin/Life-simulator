@@ -1,16 +1,17 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- app/src/main/res/values/themes.xml (modified — splash screen theme) -->
+<!-- Splash uses Deep Navy; post-splash hands off to Theme.Maisha. -->
 <resources>
     <style name="Theme.Maisha" parent="android:Theme.Material.Light.NoActionBar">
-        <item name="android:statusBarColor">@color/ic_launcher_background</item>
-        <item name="android:navigationBarColor">@color/ic_launcher_background</item>
-        <item name="android:windowBackground">@color/ic_launcher_background</item>
+        <item name="android:statusBarColor">@android:color/transparent</item>
+        <item name="android:navigationBarColor">@android:color/transparent</item>
+        <item name="android:windowBackground">@color/splash_background</item>
     </style>
 
     <style name="Theme.Maisha.Splash" parent="Theme.SplashScreen">
         <item name="windowSplashScreenBackground">@color/splash_background</item>
-        <item name="windowSplashScreenAnimatedIcon">@drawable/ic_launcher_foreground</item>
-        <item name="windowSplashScreenIconBackgroundColor">@color/ic_launcher_background</item>
+        <item name="windowSplashScreenAnimatedIcon">@drawable/avd_splash_logo</item>
+        <item name="windowSplashScreenIconBackgroundColor">@color/splash_background</item>
+        <item name="windowSplashScreenAnimationDuration">700</item>
         <item name="postSplashScreenTheme">@style/Theme.Maisha</item>
     </style>
 </resources>

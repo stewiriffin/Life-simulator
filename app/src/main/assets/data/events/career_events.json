@@ -299,6 +299,78 @@
         { "label": "Change the subject", "statEffects": { "happiness": 1 }, "performanceEffect": 2, "resultText": "You steered talk back to weekend plans. Tension eased." },
         { "label": "Join in with a joke", "statEffects": { "happiness": 2 }, "performanceEffect": -5, "resultText": "Laughs rippled, but you felt smaller afterward." }
       ]
+    },
+    {
+      "id": "gig_difficult_client",
+      "minAge": 18,
+      "maxAge": 55,
+      "text": "A freelance client keeps changing the brief at midnight and refuses to pay the agreed rate.",
+      "weight": 4,
+      "tags": ["career", "gig"],
+      "choices": [
+        { "label": "Finish the work anyway", "statEffects": { "money": 12000, "happiness": -6 }, "resultText": "They paid late — less than promised." },
+        { "label": "Walk away from the contract", "statEffects": { "happiness": 2 }, "performanceEffect": -3, "resultText": "You protected your sanity but lost the gig." }
+      ]
+    },
+    {
+      "id": "gig_surge_pricing",
+      "minAge": 18,
+      "maxAge": 60,
+      "text": "Ride-share surge pricing kicks in during a rainy evening rush. Your phone buzzes nonstop.",
+      "weight": 3,
+      "tags": ["career", "gig"],
+      "choices": [
+        { "label": "Drive through the surge", "statEffects": { "money": 18000, "happiness": -3, "health": -2 }, "resultText": "You earned well but arrived home exhausted." },
+        { "label": "Stay home tonight", "statEffects": { "happiness": 3 }, "resultText": "You watched the rain from your couch." }
+      ]
+    },
+    {
+      "id": "gig_platform_ban",
+      "minAge": 19,
+      "maxAge": 50,
+      "text": "A freelance platform flags your account after a dispute and temporarily bans you from new jobs.",
+      "weight": 3,
+      "tags": ["career", "gig"],
+      "choices": [
+        { "label": "Appeal the decision", "statEffects": { "happiness": -4, "smarts": 2 }, "resultText": "Support reinstated you after a week." },
+        { "label": "Switch to a different platform", "statEffects": { "happiness": -2, "money": -5000 }, "resultText": "Starting over cost time and profile fees." }
+      ]
+    },
+    {
+      "id": "gig_viral_review",
+      "minAge": 20,
+      "maxAge": 55,
+      "text": "A happy tutoring client posts a glowing review online. New messages flood your inbox.",
+      "weight": 3,
+      "tags": ["career", "gig"],
+      "choices": [
+        { "label": "Take on more students", "statEffects": { "money": 15000, "happiness": 5, "health": -2 }, "resultText": "Word of mouth filled your evenings." },
+        { "label": "Keep your current load", "statEffects": { "happiness": 4 }, "resultText": "Steady work without burning out." }
+      ]
+    },
+    {
+      "id": "gig_client_offers_business",
+      "minAge": 24,
+      "maxAge": 58,
+      "text": "A repeat freelance client asks whether you would run their operations full-time as a small business.",
+      "weight": 2,
+      "tags": ["career", "gig"],
+      "choices": [
+        { "label": "Accept the offer", "statEffects": { "happiness": 8, "money": 25000 }, "performanceEffect": 8, "resultText": "Your side hustle may become your main career." },
+        { "label": "Decline and stay independent", "statEffects": { "happiness": 3 }, "resultText": "Freedom won over stability — for now." }
+      ]
+    },
+    {
+      "id": "gig_tax_surprise",
+      "minAge": 22,
+      "maxAge": 60,
+      "text": "Tax authorities send a notice about undeclared side income from your gig work.",
+      "weight": 3,
+      "tags": ["career", "gig"],
+      "choices": [
+        { "label": "Pay the back taxes", "statEffects": { "money": -20000, "happiness": -5 }, "resultText": "Painful, but you are square with the law." },
+        { "label": "Hire an accountant to negotiate", "statEffects": { "money": -12000, "happiness": -2, "smarts": 1 }, "resultText": "The bill shrank after a tense meeting." }
+      ]
     }
   ]
 }

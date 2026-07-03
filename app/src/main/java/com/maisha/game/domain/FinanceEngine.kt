@@ -3,11 +3,13 @@ package com.maisha.game.domain
 
 import com.maisha.game.data.AssetCatalog
 import com.maisha.game.data.EconomyScaler
+import com.maisha.game.data.PetCatalog
 import com.maisha.game.data.model.Asset
 import com.maisha.game.data.model.AssetType
 import com.maisha.game.data.model.Character
 import com.maisha.game.data.model.EconomicClimate
 import com.maisha.game.data.model.EconomicState
+import com.maisha.game.data.model.RelationType
 import java.util.UUID
 import com.maisha.game.util.clampCondition
 import com.maisha.game.util.clampStat
@@ -121,6 +123,96 @@ class FinanceEngine @Inject constructor() {
     }
 
     /**
+     * Ad-revenue payout for monetized social accounts, scaled by followers and country economy.
+     */
+    fun calculateSocialMediaPayout(character: Character): Int {
+        val followers = character.socialMedia.followers.coerceAtLeast(0)
+        val tiers = followers / 100_000
+        val baseKenya = SOCIAL_MEDIA_BASE_PAYOUT_KENYA + tiers * SOCIAL_MEDIA_PAYOUT_PER_100K_KENYA
+        return EconomyScaler.scaleAmount(baseKenya, character.countryCode)
+    }
+
+    /** Adds [payout] cash from social media monetization. */
+    fun applySocialMediaRevenue(character: Character, payout: Int): Character {
+        if (payout <= 0) return character
+        return character.copy(
+            stats = character.stats.copy(money = character.stats.money + payout)
+        )
+    }
+
+    /** Deducts startup capital when founding a business. */
+    fun applyBusinessInvestment(character: Character, investment: Int): Character {
+        if (investment <= 0) return character
+        return character.copy(
+            stats = character.stats.copy(
+                money = (character.stats.money - investment).coerceAtLeast(0)
+            )
+        )
+    }
+
+    /** Adds sale proceeds when liquidating a business. */
+    fun applyBusinessSale(character: Character, valuation: Int): Character {
+        if (valuation <= 0) return character
+        return character.copy(
+            stats = character.stats.copy(money = character.stats.money + valuation)
+        )
+    }
+
+    /**
+     * Passive yearly living expenses for each living [RelationType.CHILD] under 18.
+     * Scaled to [Character.countryCode]; floors money at 0 with a happiness penalty if broke.
+     */
+    fun applyChildSupport(character: Character): Character {
+        val minorChildren = character.family.count {
+            it.relation == RelationType.CHILD && it.alive && it.age < MINOR_CHILD_MAX_AGE
+        }
+        if (minorChildren == 0) return character
+
+        val perChild = EconomyScaler.scaleAmount(CHILD_SUPPORT_BASE_KENYA, character.countryCode)
+        val total = perChild * minorChildren
+        val newMoney = character.stats.money - total
+        return if (newMoney < 0) {
+            character.copy(
+                stats = character.stats.copy(
+                    money = 0,
+                    happiness = clampStat(character.stats.happiness - DEBT_HAPPINESS_PENALTY)
+                )
+            )
+        } else {
+            character.copy(stats = character.stats.copy(money = newMoney))
+        }
+    }
+
+    /**
+     * Deducts annual pet care costs scaled to [Character.countryCode].
+     * If money goes negative, floors at 0 and applies a happiness penalty.
+     */
+    fun applyPetUpkeep(character: Character): Character {
+        if (character.pets.isEmpty()) return character
+
+        val climateMultiplier = upkeepMultiplier(character.economicState.climate)
+        val rawAnnual = character.pets.sumOf { pet ->
+            val entry = PetCatalog.findBySpecies(pet.species) ?: return@sumOf 0
+            EconomyScaler.scaleAmount(entry.yearlyUpkeep, character.countryCode)
+        }
+        val annualUpkeep = (rawAnnual * climateMultiplier).toInt()
+        val newMoney = character.stats.money - annualUpkeep
+
+        return if (newMoney < 0) {
+            character.copy(
+                stats = character.stats.copy(
+                    money = 0,
+                    happiness = clampStat(character.stats.happiness - DEBT_HAPPINESS_PENALTY)
+                )
+            )
+        } else {
+            character.copy(
+                stats = character.stats.copy(money = newMoney)
+            )
+        }
+    }
+
+    /**
      * Grants a rare heirloom from [AssetCatalog] heirdom entries.
      * Skips if the character already owns that catalog item by name.
      */
@@ -226,7 +318,8 @@ class FinanceEngine @Inject constructor() {
     /** Cash plus sum of [Asset.currentValue]. Used by achievements and UI net-worth displays. */
     fun calculateNetWorth(character: Character): Int {
         val assetValue = character.assets.sumOf { it.currentValue }
-        return character.stats.money + assetValue
+        val businessValue = character.businesses.sumOf { it.valuation }
+        return character.stats.money + assetValue + businessValue
     }
 
     /** Pays annual pension to retired characters during the yearly finance tick. */
@@ -433,5 +526,9 @@ class FinanceEngine @Inject constructor() {
         private const val REAL_ESTATE_APPRECIATION_CHANCE = 0.35f
         private const val MAX_ANNUAL_APPRECIATION_RATE = 0.06f
         private const val HEIRLOOM_ANNUAL_APPRECIATION_RATE = 0.03f
+        private const val CHILD_SUPPORT_BASE_KENYA = 12_000
+        private const val MINOR_CHILD_MAX_AGE = 18
+        private const val SOCIAL_MEDIA_BASE_PAYOUT_KENYA = 80_000
+        private const val SOCIAL_MEDIA_PAYOUT_PER_100K_KENYA = 40_000
     }
 }

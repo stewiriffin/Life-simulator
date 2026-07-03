@@ -1,16 +1,23 @@
-// app/src/main/java/com/maisha/game/ui/charactercreation/CharacterCreationScreen.kt (modified)
+// app/src/main/java/com/maisha/game/ui/charactercreation/CharacterCreationScreen.kt
 package com.maisha.game.ui.charactercreation
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.lazy.grid.GridCells
+import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
+import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -23,9 +30,9 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.OutlinedTextFieldDefaults
-import androidx.compose.material3.SingleChoiceSegmentedButtonRow
 import androidx.compose.material3.SegmentedButton
 import androidx.compose.material3.SegmentedButtonDefaults
+import androidx.compose.material3.SingleChoiceSegmentedButtonRow
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
@@ -34,11 +41,13 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.maisha.game.R
 import com.maisha.game.data.CountryCatalog
-import com.maisha.game.ui.components.CountryFlagWithName
+import com.maisha.game.data.model.Country
 import com.maisha.game.data.model.Gender
+import com.maisha.game.ui.components.CountryFlag
 import com.maisha.game.ui.theme.GoldAccent
 import com.maisha.game.ui.theme.NavyDeep
 import com.maisha.game.ui.theme.TealPrimary
@@ -46,7 +55,7 @@ import com.maisha.game.ui.theme.TealPrimary
 @Composable
 fun CharacterCreationScreen(
     uiState: CharacterCreationUiState,
-    filteredCountries: List<com.maisha.game.data.model.Country>,
+    filteredCountries: List<Country>,
     onNameChange: (String) -> Unit,
     onGenderSelected: (Gender) -> Unit,
     onCountrySelected: (String) -> Unit,
@@ -54,6 +63,14 @@ fun CharacterCreationScreen(
     onRandomName: () -> Unit,
     onContinueToAvatar: () -> Unit
 ) {
+    val countriesToShow = if (uiState.countrySearchQuery.isBlank()) {
+        CountryCatalog.all()
+    } else {
+        filteredCountries
+    }
+    val selectedCountry = CountryCatalog.getCountry(uiState.selectedCountryCode)
+    val selectedFlavor = CountryCatalog.flavorFor(uiState.selectedCountryCode)
+
     Column(
         modifier = Modifier
             .fillMaxSize()
@@ -85,7 +102,7 @@ fun CharacterCreationScreen(
             Spacer(modifier = Modifier.height(12.dp))
         }
 
-        Spacer(modifier = Modifier.height(28.dp))
+        Spacer(modifier = Modifier.height(20.dp))
 
         Card(
             modifier = Modifier.fillMaxWidth(),
@@ -157,9 +174,7 @@ fun CharacterCreationScreen(
                 )
 
                 OutlinedTextField(
-                    value = uiState.countrySearchQuery.ifEmpty {
-                        CountryCatalog.getCountry(uiState.selectedCountryCode).displayName
-                    },
+                    value = uiState.countrySearchQuery,
                     onValueChange = onCountrySearchChange,
                     label = { Text(stringResource(R.string.label_search_country)) },
                     singleLine = true,
@@ -171,26 +186,28 @@ fun CharacterCreationScreen(
                     )
                 )
 
-                if (uiState.countrySearchQuery.isBlank()) {
-                    CountryFlagWithName(
-                        countryCode = uiState.selectedCountryCode,
-                        displayName = CountryCatalog.getCountry(uiState.selectedCountryCode).displayName,
-                        modifier = Modifier.padding(bottom = 8.dp)
-                    )
-                }
+                CountryWelcomeBanner(
+                    country = selectedCountry,
+                    greeting = selectedFlavor.greetingPhrase ?: "Hello",
+                    transport = selectedFlavor.commonTransportMode
+                )
 
-                if (uiState.countrySearchQuery.isNotBlank()) {
-                    filteredCountries.take(6).forEach { country ->
-                        OutlinedButton(
-                            onClick = { onCountrySelected(country.code) },
-                            modifier = Modifier.fillMaxWidth(),
-                            shape = RoundedCornerShape(10.dp)
-                        ) {
-                            CountryFlagWithName(
-                                countryCode = country.code,
-                                displayName = "${country.displayName} (${country.currencySymbol})"
-                            )
-                        }
+                LazyVerticalGrid(
+                    columns = GridCells.Adaptive(minSize = 100.dp),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(280.dp),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    verticalArrangement = Arrangement.spacedBy(8.dp),
+                    contentPadding = PaddingValues(vertical = 4.dp),
+                    userScrollEnabled = true
+                ) {
+                    items(countriesToShow, key = { it.code }) { country ->
+                        CountrySelectCard(
+                            country = country,
+                            selected = country.code == uiState.selectedCountryCode,
+                            onClick = { onCountrySelected(country.code) }
+                        )
                     }
                 }
             }
@@ -219,6 +236,113 @@ fun CharacterCreationScreen(
                 },
                 style = MaterialTheme.typography.titleMedium,
                 fontWeight = FontWeight.Bold
+            )
+        }
+    }
+}
+
+@Composable
+private fun CountryWelcomeBanner(
+    country: Country,
+    greeting: String,
+    transport: String
+) {
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(14.dp),
+        colors = CardDefaults.cardColors(
+            containerColor = TealPrimary.copy(alpha = 0.12f)
+        )
+    ) {
+        Column(
+            modifier = Modifier.padding(14.dp),
+            verticalArrangement = Arrangement.spacedBy(6.dp)
+        ) {
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                CountryFlag(countryCode = country.code, size = 28.dp)
+                Text(
+                    text = stringResource(R.string.format_welcome_to_country, country.displayName),
+                    style = MaterialTheme.typography.titleSmall,
+                    fontWeight = FontWeight.Bold,
+                    color = TealPrimary,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis
+                )
+            }
+            Text(
+                text = stringResource(R.string.format_country_greeting, greeting),
+                style = MaterialTheme.typography.bodyMedium,
+                fontWeight = FontWeight.Medium
+            )
+            Text(
+                text = stringResource(
+                    R.string.format_country_currency,
+                    country.currencySymbol,
+                    country.currencyCode
+                ),
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+            Text(
+                text = stringResource(R.string.format_country_transport, transport),
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+        }
+    }
+}
+
+@Composable
+private fun CountrySelectCard(
+    country: Country,
+    selected: Boolean,
+    onClick: () -> Unit
+) {
+    Card(
+        modifier = Modifier
+            .fillMaxWidth()
+            .height(88.dp)
+            .border(
+                width = if (selected) 2.dp else 1.dp,
+                color = if (selected) GoldAccent else MaterialTheme.colorScheme.outline.copy(alpha = 0.3f),
+                shape = RoundedCornerShape(12.dp)
+            )
+            .clickable(onClick = onClick),
+        shape = RoundedCornerShape(12.dp),
+        colors = CardDefaults.cardColors(
+            containerColor = if (selected) {
+                GoldAccent.copy(alpha = 0.12f)
+            } else {
+                MaterialTheme.colorScheme.surface
+            }
+        ),
+        elevation = CardDefaults.cardElevation(defaultElevation = if (selected) 4.dp else 1.dp)
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(8.dp),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.Center
+        ) {
+            CountryFlag(countryCode = country.code, size = 28.dp)
+            Spacer(modifier = Modifier.height(4.dp))
+            Text(
+                text = country.displayName,
+                style = MaterialTheme.typography.labelSmall,
+                fontWeight = if (selected) FontWeight.Bold else FontWeight.Medium,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+                textAlign = TextAlign.Center
+            )
+            Text(
+                text = country.currencySymbol,
+                style = MaterialTheme.typography.labelSmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                maxLines = 1
             )
         }
     }
@@ -256,3 +380,4 @@ private fun WelcomeHeader() {
         )
     }
 }
+

@@ -14,9 +14,13 @@ import com.maisha.game.domain.EducationEngine
 import com.maisha.game.domain.FinanceEngine
 import com.maisha.game.domain.RelationshipEngine
 import com.maisha.game.domain.RelocationEngine
+import com.maisha.game.domain.BusinessEngine
+import com.maisha.game.domain.SkillEngine
+import com.maisha.game.domain.SocialMediaEngine
 import com.maisha.game.domain.hasChild
 import com.maisha.game.domain.hasMixedHeritageChild
 import com.maisha.game.domain.hasMixedHeritageContext
+import com.maisha.game.domain.hasPet
 import com.maisha.game.domain.hasSpouse
 import com.maisha.game.domain.isMarried
 import dagger.hilt.android.qualifiers.ApplicationContext
@@ -120,6 +124,10 @@ class EventRepository private constructor(
                 RelocationEngine.RELOCATION_SYSTEM_TAG !in event.tags &&
                 passesFinanceGate(event, character) &&
                 passesRelationshipGate(event, character) &&
+                passesPetGate(event, character) &&
+                passesSocialMediaGate(event, character) &&
+                passesSkillGate(event, character) &&
+                passesBusinessGate(event, character) &&
                 passesCountryGate(event, character) &&
                 passesRelocationGate(event, character) &&
                 passesExpatGate(event, character) &&
@@ -181,6 +189,9 @@ class EventRepository private constructor(
             RelationshipEngine.REQUIRES_CHILD_TAG,
             RelationshipEngine.REQUIRES_PARENT_TAG,
             RelationshipEngine.REQUIRES_CHILD_SCHOOL_AGE_TAG,
+            RelationshipEngine.REQUIRES_CHILD_TODDLER_TAG,
+            RelationshipEngine.REQUIRES_CHILD_PRIMARY_TAG,
+            RelationshipEngine.REQUIRES_CHILD_TEEN_TAG,
             RelationshipEngine.REQUIRES_SINGLE_TAG
         )
         val hasRequirements = event.tags.any { it in requirementTags }
@@ -204,14 +215,64 @@ class EventRepository private constructor(
         }
         if (RelationshipEngine.REQUIRES_CHILD_SCHOOL_AGE_TAG in event.tags) {
             val schoolAgeChild = character.family.any {
-                it.relation == RelationType.CHILD && it.age in CHILD_SCHOOL_MIN_AGE..CHILD_SCHOOL_MAX_AGE
+                it.relation == RelationType.CHILD && it.alive &&
+                    it.age in CHILD_SCHOOL_MIN_AGE..CHILD_SCHOOL_MAX_AGE
             }
             if (!schoolAgeChild) return false
+        }
+        if (RelationshipEngine.REQUIRES_CHILD_TODDLER_TAG in event.tags) {
+            val toddler = character.family.any {
+                it.relation == RelationType.CHILD && it.alive &&
+                    it.age in RelationshipEngine.CHILD_TODDLER_MIN_AGE..RelationshipEngine.CHILD_TODDLER_MAX_AGE
+            }
+            if (!toddler) return false
+        }
+        if (RelationshipEngine.REQUIRES_CHILD_PRIMARY_TAG in event.tags) {
+            val primary = character.family.any {
+                it.relation == RelationType.CHILD && it.alive &&
+                    it.age in RelationshipEngine.CHILD_PRIMARY_MIN_AGE..RelationshipEngine.CHILD_PRIMARY_MAX_AGE
+            }
+            if (!primary) return false
+        }
+        if (RelationshipEngine.REQUIRES_CHILD_TEEN_TAG in event.tags) {
+            val teen = character.family.any {
+                it.relation == RelationType.CHILD && it.alive &&
+                    it.age in RelationshipEngine.CHILD_TEEN_MIN_AGE..RelationshipEngine.CHILD_TEEN_MAX_AGE
+            }
+            if (!teen) return false
         }
         if (RelationshipEngine.REQUIRES_SINGLE_TAG in event.tags && character.hasSpouse()) {
             return false
         }
         return true
+    }
+
+    private fun passesPetGate(event: LifeEvent, character: Character?): Boolean {
+        if (RelationshipEngine.REQUIRES_PET_TAG !in event.tags) return true
+        if (character == null) return false
+        return character.hasPet()
+    }
+
+    private fun passesSocialMediaGate(event: LifeEvent, character: Character?): Boolean {
+        if (SocialMediaEngine.REQUIRES_SOCIAL_MEDIA_TAG !in event.tags) return true
+        if (character == null) return false
+        return character.socialMedia.hasAccount
+    }
+
+    private fun passesSkillGate(event: LifeEvent, character: Character?): Boolean {
+        val requirements = event.tags.mapNotNull(SkillEngine::parseSkillRequirementTag)
+        if (requirements.isEmpty()) return true
+        if (character == null) return false
+        return requirements.all { (skillType, minLevel) ->
+            val level = character.skills.find { it.type == skillType }?.level ?: 0
+            level >= minLevel
+        }
+    }
+
+    private fun passesBusinessGate(event: LifeEvent, character: Character?): Boolean {
+        if (BusinessEngine.REQUIRES_BUSINESS_TAG !in event.tags) return true
+        if (character == null) return false
+        return character.businesses.isNotEmpty()
     }
 
     private fun passesFinanceGate(event: LifeEvent, character: Character?): Boolean {

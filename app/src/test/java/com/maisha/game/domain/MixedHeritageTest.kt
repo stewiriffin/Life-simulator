@@ -13,7 +13,7 @@ import org.junit.Test
 
 class MixedHeritageTest {
 
-    private val relationshipEngine = RelationshipEngine()
+    private val relationshipEngine = RelationshipEngine(FinanceEngine())
 
     @Test
     fun `cross-country spouse sets child secondary country and mixed name`() {

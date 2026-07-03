@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="100dp"
+    android:height="100dp"
+    android:viewportWidth="100"
+    android:viewportHeight="100">
+    <!-- Long hair -->
+    <path
+        android:fillColor="#FFFFFFFF"
+        android:pathData="M22,38 C22,16 34,8 50,8 C66,8 78,16 78,38 L78,62 L70,62 L70,34 C70,24 62,18 50,18 C38,18 30,24 30,34 L30,62 L22,62 Z" />
+</vector>

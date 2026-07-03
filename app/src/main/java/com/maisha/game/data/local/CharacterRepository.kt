@@ -25,7 +25,10 @@ data class SlotSummary(
     val isCorrupted: Boolean = false,
     val countryCode: String? = null,
     val avatarConfig: AvatarConfig? = null,
-    val generationNumber: Int? = null
+    val generationNumber: Int? = null,
+    val netWorth: Int? = null,
+    val jobTitle: String? = null,
+    val isRetired: Boolean = false
 )
 
 data class SavedGame(
@@ -158,10 +161,14 @@ class CharacterRepository @Inject constructor(
             educationJson = json.encodeToString(education),
             careerJson = json.encodeToString(career),
             assetsJson = json.encodeToString(assets),
+            petsJson = json.encodeToString(pets),
             criminalRecordJson = json.encodeToString(criminalRecord),
             healthConditionsJson = json.encodeToString(activeConditions),
             generationNumber = generationNumber,
-            lifestyleJson = json.encodeToString(lifestyle)
+            lifestyleJson = json.encodeToString(lifestyle),
+            socialMediaJson = json.encodeToString(socialMedia),
+            skillsJson = json.encodeToString(skills),
+            businessesJson = json.encodeToString(businesses)
         )
     }
 }

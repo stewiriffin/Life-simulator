@@ -84,6 +84,7 @@ dependencies {
     implementation(libs.androidx.datastore.preferences)
     implementation(libs.androidx.appcompat)
     implementation(libs.androidx.core.splashscreen)
+    implementation(libs.androidx.tracing)
     implementation(libs.androidx.work.runtime.ktx)
     implementation(libs.androidx.hilt.work)
     ksp(libs.androidx.hilt.compiler)
@@ -94,5 +95,6 @@ dependencies {
     testImplementation("androidx.test:core:1.6.1")
     testImplementation(platform(libs.androidx.compose.bom))
     testImplementation("androidx.compose.ui:ui-test-junit4")
+    debugImplementation(libs.androidx.ui.tooling)
     debugImplementation("androidx.compose.ui:ui-test-manifest")
 }

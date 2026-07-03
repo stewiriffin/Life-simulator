@@ -22,6 +22,7 @@ data class SlotPickerUiState(
     val isLoading: Boolean = true,
     val isDatabaseUnavailable: Boolean = false,
     val pendingOverwriteSlotId: Int? = null,
+    val pendingClearCorruptedSlotId: Int? = null,
     val navigateToLife: Int? = null,
     val navigateToCreation: Int? = null,
     val navigateToSummary: Int? = null
@@ -73,12 +74,24 @@ class SlotPickerViewModel @Inject constructor(
 
     fun onClearCorruptedSlot(slotId: Int) {
         if (slotId !in 0 until MAX_SLOTS) return
+        _uiState.update { it.copy(pendingClearCorruptedSlotId = slotId) }
+    }
+
+    fun onConfirmClearCorrupted() {
+        val slotId = _uiState.value.pendingClearCorruptedSlotId ?: return
         viewModelScope.launch {
             characterRepository.clearSlot(slotId)
             _uiState.update {
-                it.copy(navigateToCreation = slotId)
+                it.copy(
+                    pendingClearCorruptedSlotId = null,
+                    navigateToCreation = slotId
+                )
             }
         }
+    }
+
+    fun onDismissClearCorrupted() {
+        _uiState.update { it.copy(pendingClearCorruptedSlotId = null) }
     }
 
     fun onConfirmOverwrite() {

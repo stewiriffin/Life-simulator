@@ -50,15 +50,21 @@ fun PersonDetailSheet(
 ) {
     val isSpouse = member.relation == RelationType.SPOUSE
     val isChild = member.relation == RelationType.CHILD
+    val isMinorChild = RelationshipEngine.isMinorChild(member)
     val canAskForMoney = !isSpouse && !isChild
     val canSetUpDate = member.relation == RelationType.SIBLING || member.relation == RelationType.FRIEND
     val pendingGiftTier = rememberConfirmableAction<GiftTier>()
     val pendingTravel = rememberConfirmableAction<Unit>()
+    val pendingAllowance = rememberConfirmableAction<Unit>()
     val pendingBreakUp = rememberConfirmableAction<Unit>()
     val travelCost = EconomyScaler.scaleRelationshipCost(
         RelationshipEngine.TRAVEL_BASE_COST_KENYA,
         playerCountryCode,
         playerAge
+    )
+    val allowanceCost = EconomyScaler.scaleAmount(
+        RelationshipEngine.ALLOWANCE_BASE_COST_KENYA,
+        playerCountryCode
     )
     val tier = relationshipTierFor(member.relationshipLevel)
     val expression = ExpressionResolver.resolvePersonExpression(member)
@@ -92,6 +98,24 @@ fun PersonDetailSheet(
         ConfirmActionDialog(
             title = stringResource(R.string.confirm_travel_title),
             description = stringResource(R.string.confirm_cost_body, formatMoney(travelCost, playerCountryCode)),
+            confirmLabel = stringResource(R.string.btn_confirm),
+            severity = ConfirmSeverity.NEUTRAL,
+            onConfirm = onConfirm,
+            onDismiss = onDismiss
+        )
+    }
+
+    ConfirmableActionHost(
+        state = pendingAllowance,
+        onConfirmed = { onInteraction(InteractionType.PAY_ALLOWANCE, null) }
+    ) { _, onConfirm, onDismiss ->
+        ConfirmActionDialog(
+            title = stringResource(R.string.confirm_allowance_title),
+            description = stringResource(
+                R.string.confirm_allowance_body,
+                member.name,
+                formatMoney(allowanceCost, playerCountryCode)
+            ),
             confirmLabel = stringResource(R.string.btn_confirm),
             severity = ConfirmSeverity.NEUTRAL,
             onConfirm = onConfirm,
@@ -210,88 +234,123 @@ fun PersonDetailSheet(
             Spacer(modifier = Modifier.height(4.dp))
             Text(stringResource(R.string.interaction_positive), fontWeight = FontWeight.SemiBold)
 
-            DetailSheetButton(
-                text = if (isChild) stringResource(R.string.btn_play_together) else stringResource(R.string.btn_spend_time),
-                onClick = { onInteraction(InteractionType.SPEND_TIME, null) }
-            )
-            DetailSheetButton(
-                text = stringResource(R.string.btn_compliment),
-                onClick = { onInteraction(InteractionType.COMPLIMENT, null) }
-            )
-            DetailSheetButton(
-                text = "${stringResource(R.string.btn_gift_small)} (${formatMoney(giftCost(GiftTier.SMALL), playerCountryCode)})",
-                onClick = { pendingGiftTier.request(GiftTier.SMALL) },
-                enabled = playerMoney >= giftCost(GiftTier.SMALL)
-            )
-            DetailSheetButton(
-                text = "${stringResource(R.string.btn_gift_medium)} (${formatMoney(giftCost(GiftTier.MEDIUM), playerCountryCode)})",
-                onClick = { pendingGiftTier.request(GiftTier.MEDIUM) },
-                enabled = playerMoney >= giftCost(GiftTier.MEDIUM)
-            )
-            DetailSheetButton(
-                text = "${stringResource(R.string.btn_gift_large)} (${formatMoney(giftCost(GiftTier.LARGE), playerCountryCode)})",
-                onClick = { pendingGiftTier.request(GiftTier.LARGE) },
-                enabled = playerMoney >= giftCost(GiftTier.LARGE)
-            )
-            DetailSheetButton(
-                text = "${stringResource(R.string.btn_travel_together)} (${formatMoney(travelCost, playerCountryCode)})",
-                onClick = { pendingTravel.request(Unit) },
-                enabled = travelEnabled && playerMoney >= travelCost
-            )
-            if (!travelEnabled && isIncarcerated) {
-                Text(
-                    text = stringResource(R.string.travel_blocked_incarcerated),
-                    style = MaterialTheme.typography.labelSmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
-            } else if (!travelEnabled) {
-                Text(
-                    text = stringResource(R.string.travel_requires_quality_time),
-                    style = MaterialTheme.typography.labelSmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
-            }
-            DetailSheetButton(
-                text = stringResource(R.string.btn_ask_advice),
-                onClick = { onInteraction(InteractionType.ASK_FOR_ADVICE, null) }
-            )
-            DetailSheetButton(
-                text = stringResource(R.string.btn_prank),
-                onClick = { onInteraction(InteractionType.PRANK, null) }
-            )
-            if (canSetUpDate) {
+            if (isMinorChild) {
                 DetailSheetButton(
-                    text = stringResource(R.string.btn_set_up_date),
-                    onClick = { onInteraction(InteractionType.SET_UP_ON_DATE, null) }
+                    text = stringResource(R.string.btn_play_together),
+                    onClick = { onInteraction(InteractionType.SPEND_TIME, null) }
                 )
-            }
-
-            Text(stringResource(R.string.interaction_negative), fontWeight = FontWeight.SemiBold)
-            OutlinedButton(
-                onClick = { onInteraction(InteractionType.ARGUE, null) },
-                modifier = Modifier.fillMaxWidth(),
-                shape = RoundedCornerShape(12.dp)
-            ) {
-                Text(if (isChild) stringResource(R.string.btn_scold) else stringResource(R.string.btn_argue))
-            }
-            OutlinedButton(
-                onClick = { onInteraction(InteractionType.INSULT, null) },
-                modifier = Modifier.fillMaxWidth(),
-                shape = RoundedCornerShape(12.dp)
-            ) {
-                Text(stringResource(R.string.btn_insult))
-            }
-
-            if (canAskForMoney) {
                 DetailSheetButton(
-                    text = if (member.relationshipLevel > 60) {
-                        stringResource(R.string.btn_ask_for_money)
-                    } else {
-                        stringResource(R.string.btn_ask_for_money_locked)
-                    },
-                    onClick = { onInteraction(InteractionType.ASK_FOR_MONEY, null) },
-                    enabled = member.relationshipLevel > 60
+                    text = stringResource(R.string.btn_help_homework),
+                    onClick = { onInteraction(InteractionType.HELP_WITH_HOMEWORK, null) }
                 )
+                DetailSheetButton(
+                    text = "${stringResource(R.string.btn_pay_allowance)} (${formatMoney(allowanceCost, playerCountryCode)})",
+                    onClick = { pendingAllowance.request(Unit) },
+                    enabled = playerMoney >= allowanceCost
+                )
+                DetailSheetButton(
+                    text = "${stringResource(R.string.btn_gift_small)} (${formatMoney(giftCost(GiftTier.SMALL), playerCountryCode)})",
+                    onClick = { pendingGiftTier.request(GiftTier.SMALL) },
+                    enabled = playerMoney >= giftCost(GiftTier.SMALL)
+                )
+                DetailSheetButton(
+                    text = "${stringResource(R.string.btn_gift_medium)} (${formatMoney(giftCost(GiftTier.MEDIUM), playerCountryCode)})",
+                    onClick = { pendingGiftTier.request(GiftTier.MEDIUM) },
+                    enabled = playerMoney >= giftCost(GiftTier.MEDIUM)
+                )
+
+                Text(stringResource(R.string.interaction_parenting), fontWeight = FontWeight.SemiBold)
+                OutlinedButton(
+                    onClick = { onInteraction(InteractionType.DISCIPLINE, null) },
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(12.dp)
+                ) {
+                    Text(stringResource(R.string.btn_discipline))
+                }
+            } else {
+                DetailSheetButton(
+                    text = if (isChild) stringResource(R.string.btn_play_together) else stringResource(R.string.btn_spend_time),
+                    onClick = { onInteraction(InteractionType.SPEND_TIME, null) }
+                )
+                DetailSheetButton(
+                    text = stringResource(R.string.btn_compliment),
+                    onClick = { onInteraction(InteractionType.COMPLIMENT, null) }
+                )
+                DetailSheetButton(
+                    text = "${stringResource(R.string.btn_gift_small)} (${formatMoney(giftCost(GiftTier.SMALL), playerCountryCode)})",
+                    onClick = { pendingGiftTier.request(GiftTier.SMALL) },
+                    enabled = playerMoney >= giftCost(GiftTier.SMALL)
+                )
+                DetailSheetButton(
+                    text = "${stringResource(R.string.btn_gift_medium)} (${formatMoney(giftCost(GiftTier.MEDIUM), playerCountryCode)})",
+                    onClick = { pendingGiftTier.request(GiftTier.MEDIUM) },
+                    enabled = playerMoney >= giftCost(GiftTier.MEDIUM)
+                )
+                DetailSheetButton(
+                    text = "${stringResource(R.string.btn_gift_large)} (${formatMoney(giftCost(GiftTier.LARGE), playerCountryCode)})",
+                    onClick = { pendingGiftTier.request(GiftTier.LARGE) },
+                    enabled = playerMoney >= giftCost(GiftTier.LARGE)
+                )
+                DetailSheetButton(
+                    text = "${stringResource(R.string.btn_travel_together)} (${formatMoney(travelCost, playerCountryCode)})",
+                    onClick = { pendingTravel.request(Unit) },
+                    enabled = travelEnabled && playerMoney >= travelCost
+                )
+                if (!travelEnabled && isIncarcerated) {
+                    Text(
+                        text = stringResource(R.string.travel_blocked_incarcerated),
+                        style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                } else if (!travelEnabled) {
+                    Text(
+                        text = stringResource(R.string.travel_requires_quality_time),
+                        style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+                DetailSheetButton(
+                    text = stringResource(R.string.btn_ask_advice),
+                    onClick = { onInteraction(InteractionType.ASK_FOR_ADVICE, null) }
+                )
+                DetailSheetButton(
+                    text = stringResource(R.string.btn_prank),
+                    onClick = { onInteraction(InteractionType.PRANK, null) }
+                )
+                if (canSetUpDate) {
+                    DetailSheetButton(
+                        text = stringResource(R.string.btn_set_up_date),
+                        onClick = { onInteraction(InteractionType.SET_UP_ON_DATE, null) }
+                    )
+                }
+
+                Text(stringResource(R.string.interaction_negative), fontWeight = FontWeight.SemiBold)
+                OutlinedButton(
+                    onClick = { onInteraction(InteractionType.ARGUE, null) },
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(12.dp)
+                ) {
+                    Text(if (isChild) stringResource(R.string.btn_scold) else stringResource(R.string.btn_argue))
+                }
+                OutlinedButton(
+                    onClick = { onInteraction(InteractionType.INSULT, null) },
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(12.dp)
+                ) {
+                    Text(stringResource(R.string.btn_insult))
+                }
+
+                if (canAskForMoney) {
+                    DetailSheetButton(
+                        text = if (member.relationshipLevel > 60) {
+                            stringResource(R.string.btn_ask_for_money)
+                        } else {
+                            stringResource(R.string.btn_ask_for_money_locked)
+                        },
+                        onClick = { onInteraction(InteractionType.ASK_FOR_MONEY, null) },
+                        enabled = member.relationshipLevel > 60
+                    )
+                }
             }
 
             if (isSpouse) {
