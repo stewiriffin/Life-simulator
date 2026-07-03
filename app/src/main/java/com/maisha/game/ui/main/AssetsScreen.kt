@@ -292,8 +292,8 @@ private fun ShopAssetCard(
                 Text(
                     text = stringResource(
                         R.string.format_asset_price_upkeep,
-                        formatMoney(item.purchasePrice),
-                        formatMoney(item.monthlyUpkeep)
+                        formatMoney(item.purchasePrice, countryCode),
+                        formatMoney(item.monthlyUpkeep, countryCode)
                     ),
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,

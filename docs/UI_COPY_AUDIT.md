@@ -41,7 +41,7 @@ Capitalization standard chosen: **Title Case for CTAs, screen titles, and dialog
 | `dialog_legacy_confirm_*` | — | *(unchanged)* | Warm continuation tone; slot scope clear | — |
 | `confirm_gift_title` / `confirm_travel_title` | — | *(unchanged)* | Light neutral confirmations | — |
 
-**Gap noted (no change — out of scope):** Break up / divorce has no `ConfirmActionDialog`; tap is immediate. Future UX could add confirmation, but that would be a behavior change.
+**Gap noted (Prompt 44):** Break up had no confirm — **resolved Prompt 49:** NEUTRAL confirm for dating break-up only; divorce immediate.
 
 ---
 
@@ -130,7 +130,7 @@ Exam failure copy lives in event JSON / engine-generated text (not `strings.xml`
 
 | Tier | EN (`tier_*`) | Issue | Fix |
 |------|---------------|-------|-----|
-| Estranged → Inseparable | Used via `relationshipTierLabel()` everywhere | Swahili `tier_inseparable` was **“Tofauti”** (wrong — means “different”) | **“Toshelezi”** in sw |
+| Estranged → Inseparable | Used via `relationshipTierLabel()` everywhere | Sw `tier_inseparable` was **“Tofauti”** (wrong) | **“Wasioachanika”** (P49); fr/es/pt/hi tiers added P49 |
 
 No paraphrased tier names found in other screens — all route through `relationshipTierLabel`.
 
@@ -146,10 +146,13 @@ Mixed sentence/title case on a few dialog titles was normalized (`Confirm Purcha
 |--------|--------|-----------|-----------|-----------|-----------|-----------|
 | All Category 1–4 EN changes | ✅ | ✅ | partial* | partial* | partial* | partial* |
 | `settings_reset_warning` | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
-| `empty_*` new/changed | ✅ | ✅ | falls back to EN | falls back | falls back | falls back |
+| `empty_*` new/changed | ✅ | ✅ | ✅ (P49) | ✅ (P49) | ✅ (P49) | ✅ (P49) |
+| `notification_nudge_comeback_*` | ✅ | ✅ | ✅ (P49) | ✅ (P49) | ✅ (P49) | ✅ (P49) |
 | `tier_inseparable` (sw bugfix) | — | ✅ | — | — | — | — |
+| `tier_*` all six (fr/es/pt/hi) | — | — | ✅ (P49) | ✅ (P49) | ✅ (P49) | ✅ (P49) |
+| Wealth achievement descriptions | ✅ `%1$s` | ✅ | ✅ | ✅ | ✅ | ✅ |
 
-\*fr/es/pt/hi are **UI-chrome-only overlays** (~40 strings). Unchanged keys fall back to English defaults — acceptable per Prompt 31; full translation pass is out of scope.
+\*fr/es/pt/hi remain **UI-chrome overlays** — Prompt 49 completed the Prompt 44 gap strings; full 100% parity with `values/` not in scope. **Spot-check translations with fluent speakers before release.**
 
 **New keys requiring sw update (done):** `empty_family_title`, `empty_achievements_title`, `empty_achievements_message`, `empty_career_no_eligible` (updated).
 
@@ -162,8 +165,8 @@ The revised English set reads as **one consistent warm narrator**: invitations o
 1. **Crime action cards** — factual descriptions of illegal acts (tone is neutral, not glamorizing — OK for gameplay context).
 2. **“Scold” / “Argue”** — blunt labels for negative interactions; clear over cute (intentional).
 3. **Partial locale overlays** — French/Spanish/etc. use localized “age up” verbs (“Vieillir”, “Cumplir años”) rather than literal “Age Up”; correct for localization.
-4. **Achievement wealth copy** still says “KSh” in descriptions — currency display issue from Prompt 20, not microcopy voice.
+4. **Achievement wealth copy** — **Fixed (Prompt 49).** `six_figures` / `first_million` descriptions use `%1$s` + `achievementDescription()` + `formatMoney()` at display time; thresholds scaled via `AchievementWealth` + `EconomyScaler`.
 
 ---
 
-*Prompt 44 — UI Copywriting & Microcopy Quality Pass. July 2026.*
+*Prompt 44 — UI Copywriting & Microcopy Quality Pass. Updated Prompt 49 (July 2026).*

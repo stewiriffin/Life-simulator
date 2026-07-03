@@ -150,12 +150,12 @@
       "tags": ["one_time", "career"],
       "choices": [
         {
-          "label": "Invest KSh 50,000",
+          "label": "Invest heavily",
           "statEffects": { "money": 120000, "happiness": 5 },
           "resultText": "The route was profitable. Your phone buzzes with M-Pesa alerts."
         },
         {
-          "label": "Invest cautiously KSh 20,000",
+          "label": "Invest cautiously",
           "statEffects": { "money": 15000, "happiness": 1 },
           "resultText": "Modest returns, but you kept most of your savings safe."
         },

@@ -49,6 +49,7 @@ import com.maisha.game.ui.components.StatType
 import com.maisha.game.feedback.HapticType
 import com.maisha.game.feedback.SoundEffect
 import com.maisha.game.notifications.NotificationScheduler
+import com.maisha.game.util.formatMoney
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -571,7 +572,7 @@ class LifeViewModel @Inject constructor(
                             context.getString(
                                 R.string.msg_crime_got_away_log,
                                 crimeTypeLabel(crimeType),
-                                result.moneyGained
+                                formatMoney(result.moneyGained, result.character.countryCode)
                             )
                         )
                     )
@@ -580,7 +581,10 @@ class LifeViewModel @Inject constructor(
                     _uiState.update {
                         it.copy(
                             character = updated,
-                            actionMessage = context.getString(R.string.msg_crime_success, result.moneyGained),
+                            actionMessage = context.getString(
+                                R.string.msg_crime_success,
+                                formatMoney(result.moneyGained, result.character.countryCode)
+                            ),
                             netWorth = financeEngine.calculateNetWorth(updated)
                         )
                     }

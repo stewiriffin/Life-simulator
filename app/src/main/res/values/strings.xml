@@ -97,6 +97,9 @@
     <string name="btn_have_child">Have a Child</string>
     <string name="btn_divorce">Divorce</string>
     <string name="btn_break_up">End Relationship</string>
+    <string name="confirm_break_up_title">End Relationship?</string>
+    <string name="confirm_break_up_body">This will end your relationship with %1$s. You can always find someone new later.</string>
+    <string name="ancestry_history_truncated">Some earlier generations are no longer shown in this timeline (history is kept to the most recent %1$d generations).</string>
     <string name="btn_view_achievements">View Achievements</string>
     <string name="btn_watch_second_wind">Watch Ad for a Second Wind</string>
     <string name="btn_age_up">+ Age Up</string>
@@ -379,9 +382,9 @@
     <string name="achievement_family_person_title">Family Man/Woman</string>
     <string name="achievement_family_person_description">Keep strong bonds — 70+ relationship with every living family member.</string>
     <string name="achievement_six_figures_title">Six Figures</string>
-    <string name="achievement_six_figures_description">Reach a net worth of KSh 100,000.</string>
+    <string name="achievement_six_figures_description">Reach a net worth of %1$s.</string>
     <string name="achievement_first_million_title">First Million</string>
-    <string name="achievement_first_million_description">Reach a net worth of KSh 1,000,000.</string>
+    <string name="achievement_first_million_description">Reach a net worth of %1$s.</string>
     <string name="achievement_property_owner_title">Property Owner</string>
     <string name="achievement_property_owner_description">Own a house.</string>
     <string name="achievement_multiple_streams_title">Multiple Streams</string>
@@ -418,8 +421,8 @@
     <string name="msg_breakup">The relationship is over.</string>
     <string name="msg_child_welcome">Welcome to the family, little one!</string>
     <string name="msg_child_need_marriage">You need to be married to have a child.</string>
-    <string name="msg_crime_got_away_log">Got away with a %1$s and gained KSh %2$d.</string>
-    <string name="msg_crime_success">Success! You gained KSh %d.</string>
+    <string name="msg_crime_got_away_log">Got away with a %1$s and gained %2$s.</string>
+    <string name="msg_crime_success">Success! You gained %1$s.</string>
     <string name="msg_crime_caught">Caught! Sentenced to %d year(s).</string>
     <string name="msg_treatment_success">Treatment successful. You feel much better.</string>
     <string name="msg_treatment_failed">The treatment didn\'t help this time, or care wasn\'t affordable. Try again when you can.</string>
@@ -434,7 +437,7 @@
     <string name="msg_argue_other">You argued with %s.</string>
     <string name="msg_ask_money_not_applicable">That doesn\'t apply here.</string>
     <string name="msg_ask_money_not_close">%s isn\'t close enough to ask for money.</string>
-    <string name="msg_ask_money_success">%1$s gave you KSh %2$d.</string>
+    <string name="msg_ask_money_success">%1$s gave you %2$s.</string>
     <string name="msg_ask_money_refused">%s refused to give you money.</string>
 
     <string name="label_country">Country</string>

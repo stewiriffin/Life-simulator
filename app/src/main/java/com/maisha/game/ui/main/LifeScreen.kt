@@ -179,6 +179,7 @@ fun LifeScreen(
         uiState.currentAchievementDialog?.let { achievement ->
             AchievementUnlockedDialog(
                 achievement = achievement,
+                countryCode = uiState.character?.countryCode ?: "KE",
                 onDismiss = onAchievementDialogDismissed
             )
         }

@@ -41,4 +41,31 @@
     <string name="settings_version">संस्करण %s</string>
     <string name="screen_slot_picker_title">आपके जीवन</string>
     <string name="screen_slot_picker_subtitle">जारी रखने या नए सिरे से शुरू करने के लिए एक स्लॉट चुनें।</string>
+    <!-- Prompt 44 / 49 locale completion — spot-check by fluent speaker before release -->
+    <string name="btn_visit_doctor">डॉक्टर से मिलें</string>
+    <string name="btn_break_up">रिश्ता समाप्त करें</string>
+    <string name="settings_privacy_policy">गोपनीयता नीति</string>
+    <string name="empty_no_character">यहाँ कोई सहेजा जीवन नहीं है।</string>
+    <string name="empty_family">आपका दायरा आपसे शुरू होता है — परिवार और दोस्त कहानी बढ़ने पर दिखेंगे।</string>
+    <string name="empty_family_title">बढ़ने की जगह</string>
+    <string name="empty_achievements_title">उपलब्धियाँ प्रतीक्षा में</string>
+    <string name="empty_achievements_message">जीते ही मील के पत्थर खुलते हैं। Age Up दबाएँ, खोजें और देखें क्या हासिल कर सकते हैं।</string>
+    <string name="empty_career_no_eligible">अभी आपकी उम्र और शिक्षा के लिए कोई रिक्ति नहीं। पढ़ाई जारी रखें या Age Up — कुछ खुल सकता है।</string>
+    <string name="empty_assets">अभी आपके नाम पर कुछ नहीं। निवेश के लिए तैयार हों तो नीचे की दुकान देखें।</string>
+    <string name="empty_event_log">अभी कोई घटना नहीं — आपकी कहानी अभी शुरू हुई है।</string>
+    <string name="achievement_unlocked_title">उपलब्धि अनलॉक!</string>
+    <string name="achievement_six_figures_description">%1$s की कुल संपत्ति तक पहुँचें।</string>
+    <string name="achievement_first_million_description">%1$s की कुल संपत्ति तक पहुँचें।</string>
+    <string name="notification_nudge_comeback_title">अपनी कहानी जारी रखें</string>
+    <string name="notification_nudge_comeback_body">%1$s का जीवन वहीं इंतज़ार कर रहा है जहाँ आपने छोड़ा था।</string>
+    <string name="msg_treatment_failed">इस बार इलाज मददगार नहीं रहा, या देखभाल किफ़ायती नहीं थी। जब संभव हो फिर कोशिश करें।</string>
+    <string name="confirm_break_up_title">रिश्ता समाप्त करें?</string>
+    <string name="confirm_break_up_body">यह %1$s के साथ आपका रिश्ता समाप्त कर देगा। बाद में आप नया कोई रिश्ता बना सकते हैं।</string>
+    <string name="ancestry_history_truncated">कुछ पुरानी पीढ़ियाँ अब नहीं दिखतीं (इतिहास हाल की %1$d पीढ़ियों तक सीमित है)।</string>
+    <string name="tier_estranged">दूर</string>
+    <string name="tier_distant">कुछ दूर</string>
+    <string name="tier_cool">ठंडा</string>
+    <string name="tier_friendly">मैत्रीपूर्ण</string>
+    <string name="tier_close">करीब</string>
+    <string name="tier_inseparable">अविच्छेद्य</string>
 </resources>

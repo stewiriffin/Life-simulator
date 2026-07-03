@@ -32,6 +32,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.maisha.game.R
+import com.maisha.game.domain.AncestryHistoryCap
 import com.maisha.game.data.CountryCatalog
 import com.maisha.game.data.model.AncestryEntry
 import com.maisha.game.data.model.Character
@@ -53,6 +54,8 @@ fun AncestryScreen(
 ) {
     val sortedAncestors = character.ancestryHistory.sortedBy { it.generationNumber }
     val showEmptyState = sortedAncestors.isEmpty() && character.generationNumber <= 1
+    val historyTruncated = (character.generationNumber - 1) > sortedAncestors.size &&
+        (character.generationNumber - 1) > AncestryHistoryCap.MAX_ENTRIES
 
     Scaffold(
         modifier = modifier.fillMaxSize(),
@@ -110,6 +113,20 @@ fun AncestryScreen(
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                     Spacer(modifier = Modifier.height(8.dp))
+                }
+
+                if (historyTruncated) {
+                    item {
+                        Text(
+                            text = stringResource(
+                                R.string.ancestry_history_truncated,
+                                AncestryHistoryCap.MAX_ENTRIES
+                            ),
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            modifier = Modifier.padding(bottom = 8.dp)
+                        )
+                    }
                 }
 
                 items(sortedAncestors, key = { "${it.generationNumber}-${it.characterName}" }) { entry ->

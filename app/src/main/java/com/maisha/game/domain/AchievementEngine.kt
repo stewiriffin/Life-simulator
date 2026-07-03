@@ -2,6 +2,7 @@
 package com.maisha.game.domain
 
 import com.maisha.game.data.AchievementCatalog
+import com.maisha.game.data.AchievementWealth
 import com.maisha.game.data.model.Achievement
 import com.maisha.game.data.model.AchievementProgress
 import com.maisha.game.data.model.AssetType
@@ -51,8 +52,8 @@ class AchievementEngine @Inject constructor(
             "first_child" -> checkFirstChild(character)
             "growing_family" -> checkGrowingFamily(character)
             "family_person" -> checkFamilyPerson(character)
-            "six_figures" -> netWorth >= 100_000
-            "first_million" -> netWorth >= 1_000_000
+            "six_figures" -> netWorth >= AchievementWealth.sixFiguresThreshold(character.countryCode)
+            "first_million" -> netWorth >= AchievementWealth.firstMillionThreshold(character.countryCode)
             "property_owner" -> checkPropertyOwner(character)
             "multiple_streams" -> checkMultipleStreams(character)
             "half_century" -> checkHalfCentury(character)

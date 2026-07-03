@@ -18,6 +18,7 @@ import com.maisha.game.data.model.WorkEffort
 import com.maisha.game.notifications.NotificationScheduler
 import com.maisha.game.notifications.NudgeType
 import com.maisha.game.util.clampRelationshipLevel
+import com.maisha.game.util.formatMoney
 import javax.inject.Inject
 import javax.inject.Singleton
 import kotlin.random.Random
@@ -391,7 +392,8 @@ class GameEngine @Inject constructor(
             is CrimeResult.Success -> result.character.copy(
                 eventLog = EventLogCap.prepend(
                     result.character.eventLog,
-                    "Got away with ${crimeType.name.lowercase()} and gained KSh ${result.moneyGained}."
+                    "Got away with ${crimeType.name.lowercase()} and gained " +
+                        "${formatMoney(result.moneyGained, result.character.countryCode)}."
                 )
             )
             is CrimeResult.Caught -> result.character

@@ -179,6 +179,7 @@ Unit tests (Prompt 38) and edge-case hardening (Prompt 39) are in place for doma
 
 | Document | Contents |
 |----------|----------|
+| [docs/PROJECT_OVERVIEW.md](docs/PROJECT_OVERVIEW.md) | **External AI onboarding** — full project state, architecture, gaps, prompt history |
 | [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) | Age-up flow, slots/legacy, country cascade, engine API |
 | [docs/MANUAL_QA_TEST_PLAN.md](docs/MANUAL_QA_TEST_PLAN.md) | Device QA checklist (Sections A–I, 73 steps) |
 | [docs/PERFORMANCE_AUDIT.md](docs/PERFORMANCE_AUDIT.md) | Prompt 43 profiling baseline, optimizations, pass/fail thresholds |

@@ -30,6 +30,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.scale
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
@@ -39,6 +40,7 @@ import androidx.compose.ui.window.DialogProperties
 import com.maisha.game.R
 import com.maisha.game.data.model.Achievement
 import com.maisha.game.data.model.AchievementCategory
+import com.maisha.game.util.achievementDescription
 import com.maisha.game.ui.theme.AppIcons
 import com.maisha.game.ui.theme.GoldAccent
 import com.maisha.game.ui.theme.NavyDeep
@@ -47,8 +49,10 @@ import com.maisha.game.ui.theme.TealPrimary
 @Composable
 fun AchievementUnlockedDialog(
     achievement: Achievement,
+    countryCode: String,
     onDismiss: () -> Unit
 ) {
+    val context = LocalContext.current
     var visible by remember(achievement.id) { mutableStateOf(false) }
     LaunchedEffect(achievement.id) { visible = true }
 
@@ -126,7 +130,7 @@ fun AchievementUnlockedDialog(
                 }
 
                 Text(
-                    text = stringResource(achievement.descriptionRes),
+                    text = achievementDescription(context, achievement, countryCode),
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     textAlign = TextAlign.Start

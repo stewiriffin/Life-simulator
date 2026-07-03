@@ -12,6 +12,7 @@ import com.maisha.game.data.model.SchoolStage
 import com.maisha.game.data.model.WorkEffort
 import com.maisha.game.util.clampPerformanceScore
 import com.maisha.game.util.clampStat
+import com.maisha.game.util.formatMoney
 import javax.inject.Inject
 import javax.inject.Singleton
 import kotlin.math.roundToInt
@@ -196,9 +197,8 @@ class CareerEngine @Inject constructor() {
             minAge = character.age,
             maxAge = character.age,
             text = "Your manager calls you in. After a strong review, you have been promoted to " +
-                "${job.title} — Level ${job.level}. Your salary increases to KSh ${
-                formatSalary(job.baseSalary)
-                } per year.",
+                "${job.title} — Level ${job.level}. Your salary increases to " +
+                "${formatMoney(job.baseSalary, character.countryCode)} per year.",
             choices = listOf(
                 EventChoice(
                     label = "Celebrate with colleagues",

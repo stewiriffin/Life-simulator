@@ -30,6 +30,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
@@ -37,6 +38,7 @@ import androidx.compose.ui.unit.dp
 import com.maisha.game.R
 import com.maisha.game.data.IllustrationCatalog
 import com.maisha.game.data.model.AchievementCategory
+import com.maisha.game.util.achievementDescription
 import com.maisha.game.ui.components.AppLoadingIndicator
 import com.maisha.game.ui.components.EmptyStateCard
 import com.maisha.game.ui.components.IllustrationImage
@@ -53,6 +55,7 @@ fun AchievementsScreen(
     formatUnlockDate: (Long?) -> String?,
     modifier: Modifier = Modifier
 ) {
+    val context = LocalContext.current
     Scaffold(
         modifier = modifier.fillMaxSize(),
         topBar = {
@@ -142,7 +145,12 @@ fun AchievementsScreen(
                 items(categoryItems, key = { it.achievement.id }) { item ->
                     AchievementCard(
                         item = item,
-                        unlockDate = formatUnlockDate(item.progress.unlockedAt)
+                        unlockDate = formatUnlockDate(item.progress.unlockedAt),
+                        description = achievementDescription(
+                            context,
+                            item.achievement,
+                            uiState.displayCountryCode
+                        )
                     )
                 }
             }
@@ -153,7 +161,8 @@ fun AchievementsScreen(
 @Composable
 private fun AchievementCard(
     item: AchievementListItem,
-    unlockDate: String?
+    unlockDate: String?,
+    description: String
 ) {
     val unlocked = item.progress.unlocked
     val alpha = if (unlocked) 1f else 0.55f
@@ -204,7 +213,7 @@ private fun AchievementCard(
                     overflow = TextOverflow.Ellipsis
                 )
                 Text(
-                    text = stringResource(item.achievement.descriptionRes),
+                    text = description,
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     maxLines = 2,

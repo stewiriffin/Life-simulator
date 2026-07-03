@@ -54,6 +54,7 @@ fun PersonDetailSheet(
     val canSetUpDate = member.relation == RelationType.SIBLING || member.relation == RelationType.FRIEND
     val pendingGiftTier = rememberConfirmableAction<GiftTier>()
     val pendingTravel = rememberConfirmableAction<Unit>()
+    val pendingBreakUp = rememberConfirmableAction<Unit>()
     val travelCost = EconomyScaler.scaleRelationshipCost(
         RelationshipEngine.TRAVEL_BASE_COST_KENYA,
         playerCountryCode,
@@ -96,6 +97,22 @@ fun PersonDetailSheet(
             onConfirm = onConfirm,
             onDismiss = onDismiss
         )
+    }
+
+    if (isSpouse && !member.isMarried) {
+        ConfirmableActionHost(
+            state = pendingBreakUp,
+            onConfirmed = { onBreakUp() }
+        ) { _, onConfirm, onDismiss ->
+            ConfirmActionDialog(
+                title = stringResource(R.string.confirm_break_up_title),
+                description = stringResource(R.string.confirm_break_up_body, member.name),
+                confirmLabel = stringResource(R.string.btn_break_up),
+                severity = ConfirmSeverity.NEUTRAL,
+                onConfirm = onConfirm,
+                onDismiss = onDismiss
+            )
+        }
     }
 
     Column(modifier = Modifier.fillMaxWidth()) {
@@ -297,7 +314,13 @@ fun PersonDetailSheet(
                     )
                 }
                 OutlinedButton(
-                    onClick = onBreakUp,
+                    onClick = {
+                        if (member.isMarried) {
+                            onBreakUp()
+                        } else {
+                            pendingBreakUp.request(Unit)
+                        }
+                    },
                     modifier = Modifier.fillMaxWidth(),
                     shape = RoundedCornerShape(12.dp)
                 ) {

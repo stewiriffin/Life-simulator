@@ -25,11 +25,14 @@
 | Site | Before | After |
 |------|--------|-------|
 | Crime / doctor (`ActionsScreen`) | Hand-rolled `mutableStateOf` + `ConfirmActionDialog` | `ConfirmableActionHost` |
-| Asset purchase (`AssetsScreen`) | Raw `AlertDialog` (no haptic, different button styling) | `ConfirmActionDialog` via host — **visual alignment only** |
+| Asset purchase (`AssetsScreen`) | Raw `AlertDialog` (no haptic, different button styling) | `ConfirmActionDialog` via host — visual + haptic on confirm via `LifeViewModel.onPurchaseAsset` (P49 verified) |
 | Gift / travel (`PersonDetailSheet`) | Separate boolean + tier state | `ConfirmableActionHost` |
 | Job apply (`CareerScreen`) | No confirmation (direct apply) | **Unchanged** — adding confirm would be behavior change |
 | Marriage propose (`PersonDetailSheet`) | Direct `onPropose` | **Unchanged** — never had confirm step |
+| Dating break-up (`PersonDetailSheet`) | Immediate tap | **Prompt 49:** `ConfirmableActionHost` + NEUTRAL `ConfirmActionDialog` when not married; **divorce stays immediate** (higher-stakes label, existing behavior) |
 | Relocation | Life-event choice in `GameEngine` | **Unchanged** — different flow by design |
+
+**Asset purchase haptics (Prompt 49):** Verified — `LifeViewModel.onPurchaseAsset` enqueues `FeedbackCue(sound = PURCHASE, haptic = LIGHT_TAP)` on success; same pattern as crime/doctor confirms via `ActionsScreen` → ViewModel.
 
 All consolidated dialogs dismiss on backdrop tap via `ConfirmActionDialog.onDismissRequest`.
 
@@ -56,4 +59,8 @@ Routed through helpers in: `Stats`, `Person`, all domain engines with stat mutat
 - Effort balance: **1 file** (`EffortResolver.kt`) instead of 2 engines × 2 code paths
 - Person tuning: **1 file** (`PersonGenerator.kt`) for dating/friend/NPC stat constants
 - Stat bounds: grep for raw `.coerceIn(0, 100)` outside `ClampUtils` / `illnessChance` = review flag
-- Confirm flows: **1 host** pattern for action screens; ~60 lines of duplicated state/dialog wiring removed
+- Confirm flows: **1 host** pattern for action screens; dating break-up added P49
+
+---
+
+*Prompt 41 audit. Updated Prompt 49 (July 2026).*

@@ -370,9 +370,9 @@
     <string name="achievement_family_person_title">Mtu wa Familia</string>
     <string name="achievement_family_person_description">Dumisha uhusiano imara — 70+ na kila mwanafamilia aliye hai.</string>
     <string name="achievement_six_figures_title">Nambari Sita</string>
-    <string name="achievement_six_figures_description">Fikia thamani halisi ya KSh 100,000.</string>
+    <string name="achievement_six_figures_description">Fikia thamani halisi ya %1$s.</string>
     <string name="achievement_first_million_title">Milioni ya Kwanza</string>
-    <string name="achievement_first_million_description">Fikia thamani halisi ya KSh 1,000,000.</string>
+    <string name="achievement_first_million_description">Fikia thamani halisi ya %1$s.</string>
     <string name="achievement_property_owner_title">Mmiliki wa Nyumba</string>
     <string name="achievement_property_owner_description">Kuwa na nyumba yako mwenyewe.</string>
     <string name="achievement_multiple_streams_title">Vyanzo Vingi</string>
@@ -406,8 +406,8 @@
     <string name="msg_breakup">Uhusiano umekwisha.</string>
     <string name="msg_child_welcome">Karibu kwenye familia, mtoto mdogo!</string>
     <string name="msg_child_need_marriage">Unahitaji kuwa na ndoa ili kupata mtoto.</string>
-    <string name="msg_crime_got_away_log">Alitoroka na %1$s na akapata KSh %2$d.</string>
-    <string name="msg_crime_success">Imefanikiwa! Umepata KSh %d.</string>
+    <string name="msg_crime_got_away_log">Alitoroka na %1$s na akapata %2$s.</string>
+    <string name="msg_crime_success">Imefanikiwa! Umepata %1$s.</string>
     <string name="msg_crime_caught">Umekamatwa! Adhabu ya miaka %d.</string>
     <string name="msg_treatment_success">Matibabu yamefanikiwa. Unajisikia vizuri zaidi.</string>
     <string name="msg_treatment_failed">Matibabu hayakusaidia wakati huu, au gharama haikuwezekana. Jaribu tena ukiwa tayari.</string>
@@ -422,7 +422,7 @@
     <string name="msg_argue_other">Uligombana na %s.</string>
     <string name="msg_ask_money_not_applicable">Hiyo haifai hapa.</string>
     <string name="msg_ask_money_not_close">%s hako karibu vya kutosha kuomba pesa.</string>
-    <string name="msg_ask_money_success">%1$s amekupa KSh %2$d.</string>
+    <string name="msg_ask_money_success">%1$s amekupa %2$s.</string>
     <string name="msg_ask_money_refused">%s amekataa kukupa pesa.</string>
 
     <string name="empty_career_no_eligible">Hakuna kazi zinazofaa elimu na umri wako bado. Endelea kusoma au gusa Ongeza Umri — fursa inaweza kufunguka.</string>
@@ -434,7 +434,7 @@
     <string name="tier_cool">Baridi</string>
     <string name="tier_friendly">Urafiki</string>
     <string name="tier_close">Karibu</string>
-    <string name="tier_inseparable">Toshelezi</string>
+    <string name="tier_inseparable">Wasioachanika</string>
     <string name="tip_family_detail">Gusa mwanafamilia kuona kiwango cha uhusiano, kumbukumbu, na mwingiliano. Uhusiano hupungua ukipuuzia.</string>
     <string name="msg_relationship_decay">Wewe na %1$s mmekuwa %2$s.</string>
     <string name="onboarding_world_title">Mwonekano wako na ulimwengu wako</string>

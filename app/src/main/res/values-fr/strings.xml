@@ -41,4 +41,31 @@
     <string name="settings_version">Version %s</string>
     <string name="screen_slot_picker_title">Vos vies</string>
     <string name="screen_slot_picker_subtitle">Choisissez un emplacement pour continuer ou recommencer.</string>
+    <!-- Prompt 44 / 49 locale completion — spot-check by fluent speaker before release -->
+    <string name="btn_visit_doctor">Consulter un médecin</string>
+    <string name="btn_break_up">Mettre fin à la relation</string>
+    <string name="settings_privacy_policy">Politique de confidentialité</string>
+    <string name="empty_no_character">Aucune vie sauvegardée ici.</string>
+    <string name="empty_family">Votre cercle commence avec vous — famille et amis apparaîtront au fil de votre histoire.</string>
+    <string name="empty_family_title">De la place pour grandir</string>
+    <string name="empty_achievements_title">Des succès vous attendent</string>
+    <string name="empty_achievements_message">Les étapes se débloquent en vivant. Appuyez sur Vieillir, explorez et voyez ce que vous pouvez accomplir.</string>
+    <string name="empty_career_no_eligible">Pas encore d\'offres pour votre âge et votre formation. Continuez à apprendre ou appuyez sur Vieillir — une opportunité peut s\'ouvrir.</string>
+    <string name="empty_assets">Rien à votre nom pour l\'instant. Parcourez la boutique quand vous serez prêt à investir.</string>
+    <string name="empty_event_log">Pas encore d\'événements — votre histoire ne fait que commencer.</string>
+    <string name="achievement_unlocked_title">Succès débloqué !</string>
+    <string name="achievement_six_figures_description">Atteignez une valeur nette de %1$s.</string>
+    <string name="achievement_first_million_description">Atteignez une valeur nette de %1$s.</string>
+    <string name="notification_nudge_comeback_title">Reprenez votre histoire</string>
+    <string name="notification_nudge_comeback_body">La vie de %1$s vous attend là où vous l\'avez laissée.</string>
+    <string name="msg_treatment_failed">Le traitement n\'a pas aidé cette fois, ou les soins n\'étaient pas abordables. Réessayez quand vous pourrez.</string>
+    <string name="confirm_break_up_title">Mettre fin à la relation ?</string>
+    <string name="confirm_break_up_body">Cela mettra fin à votre relation avec %1$s. Vous pourrez toujours rencontrer quelqu\'un d\'autre plus tard.</string>
+    <string name="ancestry_history_truncated">Certaines générations antérieures ne sont plus affichées (l\'historique est limité aux %1$d générations les plus récentes).</string>
+    <string name="tier_estranged">Éloigné</string>
+    <string name="tier_distant">Distant</string>
+    <string name="tier_cool">Froid</string>
+    <string name="tier_friendly">Amical</string>
+    <string name="tier_close">Proche</string>
+    <string name="tier_inseparable">Inséparable</string>
 </resources>

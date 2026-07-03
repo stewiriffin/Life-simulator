@@ -41,4 +41,31 @@
     <string name="settings_version">Versión %s</string>
     <string name="screen_slot_picker_title">Tus vidas</string>
     <string name="screen_slot_picker_subtitle">Elige una ranura para continuar o empezar de nuevo.</string>
+    <!-- Prompt 44 / 49 locale completion — spot-check by fluent speaker before release -->
+    <string name="btn_visit_doctor">Visitar al médico</string>
+    <string name="btn_break_up">Terminar relación</string>
+    <string name="settings_privacy_policy">Política de privacidad</string>
+    <string name="empty_no_character">No hay ninguna vida guardada aquí.</string>
+    <string name="empty_family">Tu círculo empieza contigo — familia y amigos aparecerán a medida que crezca tu historia.</string>
+    <string name="empty_family_title">Espacio para crecer</string>
+    <string name="empty_achievements_title">Logros te esperan</string>
+    <string name="empty_achievements_message">Los hitos se desbloquean al vivir. Pulsa Cumplir años, explora y mira qué puedes lograr.</string>
+    <string name="empty_career_no_eligible">Aún no hay vacantes para tu edad y formación. Sigue aprendiendo o pulsa Cumplir años — algo puede abrirse.</string>
+    <string name="empty_assets">Nada a tu nombre todavía. Mira la tienda cuando quieras invertir.</string>
+    <string name="empty_event_log">Aún no hay eventos — tu historia acaba de empezar.</string>
+    <string name="achievement_unlocked_title">¡Logro desbloqueado!</string>
+    <string name="achievement_six_figures_description">Alcanza un patrimonio neto de %1$s.</string>
+    <string name="achievement_first_million_description">Alcanza un patrimonio neto de %1$s.</string>
+    <string name="notification_nudge_comeback_title">Retoma tu historia</string>
+    <string name="notification_nudge_comeback_body">La vida de %1$s te espera justo donde la dejaste.</string>
+    <string name="msg_treatment_failed">El tratamiento no ayudó esta vez, o la atención no era asequible. Inténtalo de nuevo cuando puedas.</string>
+    <string name="confirm_break_up_title">¿Terminar relación?</string>
+    <string name="confirm_break_up_body">Esto terminará tu relación con %1$s. Siempre podrás conocer a alguien nuevo más adelante.</string>
+    <string name="ancestry_history_truncated">Algunas generaciones anteriores ya no se muestran (el historial se limita a las %1$d generaciones más recientes).</string>
+    <string name="tier_estranged">Alejado</string>
+    <string name="tier_distant">Distante</string>
+    <string name="tier_cool">Frío</string>
+    <string name="tier_friendly">Amistoso</string>
+    <string name="tier_close">Cercano</string>
+    <string name="tier_inseparable">Inseparable</string>
 </resources>
