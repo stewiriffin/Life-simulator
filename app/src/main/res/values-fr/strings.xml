@@ -37,7 +37,7 @@
     <string name="settings_language_spanish">Español</string>
     <string name="settings_language_hindi">हिन्दी</string>
     <string name="settings_reset_all_data">Réinitialiser toutes les données</string>
-    <string name="settings_reset_warning">Cela supprimera définitivement toutes les vies sauvegardées et les succès. Irréversible.</string>
+    <string name="settings_reset_warning">Cela supprime définitivement les trois emplacements, toutes les vies sauvegardées, tous les succès et rétablit les paramètres par défaut. Irréversible.</string>
     <string name="settings_version">Version %s</string>
     <string name="screen_slot_picker_title">Vos vies</string>
     <string name="screen_slot_picker_subtitle">Choisissez un emplacement pour continuer ou recommencer.</string>

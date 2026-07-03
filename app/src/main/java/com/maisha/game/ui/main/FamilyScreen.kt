@@ -172,7 +172,7 @@ fun FamilyScreen(
         if (character.family.isEmpty()) {
             EmptyStateCard(
                 illustration = EmptyStateIllustration.FAMILY,
-                title = stringResource(R.string.screen_family),
+                title = stringResource(R.string.empty_family_title),
                 message = stringResource(R.string.empty_family),
                 actionLabel = if (character.age >= 18 && !character.hasSpouse()) {
                     stringResource(R.string.btn_find_date)

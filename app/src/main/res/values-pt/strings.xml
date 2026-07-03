@@ -37,7 +37,7 @@
     <string name="settings_language_spanish">Español</string>
     <string name="settings_language_hindi">हिन्दी</string>
     <string name="settings_reset_all_data">Redefinir todos os dados</string>
-    <string name="settings_reset_warning">Isso apagará permanentemente todas as vidas salvas e conquistas. Não pode ser desfeito.</string>
+    <string name="settings_reset_warning">Isso apaga permanentemente os três slots, todas as vidas salvas, todas as conquistas e restaura os ajustes padrão. Não pode ser desfeito.</string>
     <string name="settings_version">Versão %s</string>
     <string name="screen_slot_picker_title">Suas vidas</string>
     <string name="screen_slot_picker_subtitle">Escolha um slot para continuar ou começar de novo.</string>

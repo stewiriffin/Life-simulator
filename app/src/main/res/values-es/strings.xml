@@ -37,7 +37,7 @@
     <string name="settings_language_spanish">Español</string>
     <string name="settings_language_hindi">हिन्दी</string>
     <string name="settings_reset_all_data">Restablecer todos los datos</string>
-    <string name="settings_reset_warning">Esto borrará permanentemente todas las vidas guardadas y logros. No se puede deshacer.</string>
+    <string name="settings_reset_warning">Esto borra permanentemente las tres ranuras, todas las vidas guardadas, todos los logros y restablece los ajustes. No se puede deshacer.</string>
     <string name="settings_version">Versión %s</string>
     <string name="screen_slot_picker_title">Tus vidas</string>
     <string name="screen_slot_picker_subtitle">Elige una ranura para continuar o empezar de nuevo.</string>

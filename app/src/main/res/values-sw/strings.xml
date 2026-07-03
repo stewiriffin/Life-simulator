@@ -53,8 +53,8 @@
     <string name="notification_nudge_health_body">%1$s amekuwa na %2$s kwa muda — daktari anaweza kusaidia.</string>
     <string name="notification_nudge_decision_title">Chaguo linakusubiri</string>
     <string name="notification_nudge_decision_body">%1$s ana uamuzi wa kufanya. Utachagua nini?</string>
-    <string name="notification_nudge_comeback_title">Tumekukosa</string>
-    <string name="notification_nudge_comeback_body">Maisha ya %1$s yamesimama — endelea ulipoishia.</string>
+    <string name="notification_nudge_comeback_title">Endelea Hadithi Yako</string>
+    <string name="notification_nudge_comeback_body">Maisha ya %1$s yanasubiri ulipoishia.</string>
 
     <!-- Navigation -->
     <string name="nav_life">Maisha</string>
@@ -93,7 +93,7 @@
     <string name="btn_propose_locked">Omba (inahitaji %d+)</string>
     <string name="btn_have_child">Pata Mtoto</string>
     <string name="btn_divorce">Talaka</string>
-    <string name="btn_break_up">Achana</string>
+    <string name="btn_break_up">Maliza Uhusiano</string>
     <string name="btn_view_achievements">Angalia Mafanikio</string>
     <string name="btn_watch_second_wind">Tazama Tangazo kwa Second Wind</string>
     <string name="btn_age_up">+ Ongeza Umri</string>
@@ -118,7 +118,7 @@
     <string name="settings_language_spanish">Español</string>
     <string name="settings_language_hindi">हिन्दी</string>
     <string name="settings_reset_all_data">Weka upya data zote</string>
-    <string name="settings_reset_warning">Hii itafuta kabisa maisha yote yaliyohifadhiwa, maendeleo ya mafanikio, na kuweka mipangilio chaguomsingi. Haiwezi kutenduliwa.</string>
+    <string name="settings_reset_warning">Hii itafuta kabisa nafasi zote tatu za kuhifadhi, maisha yote yaliyohifadhiwa, maendeleo ya mafanikio, na kuweka mipangilio chaguomsingi. Haiwezi kutenduliwa.</string>
     <string name="settings_version">Toleo %s</string>
 
     <!-- Slot picker -->
@@ -142,10 +142,10 @@
     <string name="error_name_required">Tafadhali weka jina</string>
 
     <!-- Life screen -->
-    <string name="empty_no_character">Hakuna mhusika aliyehifadhiwa.</string>
+    <string name="empty_no_character">Hakuna maisha yaliyohifadhiwa hapa.</string>
     <string name="section_event_log">Kumbukumbu za Matukio</string>
     <string name="empty_event_log_life">Hakuna matukio bado. Gusa Ongeza Umri ili kuishi maisha yako.</string>
-    <string name="empty_event_log">Hakuna matukio bado.</string>
+    <string name="empty_event_log">Hakuna matukio bado — hadithi yako inaanza tu.</string>
     <string name="label_years">MIAKA</string>
     <string name="label_net_worth">Thamani Halisi</string>
     <string name="label_education">Elimu</string>
@@ -170,7 +170,8 @@
 
     <!-- Family -->
     <string name="format_family_member_count">Wanachama %d</string>
-    <string name="empty_family">Hakuna wanafamilia waliopatikana.</string>
+    <string name="empty_family">Mduara wako unaanza na wewe — familia na marafiki wataonekana kadri hadithi yako inavyokua.</string>
+    <string name="empty_family_title">Nafasi ya Kukua</string>
     <string name="section_parents">Wazazi</string>
     <string name="section_siblings">Ndugu</string>
     <string name="section_partner">Mpenzi</string>
@@ -237,7 +238,7 @@
     <string name="dialog_confirm_purchase_body">Nunua %1$s kwa %2$s? Matengenezo: %3$s/mwezi</string>
     <string name="format_cash_net_worth">Fedha taslimu: %1$s · Thamani halisi: %2$s</string>
     <string name="section_owned_count">Zinazomilikiwa (%d)</string>
-    <string name="empty_assets">Hakuna mali bado. Angalia duka hapa chini.</string>
+    <string name="empty_assets">Bado hakuna mali zako. Angalia duka hapa chini ukiwa tayari kuwekeza.</string>
     <string name="section_shop">Duka</string>
     <string name="format_upkeep_monthly">Matengenezo: %s/mwezi</string>
     <string name="format_asset_price_upkeep">%1$s · %2$s/mwezi</string>
@@ -334,7 +335,7 @@
     <string name="event_category_life">Maisha</string>
 
     <!-- Achievements -->
-    <string name="achievement_unlocked_title">Mafanikio Yamefunguliwa</string>
+    <string name="achievement_unlocked_title">Mafanikio Yamefunguliwa!</string>
     <string name="format_achievement_unlocked_date">Imefunguliwa %s</string>
     <string name="achievement_category_career">Kazi</string>
     <string name="achievement_category_education">Elimu</string>
@@ -404,7 +405,7 @@
     <string name="msg_crime_success">Imefanikiwa! Umepata KSh %d.</string>
     <string name="msg_crime_caught">Umekamatwa! Adhabu ya miaka %d.</string>
     <string name="msg_treatment_success">Matibabu yamefanikiwa. Unajisikia vizuri zaidi.</string>
-    <string name="msg_treatment_failed">Matibabu yameshindwa au hukuweza kumudu gharama.</string>
+    <string name="msg_treatment_failed">Matibabu hayakusaidia wakati huu, au gharama haikuwezekana. Jaribu tena ukiwa tayari.</string>
 
     <!-- Family interaction messages -->
     <string name="msg_person_not_found">Mtu hajapatikana.</string>
@@ -419,12 +420,16 @@
     <string name="msg_ask_money_success">%1$s amekupa KSh %2$d.</string>
     <string name="msg_ask_money_refused">%s amekataa kukupa pesa.</string>
 
+    <string name="empty_career_no_eligible">Hakuna kazi zinazofaa elimu na umri wako bado. Endelea kusoma au gusa Ongeza Umri — fursa inaweza kufunguka.</string>
+    <string name="empty_achievements_title">Mafanikio Yanakusubiri</string>
+    <string name="empty_achievements_message">Hatua muhimu hufunguliwa unapoishi. Gusa Ongeza Umri, chunguza, na uone unachoweza kupata.</string>
+
     <string name="tier_estranged">Mbali sana</string>
     <string name="tier_distant">Mbali</string>
     <string name="tier_cool">Baridi</string>
     <string name="tier_friendly">Urafiki</string>
     <string name="tier_close">Karibu</string>
-    <string name="tier_inseparable">Tofauti</string>
+    <string name="tier_inseparable">Toshelezi</string>
     <string name="tip_family_detail">Gusa mwanafamilia kuona kiwango cha uhusiano, kumbukumbu, na mwingiliano. Uhusiano hupungua ukipuuzia.</string>
     <string name="msg_relationship_decay">Wewe na %1$s mmekuwa %2$s.</string>
     <string name="onboarding_world_title">Mwonekano wako na ulimwengu wako</string>

@@ -102,8 +102,8 @@ fun AchievementsScreen(
             ) {
                 EmptyStateCard(
                     illustration = EmptyStateIllustration.ACHIEVEMENTS,
-                    title = stringResource(R.string.screen_achievements),
-                    message = stringResource(R.string.empty_event_log)
+                    title = stringResource(R.string.empty_achievements_title),
+                    message = stringResource(R.string.empty_achievements_message)
                 )
             }
             return@Scaffold

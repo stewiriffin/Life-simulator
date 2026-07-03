@@ -56,8 +56,8 @@
     <string name="notification_nudge_health_body">%1$s has had %2$s for a while — a doctor visit might help.</string>
     <string name="notification_nudge_decision_title">A choice awaits</string>
     <string name="notification_nudge_decision_body">%1$s has a life decision waiting. What will you choose?</string>
-    <string name="notification_nudge_comeback_title">We miss you</string>
-    <string name="notification_nudge_comeback_body">%1$s\'s life is on pause — pick up where you left off.</string>
+    <string name="notification_nudge_comeback_title">Pick Up Your Story</string>
+    <string name="notification_nudge_comeback_body">%1$s\'s life is waiting right where you left off.</string>
 
     <!-- Navigation -->
     <string name="nav_life">Life</string>
@@ -83,7 +83,7 @@
     <string name="btn_locked">Locked</string>
     <string name="btn_quit_job">Quit Job</string>
     <string name="btn_attempt">Attempt</string>
-    <string name="btn_visit_doctor">Visit doctor</string>
+    <string name="btn_visit_doctor">Visit Doctor</string>
     <string name="btn_find_date">Find a Date</string>
     <string name="btn_start_dating">Start Dating</string>
     <string name="btn_play_together">Play Together</string>
@@ -96,7 +96,7 @@
     <string name="btn_propose_locked">Propose (needs %d+)</string>
     <string name="btn_have_child">Have a Child</string>
     <string name="btn_divorce">Divorce</string>
-    <string name="btn_break_up">Break Up</string>
+    <string name="btn_break_up">End Relationship</string>
     <string name="btn_view_achievements">View Achievements</string>
     <string name="btn_watch_second_wind">Watch Ad for a Second Wind</string>
     <string name="btn_age_up">+ Age Up</string>
@@ -124,8 +124,8 @@
     <string name="settings_language_portuguese">Português</string>
     <string name="settings_language_spanish">Español</string>
     <string name="settings_language_hindi">हिन्दी</string>
-    <string name="settings_reset_all_data">Reset all data</string>
-    <string name="settings_reset_warning">This will permanently delete all saved lives, achievement progress, and reset settings to defaults. This cannot be undone.</string>
+    <string name="settings_reset_all_data">Reset All Data</string>
+    <string name="settings_reset_warning">This permanently deletes all three save slots, every saved life, all achievement progress, and restores settings to defaults. This cannot be undone.</string>
     <string name="settings_version">Version %s</string>
 
     <!-- Slot picker -->
@@ -149,11 +149,11 @@
     <string name="error_name_required">Please enter a name</string>
 
     <!-- Life screen -->
-    <string name="empty_no_character">No saved character found.</string>
-    <string name="empty_career_no_eligible">No jobs match your education and age yet. Keep studying or age up.</string>
+    <string name="empty_no_character">No saved life found here.</string>
+    <string name="empty_career_no_eligible">No openings yet for your education and age. Keep learning or tap Age Up — something may open up.</string>
     <string name="section_event_log">Event Log</string>
     <string name="empty_event_log_life">No events yet. Tap Age Up to live your life.</string>
-    <string name="empty_event_log">No events yet.</string>
+    <string name="empty_event_log">No events yet — your story is just getting started.</string>
     <string name="label_years">YEARS</string>
     <string name="label_net_worth">Net Worth</string>
     <string name="label_education">Education</string>
@@ -178,7 +178,8 @@
 
     <!-- Family -->
     <string name="format_family_member_count">%d members</string>
-    <string name="empty_family">No family members found.</string>
+    <string name="empty_family">Your circle starts with you — family and friends will appear as your story grows.</string>
+    <string name="empty_family_title">Room to Grow</string>
     <string name="section_parents">Parents</string>
     <string name="section_siblings">Siblings</string>
     <string name="section_partner">Partner</string>
@@ -241,11 +242,11 @@
     <string name="edu_no_formal_education">No formal education</string>
 
     <!-- Assets -->
-    <string name="dialog_confirm_purchase_title">Confirm purchase</string>
+    <string name="dialog_confirm_purchase_title">Confirm Purchase</string>
     <string name="dialog_confirm_purchase_body">Buy %1$s for %2$s? Upkeep: %3$s/mo</string>
     <string name="format_cash_net_worth">Cash: %1$s · Net worth: %2$s</string>
     <string name="section_owned_count">Owned (%d)</string>
-    <string name="empty_assets">No assets yet. Browse the shop below.</string>
+    <string name="empty_assets">Nothing in your name yet. Browse the shop below when you\'re ready to invest.</string>
     <string name="section_shop">Shop</string>
     <string name="format_upkeep_monthly">Upkeep: %s/mo</string>
     <string name="format_asset_price_upkeep">%1$s · %2$s/mo</string>
@@ -342,7 +343,7 @@
     <string name="event_category_life">Life</string>
 
     <!-- Achievements -->
-    <string name="achievement_unlocked_title">Achievement Unlocked</string>
+    <string name="achievement_unlocked_title">Achievement Unlocked!</string>
     <string name="format_achievement_unlocked_date">Unlocked %s</string>
     <string name="achievement_category_career">Career</string>
     <string name="achievement_category_education">Education</string>
@@ -393,6 +394,9 @@
     <string name="achievement_clean_record_title">Clean Record</string>
     <string name="achievement_clean_record_description">Reach age 60 without a criminal record.</string>
 
+    <string name="empty_achievements_title">Achievements Await</string>
+    <string name="empty_achievements_message">Milestones unlock as you live. Tap Age Up, explore, and see what you can earn.</string>
+
     <!-- ViewModel / snackbar messages -->
     <string name="msg_hired">Hired as %s!</string>
     <string name="msg_job_rejected">Application rejected. Try again or build your skills.</string>
@@ -413,7 +417,7 @@
     <string name="msg_crime_success">Success! You gained KSh %d.</string>
     <string name="msg_crime_caught">Caught! Sentenced to %d year(s).</string>
     <string name="msg_treatment_success">Treatment successful. You feel much better.</string>
-    <string name="msg_treatment_failed">Treatment failed or you couldn\'t afford care.</string>
+    <string name="msg_treatment_failed">The treatment didn\'t help this time, or care wasn\'t affordable. Try again when you can.</string>
 
     <!-- Family interaction messages -->
     <string name="msg_person_not_found">Person not found.</string>

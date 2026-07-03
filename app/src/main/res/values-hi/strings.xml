@@ -37,7 +37,7 @@
     <string name="settings_language_spanish">Español</string>
     <string name="settings_language_hindi">हिन्दी</string>
     <string name="settings_reset_all_data">सभी डेटा रीसेट करें</string>
-    <string name="settings_reset_warning">यह सभी सहेजे गए जीवन और उपलब्धियाँ स्थायी रूप से हटा देगा। इसे पूर्ववत नहीं किया जा सकता।</string>
+    <string name="settings_reset_warning">यह तीनों स्लॉट, सभी सहेजे जीवन, सभी उपलब्धियाँ और सेटिंग्स स्थायी रूप से मिटा देगा। इसे पूर्ववत नहीं किया जा सकता।</string>
     <string name="settings_version">संस्करण %s</string>
     <string name="screen_slot_picker_title">आपके जीवन</string>
     <string name="screen_slot_picker_subtitle">जारी रखने या नए सिरे से शुरू करने के लिए एक स्लॉट चुनें।</string>
