@@ -8,6 +8,7 @@ import androidx.work.CoroutineWorker
 import androidx.work.WorkerParameters
 import com.maisha.game.R
 import com.maisha.game.data.local.CharacterRepository
+import com.maisha.game.data.local.SavedGameLoadResult
 import com.maisha.game.data.local.MAX_SLOTS
 import com.maisha.game.data.local.SettingsRepository
 import dagger.assisted.Assisted
@@ -56,7 +57,10 @@ class DailyReminderWorker @AssistedInject constructor(
     private suspend fun loadLivingCharacterNames(): List<Pair<Int, String>> {
         val results = mutableListOf<Pair<Int, String>>()
         for (slotId in 0 until MAX_SLOTS) {
-            val game = characterRepository.loadGame(slotId) ?: continue
+            val game = when (val result = characterRepository.loadGame(slotId)) {
+                is SavedGameLoadResult.Success -> result.game
+                else -> continue
+            }
             val character = game.character
             if (character.alive) {
                 results += slotId to character.name

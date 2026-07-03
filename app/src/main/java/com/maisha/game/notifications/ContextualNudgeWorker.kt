@@ -8,6 +8,7 @@ import androidx.work.CoroutineWorker
 import androidx.work.WorkerParameters
 import com.maisha.game.R
 import com.maisha.game.data.local.CharacterRepository
+import com.maisha.game.data.local.SavedGameLoadResult
 import com.maisha.game.data.local.SettingsRepository
 import dagger.assisted.Assisted
 import dagger.assisted.AssistedInject
@@ -36,7 +37,10 @@ class ContextualNudgeWorker @AssistedInject constructor(
                 ?.let { runCatching { NudgeType.valueOf(it) }.getOrNull() }
                 ?: return Result.success()
 
-            val game = characterRepository.loadGame(slotId) ?: return Result.success()
+            val game = when (val result = characterRepository.loadGame(slotId)) {
+                is SavedGameLoadResult.Success -> result.game
+                else -> return Result.success()
+            }
             val character = game.character
             if (!character.alive) return Result.success()
 

@@ -50,6 +50,7 @@ fun SlotPickerScreen(
     onStartNewLife: (Int) -> Unit,
     onConfirmOverwrite: () -> Unit,
     onDismissOverwrite: () -> Unit,
+    onClearCorruptedSlot: (Int) -> Unit,
     onOpenSettings: () -> Unit,
     modifier: Modifier = Modifier
 ) {
@@ -100,12 +101,23 @@ fun SlotPickerScreen(
         LazyColumn(
             verticalArrangement = Arrangement.spacedBy(10.dp)
         ) {
+            if (uiState.isDatabaseUnavailable) {
+                item(key = "database_unavailable") {
+                    Text(
+                        text = stringResource(R.string.database_unavailable_message),
+                        style = MaterialTheme.typography.bodySmall,
+                        color = CoralNegative,
+                        modifier = Modifier.padding(bottom = 4.dp)
+                    )
+                }
+            }
             items(uiState.slots, key = { it.slotId }) { slot ->
                 SlotCard(
                     slot = slot,
                     onContinue = { onContinue(slot.slotId) },
                     onViewSummary = { onViewSummary(slot.slotId) },
-                    onStartNewLife = { onStartNewLife(slot.slotId) }
+                    onStartNewLife = { onStartNewLife(slot.slotId) },
+                    onClearCorrupted = { onClearCorruptedSlot(slot.slotId) }
                 )
             }
         }
@@ -134,7 +146,8 @@ private fun SlotCard(
     slot: SlotSummary,
     onContinue: () -> Unit,
     onViewSummary: () -> Unit,
-    onStartNewLife: () -> Unit
+    onStartNewLife: () -> Unit,
+    onClearCorrupted: () -> Unit
 ) {
     Card(
         modifier = Modifier.fillMaxWidth(),
@@ -178,6 +191,7 @@ private fun SlotCard(
                     }
                     Text(
                         text = when {
+                            slot.isCorrupted -> stringResource(R.string.slot_save_data_issue)
                             slot.isEmpty -> stringResource(R.string.slot_empty)
                             slot.alive == true -> slot.name.orEmpty()
                             else -> stringResource(
@@ -190,7 +204,15 @@ private fun SlotCard(
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis
                     )
-                    if (!slot.isEmpty && slot.age != null) {
+                    if (slot.isCorrupted) {
+                        Text(
+                            text = stringResource(R.string.slot_could_not_load),
+                            style = MaterialTheme.typography.bodySmall,
+                            color = CoralNegative,
+                            maxLines = 2,
+                            overflow = TextOverflow.Ellipsis
+                        )
+                    } else if (!slot.isEmpty && slot.age != null) {
                         Text(
                             text = if (slot.alive == true) {
                                 stringResource(R.string.format_age, slot.age)
@@ -226,6 +248,16 @@ private fun SlotCard(
             }
 
             when {
+                slot.isCorrupted -> {
+                    Button(
+                        onClick = onClearCorrupted,
+                        modifier = Modifier.fillMaxWidth(),
+                        shape = RoundedCornerShape(10.dp),
+                        colors = ButtonDefaults.buttonColors(containerColor = CoralNegative)
+                    ) {
+                        Text(stringResource(R.string.btn_clear_and_start_fresh), maxLines = 2)
+                    }
+                }
                 slot.isEmpty -> {
                     Button(
                         onClick = onStartNewLife,

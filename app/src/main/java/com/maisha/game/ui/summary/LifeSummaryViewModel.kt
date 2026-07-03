@@ -11,6 +11,7 @@ import com.maisha.game.data.AchievementCatalog
 import com.maisha.game.data.JobPool
 import com.maisha.game.data.AchievementRepository
 import com.maisha.game.data.local.CharacterRepository
+import com.maisha.game.data.local.SavedGameLoadResult
 import com.maisha.game.data.local.MAX_SLOTS
 import com.maisha.game.data.local.MetaBonusRepository
 import com.maisha.game.data.local.OnboardingTips
@@ -94,57 +95,65 @@ class LifeSummaryViewModel @Inject constructor(
 
     init {
         viewModelScope.launch {
-            val saved = characterRepository.loadGame(slotId)
-            val character = saved?.character
-            if (character == null || character.alive) {
-                _uiState.update {
-                    it.copy(isLoading = false, navigateToSlotPicker = true)
+            when (val result = characterRepository.loadGame(slotId)) {
+                is SavedGameLoadResult.Success -> {
+                    val character = result.game.character
+                    if (character.alive) {
+                        _uiState.update {
+                            it.copy(isLoading = false, navigateToSlotPicker = true)
+                        }
+                        return@launch
+                    }
+
+                    val cause = mortalityEngine.parseDeathCause(character) ?: DeathCause.OLD_AGE
+                    val highlights = character.eventLog
+                        .filter { !it.startsWith("::DEATH:") }
+                        .take(5)
+                    val seenTips = settingsRepository.getSeenTipsSnapshot()
+                    val showAchievementsTip =
+                        OnboardingTips.FIRST_DEATH_ACHIEVEMENTS !in seenTips
+                    val netWorth = financeEngine.calculateNetWorth(character)
+                    val deathLabel = deathCauseLabel(cause)
+                    val achievementProgress = achievementRepository.getProgressSnapshot()
+
+                    _uiState.update {
+                        it.copy(
+                            isLoading = false,
+                            slotId = slotId,
+                            character = character,
+                            deathCauseLabel = deathLabel,
+                            deathFlavorText = deathFlavorText(cause),
+                            netWorth = netWorth,
+                            careerRecap = buildCareerRecap(character),
+                            educationRecap = EducationFormatter.formatHighestEducation(
+                                character.education,
+                                context.resources
+                            ),
+                            spouseRecap = buildSpouseRecap(character),
+                            closestBondRecap = buildClosestBondRecap(character),
+                            childrenCount = character.family.count { person ->
+                                person.relation == RelationType.CHILD
+                            },
+                            eventHighlights = highlights,
+                            showSecondWindButton = sessionAdTracker.canShowSecondWindOffer(),
+                            showAchievementsCarryOverTip = showAchievementsTip,
+                            shareCardData = buildShareCardData(
+                                character = character,
+                                deathCauseLabel = deathLabel,
+                                netWorth = netWorth,
+                                unlockedAchievementIds = achievementProgress
+                                    .filter { progress -> progress.unlocked }
+                                    .map { progress -> progress.achievementId }
+                            ),
+                            eligibleHeirs = legacyEngine.eligibleHeirs(character)
+                        )
+                    }
                 }
-                return@launch
-            }
-
-            val cause = mortalityEngine.parseDeathCause(character) ?: DeathCause.OLD_AGE
-            val highlights = character.eventLog
-                .filter { !it.startsWith("::DEATH:") }
-                .take(5)
-            val seenTips = settingsRepository.getSeenTipsSnapshot()
-            val showAchievementsTip =
-                OnboardingTips.FIRST_DEATH_ACHIEVEMENTS !in seenTips
-            val netWorth = financeEngine.calculateNetWorth(character)
-            val deathLabel = deathCauseLabel(cause)
-            val achievementProgress = achievementRepository.getProgressSnapshot()
-
-            _uiState.update {
-                it.copy(
-                    isLoading = false,
-                    slotId = slotId,
-                    character = character,
-                    deathCauseLabel = deathLabel,
-                    deathFlavorText = deathFlavorText(cause),
-                    netWorth = netWorth,
-                    careerRecap = buildCareerRecap(character),
-                    educationRecap = EducationFormatter.formatHighestEducation(
-                        character.education,
-                        context.resources
-                    ),
-                    spouseRecap = buildSpouseRecap(character),
-                    closestBondRecap = buildClosestBondRecap(character),
-                    childrenCount = character.family.count { person ->
-                        person.relation == RelationType.CHILD
-                    },
-                    eventHighlights = highlights,
-                    showSecondWindButton = sessionAdTracker.canShowSecondWindOffer(),
-                    showAchievementsCarryOverTip = showAchievementsTip,
-                    shareCardData = buildShareCardData(
-                        character = character,
-                        deathCauseLabel = deathLabel,
-                        netWorth = netWorth,
-                        unlockedAchievementIds = achievementProgress
-                            .filter { progress -> progress.unlocked }
-                            .map { progress -> progress.achievementId }
-                    ),
-                    eligibleHeirs = legacyEngine.eligibleHeirs(character)
-                )
+                SavedGameLoadResult.Corrupted, SavedGameLoadResult.NotFound -> {
+                    _uiState.update {
+                        it.copy(isLoading = false, navigateToSlotPicker = true)
+                    }
+                }
             }
         }
     }

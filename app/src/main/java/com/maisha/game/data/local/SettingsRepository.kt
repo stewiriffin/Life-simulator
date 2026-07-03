@@ -2,11 +2,13 @@
 package com.maisha.game.data.local
 
 import android.content.Context
+import android.util.Log
 import androidx.core.app.NotificationManagerCompat
 import androidx.datastore.core.DataStore
 import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.core.booleanPreferencesKey
 import androidx.datastore.preferences.core.edit
+import androidx.datastore.preferences.core.emptyPreferences
 import androidx.datastore.preferences.core.longPreferencesKey
 import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.datastore.preferences.core.stringSetPreferencesKey
@@ -14,6 +16,7 @@ import androidx.datastore.preferences.preferencesDataStore
 import com.maisha.game.util.LocaleManager
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
 import javax.inject.Inject
@@ -40,35 +43,40 @@ class SettingsRepository @Inject constructor(
 ) {
     private val dataStore = context.settingsDataStore
 
-    val soundEnabled: Flow<Boolean> = dataStore.data.map { prefs ->
+    private fun preferencesFlow() = dataStore.data.catch { e ->
+        Log.e(TAG, "DataStore read failed; using defaults", e)
+        emit(emptyPreferences())
+    }
+
+    val soundEnabled: Flow<Boolean> = preferencesFlow().map { prefs ->
         prefs[SOUND_KEY] ?: true
     }
 
-    val hapticsEnabled: Flow<Boolean> = dataStore.data.map { prefs ->
+    val hapticsEnabled: Flow<Boolean> = preferencesFlow().map { prefs ->
         prefs[HAPTICS_KEY] ?: true
     }
 
-    val language: Flow<String> = dataStore.data.map { prefs ->
+    val language: Flow<String> = preferencesFlow().map { prefs ->
         prefs[LANGUAGE_KEY] ?: LocaleManager.systemDefaultLanguage()
     }
 
-    val hasCompletedOnboarding: Flow<Boolean> = dataStore.data.map { prefs ->
+    val hasCompletedOnboarding: Flow<Boolean> = preferencesFlow().map { prefs ->
         prefs[ONBOARDING_KEY] ?: false
     }
 
-    val seenTipIds: Flow<Set<String>> = dataStore.data.map { prefs ->
+    val seenTipIds: Flow<Set<String>> = preferencesFlow().map { prefs ->
         prefs[SEEN_TIPS_KEY] ?: emptySet()
     }
 
-    val notificationsEnabled: Flow<Boolean> = dataStore.data.map { prefs ->
+    val notificationsEnabled: Flow<Boolean> = preferencesFlow().map { prefs ->
         prefs[NOTIFICATIONS_KEY] ?: true
     }
 
-    val lastOpenedTimestamp: Flow<Long> = dataStore.data.map { prefs ->
+    val lastOpenedTimestamp: Flow<Long> = preferencesFlow().map { prefs ->
         prefs[LAST_OPENED_KEY] ?: System.currentTimeMillis()
     }
 
-    val flagEmojiFallbackPreferred: Flow<Boolean> = dataStore.data.map { prefs ->
+    val flagEmojiFallbackPreferred: Flow<Boolean> = preferencesFlow().map { prefs ->
         prefs[FLAG_EMOJI_FALLBACK_KEY] ?: false
     }
 
@@ -90,7 +98,7 @@ class SettingsRepository @Inject constructor(
     suspend fun isNotificationsEnabledNow(): Boolean = notificationsEnabled.first()
 
     suspend fun hasRecordedFirstAgeUp(): Boolean =
-        dataStore.data.first()[FIRST_AGE_UP_KEY] ?: false
+        preferencesFlow().first()[FIRST_AGE_UP_KEY] ?: false
 
     suspend fun isSoundEnabledNow(): Boolean = soundEnabled.first()
 
@@ -138,7 +146,7 @@ class SettingsRepository @Inject constructor(
     }
 
     suspend fun isFlagEmojiFallbackPreferred(): Boolean =
-        dataStore.data.first()[FLAG_EMOJI_FALLBACK_KEY] ?: false
+        preferencesFlow().first()[FLAG_EMOJI_FALLBACK_KEY] ?: false
 
     suspend fun setFlagEmojiFallbackPreferred(preferred: Boolean) {
         dataStore.edit { it[FLAG_EMOJI_FALLBACK_KEY] = preferred }
@@ -160,6 +168,7 @@ class SettingsRepository @Inject constructor(
     }
 
     companion object {
+        private const val TAG = "SettingsRepository"
         private val SOUND_KEY = booleanPreferencesKey("sound_enabled")
         private val HAPTICS_KEY = booleanPreferencesKey("haptics_enabled")
         private val LANGUAGE_KEY = stringPreferencesKey("language")

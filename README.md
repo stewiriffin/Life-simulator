@@ -183,6 +183,7 @@ Unit tests (Prompt 38) and edge-case hardening (Prompt 39) are in place for doma
 | [docs/MANUAL_QA_TEST_PLAN.md](docs/MANUAL_QA_TEST_PLAN.md) | Device QA checklist (Sections A–I, 73 steps) |
 | [docs/PERFORMANCE_AUDIT.md](docs/PERFORMANCE_AUDIT.md) | Prompt 43 profiling baseline, optimizations, pass/fail thresholds |
 | [docs/UI_COPY_AUDIT.md](docs/UI_COPY_AUDIT.md) | Prompt 44 microcopy before/after table and voice standard |
+| [docs/SAVE_DATA_INTEGRITY.md](docs/SAVE_DATA_INTEGRITY.md) | Prompt 45 corruption resilience and recovery UX |
 | [docs/REFACTORING_AUDIT.md](docs/REFACTORING_AUDIT.md) | Prompt 41 duplication consolidation notes |
 | [app/src/main/assets/data/events/README.md](app/src/main/assets/data/events/README.md) | Event JSON schema & authoring |
 | KDoc in `domain/` and `data/model/` | Per-class and per-function reference |

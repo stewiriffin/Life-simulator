@@ -2,22 +2,14 @@
 package com.maisha.game.data.local
 
 import com.maisha.game.data.model.AvatarConfig
-import com.maisha.game.data.model.AncestryEntry
-import com.maisha.game.data.model.Asset
-import com.maisha.game.data.model.CareerState
 import com.maisha.game.data.model.Character
-import com.maisha.game.data.model.CriminalRecord
-import com.maisha.game.data.model.EducationState
-import com.maisha.game.data.model.Gender
-import com.maisha.game.data.model.HealthCondition
-import com.maisha.game.data.model.Person
-import com.maisha.game.data.model.Stats
 import com.maisha.game.domain.AncestryHistoryCap
 import com.maisha.game.domain.EventLogCap
+import com.maisha.game.util.SerializationUtils
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.map
 import kotlinx.serialization.encodeToString
-import kotlinx.serialization.json.Json
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -29,8 +21,9 @@ data class SlotSummary(
     val age: Int?,
     val alive: Boolean?,
     val isEmpty: Boolean,
+    val isCorrupted: Boolean = false,
     val countryCode: String? = null,
-    val avatarConfig: com.maisha.game.data.model.AvatarConfig? = null,
+    val avatarConfig: AvatarConfig? = null,
     val generationNumber: Int? = null
 )
 
@@ -47,33 +40,52 @@ data class SavedGame(
  */
 @Singleton
 class CharacterRepository @Inject constructor(
-    private val characterDao: CharacterDao
+    private val databaseHealth: GameDatabaseAccess
 ) {
-    private val json = Json { ignoreUnknownKeys = true }
+    private val json = SerializationUtils.json
+
+    val isDatabaseAvailable: Boolean
+        get() = databaseHealth.isAvailable
+
+    private val characterDao: CharacterDao?
+        get() = databaseHealth.characterDao
 
     fun getCharacter(slotId: Int): Flow<Character?> =
         savedGameFlow(slotId).map { it?.character }
 
     fun savedGameFlow(slotId: Int): Flow<SavedGame?> =
-        characterDao.getCharacterFlow(requireValidSlot(slotId)).map { entity ->
-            entity?.toSavedGame()
+        when (val dao = characterDao) {
+            null -> flowOf(null)
+            else -> dao.getCharacterFlow(requireValidSlot(slotId)).map { entity ->
+                when (val result = entity?.let(CharacterSaveMapper::toSavedGame)) {
+                    is SavedGameLoadResult.Success -> result.game
+                    else -> null
+                }
+            }
         }
 
-    suspend fun loadGame(slotId: Int): SavedGame? {
-        return characterDao.getCharacter(requireValidSlot(slotId))?.toSavedGame()
+    suspend fun loadGame(slotId: Int): SavedGameLoadResult {
+        val dao = characterDao ?: return SavedGameLoadResult.Corrupted
+        val entity = dao.getCharacter(requireValidSlot(slotId)) ?: return SavedGameLoadResult.NotFound
+        return CharacterSaveMapper.toSavedGame(entity)
     }
 
     suspend fun saveGame(slotId: Int, character: Character, triggeredEventIds: Set<String>) {
+        val dao = characterDao ?: return
         val validSlot = requireValidSlot(slotId)
-        characterDao.saveCharacter(character.toEntity(validSlot, triggeredEventIds))
+        dao.saveCharacter(character.toEntity(validSlot, triggeredEventIds))
     }
 
     suspend fun saveCharacter(slotId: Int, character: Character, triggeredEventIds: Set<String> = emptySet()) {
         saveGame(slotId, character, triggeredEventIds)
     }
 
-    fun getAllSlots(): Flow<List<SlotSummary>> =
-        characterDao.getAllCharactersFlow().map { entities ->
+    fun getAllSlots(): Flow<List<SlotSummary>> {
+        val dao = characterDao
+        if (dao == null) {
+            return flowOf(emptySlotSummaries())
+        }
+        return dao.getAllCharactersFlow().map { entities ->
             val bySlot = entities.associateBy { it.slotId }
             (0 until MAX_SLOTS).map { slotId ->
                 val entity = bySlot[slotId]
@@ -86,30 +98,30 @@ class CharacterRepository @Inject constructor(
                         isEmpty = true
                     )
                 } else {
-                    SlotSummary(
-                        slotId = slotId,
-                        name = entity.name,
-                        age = entity.age,
-                        alive = entity.alive,
-                        isEmpty = false,
-                        countryCode = entity.countryCode,
-                        avatarConfig = runCatching {
-                            json.decodeFromString<AvatarConfig>(entity.avatarConfigJson)
-                        }.getOrDefault(AvatarConfig.DEFAULT),
-                        generationNumber = entity.generationNumber
-                    )
+                    CharacterSaveMapper.toSlotSummary(entity)
                 }
             }
         }
+    }
 
     suspend fun clearSlot(slotId: Int) {
-        // Clears only character data for this slot — achievement_progress is untouched.
-        characterDao.clearSlot(requireValidSlot(slotId))
+        characterDao?.clearSlot(requireValidSlot(slotId))
     }
 
     suspend fun clearAllSlots() {
-        characterDao.clearAll()
+        characterDao?.clearAll()
     }
+
+    private fun emptySlotSummaries(): List<SlotSummary> =
+        (0 until MAX_SLOTS).map { slotId ->
+            SlotSummary(
+                slotId = slotId,
+                name = null,
+                age = null,
+                alive = null,
+                isEmpty = true
+            )
+        }
 
     private fun requireValidSlot(slotId: Int): Int {
         require(slotId in 0 until MAX_SLOTS) { "Invalid slotId: $slotId" }
@@ -147,72 +159,6 @@ class CharacterRepository @Inject constructor(
             criminalRecordJson = json.encodeToString(criminalRecord),
             healthConditionsJson = json.encodeToString(activeConditions),
             generationNumber = generationNumber
-        )
-    }
-
-    private fun CharacterEntity.toSavedGame(): SavedGame {
-        val log: List<String> = json.decodeFromString(eventLogJson)
-        val triggeredIds: List<String> = json.decodeFromString(triggeredEventIdsJson)
-        val family: List<Person> = runCatching {
-            json.decodeFromString<List<Person>>(familyJson)
-        }.getOrDefault(emptyList())
-        val education: EducationState = runCatching {
-            json.decodeFromString<EducationState>(educationJson)
-        }.getOrDefault(EducationState())
-        val career: CareerState = runCatching {
-            json.decodeFromString<CareerState>(careerJson)
-        }.getOrDefault(CareerState())
-        val assets: List<Asset> = runCatching {
-            json.decodeFromString<List<Asset>>(assetsJson)
-        }.getOrDefault(emptyList())
-        val criminalRecord: CriminalRecord = runCatching {
-            json.decodeFromString<CriminalRecord>(criminalRecordJson)
-        }.getOrDefault(CriminalRecord())
-        val healthConditions: List<HealthCondition> = runCatching {
-            json.decodeFromString<List<HealthCondition>>(healthConditionsJson)
-        }.getOrDefault(emptyList())
-        val avatar: AvatarConfig = runCatching {
-            json.decodeFromString<AvatarConfig>(avatarConfigJson)
-        }.getOrDefault(AvatarConfig.DEFAULT)
-        val relocationHistory: List<String> = runCatching {
-            json.decodeFromString<List<String>>(relocationHistoryJson)
-        }.getOrDefault(emptyList())
-        val ancestryHistory: List<AncestryEntry> = runCatching {
-            json.decodeFromString<List<AncestryEntry>>(ancestryHistoryJson)
-        }.getOrDefault(emptyList())
-        return SavedGame(
-            character = Character(
-                name = name,
-                age = age,
-                gender = Gender.valueOf(gender),
-                stats = Stats(
-                    health = health,
-                    happiness = happiness,
-                    smarts = smarts,
-                    looks = looks,
-                    money = money
-                ),
-                birthYear = birthYear,
-                alive = alive,
-                countryCode = countryCode,
-                birthCountryCode = birthCountryCode,
-                secondaryCountryCode = secondaryCountryCode,
-                relocationCount = relocationCount,
-                lastRelocationAge = lastRelocationAge,
-                lastHolidayAge = lastHolidayAge,
-                relocationHistory = relocationHistory,
-                ancestryHistory = ancestryHistory,
-                avatarConfig = avatar,
-                eventLog = log,
-                family = family,
-                education = education,
-                career = career,
-                assets = assets,
-                criminalRecord = criminalRecord,
-                activeConditions = healthConditions,
-                generationNumber = generationNumber
-            ),
-            triggeredEventIds = triggeredIds.toSet()
         )
     }
 }

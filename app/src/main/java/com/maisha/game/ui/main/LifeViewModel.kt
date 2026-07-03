@@ -12,6 +12,7 @@ import com.maisha.game.data.events.EventRepository
 import com.maisha.game.data.local.CharacterRepository
 import com.maisha.game.data.local.MAX_SLOTS
 import com.maisha.game.data.local.OnboardingTips
+import com.maisha.game.data.local.SavedGameLoadResult
 import com.maisha.game.data.local.SettingsRepository
 import com.maisha.game.data.model.Achievement
 import com.maisha.game.data.model.Character
@@ -74,6 +75,7 @@ data class LifeUiState(
     val showDatingProspects: Boolean = false,
     val relationshipMessage: String? = null,
     val navigateToLifeSummary: Boolean = false,
+    val navigateToSlotPicker: Boolean = false,
     val showInterstitialAd: Boolean = false,
     val deferredInterstitialAd: Boolean = false,
     val actionMessage: String? = null,
@@ -119,29 +121,32 @@ class LifeViewModel @Inject constructor(
             _uiState.update { it.copy(seenTipIds = seenTips, tipsLoaded = true) }
         }
         viewModelScope.launch {
-            val saved = characterRepository.loadGame(slotId)
-            if (saved != null) {
-                triggeredEventIds = saved.triggeredEventIds
-                val character = saved.character
-                var introResult: AgeUpResult? = null
-                if (character.age == 0 && character.eventLog.isEmpty()) {
-                    introResult = gameEngine.introEventsForNewborn(triggeredEventIds)
+            when (val result = characterRepository.loadGame(slotId)) {
+                is SavedGameLoadResult.Success -> {
+                    val saved = result.game
+                    triggeredEventIds = saved.triggeredEventIds
+                    val character = saved.character
+                    var introResult: AgeUpResult? = null
+                    if (character.age == 0 && character.eventLog.isEmpty()) {
+                        introResult = gameEngine.introEventsForNewborn(triggeredEventIds)
+                    }
+                    _uiState.update {
+                        it.copy(
+                            character = character,
+                            isLoading = false,
+                            eligibleJobs = careerEngine.getEligibleJobs(character),
+                            netWorth = financeEngine.calculateNetWorth(character),
+                            navigateToLifeSummary = !character.alive,
+                            headerExpression = ExpressionResolver.resolveExpression(character, null)
+                        )
+                    }
+                    if (character.alive) {
+                        introResult?.let { applyAgeUpResult(character, it, persistAge = false) }
+                    }
                 }
-                _uiState.update {
-                    it.copy(
-                        character = character,
-                        isLoading = false,
-                        eligibleJobs = careerEngine.getEligibleJobs(character),
-                        netWorth = financeEngine.calculateNetWorth(character),
-                        navigateToLifeSummary = !character.alive,
-                        headerExpression = ExpressionResolver.resolveExpression(character, null)
-                    )
+                SavedGameLoadResult.Corrupted, SavedGameLoadResult.NotFound -> {
+                    _uiState.update { it.copy(isLoading = false, navigateToSlotPicker = true) }
                 }
-                if (character.alive) {
-                    introResult?.let { applyAgeUpResult(character, it, persistAge = false) }
-                }
-            } else {
-                _uiState.update { it.copy(isLoading = false) }
             }
         }
     }
@@ -254,6 +259,10 @@ class LifeViewModel @Inject constructor(
 
     fun onInterstitialAdHandled() {
         _uiState.update { it.copy(showInterstitialAd = false) }
+    }
+
+    fun onSlotPickerNavigationHandled() {
+        _uiState.update { it.copy(navigateToSlotPicker = false) }
     }
 
     fun onLifeSummaryNavigationHandled() {

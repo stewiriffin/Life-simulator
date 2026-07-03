@@ -132,6 +132,7 @@ fun MaishaNavHost(
                 onStartNewLife = viewModel::onStartNewLife,
                 onConfirmOverwrite = viewModel::onConfirmOverwrite,
                 onDismissOverwrite = viewModel::onDismissOverwrite,
+                onClearCorruptedSlot = viewModel::onClearCorruptedSlot,
                 onOpenSettings = { navController.navigate(Routes.SETTINGS) }
             )
         }
@@ -214,6 +215,15 @@ fun MaishaNavHost(
                         popUpTo(Routes.life(slotId)) { inclusive = true }
                     }
                     viewModel.onLifeSummaryNavigationHandled()
+                }
+            }
+
+            LaunchedEffect(uiState.navigateToSlotPicker) {
+                if (uiState.navigateToSlotPicker) {
+                    navController.navigate(Routes.SLOT_PICKER) {
+                        popUpTo(Routes.life(slotId)) { inclusive = true }
+                    }
+                    viewModel.onSlotPickerNavigationHandled()
                 }
             }
 

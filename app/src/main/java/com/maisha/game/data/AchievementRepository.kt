@@ -2,6 +2,7 @@
 package com.maisha.game.data
 
 import com.maisha.game.data.local.AchievementDao
+import com.maisha.game.data.local.GameDatabaseAccess
 import com.maisha.game.data.local.AchievementEntity
 import com.maisha.game.data.model.Achievement
 import com.maisha.game.data.model.AchievementProgress
@@ -17,23 +18,30 @@ import javax.inject.Singleton
  */
 @Singleton
 class AchievementRepository @Inject constructor(
-    private val achievementDao: AchievementDao
+    private val databaseHealth: GameDatabaseAccess
 ) {
+    private val achievementDao: AchievementDao?
+        get() = databaseHealth.achievementDao
 
-    fun getAllProgress(): Flow<List<AchievementProgress>> =
-        achievementDao.getAllFlow().map { entities -> mergeWithCatalog(entities) }
+    fun getAllProgress(): Flow<List<AchievementProgress>> {
+        val dao = achievementDao ?: return kotlinx.coroutines.flow.flowOf(
+            mergeWithCatalog(emptyList())
+        )
+        return dao.getAllFlow().map { entities -> mergeWithCatalog(entities) }
+    }
 
     suspend fun getProgressSnapshot(): List<AchievementProgress> =
-        mergeWithCatalog(achievementDao.getAll())
+        mergeWithCatalog(achievementDao?.getAll().orEmpty())
 
     suspend fun clearAllProgress() {
-        achievementDao.clearAll()
+        achievementDao?.clearAll()
     }
 
     suspend fun unlockAchievements(newlyUnlocked: List<Achievement>) {
-        if (newlyUnlocked.isEmpty()) return
+        val dao = achievementDao
+        if (newlyUnlocked.isEmpty() || dao == null) return
         val now = System.currentTimeMillis()
-        achievementDao.upsertAll(
+        dao.upsertAll(
             newlyUnlocked.map { achievement ->
                 AchievementEntity(
                     achievementId = achievement.id,
