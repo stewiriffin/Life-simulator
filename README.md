@@ -180,6 +180,8 @@ Unit tests (Prompt 38) and edge-case hardening (Prompt 39) are in place for doma
 | Document | Contents |
 |----------|----------|
 | [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) | Age-up flow, slots/legacy, country cascade, engine API |
+| [docs/MANUAL_QA_TEST_PLAN.md](docs/MANUAL_QA_TEST_PLAN.md) | Device QA checklist (Sections A–I, 73 steps) |
+| [docs/REFACTORING_AUDIT.md](docs/REFACTORING_AUDIT.md) | Prompt 41 duplication consolidation notes |
 | [app/src/main/assets/data/events/README.md](app/src/main/assets/data/events/README.md) | Event JSON schema & authoring |
 | KDoc in `domain/` and `data/model/` | Per-class and per-function reference |
 
