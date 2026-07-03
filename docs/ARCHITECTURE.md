@@ -28,6 +28,8 @@ When the player taps **Age Up** on the Life tab, the following chain runs. This 
 
 `triggeredEventIds` is held in the ViewModel (not inside `Character`) and saved with each `CharacterRepository.saveGame()`.
 
+**Process-death safety (verified P52):** On age-up, one-time event ids from the offered event(s) are added to `triggeredEventIds` **in the same `persist()` call** that saves the advanced character (`LifeViewModel.applyAgeUpResult`, `persistAge = true`). This closes the window where age was saved but a one-time milestone could re-eligible on a later age-up after OS kill before the player tapped a choice. Intro-at-birth (`persistAge = false`) still marks ids on choice resolution only — character is not advanced until then. Duplicate stat effects from re-fired one-time JSON events were the gameplay risk; cosmetic-only re-shows without stat re-apply were already unlikely because `currentEvent` is not restored from disk.
+
 ### Domain layer (`GameEngine.ageUp`)
 
 Order is fixed and has been stable since the mortality-last rule (Prompt 8):
@@ -219,6 +221,8 @@ One-line responsibility + key public entry points. See KDoc on each class for pa
 **Country relocation offers and moves.**
 
 `hasRelocated`, `shouldOfferRelocation`, `getRelocationOpportunities`, `buildRelocationOpportunityEvent`, `relocate`
+
+**Multi-relocation (verified P52):** `hasRelocated(character): Boolean` is a yes/no helper (`relocationCount > 0` or birth ≠ current country) — not a count API. Full history lives on `Character.relocationCount` (int), `Character.relocationHistory` (list of country codes), and `Character.lastRelocationAge`. `shouldOfferRelocation` uses **per-index** one-time event ids (`relocation_opportunity_system_0`, `_1`, …) and enforces `MIN_YEARS_BETWEEN_RELOCATIONS` (4) after the first move — a second relocation is supported. `AchievementEngine.checkWorldTraveler` requires `relocationCount >= 2` (achievement id `world_traveler`) — achievable with the shipped engine.
 
 ### `EventLogCap` (utility)
 **Bounds event log size on disk.**

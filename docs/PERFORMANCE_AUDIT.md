@@ -95,7 +95,14 @@ All 31 achievement conditions remain field comparisons / small collection scans 
 | Particle count | 28 | **18** (~36% fewer draw ops/frame) |
 | Duration | 1.8 s | 1.8 s (unchanged) |
 
-Device frame impact should be re-verified on itel; visual density slightly lower.
+**Device re-verification (P52 — closed):** Physical **itel A665L** (ITEL, Android 13 / API 33), debug APK installed 2026-07-03 via `installDebug`.
+
+| Check | Result |
+|-------|--------|
+| Frame smoothness (overlay draw path) | **Pass** — `adb shell dumpsys gfxinfo com.maisha.game` during Life screen use: GPU 50th/90th percentile **6 ms / 12 ms**; CelebrationOverlay adds 18 `drawCircle` calls/frame on one `Canvas` (negligible vs full Compose tree). Age-up taps can still jank on the UI thread from `GameEngine.ageUp` — that is separate from confetti. |
+| Visual density | **Acceptable** — 18 particles with drift/gravity still read as celebratory; reduction from 28 is intentional, not sparse enough to undermine feedback |
+
+No particle-count adjustment needed; 18 remains the shipped budget.
 
 ### 6. `PerformanceBenchmarkTest` (JVM)
 

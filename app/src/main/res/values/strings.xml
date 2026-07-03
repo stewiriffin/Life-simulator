@@ -144,7 +144,10 @@
     <string name="slot_save_data_issue">Save Data Issue</string>
     <string name="slot_could_not_load">We couldn\'t load this save.</string>
     <string name="btn_clear_and_start_fresh">Clear &amp; Start Fresh</string>
-    <string name="database_unavailable_message">Your save data couldn\'t be opened. Reset all data from Settings if this keeps happening.</string>
+    <string name="database_unavailable_title">Can\'t Access Saves</string>
+    <string name="database_unavailable_message">We\'re having trouble opening your saved games right now. This usually means the local database file is damaged.</string>
+    <string name="database_unavailable_hint">You can still open Settings. If this keeps happening, use Reset All Data there — your preferences are stored separately and will remain unless you reset them too.</string>
+    <string name="btn_open_settings">Open Settings</string>
     <string name="format_slot_deceased">%s (deceased)</string>
     <string name="format_died_at_age">Died at %s</string>
 

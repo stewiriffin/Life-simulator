@@ -94,6 +94,20 @@ class AchievementEngineTest {
     }
 
     @Test
+    fun worldTraveler_triggersAtTwoRelocations() {
+        val character = TestFixtures.character(relocationCount = 2)
+        val unlocked = engine.checkAchievements(character, emptyList())
+        assertTrue(unlocked.any { it.id == "world_traveler" })
+    }
+
+    @Test
+    fun worldTraveler_doesNotTriggerAtOneRelocation() {
+        val character = TestFixtures.character(relocationCount = 1)
+        val unlocked = engine.checkAchievements(character, emptyList())
+        assertFalse(unlocked.any { it.id == "world_traveler" })
+    }
+
+    @Test
     fun brushWithLaw_triggersAfterArrest() {
         val character = TestFixtures.character(
             criminalRecord = com.maisha.game.data.model.CriminalRecord(

@@ -30,7 +30,10 @@ object TestFixtures {
         career: CareerState = CareerState(),
         assets: List<Asset> = emptyList(),
         criminalRecord: CriminalRecord = CriminalRecord(),
-        generationNumber: Int = 1
+        generationNumber: Int = 1,
+        relocationCount: Int = 0,
+        relocationHistory: List<String> = emptyList(),
+        lastRelocationAge: Int? = null
     ): Character = Character(
         name = name,
         age = age,
@@ -45,7 +48,10 @@ object TestFixtures {
         career = career,
         assets = assets,
         criminalRecord = criminalRecord,
-        generationNumber = generationNumber
+        generationNumber = generationNumber,
+        relocationCount = relocationCount,
+        relocationHistory = relocationHistory,
+        lastRelocationAge = lastRelocationAge
     )
 
     fun person(

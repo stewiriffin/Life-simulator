@@ -65,6 +65,14 @@ fun SlotPickerScreen(
         return
     }
 
+    if (uiState.isDatabaseUnavailable) {
+        DatabaseUnavailableScreen(
+            onOpenSettings = onOpenSettings,
+            modifier = modifier
+        )
+        return
+    }
+
     Column(
         modifier = modifier
             .fillMaxSize()
@@ -101,16 +109,6 @@ fun SlotPickerScreen(
         LazyColumn(
             verticalArrangement = Arrangement.spacedBy(10.dp)
         ) {
-            if (uiState.isDatabaseUnavailable) {
-                item(key = "database_unavailable") {
-                    Text(
-                        text = stringResource(R.string.database_unavailable_message),
-                        style = MaterialTheme.typography.bodySmall,
-                        color = CoralNegative,
-                        modifier = Modifier.padding(bottom = 4.dp)
-                    )
-                }
-            }
             items(uiState.slots, key = { it.slotId }) { slot ->
                 SlotCard(
                     slot = slot,
@@ -138,6 +136,48 @@ fun SlotPickerScreen(
             onConfirm = onConfirmOverwrite,
             onDismiss = onDismissOverwrite
         )
+    }
+}
+
+@Composable
+private fun DatabaseUnavailableScreen(
+    onOpenSettings: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    Column(
+        modifier = modifier
+            .fillMaxSize()
+            .padding(horizontal = MaishaSpacing.md, vertical = MaishaSpacing.lg),
+        verticalArrangement = Arrangement.Center,
+        horizontalAlignment = Alignment.CenterHorizontally
+    ) {
+        Text(
+            text = stringResource(R.string.database_unavailable_title),
+            style = MaterialTheme.typography.headlineSmall,
+            fontWeight = FontWeight.Bold,
+            color = CoralNegative
+        )
+        Text(
+            text = stringResource(R.string.database_unavailable_message),
+            style = MaterialTheme.typography.bodyMedium,
+            modifier = Modifier.padding(top = 12.dp)
+        )
+        Text(
+            text = stringResource(R.string.database_unavailable_hint),
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            modifier = Modifier.padding(top = 8.dp)
+        )
+        Button(
+            onClick = onOpenSettings,
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(top = 24.dp),
+            shape = RoundedCornerShape(10.dp),
+            colors = ButtonDefaults.buttonColors(containerColor = TealPrimary)
+        ) {
+            Text(stringResource(R.string.btn_open_settings))
+        }
     }
 }
 

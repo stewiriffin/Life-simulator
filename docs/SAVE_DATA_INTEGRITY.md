@@ -26,6 +26,15 @@ Malformed blobs log `Log.e` and fall back to empty/default for **that field only
 - Other slots unaffected
 - `LifeViewModel` / `LifeSummaryViewModel` navigate back to slot picker on corrupted load
 
+## Whole-database unavailable UX (P52)
+
+When `DatabaseHealth.isAvailable = false` (Room failed to open — distinct from per-slot `isCorrupted`):
+
+- `SlotPickerViewModel` sets `isDatabaseUnavailable = true` (does not collect slot flow)
+- `SlotPickerScreen` shows a **full-screen** `DatabaseUnavailableScreen` instead of three empty slot cards (which would misleadingly look like “no saves yet”)
+- **Settings remains reachable** via **Open Settings** — `SettingsRepository` uses DataStore, not Room
+- Recovery path: **Reset All Data** in Settings (honest guidance; no in-app DB reopen without process restart)
+
 ## DataStore
 
 `SettingsRepository.preferencesFlow()` uses `.catch { }` + `emptyPreferences()` defaults.

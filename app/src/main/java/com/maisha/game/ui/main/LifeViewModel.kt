@@ -797,6 +797,15 @@ class LifeViewModel @Inject constructor(
         persistAge: Boolean
     ) {
         if (persistAge) {
+            // Consume one-time event ids when an age-up offers them, before persisting the
+            // advanced character — prevents process-death from re-eligible duplicate events
+            // (and duplicate stat effects on a later age-up) after age was already saved.
+            val consumedOneTimeIds = eventsFromResult(result)
+                .filter { EventRepository.ONE_TIME_TAG in it.tags }
+                .map { it.id }
+            if (consumedOneTimeIds.isNotEmpty()) {
+                triggeredEventIds = triggeredEventIds + consumedOneTimeIds
+            }
             persist(character)
         }
         val isDead = !character.alive
