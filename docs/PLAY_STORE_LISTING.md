@@ -13,11 +13,11 @@ Play Store title limit is **30 characters**. Character counts include spaces and
 
 | # | Title | Chars | Notes |
 |---|-------|-------|-------|
-| 1 | **Maisha: Life Simulator** | 24 | Clear genre keyword; brand name matches in-app branding |
-| 2 | **Maisha — World Life Sim** | 25 | Hints at the 15-country roster without crowding the title |
-| 3 | **Maisha: Life & Legacy** | 23 | Highlights generational play — distinctive vs. one-life-only sims |
-| 4 | **Maisha: Your Life Story** | 25 | Warm, story-forward; less search-keyword dense |
-| 5 | **Maisha Life Simulator** | 23 | Straightforward; no subtitle punctuation |
+| 1 | **Maisha: Life Simulator** | 22 | Clear genre keyword; brand name matches in-app branding |
+| 2 | **Maisha — World Life Sim** | 23 | Hints at the 15-country roster without crowding the title |
+| 3 | **Maisha: Life & Legacy** | 21 | Highlights generational play — distinctive vs. one-life-only sims |
+| 4 | **Maisha: Your Life Story** | 23 | Warm, story-forward; less search-keyword dense |
+| 5 | **Maisha Life Simulator** | 21 | Straightforward; no subtitle punctuation |
 
 **Recommendation:** **Maisha: Life Simulator** for search clarity, or **Maisha: Life & Legacy** if you want the listing to stand out on legacy play in browse results.
 
@@ -29,7 +29,7 @@ Short description limit is **80 characters**. Shown in search and install surfac
 
 | # | Short description | Chars |
 |---|-------------------|-------|
-| A | `Live a life anywhere in the world. Build family, career, and legacy—year by year.` | 79 |
+| A | `Live life anywhere in the world. Build family, career, and legacy—year by year.` | 79 |
 | B | `A life sim across 15 countries. Date, work, raise kids, and pass on your legacy.` | 79 |
 | C | `Year-by-year life simulation: school, career, relationships, health—and heirs.` | 76 |
 
