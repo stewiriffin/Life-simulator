@@ -42,8 +42,7 @@ Last audited: **2026-07-03** (Prompt 50).
 | `takeExam` | Tested | `EducationEngineTest.takeExam_highStatsPassMoreOftenThanLowStats` | |
 | `applyToUniversity` | Tested | `EducationEngineTest.applyToUniversity_rejectsBelowMinimumGrade`, `applyToUniversity_acceptsStrongGrade` | |
 | `isEligibleForUniversity` | Indirect | `EducationEngineTest` | |
-| `shouldTriggerKcpe` | Gap closed (P50) | `EducationEngineTest.shouldTriggerKcpe_*` | |
-| `shouldTriggerKcse` | Gap closed (P50) | `EducationEngineTest.shouldTriggerKcse_*` | |
+| `shouldTriggerPrimaryExam` / `shouldTriggerSecondaryExam` | Gap closed (P50/P53) | `EducationEngineTest` (renamed from `shouldTriggerKcpe`/`shouldTriggerKcse`; multi-country KE/NG/US/GB) | Logic is country-agnostic |
 | `buildExamResultEvent` | Low priority | — | Presentation builder |
 | `applyGpaEffect` | Indirect | `EducationEngineTest` | |
 

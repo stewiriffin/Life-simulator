@@ -459,12 +459,12 @@ class GameEngine @Inject constructor(
     }
 
     private fun resolveExamEvent(character: Character): Pair<Character, AgeUpResult>? {
-        if (educationEngine.shouldTriggerKcpe(character)) {
+        if (educationEngine.shouldTriggerPrimaryExam(character)) {
             val (afterExam, result) = educationEngine.takeExam(character, ExamType.KCPE)
             val event = educationEngine.buildExamResultEvent(ExamType.KCPE, result, afterExam)
             return afterExam to AgeUpResult.SingleEvent(event)
         }
-        if (educationEngine.shouldTriggerKcse(character)) {
+        if (educationEngine.shouldTriggerSecondaryExam(character)) {
             val (afterExam, result) = educationEngine.takeExam(character, ExamType.KCSE)
             val event = educationEngine.buildExamResultEvent(ExamType.KCSE, result, afterExam)
             return afterExam to AgeUpResult.SingleEvent(event)

@@ -138,7 +138,7 @@ On death + legacy pick child "A":
    - `{transportMode}` → country-specific transport string
    - `{moneyApp}` → e.g. **OPay** (or fallback `"mobile banking"`)
 
-4. **Education system events** (`exam_system` tag) bypass random pool — `EducationEngine.buildExamResultEvent` uses **`ExamNames.secondaryExamName(countryCode)`** for display text on KCPE/KCSE internal exam types.
+4. **Education system events** (`exam_system` tag) bypass random pool — `EducationEngine.buildExamResultEvent` uses **`ExamNames.primaryExamName` / `ExamNames.secondaryExamName(countryCode)`** for display text. Internal `ExamType.KCPE` / `ExamType.KCSE` enum values are legacy names only; trigger logic is country-agnostic (see §4 `EducationEngine`).
 
 5. **Jobs** — `JobPool.getJobsForCountry("NG")` returns NG overrides + universal jobs; salaries scaled by **`EconomyScaler`**.
 
@@ -148,7 +148,21 @@ On death + legacy pick child "A":
 
 8. **Holidays** — events tagged `holiday` resolve `{holidayName}` / `{holidayDescription}` from `CountryFlavor.notableHolidays`; gated by `lastHolidayAge` cooldown.
 
-9. **Kenya-only events** — `restrictedToCountry: "KE"` never offered to NG characters; parallel `_world` variants exist for many former KE-only scenarios.
+9. **Kenya-only events (verified P53)** — **9** events carry `restrictedToCountry: "KE"`; **all 9** have a universal counterpart at the same age range/theme (4 use `_world` ids; 5 use parallel universal ids). Non-Kenyan players are not missing a life-stage bucket. Inventory:
+
+| KE-only id | Universal counterpart | Age range |
+|------------|----------------------|-----------|
+| `birth` | `birth_world` | 0 |
+| `matatu_ride` | `school_bus_ride` | 6–8 |
+| `losing_tooth` | `losing_tooth_world` | 6–8 |
+| `church_sunday` | `church_sunday_world` | 5–16 |
+| `helping_at_home` | `helping_at_home_world` | 9–16 |
+| `choose_secondary_school` | `choose_secondary_school_world` | 14–15 |
+| `side_hustle_matatu` | `side_hustle_delivery` | 20–40 |
+| `motorbike_repair` | `scooter_repair` | 18–45 |
+| `teen_matatu_wash` | `teen_car_wash` | 14–18 |
+
+KE-restricted events remain for Kenya-flavor authenticity; they are never offered outside KE.
 
 ---
 
@@ -175,7 +189,9 @@ One-line responsibility + key public entry points. See KDoc on each class for pa
 ### `EducationEngine`
 **School enrollment, grades, exams, university.**
 
-`enrollIfEligible`, `advanceGrade`, `applyStudyEffort`, `advanceUniversityYear`, `takeExam`, `applyToUniversity`, `isEligibleForUniversity`, `shouldTriggerKcpe` / `shouldTriggerKcse`, `buildExamResultEvent`, `applyGpaEffect`
+`enrollIfEligible`, `advanceGrade`, `applyStudyEffort`, `advanceUniversityYear`, `takeExam`, `applyToUniversity`, `isEligibleForUniversity`, `shouldTriggerPrimaryExam` / `shouldTriggerSecondaryExam`, `buildExamResultEvent`, `applyGpaEffect`
+
+**Exam triggers (verified P53):** `shouldTriggerPrimaryExam` / `shouldTriggerSecondaryExam` (renamed from `shouldTriggerKcpe` / `shouldTriggerKcse`) check **school stage, final grade, and universal age thresholds** (13 / 17) only — **no `countryCode` gate**. Display localization is in `buildExamResultEvent` via `ExamNames`. `EducationState.kcpePassed` / `kcseGrade` field names are persistence legacy; behavior applies to all countries. `EducationEngineTest` confirms triggers for KE, NG, US/GB at exit ages.
 
 ### `CareerEngine`
 **Jobs, work years, promotions, firing.**

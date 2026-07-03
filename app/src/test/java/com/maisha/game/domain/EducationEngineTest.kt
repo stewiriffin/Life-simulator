@@ -99,7 +99,7 @@ class EducationEngineTest {
     }
 
     @Test
-    fun shouldTriggerKcpe_trueAtPrimaryExitBeforePass() {
+    fun shouldTriggerPrimaryExam_trueAtPrimaryExitBeforePass() {
         val character = TestFixtures.character(
             age = 13,
             education = EducationState(
@@ -108,11 +108,11 @@ class EducationEngineTest {
                 kcpePassed = false
             )
         )
-        assertTrue(engine.shouldTriggerKcpe(character))
+        assertTrue(engine.shouldTriggerPrimaryExam(character))
     }
 
     @Test
-    fun shouldTriggerKcpe_falseAfterAlreadyPassed() {
+    fun shouldTriggerPrimaryExam_falseAfterAlreadyPassed() {
         val character = TestFixtures.character(
             age = 14,
             education = EducationState(
@@ -121,11 +121,30 @@ class EducationEngineTest {
                 kcpePassed = true
             )
         )
-        assertFalse(engine.shouldTriggerKcpe(character))
+        assertFalse(engine.shouldTriggerPrimaryExam(character))
     }
 
     @Test
-    fun shouldTriggerKcse_trueAtSecondaryExitBeforeGradeRecorded() {
+    fun shouldTriggerPrimaryExam_trueForMultipleCountriesAtExitAge() {
+        listOf("KE", "NG", "US").forEach { countryCode ->
+            val character = TestFixtures.character(
+                age = 13,
+                countryCode = countryCode,
+                education = EducationState(
+                    stage = SchoolStage.PRIMARY,
+                    currentGrade = 8,
+                    kcpePassed = false
+                )
+            )
+            assertTrue(
+                "Primary exam should trigger for $countryCode at exit grade/age",
+                engine.shouldTriggerPrimaryExam(character)
+            )
+        }
+    }
+
+    @Test
+    fun shouldTriggerSecondaryExam_trueAtSecondaryExitBeforeGradeRecorded() {
         val character = TestFixtures.character(
             age = 18,
             education = EducationState(
@@ -134,11 +153,11 @@ class EducationEngineTest {
                 kcseGrade = null
             )
         )
-        assertTrue(engine.shouldTriggerKcse(character))
+        assertTrue(engine.shouldTriggerSecondaryExam(character))
     }
 
     @Test
-    fun shouldTriggerKcse_falseAfterGradeRecorded() {
+    fun shouldTriggerSecondaryExam_falseAfterGradeRecorded() {
         val character = TestFixtures.character(
             age = 18,
             education = EducationState(
@@ -147,6 +166,25 @@ class EducationEngineTest {
                 kcseGrade = "C+"
             )
         )
-        assertFalse(engine.shouldTriggerKcse(character))
+        assertFalse(engine.shouldTriggerSecondaryExam(character))
+    }
+
+    @Test
+    fun shouldTriggerSecondaryExam_trueForMultipleCountriesAtExitAge() {
+        listOf("KE", "NG", "GB").forEach { countryCode ->
+            val character = TestFixtures.character(
+                age = 17,
+                countryCode = countryCode,
+                education = EducationState(
+                    stage = SchoolStage.SECONDARY,
+                    currentGrade = 4,
+                    kcseGrade = null
+                )
+            )
+            assertTrue(
+                "Secondary exam should trigger for $countryCode at exit grade/age",
+                engine.shouldTriggerSecondaryExam(character)
+            )
+        }
     }
 }

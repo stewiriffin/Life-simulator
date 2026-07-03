@@ -190,21 +190,21 @@ class EducationEngine @Inject constructor() {
         return gradeToPoints(grade) >= UNIVERSITY_MIN_POINTS
     }
 
-    /** Primary exit exam due: final primary grade, age threshold, not yet passed. */
-    fun shouldTriggerKcpe(character: Character): Boolean {
+    /** Primary exit exam due: final primary grade, age threshold, not yet passed. Country-agnostic; display localized via [ExamNames]. */
+    fun shouldTriggerPrimaryExam(character: Character): Boolean {
         val education = character.education
         return education.stage == SchoolStage.PRIMARY &&
             education.currentGrade >= PRIMARY_MAX_GRADE &&
-            character.age >= KCPE_AGE &&
+            character.age >= PRIMARY_EXIT_EXAM_AGE &&
             education.kcpePassed != true
     }
 
-    /** Secondary exit exam due: final secondary grade, age threshold, no grade recorded yet. */
-    fun shouldTriggerKcse(character: Character): Boolean {
+    /** Secondary exit exam due: final secondary grade, age threshold, no grade recorded yet. Country-agnostic; display localized via [ExamNames]. */
+    fun shouldTriggerSecondaryExam(character: Character): Boolean {
         val education = character.education
         return education.stage == SchoolStage.SECONDARY &&
             education.currentGrade >= SECONDARY_MAX_GRADE &&
-            character.age >= KCSE_AGE &&
+            character.age >= SECONDARY_EXIT_EXAM_AGE &&
             education.kcseGrade == null
     }
 
@@ -378,8 +378,8 @@ class EducationEngine @Inject constructor() {
 
         private const val PRIMARY_ENROLL_AGE = 6
         private const val SECONDARY_ENROLL_AGE = 14
-        private const val KCPE_AGE = 13
-        private const val KCSE_AGE = 17
+        private const val PRIMARY_EXIT_EXAM_AGE = 13
+        private const val SECONDARY_EXIT_EXAM_AGE = 17
         private const val PRIMARY_MAX_GRADE = 8
         private const val SECONDARY_MAX_GRADE = 4
         private const val UNIVERSITY_YEARS = 4
