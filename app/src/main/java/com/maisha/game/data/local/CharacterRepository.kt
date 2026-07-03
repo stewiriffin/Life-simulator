@@ -12,6 +12,7 @@ import com.maisha.game.data.model.Gender
 import com.maisha.game.data.model.HealthCondition
 import com.maisha.game.data.model.Person
 import com.maisha.game.data.model.Stats
+import com.maisha.game.domain.AncestryHistoryCap
 import com.maisha.game.domain.EventLogCap
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
@@ -135,7 +136,7 @@ class CharacterRepository @Inject constructor(
             lastRelocationAge = lastRelocationAge,
             lastHolidayAge = lastHolidayAge,
             relocationHistoryJson = json.encodeToString(relocationHistory),
-            ancestryHistoryJson = json.encodeToString(ancestryHistory),
+            ancestryHistoryJson = json.encodeToString(AncestryHistoryCap.trim(ancestryHistory)),
             avatarConfigJson = json.encodeToString(avatarConfig),
             eventLogJson = json.encodeToString(EventLogCap.trim(eventLog)),
             triggeredEventIdsJson = json.encodeToString(triggeredEventIds.toList()),

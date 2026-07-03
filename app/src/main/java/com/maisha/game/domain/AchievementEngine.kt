@@ -32,12 +32,14 @@ class AchievementEngine @Inject constructor(
             .map { it.achievementId }
             .toSet()
 
+        val netWorth = financeEngine.calculateNetWorth(character)
+
         return AchievementCatalog.all
             .filter { it.id !in unlockedIds }
-            .filter { achievement -> checkCondition(achievement.id, character) }
+            .filter { achievement -> checkCondition(achievement.id, character, netWorth) }
     }
 
-    private fun checkCondition(achievementId: String, character: Character): Boolean =
+    private fun checkCondition(achievementId: String, character: Character, netWorth: Int): Boolean =
         when (achievementId) {
             "first_job" -> checkFirstJob(character)
             "corner_office" -> checkCornerOffice(character)
@@ -49,8 +51,8 @@ class AchievementEngine @Inject constructor(
             "first_child" -> checkFirstChild(character)
             "growing_family" -> checkGrowingFamily(character)
             "family_person" -> checkFamilyPerson(character)
-            "six_figures" -> checkSixFigures(character)
-            "first_million" -> checkFirstMillion(character)
+            "six_figures" -> netWorth >= 100_000
+            "first_million" -> netWorth >= 1_000_000
             "property_owner" -> checkPropertyOwner(character)
             "multiple_streams" -> checkMultipleStreams(character)
             "half_century" -> checkHalfCentury(character)
@@ -108,12 +110,6 @@ class AchievementEngine @Inject constructor(
         if (livingFamily.isEmpty()) return false
         return livingFamily.all { it.relationshipLevel >= 70 }
     }
-
-    private fun checkSixFigures(character: Character): Boolean =
-        financeEngine.calculateNetWorth(character) >= 100_000
-
-    private fun checkFirstMillion(character: Character): Boolean =
-        financeEngine.calculateNetWorth(character) >= 1_000_000
 
     private fun checkPropertyOwner(character: Character): Boolean =
         character.assets.any { it.type == AssetType.HOUSE }

@@ -26,11 +26,11 @@ import kotlin.math.sin
 import kotlin.random.Random
 
 /**
- * Lightweight confetti — 28 particles, ~1.8s drift, tap-to-dismiss.
- * Conservative count for itel A665L (360dp, budget GPU): no physics library,
- * single Canvas pass per frame, particles removed after lifetime.
+ * Lightweight confetti — 18 particles, ~1.8s drift, tap-to-dismiss.
+ * Reduced from 28 after Prompt 43 profiling budget (itel A665L): single Canvas pass,
+ * no physics library, particles removed after lifetime.
  */
-private const val PARTICLE_COUNT = 28
+private const val PARTICLE_COUNT = 18
 private const val ANIMATION_MS = 1_800L
 private const val AUTO_DISMISS_MS = 2_500L
 

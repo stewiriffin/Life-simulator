@@ -65,7 +65,7 @@ class LegacyEngine @Inject constructor(
 
         val currentYear = Calendar.getInstance().get(Calendar.YEAR)
         val deceasedEntry = buildAncestryEntry(deceased)
-        val carriedHistory = deceased.ancestryHistory + deceasedEntry
+        val carriedHistory = AncestryHistoryCap.trim(deceased.ancestryHistory + deceasedEntry)
 
         return Character(
             name = heir.name,

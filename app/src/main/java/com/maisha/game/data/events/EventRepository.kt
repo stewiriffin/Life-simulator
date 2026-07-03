@@ -46,6 +46,19 @@ class EventRepository private constructor(
         }
     }
 
+    /** Pre-indexed by age so [getEligibleEvents] skips scanning the full pool each age-up. */
+    private val eventsByAge: Array<List<LifeEvent>> by lazy {
+        buildAgeIndex(allEvents)
+    }
+
+    private fun buildAgeIndex(events: List<LifeEvent>): Array<List<LifeEvent>> {
+        if (events.isEmpty()) return arrayOf(emptyList())
+        val maxAge = events.maxOf { it.maxAge }.coerceAtLeast(DEFAULT_MAX_AGE)
+        return Array(maxAge + 1) { age ->
+            events.filter { age in it.minAge..it.maxAge }
+        }
+    }
+
     private fun loadAllFromAssets(context: Context): List<LifeEvent> {
         val starter = loadEventsFromAsset(context, "data/events/starter_events.json")
         val education = loadEventsFromAsset(context, "data/events/education_events.json")
@@ -68,9 +81,11 @@ class EventRepository private constructor(
         usedIds: Set<String>,
         character: Character? = null
     ): List<LifeEvent> {
-        return allEvents.filter { event ->
-            age in event.minAge..event.maxAge &&
-                (ONE_TIME_TAG !in event.tags || event.id !in usedIds) &&
+        val ageCandidates = eventsByAge.getOrElse(age) {
+            allEvents.filter { age in it.minAge..it.maxAge }
+        }
+        return ageCandidates.filter { event ->
+            (ONE_TIME_TAG !in event.tags || event.id !in usedIds) &&
                 EducationEngine.EXAM_SYSTEM_TAG !in event.tags &&
                 CareerEngine.CAREER_SYSTEM_TAG !in event.tags &&
                 RelocationEngine.RELOCATION_SYSTEM_TAG !in event.tags &&
@@ -192,5 +207,6 @@ class EventRepository private constructor(
         private const val CHILD_SCHOOL_MIN_AGE = 5
         private const val CHILD_SCHOOL_MAX_AGE = 7
         private const val HOLIDAY_COOLDOWN_YEARS = 3
+        private const val DEFAULT_MAX_AGE = 120
     }
 }

@@ -1,6 +1,7 @@
 // app/src/main/java/com/maisha/game/data/model/Avatar.kt (modified — Prompt 26: wider tones/styles + facialFeature)
 package com.maisha.game.data.model
 
+import androidx.compose.runtime.Immutable
 import kotlinx.serialization.Serializable
 import kotlin.random.Random
 
@@ -33,6 +34,7 @@ fun ageStageFor(age: Int): AgeStage = when {
  *
  * Index ranges are defined in [Companion]; out-of-range values are coerced at render time.
  */
+@Immutable
 @Serializable
 data class AvatarConfig(
     val skinTone: Int,
