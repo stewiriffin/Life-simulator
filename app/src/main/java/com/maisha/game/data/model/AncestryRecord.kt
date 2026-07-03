@@ -3,6 +3,12 @@ package com.maisha.game.data.model
 
 import kotlinx.serialization.Serializable
 
+/**
+ * One deceased generation in a slot's legacy chain, stored in [Character.ancestryHistory].
+ *
+ * @property ageAtDeath Always set when built by [com.maisha.game.domain.LegacyEngine.buildAncestryEntry].
+ * @property cause Human-readable death summary; nullable for forward-compatible records.
+ */
 @Serializable
 data class AncestryEntry(
     val generationNumber: Int,

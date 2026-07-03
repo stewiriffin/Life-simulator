@@ -30,6 +30,7 @@ sealed class ProposalResult {
 @Singleton
 class RelationshipEngine @Inject constructor() {
 
+    /** Maps [Person.relationshipLevel] to a display tier (ESTRANGED through INSEPARABLE). */
     fun getRelationshipTier(person: Person): RelationshipTier =
         relationshipTierFor(person.relationshipLevel)
 
@@ -63,8 +64,10 @@ class RelationshipEngine @Inject constructor() {
         return FamilyYearTickResult(family = family, decayNotices = notices)
     }
 
+    /** True when relationship is CLOSE or INSEPARABLE and person is alive. */
     fun canTravelTogether(person: Person): Boolean = Companion.canTravelTogether(person)
 
+    /** Dating prospects when single and past [MIN_DATING_AGE]; empty if already married. */
     fun findDatingProspects(character: Character): List<Person> {
         if (character.age < MIN_DATING_AGE || character.hasSpouse()) return emptyList()
         return DatingPool.generateProspects(character)
@@ -123,6 +126,7 @@ class RelationshipEngine @Inject constructor() {
         return character.copy(family = updatedFamily)
     }
 
+    /** Adds prospect as dating [RelationType.SPOUSE] (not yet married) with STARTED_DATING milestone. */
     fun startDating(character: Character, prospect: Person): Character {
         if (character.hasSpouse()) return character
         val partner = prospect.copy(
@@ -138,6 +142,11 @@ class RelationshipEngine @Inject constructor() {
         return character.copy(family = character.family + partner)
     }
 
+    /**
+     * Player interaction with a family member: spend time, argue, gifts, travel, etc.
+     *
+     * Sets [Person.interactedThisYear] on success. Travel blocked while incarcerated.
+     */
     fun progressRelationship(
         character: Character,
         personId: String,
@@ -172,6 +181,10 @@ class RelationshipEngine @Inject constructor() {
         }
     }
 
+    /**
+     * Marriage proposal to a dating partner. Requires relationship ≥ [PROPOSAL_THRESHOLD];
+     * acceptance chance scales with level.
+     */
     fun proposeMarriage(character: Character, personId: String): Pair<Character, ProposalResult> {
         val memberIndex = character.family.indexOfFirst { it.id == personId }
         if (memberIndex == -1) return character to ProposalResult.Rejected
@@ -212,6 +225,7 @@ class RelationshipEngine @Inject constructor() {
         }
     }
 
+    /** Removes spouse from family; larger happiness hit if [Person.isMarried]. */
     fun breakUpOrDivorce(character: Character, personId: String): Character {
         val memberIndex = character.family.indexOfFirst { it.id == personId }
         if (memberIndex == -1) return character
@@ -233,6 +247,9 @@ class RelationshipEngine @Inject constructor() {
         )
     }
 
+    /**
+     * Adds a newborn child when married; may set [Person.secondaryCountryCode] for cross-country spouses.
+     */
     fun haveChild(character: Character): Character {
         val spouse = character.family.firstOrNull {
             it.relation == RelationType.SPOUSE && it.isMarried
@@ -280,6 +297,7 @@ class RelationshipEngine @Inject constructor() {
         return "${firstPool.randomFirstName(gender)} ${surnamePool.randomSurname()}"
     }
 
+    /** Event-choice hook: adjusts spouse [Person.relationshipLevel] by [delta]. */
     fun applySpouseRelationshipEffect(character: Character, delta: Int): Character {
         val spouseIndex = character.family.indexOfFirst { it.relation == RelationType.SPOUSE }
         if (spouseIndex == -1) return character

@@ -10,6 +10,11 @@ import kotlinx.coroutines.flow.map
 import javax.inject.Inject
 import javax.inject.Singleton
 
+/**
+ * App-wide achievement unlock state (not per save slot).
+ *
+ * Merges Room rows with [AchievementCatalog] so locked achievements still appear in UI.
+ */
 @Singleton
 class AchievementRepository @Inject constructor(
     private val achievementDao: AchievementDao

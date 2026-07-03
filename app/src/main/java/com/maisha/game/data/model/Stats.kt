@@ -3,6 +3,12 @@ package com.maisha.game.data.model
 
 import kotlinx.serialization.Serializable
 
+/**
+ * Core numeric attributes for the player or an NPC.
+ *
+ * Health/happiness/smarts/looks are clamped 0–100 via [coerceCapped] and [applyEffects].
+ * Money is floored at 0 (not capped at 100).
+ */
 @Serializable
 data class Stats(
     val health: Int = 50,

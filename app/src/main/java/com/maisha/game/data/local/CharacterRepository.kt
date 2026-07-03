@@ -38,6 +38,12 @@ data class SavedGame(
     val triggeredEventIds: Set<String>
 )
 
+/**
+ * Per-slot game persistence (slots 0..[MAX_SLOTS]-1).
+ *
+ * Each slot stores one [Character] plus [SavedGame.triggeredEventIds] for one-time JSON events.
+ * Not global — achievements and settings live elsewhere.
+ */
 @Singleton
 class CharacterRepository @Inject constructor(
     private val characterDao: CharacterDao

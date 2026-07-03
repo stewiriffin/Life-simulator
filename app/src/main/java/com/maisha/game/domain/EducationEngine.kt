@@ -17,6 +17,9 @@ import kotlin.random.Random
 @Singleton
 class EducationEngine @Inject constructor() {
 
+    /**
+     * Auto-enrolls at primary (age 6) or secondary (age 14 after KCPE pass). Skips if [EducationState.expelled].
+     */
     fun enrollIfEligible(character: Character): Character {
         val education = character.education
         if (education.expelled) return character
@@ -50,6 +53,10 @@ class EducationEngine @Inject constructor() {
         }
     }
 
+    /**
+     * Increments grade in primary/secondary and applies [studyChoice] GPA/smarts effects.
+     * No-op if not in primary/secondary or already at max grade for stage.
+     */
     fun advanceGrade(character: Character, studyChoice: StudyEffort): Character {
         val education = character.education
         if (education.expelled) return character
@@ -71,6 +78,7 @@ class EducationEngine @Inject constructor() {
         )
     }
 
+    /** Applies study effort without advancing grade — used by study-tagged event choices. */
     fun applyStudyEffort(character: Character, studyChoice: StudyEffort): Character {
         return applyStudyEffort(character, studyChoice, incrementGrade = false)
     }
@@ -122,6 +130,7 @@ class EducationEngine @Inject constructor() {
         )
     }
 
+    /** Increments university year or graduates when [UNIVERSITY_YEARS] completed. */
     fun advanceUniversityYear(character: Character): Character {
         val education = character.education
         if (education.stage != SchoolStage.UNIVERSITY) return character
@@ -141,6 +150,11 @@ class EducationEngine @Inject constructor() {
         }
     }
 
+    /**
+     * Scores KCPE/KCSE from GPA, smarts, and randomness; updates pass flags on [EducationState].
+     *
+     * @return Updated character and [ExamResult] for UI/system events.
+     */
     fun takeExam(character: Character, examType: ExamType): Pair<Character, ExamResult> {
         val education = character.education
         val randomFactor = Random.nextFloat() * 15f
@@ -165,6 +179,7 @@ class EducationEngine @Inject constructor() {
         return updatedCharacter to ExamResult(passed = passed, grade = grade, score = score)
     }
 
+    /** Enrolls in university with [course] if [isEligibleForUniversity]; otherwise returns character unchanged. */
     fun applyToUniversity(character: Character, course: String): Character {
         if (!isEligibleForUniversity(character)) return character
         return character.copy(
@@ -177,11 +192,13 @@ class EducationEngine @Inject constructor() {
         )
     }
 
+    /** True when KCSE letter grade maps to at least [UNIVERSITY_MIN_POINTS]. */
     fun isEligibleForUniversity(character: Character): Boolean {
         val grade = character.education.kcseGrade ?: return false
         return gradeToPoints(grade) >= UNIVERSITY_MIN_POINTS
     }
 
+    /** Primary exit exam due: final primary grade, age threshold, not yet passed. */
     fun shouldTriggerKcpe(character: Character): Boolean {
         val education = character.education
         return education.stage == SchoolStage.PRIMARY &&
@@ -190,6 +207,7 @@ class EducationEngine @Inject constructor() {
             education.kcpePassed != true
     }
 
+    /** Secondary exit exam due: final secondary grade, age threshold, no grade recorded yet. */
     fun shouldTriggerKcse(character: Character): Boolean {
         val education = character.education
         return education.stage == SchoolStage.SECONDARY &&
@@ -198,6 +216,9 @@ class EducationEngine @Inject constructor() {
             education.kcseGrade == null
     }
 
+    /**
+     * System result event after [takeExam]; exam name is localized via [ExamNames] for [character.countryCode].
+     */
     fun buildExamResultEvent(
         examType: ExamType,
         result: ExamResult,
@@ -244,6 +265,7 @@ class EducationEngine @Inject constructor() {
         )
     }
 
+    /** Adds [gpaEffect] to [EducationState.gpa], clamped 0–4. No-op when effect is 0. */
     fun applyGpaEffect(character: Character, gpaEffect: Float): Character {
         if (gpaEffect == 0f) return character
         return character.copy(

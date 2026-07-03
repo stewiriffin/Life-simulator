@@ -29,6 +29,11 @@ private val Context.settingsDataStore: DataStore<Preferences> by preferencesData
     name = "maisha_settings"
 )
 
+/**
+ * App-wide preferences via DataStore (not per slot).
+ *
+ * Sound, locale, onboarding tips, notification toggles, last-opened slot, etc.
+ */
 @Singleton
 class SettingsRepository @Inject constructor(
     @ApplicationContext private val context: Context

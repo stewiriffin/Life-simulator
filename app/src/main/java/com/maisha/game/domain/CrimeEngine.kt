@@ -16,6 +16,13 @@ sealed class CrimeResult {
 @Singleton
 class CrimeEngine @Inject constructor() {
 
+    /**
+     * Attempts a crime if the character is at least [MIN_CRIME_AGE] and not incarcerated.
+     *
+     * Success chance scales with smarts; failure routes through [processArrest].
+     *
+     * @return [CrimeResult.Success] with cash gained, or [CrimeResult.Caught] with updated record.
+     */
     fun attemptCrime(character: Character, crimeType: CrimeType): CrimeResult {
         if (character.criminalRecord.currentlyIncarcerated) {
             return CrimeResult.Caught(character)
@@ -38,6 +45,11 @@ class CrimeEngine @Inject constructor() {
         }
     }
 
+    /**
+     * Records arrest, assigns sentence (repeat offenses lengthen it), fires current job, and logs the outcome.
+     *
+     * @return Character with [CriminalRecord] updated and optional career cleared.
+     */
     fun processArrest(character: Character, crimeType: CrimeType): Character {
         val record = character.criminalRecord
         val newTimesArrested = record.timesArrested + 1
@@ -70,6 +82,12 @@ class CrimeEngine @Inject constructor() {
         )
     }
 
+    /**
+     * Advances incarceration by one year: decrements [CriminalRecord.yearsRemaining], applies happiness penalty,
+     * and prepends a release log entry when the sentence ends.
+     *
+     * No-op if not [CriminalRecord.currentlyIncarcerated].
+     */
     fun serveYear(character: Character): Character {
         val record = character.criminalRecord
         if (!record.currentlyIncarcerated) return character

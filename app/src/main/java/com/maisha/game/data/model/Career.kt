@@ -3,6 +3,9 @@ package com.maisha.game.data.model
 
 import kotlinx.serialization.Serializable
 
+/**
+ * Employment snapshot. [Job.performanceScore] is 0–100 and drives promotion/firing.
+ */
 @Serializable
 data class Job(
     val id: String,
@@ -13,6 +16,9 @@ data class Job(
     val performanceScore: Int = 50
 )
 
+/**
+ * Career history for a [Character]: current job, past titles, tenure.
+ */
 @Serializable
 data class CareerState(
     val currentJob: Job? = null,

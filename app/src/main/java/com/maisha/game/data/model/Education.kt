@@ -32,6 +32,15 @@ data class ExamResult(
     val score: Float
 )
 
+/**
+ * School progression for a [Character].
+ *
+ * Internal exam fields use KCPE/KCSE names historically; UI shows country-specific exam names.
+ *
+ * @property expelled When true, blocks enrollment and grade advance. **Note:** no gameplay path currently sets this.
+ * @property kcpePassed Primary exit exam pass flag; gates secondary enrollment at age 14.
+ * @property kcseGrade Letter grade string; gates university via points threshold.
+ */
 @Serializable
 data class EducationState(
     val stage: SchoolStage = SchoolStage.NONE,

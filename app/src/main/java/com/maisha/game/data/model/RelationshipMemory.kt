@@ -17,6 +17,9 @@ enum class MilestoneKind {
     LEGACY_CONTINUED
 }
 
+/**
+ * Notable relationship moment on a [Person], shown in detail UI.
+ */
 @Serializable
 data class RelationshipMilestone(
     val ageAtEvent: Int,

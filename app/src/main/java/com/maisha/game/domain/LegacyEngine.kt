@@ -19,6 +19,9 @@ class LegacyEngine @Inject constructor(
     private val mortalityEngine: MortalityEngine
 ) {
 
+    /**
+     * Living children aged [MIN_HEIR_AGE]+, sorted oldest first — candidates for legacy continuation.
+     */
     fun eligibleHeirs(deceased: Character): List<Person> =
         deceased.family
             .filter { person ->
@@ -26,6 +29,13 @@ class LegacyEngine @Inject constructor(
             }
             .sortedByDescending { it.age }
 
+    /**
+     * Builds the next playable [Character] from a chosen heir: splits money among siblings, remaps family
+     * (surviving parent, siblings, friends), appends deceased to [Character.ancestryHistory], and increments
+     * [Character.generationNumber].
+     *
+     * @param heir Must be a living [RelationType.CHILD] of [deceased].
+     */
     fun createLegacyCharacter(deceased: Character, heir: Person): Character {
         require(heir.relation == RelationType.CHILD && heir.alive) {
             "Legacy heir must be a living child of the deceased character."
@@ -81,6 +91,7 @@ class LegacyEngine @Inject constructor(
         )
     }
 
+    /** Snapshot of a finished life for [Character.ancestryHistory], using [MortalityEngine] for cause text. */
     fun buildAncestryEntry(deceased: Character): AncestryEntry {
         val cause = mortalityEngine.parseDeathCause(deceased) ?: DeathCause.OLD_AGE
         return AncestryEntry(

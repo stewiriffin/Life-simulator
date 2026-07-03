@@ -13,6 +13,14 @@ enum class RelationType {
     FRIEND
 }
 
+/**
+ * A family member, friend, or dating prospect attached to a [Character].
+ *
+ * Stored in [Character.family] (including friends and spouses). Relationship level is 0–100.
+ *
+ * @property secondaryCountryCode Set on children when parents have different [countryCode] values (mixed heritage).
+ * @property interactedThisYear When false at year tick, relationship may decay toward neutral.
+ */
 @Serializable
 data class Person(
     val id: String,

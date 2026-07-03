@@ -10,6 +10,9 @@ enum class AssetType {
     MOTORBIKE
 }
 
+/**
+ * Ownable property or vehicle. [condition] affects [currentValue] via [com.maisha.game.domain.FinanceEngine.recalculateValue].
+ */
 @Serializable
 data class Asset(
     val id: String,

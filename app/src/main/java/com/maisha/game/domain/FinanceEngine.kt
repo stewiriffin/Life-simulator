@@ -19,6 +19,11 @@ sealed class PurchaseResult {
 @Singleton
 class FinanceEngine @Inject constructor() {
 
+    /**
+     * Buys a catalog asset scaled to [Character.countryCode]; deducts scaled price from money.
+     *
+     * @return [PurchaseResult.InsufficientFunds] if unknown id or not enough cash.
+     */
     fun purchaseAsset(character: Character, assetCatalogId: String): PurchaseResult {
         val catalogItem = AssetCatalog.findById(assetCatalogId)
             ?: return PurchaseResult.InsufficientFunds
@@ -49,6 +54,7 @@ class FinanceEngine @Inject constructor() {
         return PurchaseResult.Success(updatedCharacter)
     }
 
+    /** Sells [assetId] at [Asset.currentValue] and removes it from [Character.assets]. No-op if id not found. */
     fun sellAsset(character: Character, assetId: String): Character {
         val asset = character.assets.find { it.id == assetId } ?: return character
         return character.copy(
@@ -59,6 +65,10 @@ class FinanceEngine @Inject constructor() {
         )
     }
 
+    /**
+     * Deducts annual upkeep (12× monthly, with multi-asset discount). If money goes negative, floors at 0
+     * and applies a happiness penalty.
+     */
     fun applyUpkeep(character: Character): Character {
         if (character.assets.isEmpty()) return character
 
@@ -86,6 +96,7 @@ class FinanceEngine @Inject constructor() {
         }
     }
 
+    /** Random yearly wear on each asset; recalculates [Asset.currentValue] via [recalculateValue]. */
     fun degradeAssets(character: Character): Character {
         if (character.assets.isEmpty()) return character
 
@@ -97,11 +108,13 @@ class FinanceEngine @Inject constructor() {
         return character.copy(assets = degraded)
     }
 
+    /** Cash plus sum of [Asset.currentValue]. Used by achievements and UI net-worth displays. */
     fun calculateNetWorth(character: Character): Int {
         val assetValue = character.assets.sumOf { it.currentValue }
         return character.stats.money + assetValue
     }
 
+    /** Adjusts condition on the first asset of [type]; used by finance event choices. */
     fun applyConditionToAssetType(
         character: Character,
         type: AssetType,
@@ -118,6 +131,7 @@ class FinanceEngine @Inject constructor() {
         )
     }
 
+    /** Adjusts condition on the first owned asset when event has no [EventChoice.targetAssetType]. */
     fun applyConditionToFirstAsset(
         character: Character,
         conditionDelta: Int
@@ -131,10 +145,12 @@ class FinanceEngine @Inject constructor() {
         )
     }
 
+    /** Gate for finance-tagged random events: owns assets or has at least FINANCE_EVENT_MONEY_THRESHOLD cash. */
     fun meetsFinanceEventThreshold(character: Character): Boolean {
         return character.assets.isNotEmpty() || character.stats.money >= FINANCE_EVENT_MONEY_THRESHOLD
     }
 
+    /** Sets [Asset.currentValue] from purchase price × condition percentage. */
     fun recalculateValue(asset: Asset): Asset {
         val value = (asset.purchasePrice * (asset.condition / 100f)).toInt()
         return asset.copy(currentValue = value.coerceAtLeast(0))

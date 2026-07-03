@@ -13,12 +13,15 @@ import kotlin.random.Random
 @Singleton
 class RelocationEngine @Inject constructor() {
 
+    /** True if [Character.relocationCount] > 0 or birth country differs from current residence. */
     fun hasRelocated(character: Character): Boolean =
         character.relocationCount > 0 || character.birthCountryCode != character.countryCode
 
+    /** Unique one-time event id per relocation index (supports multiple moves / World Traveler). */
     fun relocationOpportunityEventId(relocationCount: Int): String =
         "${RELOCATION_OPPORTUNITY_EVENT_ID}_$relocationCount"
 
+    /** Random subset of countries excluding the character's current [Character.countryCode]. */
     fun getRelocationOpportunities(character: Character): List<Country> {
         val current = character.countryCode
         return CountryCatalog.all()
@@ -27,6 +30,10 @@ class RelocationEngine @Inject constructor() {
             .take(RELOCATION_DESTINATION_COUNT)
     }
 
+    /**
+     * Whether to roll a relocation offer this year: age window, not incarcerated, event not yet triggered,
+     * and minimum gap since last move when [Character.relocationCount] > 0.
+     */
     fun shouldOfferRelocation(character: Character, triggeredEventIds: Set<String>): Boolean {
         if (character.age < MIN_RELOCATION_AGE || character.age > MAX_RELOCATION_AGE) return false
         if (character.criminalRecord.currentlyIncarcerated) return false
@@ -39,6 +46,9 @@ class RelocationEngine @Inject constructor() {
         return Random.nextFloat() < RELOCATION_OFFER_CHANCE
     }
 
+    /**
+     * System [LifeEvent] with up to three destination choices plus stay-put; choices use [EventChoice.relocateToCountry].
+     */
     fun buildRelocationOpportunityEvent(
         character: Character,
         destinations: List<Country>
@@ -71,6 +81,10 @@ class RelocationEngine @Inject constructor() {
         )
     }
 
+    /**
+     * Applies a move: updates [Character.countryCode], increments relocation counters/history, clears job
+     * (credentials don't transfer), and applies a random happiness dip.
+     */
     fun relocate(character: Character, newCountry: Country): Character {
         val formerJob = character.career.currentJob
         val updatedCareer = if (formerJob != null) {

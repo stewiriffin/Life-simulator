@@ -28,6 +28,11 @@ fun ageStageFor(age: Int): AgeStage = when {
     else -> AgeStage.SENIOR
 }
 
+/**
+ * Visual identity indices for [com.maisha.game.ui.avatar.AvatarRenderer] (procedural Canvas art).
+ *
+ * Index ranges are defined in [Companion]; out-of-range values are coerced at render time.
+ */
 @Serializable
 data class AvatarConfig(
     val skinTone: Int,

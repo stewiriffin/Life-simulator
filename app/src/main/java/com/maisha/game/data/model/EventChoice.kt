@@ -3,6 +3,9 @@ package com.maisha.game.data.model
 
 import kotlinx.serialization.Serializable
 
+/**
+ * Player pick for a [LifeEvent]. Engine hooks read optional effect fields in [com.maisha.game.domain.GameEngine.applyChoice].
+ */
 @Serializable
 data class EventChoice(
     val label: String,

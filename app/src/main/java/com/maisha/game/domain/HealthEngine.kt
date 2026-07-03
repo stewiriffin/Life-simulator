@@ -16,6 +16,11 @@ sealed class DoctorResult {
 @Singleton
 class HealthEngine @Inject constructor() {
 
+    /**
+     * Random new illness if health is low enough and no untreated condition exists.
+     *
+     * @return A new [HealthCondition] or null if roll fails or character already has untreated illness.
+     */
     fun rollForIllness(character: Character): HealthCondition? {
         if (character.activeConditions.any { !it.treated }) {
             return null
@@ -36,6 +41,7 @@ class HealthEngine @Inject constructor() {
         )
     }
 
+    /** Appends [condition] to [Character.activeConditions] and logs onset; no-op if id already present. */
     fun addCondition(character: Character, condition: HealthCondition): Character {
         if (character.activeConditions.any { it.id == condition.id }) return character
         return character.copy(
@@ -44,6 +50,9 @@ class HealthEngine @Inject constructor() {
         )
     }
 
+    /**
+     * Yearly drain from untreated conditions: reduces health and increments [HealthCondition.yearsUntreated].
+     */
     fun applyUntreatedConditions(character: Character): Character {
         val untreated = character.activeConditions.filter { !it.treated }
         if (untreated.isEmpty()) return character
@@ -63,6 +72,11 @@ class HealthEngine @Inject constructor() {
         )
     }
 
+    /**
+     * Pays for treatment of [conditionId]; deducts cost first, then rolls success by severity and care tier.
+     *
+     * @return [DoctorResult.Failed] if condition missing, already treated, or insufficient funds.
+     */
     fun visitDoctor(
         character: Character,
         conditionId: String,
@@ -113,6 +127,7 @@ class HealthEngine @Inject constructor() {
         }
     }
 
+    /** Convenience wrapper: treats the first untreated condition, if any. */
     fun visitFirstUntreatedCondition(
         character: Character,
         usePrivateCare: Boolean

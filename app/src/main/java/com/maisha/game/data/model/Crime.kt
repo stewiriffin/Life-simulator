@@ -3,6 +3,11 @@ package com.maisha.game.data.model
 
 import kotlinx.serialization.Serializable
 
+/**
+ * Criminal history and incarceration state.
+ *
+ * Defaults to empty record on new characters. [lastArrestAge] drives clean-streak hire penalty reduction in [com.maisha.game.domain.CareerEngine].
+ */
 @Serializable
 data class CriminalRecord(
     val hasRecord: Boolean = false,

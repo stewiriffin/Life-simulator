@@ -21,6 +21,12 @@ sealed class DeathResult {
 @Singleton
 class MortalityEngine @Inject constructor() {
 
+    /**
+     * Rolls death for a living character. Evaluated in order: accident → critical health → low health illness
+     * → chronic untreated conditions → age curve. Already-dead characters return [DeathResult.Alive] immediately.
+     *
+     * Called last in [GameEngine.finalizeYear] so other yearly hooks run before death.
+     */
     fun checkDeath(character: Character): DeathResult {
         if (!character.alive) return DeathResult.Alive
 
@@ -58,6 +64,10 @@ class MortalityEngine @Inject constructor() {
         return DeathResult.Alive
     }
 
+    /**
+     * Marks the character dead, sets [Character.age] to [ageAtDeath], and prepends a structured death marker
+     * on [Character.eventLog] for later parsing.
+     */
     fun applyDeath(character: Character, cause: DeathCause, ageAtDeath: Int): Character {
         val flavor = flavorText(cause)
         val marker = "${EventLogCap.DEATH_MARKER_PREFIX}${cause.name}::$flavor"
@@ -68,6 +78,7 @@ class MortalityEngine @Inject constructor() {
         )
     }
 
+    /** Reads [DeathCause] from the newest death-marker log line; defaults to [DeathCause.OLD_AGE] if missing. */
     fun parseDeathCause(character: Character): DeathCause? {
         if (character.alive) return null
         val line = character.eventLog.firstOrNull() ?: return DeathCause.OLD_AGE
@@ -76,6 +87,7 @@ class MortalityEngine @Inject constructor() {
         return runCatching { DeathCause.valueOf(causeName) }.getOrElse { DeathCause.OLD_AGE }
     }
 
+    /** Human-readable death sentence for summary UI; falls back to [gentleCauseLabel] if log format is unexpected. */
     fun deathFlavorText(character: Character): String {
         val line = character.eventLog.firstOrNull() ?: return gentleCauseLabel(DeathCause.OLD_AGE)
         return if (line.startsWith(EventLogCap.DEATH_MARKER_PREFIX)) {
@@ -85,6 +97,7 @@ class MortalityEngine @Inject constructor() {
         }
     }
 
+    /** Short cause label for ancestry and life-summary screens (no log parsing). */
     fun gentleCauseLabel(cause: DeathCause): String = when (cause) {
         DeathCause.OLD_AGE -> "Passed away peacefully in old age"
         DeathCause.HEALTH_FAILURE -> "Passed away due to failing health"

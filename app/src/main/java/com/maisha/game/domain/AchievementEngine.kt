@@ -18,6 +18,11 @@ class AchievementEngine @Inject constructor(
     private val financeEngine: FinanceEngine
 ) {
 
+    /**
+     * Returns catalog achievements whose conditions pass and are not already unlocked in [currentProgress].
+     *
+     * Assumes [character] reflects post-year state. Does not persist — caller unlocks via repository.
+     */
     fun checkAchievements(
         character: Character,
         currentProgress: List<AchievementProgress>

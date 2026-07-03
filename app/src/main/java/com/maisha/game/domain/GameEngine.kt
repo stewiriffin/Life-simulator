@@ -40,6 +40,11 @@ data class AgeUpOutcome(
     val newFriendName: String? = null
 )
 
+/**
+ * Orchestrates the yearly life loop and player actions by delegating to domain engines.
+ *
+ * Single entry point for age-up sequencing; keeps Android out of pure engine logic.
+ */
 @Singleton
 class GameEngine @Inject constructor(
     private val eventRepository: EventRepository,
@@ -55,6 +60,14 @@ class GameEngine @Inject constructor(
     private val relocationEngine: RelocationEngine
 ) {
 
+    /**
+     * Advances one in-game year: runs education/career (unless incarcerated), finance, relationships, health,
+     * friends, prison, then career/exam/random events, mortality last, achievements only if still alive.
+     *
+     * @param triggeredEventIds One-time event ids already consumed in this slot.
+     * @param achievementProgress Global unlock state for [AchievementEngine.checkAchievements].
+     * @return [AgeUpOutcome] with optional pending events and newly unlocked achievements.
+     */
     fun ageUp(
         character: Character,
         triggeredEventIds: Set<String>,
@@ -171,12 +184,17 @@ class GameEngine @Inject constructor(
         return AgeUpOutcome(finalCharacter, finalResult, newlyUnlocked)
     }
 
+    /** Picks a starter event for age 0 from JSON pool, respecting [triggeredEventIds]. */
     fun introEventsForNewborn(triggeredEventIds: Set<String>): AgeUpResult {
         val eligible = eventRepository.getEligibleEvents(age = 0, usedIds = triggeredEventIds)
         val event = eventRepository.pickRandomEvent(eligible) ?: return AgeUpResult.NoEvent
         return AgeUpResult.SingleEvent(event)
     }
 
+    /**
+     * Applies a player [choice] from a [LifeEvent]: study/work effort, relationship deltas, crime, doctor,
+     * relocation, assets, GPA, university enrollment, and flat stat effects.
+     */
     fun applyChoice(character: Character, choice: EventChoice, event: LifeEvent): Character {
         var updatedCharacter = character
 
@@ -288,6 +306,7 @@ class GameEngine @Inject constructor(
         return updatedCharacter.copy(stats = updatedStats, eventLog = updatedLog)
     }
 
+    /** Delegates to [CareerEngine]; rejects immediately if incarcerated. */
     fun applyForJob(character: Character, jobId: String): Pair<Character, CareerResult> {
         if (character.criminalRecord.currentlyIncarcerated) {
             return character to CareerResult.Rejected
@@ -295,24 +314,30 @@ class GameEngine @Inject constructor(
         return careerEngine.applyForJob(character, jobId)
     }
 
+    /** Delegates to [CareerEngine.quitJob]. */
     fun quitJob(character: Character): Character {
         return careerEngine.quitJob(character)
     }
 
+    /** Delegates to [CareerEngine.getEligibleJobs]. */
     fun getEligibleJobs(character: Character) = careerEngine.getEligibleJobs(character)
 
+    /** Delegates to [FinanceEngine.purchaseAsset]. */
     fun purchaseAsset(character: Character, catalogId: String): PurchaseResult {
         return financeEngine.purchaseAsset(character, catalogId)
     }
 
+    /** Delegates to [FinanceEngine.sellAsset]. */
     fun sellAsset(character: Character, assetId: String): Character {
         return financeEngine.sellAsset(character, assetId)
     }
 
+    /** Delegates to [FinanceEngine.calculateNetWorth]. */
     fun calculateNetWorth(character: Character): Int {
         return financeEngine.calculateNetWorth(character)
     }
 
+    /** Delegates to [RelationshipEngine.progressRelationship]. */
     fun interactWithFamilyMember(
         character: Character,
         personId: String,
@@ -322,27 +347,35 @@ class GameEngine @Inject constructor(
         return relationshipEngine.progressRelationship(character, personId, interactionType, giftTier)
     }
 
+    /** Delegates to [RelationshipEngine.findDatingProspects]. */
     fun findDatingProspects(character: Character) =
         relationshipEngine.findDatingProspects(character)
 
+    /** Delegates to [RelationshipEngine.startDating]. */
     fun startDating(character: Character, prospect: Person): Character =
         relationshipEngine.startDating(character, prospect)
 
+    /** Delegates to [RelationshipEngine.proposeMarriage]. */
     fun proposeMarriage(character: Character, personId: String) =
         relationshipEngine.proposeMarriage(character, personId)
 
+    /** Delegates to [RelationshipEngine.breakUpOrDivorce]. */
     fun breakUpOrDivorce(character: Character, personId: String): Character =
         relationshipEngine.breakUpOrDivorce(character, personId)
 
+    /** Delegates to [RelationshipEngine.haveChild]. */
     fun haveChild(character: Character): Character =
         relationshipEngine.haveChild(character)
 
+    /** Delegates to [RelationshipEngine.applyLegacyFamilyMilestones]. */
     fun applyLegacyFamilyMilestones(character: Character): Character =
         relationshipEngine.applyLegacyFamilyMilestones(character)
 
+    /** Delegates to [CrimeEngine.attemptCrime]. */
     fun attemptCrime(character: Character, crimeType: com.maisha.game.data.model.CrimeType): CrimeResult =
         crimeEngine.attemptCrime(character, crimeType)
 
+    /** Delegates to [HealthEngine.visitDoctor]. */
     fun visitDoctor(
         character: Character,
         conditionId: String,

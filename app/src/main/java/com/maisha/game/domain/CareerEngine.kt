@@ -23,6 +23,7 @@ sealed class CareerResult {
 @Singleton
 class CareerEngine @Inject constructor() {
 
+    /** Minimum age and secondary+ education required to seek employment. */
     fun isJobEligible(character: Character): Boolean {
         if (character.age < MIN_JOB_AGE) return false
         return when (character.education.stage) {
@@ -33,6 +34,7 @@ class CareerEngine @Inject constructor() {
         }
     }
 
+    /** Country-scoped job list filtered by education; empty if already employed or ineligible. */
     fun getEligibleJobs(character: Character): List<Job> {
         if (!isJobEligible(character) || character.career.currentJob != null) return emptyList()
 
@@ -41,6 +43,11 @@ class CareerEngine @Inject constructor() {
         }
     }
 
+    /**
+     * Hire roll using smarts, GPA, and criminal-record penalty (reduced after clean years since last arrest).
+     *
+     * @return [CareerResult.Hired] with salary scaled to country, or [CareerResult.Rejected].
+     */
     fun applyForJob(character: Character, jobId: String): Pair<Character, CareerResult> {
         if (character.career.currentJob != null) {
             return character to CareerResult.Rejected
@@ -67,6 +74,10 @@ class CareerEngine @Inject constructor() {
         return character.copy(career = updatedCareer) to CareerResult.Hired(hiredJob)
     }
 
+    /**
+     * Annual work simulation: pays [calculateAnnualSalary], adjusts performance/happiness/health by [effort],
+     * increments [CareerState.yearsAtCurrentJob].
+     */
     fun workYear(character: Character, effort: WorkEffort): Character {
         val job = character.career.currentJob ?: return character
 
@@ -105,6 +116,7 @@ class CareerEngine @Inject constructor() {
         )
     }
 
+    /** Event-choice variant of work effort — performance/happiness only, no salary or tenure tick. */
     fun applyWorkEffort(character: Character, effort: WorkEffort): Character {
         val job = character.career.currentJob ?: return character
 
@@ -135,6 +147,11 @@ class CareerEngine @Inject constructor() {
         )
     }
 
+    /**
+     * Promotion check on interval years when performance ≥ threshold; bumps level and salary.
+     *
+     * @return Pair of updated character and whether promotion occurred.
+     */
     fun evaluatePromotion(character: Character): Pair<Character, Boolean> {
         val job = character.career.currentJob ?: return character to false
         if (character.career.yearsAtCurrentJob == 0 ||
@@ -155,6 +172,7 @@ class CareerEngine @Inject constructor() {
         ) to true
     }
 
+    /** Fires employee when [Job.performanceScore] falls below threshold; title moves to [CareerState.jobHistory]. */
     fun evaluateFiring(character: Character): Pair<Character, Boolean> {
         val job = character.career.currentJob ?: return character to false
         if (job.performanceScore >= FIRING_THRESHOLD) return character to false
@@ -168,6 +186,7 @@ class CareerEngine @Inject constructor() {
         ) to true
     }
 
+    /** Voluntary resignation; clears [CareerState.currentJob] and appends title to history. */
     fun quitJob(character: Character): Character {
         val job = character.career.currentJob ?: return character
         return character.copy(
@@ -179,6 +198,7 @@ class CareerEngine @Inject constructor() {
         )
     }
 
+    /** Event-driven delta to [Job.performanceScore], clamped 0–100. */
     fun applyPerformanceEffect(character: Character, delta: Int): Character {
         val job = character.career.currentJob ?: return character
         val newScore = (job.performanceScore + delta).coerceIn(0, 100)
@@ -189,6 +209,7 @@ class CareerEngine @Inject constructor() {
         )
     }
 
+    /** One-time system event after [evaluatePromotion] succeeds. Assumes [character.career.currentJob] is set. */
     fun buildPromotionEvent(character: Character): LifeEvent {
         val job = character.career.currentJob!!
         return LifeEvent(
@@ -216,6 +237,7 @@ class CareerEngine @Inject constructor() {
         )
     }
 
+    /** One-time system event after [evaluateFiring]. */
     fun buildFiringEvent(character: Character, formerTitle: String): LifeEvent {
         return LifeEvent(
             id = FIRING_EVENT_ID,
@@ -239,6 +261,7 @@ class CareerEngine @Inject constructor() {
         )
     }
 
+    /** One-time layoff event (random downsizing, not performance-based). */
     fun buildDownsizingEvent(character: Character, formerTitle: String): LifeEvent {
         return LifeEvent(
             id = DOWNSIZING_EVENT_ID,
@@ -262,11 +285,13 @@ class CareerEngine @Inject constructor() {
         )
     }
 
+    /** Random layoff roll while employed and past minimum job age. */
     fun shouldTriggerDownsizing(character: Character): Boolean {
         if (character.career.currentJob == null) return false
         return character.age >= MIN_JOB_AGE && Random.nextFloat() < DOWNSIZING_CHANCE
     }
 
+    /** Clears job without performance check; returns former title for event text. */
     fun applyDownsizing(character: Character): Pair<Character, String> {
         val job = character.career.currentJob ?: return character to ""
         val title = job.title
@@ -280,11 +305,13 @@ class CareerEngine @Inject constructor() {
         return updated to title
     }
 
+    /** UI helper: job title and level, or "Unemployed". */
     fun formatCareerStatus(career: CareerState): String {
         val job = career.currentJob ?: return "Unemployed"
         return "${job.title} — Level ${job.level}"
     }
 
+    /** Annual gross pay equals [Job.baseSalary] (already economy-scaled at hire). */
     fun calculateAnnualSalary(job: Job): Int = job.baseSalary
 
     private fun calculateHireChance(character: Character): Float {

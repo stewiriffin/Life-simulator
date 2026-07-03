@@ -3,6 +3,9 @@ package com.maisha.game.data.model
 
 import kotlinx.serialization.Serializable
 
+/**
+ * A narrative event offered to the player (loaded from JSON or built by system engines).
+ */
 @Serializable
 data class LifeEvent(
     val id: String,
