@@ -236,4 +236,5 @@ One-line responsibility + key public entry points. See KDoc on each class for pa
 
 - **One-shot UI events** (ads, achievements, celebrations, navigation): boolean flags + `*Handled()` callbacks in `UiState`, not `SharedFlow`.
 - **`LifeViewModel`** is intentionally monolithic — shared slot state, ad deferral, and achievement queues (see Prompt 37).
+- **Notifications:** `NotificationScheduler` enqueues `DailyReminderWorker` (24h + 6h flex, `KEEP` policy) and one-time `ContextualNudgeWorker` jobs. No battery-optimization exemption — see [KNOWN_PLATFORM_LIMITATIONS.md](KNOWN_PLATFORM_LIMITATIONS.md).
 - **Tests:** `EventRepository.forTesting()` and `NotificationScheduler.forTesting()` exist for JVM unit tests only.

@@ -2,6 +2,7 @@
 package com.maisha.game.notifications
 
 import android.content.Context
+import androidx.work.Constraints
 import androidx.work.Data
 import androidx.work.ExistingPeriodicWorkPolicy
 import androidx.work.ExistingWorkPolicy
@@ -13,10 +14,22 @@ import java.util.concurrent.TimeUnit
 import javax.inject.Inject
 import javax.inject.Singleton
 
+/**
+ * Schedules local notification workers via WorkManager.
+ *
+ * Daily reminder uses [ExistingPeriodicWorkPolicy.KEEP] because [scheduleDailyReminder] may be
+ * called on every cold start when notifications are enabled — KEEP preserves the existing
+ * periodic window instead of resetting it (UPDATE would shift timing every launch).
+ *
+ * No network/charging constraints: workers only read local Room/DataStore and post a notification.
+ * A 6-hour flex window lets the OS batch work under Doze/OEM battery management.
+ *
+ * See docs/KNOWN_PLATFORM_LIMITATIONS.md — we do NOT request battery-optimization exemption.
+ */
 @Singleton
 class NotificationScheduler private constructor(
-  private val assetContext: Context?,
-  private val noop: Boolean
+    private val assetContext: Context?,
+    private val noop: Boolean
 ) {
     @Inject
     constructor(@ApplicationContext context: Context) : this(context, false)
@@ -25,12 +38,18 @@ class NotificationScheduler private constructor(
 
     fun scheduleDailyReminder() {
         if (noop) return
-        val request = PeriodicWorkRequestBuilder<DailyReminderWorker>(24, TimeUnit.HOURS)
+        val request = PeriodicWorkRequestBuilder<DailyReminderWorker>(
+            REPEAT_INTERVAL_HOURS,
+            TimeUnit.HOURS,
+            FLEX_INTERVAL_HOURS,
+            TimeUnit.HOURS
+        )
+            .setConstraints(Constraints.Builder().build())
             .addTag(DAILY_REMINDER_TAG)
             .build()
         workManager.enqueueUniquePeriodicWork(
             DAILY_REMINDER_WORK,
-            ExistingPeriodicWorkPolicy.UPDATE,
+            ExistingPeriodicWorkPolicy.KEEP,
             request
         )
     }
@@ -74,6 +93,8 @@ class NotificationScheduler private constructor(
 
         private const val DAILY_REMINDER_WORK = "daily_life_reminder"
         private const val DAILY_REMINDER_TAG = "daily_reminder"
+        private const val REPEAT_INTERVAL_HOURS = 24L
+        private const val FLEX_INTERVAL_HOURS = 6L
         const val CONTEXTUAL_NUDGE_TAG = "contextual_nudge"
     }
 }
