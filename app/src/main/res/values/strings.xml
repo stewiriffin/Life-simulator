@@ -127,6 +127,7 @@
     <string name="settings_reset_all_data">Reset All Data</string>
     <string name="settings_reset_warning">This permanently deletes all three save slots, every saved life, all achievement progress, and restores settings to defaults. This cannot be undone.</string>
     <string name="settings_version">Version %s</string>
+    <string name="settings_privacy_policy">Privacy Policy</string>
 
     <!-- Slot picker -->
     <string name="screen_slot_picker_title">Your Lives</string>

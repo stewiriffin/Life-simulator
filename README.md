@@ -185,6 +185,8 @@ Unit tests (Prompt 38) and edge-case hardening (Prompt 39) are in place for doma
 | [docs/UI_COPY_AUDIT.md](docs/UI_COPY_AUDIT.md) | Prompt 44 microcopy before/after table and voice standard |
 | [docs/SAVE_DATA_INTEGRITY.md](docs/SAVE_DATA_INTEGRITY.md) | Prompt 45 corruption resilience and recovery UX |
 | [docs/KNOWN_PLATFORM_LIMITATIONS.md](docs/KNOWN_PLATFORM_LIMITATIONS.md) | OEM battery/Doze limits, notification delivery expectations |
+| [docs/PRIVACY_POLICY.md](docs/PRIVACY_POLICY.md) | Privacy policy source text (host at public URL for Play Store) |
+| [docs/PLAY_STORE_DATA_SAFETY_NOTES.md](docs/PLAY_STORE_DATA_SAFETY_NOTES.md) | Data Safety form draft answers for AdMob disclosure |
 | [docs/REFACTORING_AUDIT.md](docs/REFACTORING_AUDIT.md) | Prompt 41 duplication consolidation notes |
 | [app/src/main/assets/data/events/README.md](app/src/main/assets/data/events/README.md) | Event JSON schema & authoring |
 | KDoc in `domain/` and `data/model/` | Per-class and per-function reference |

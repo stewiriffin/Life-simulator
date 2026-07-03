@@ -120,6 +120,7 @@
     <string name="settings_reset_all_data">Weka upya data zote</string>
     <string name="settings_reset_warning">Hii itafuta kabisa nafasi zote tatu za kuhifadhi, maisha yote yaliyohifadhiwa, maendeleo ya mafanikio, na kuweka mipangilio chaguomsingi. Haiwezi kutenduliwa.</string>
     <string name="settings_version">Toleo %s</string>
+    <string name="settings_privacy_policy">Sera ya Faragha</string>
 
     <!-- Slot picker -->
     <string name="screen_slot_picker_title">Maisha Yako</string>

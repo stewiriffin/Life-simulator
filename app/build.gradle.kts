@@ -17,6 +17,12 @@ android {
         targetSdk = 35
         versionCode = 1
         versionName = "1.0"
+        // Replace with hosted HTTPS URL before Play Store submission (see docs/PRIVACY_POLICY.md).
+        buildConfigField(
+            "String",
+            "PRIVACY_POLICY_URL",
+            "\"https://REPLACE-WITH-HOSTED-PRIVACY-POLICY-URL\""
+        )
     }
 
     buildTypes {
