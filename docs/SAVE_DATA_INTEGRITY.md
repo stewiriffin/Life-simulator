@@ -18,6 +18,28 @@ Hardening against corrupted or unreadable persisted data. No backup/restore syst
 
 Malformed blobs log `Log.e` and fall back to empty/default for **that field only**.
 
+## Bounded persisted lists (P54 audit)
+
+| Field | Location | Cap | Applied |
+|-------|----------|-----|---------|
+| `eventLog` | `Character` | 150 (`EventLogCap`) | On prepend/append + `CharacterRepository.saveGame` |
+| `ancestryHistory` | `Character` | 25 (`AncestryHistoryCap`) | `LegacyEngine.createLegacyCharacter` + save |
+| `Person.milestones` | nested in `family` JSON | **25 per person** (`RelationshipMilestoneCap`) | `RelationshipEngine` on append + save |
+
+### `Person.milestones` — growth assessment (P54)
+
+**Before P54:** Uncapped. `SerializationUtils.safeDeserialize` for `familyJson` does not trim nested lists.
+
+**Recording rules (significance filter — Prompt 21):** Only major interactions append milestones (`ARGUE`, `INSULT`, `TRAVEL_TOGETHER`, `SET_UP_ON_DATE`, `GIFT` medium/large). `QUALITY_TIME` and `LEGACY_CONTINUED` are once per person. Lifecycle adds `STARTED_DATING` / `MARRIED` once each.
+
+**Realistic worst case (uncapped):** A player repeating milestone-qualifying interactions with the same person every year for ~60 active years could accumulate **~3 milestones/year** (e.g. argue + travel + large gift) → **~180/person**. With ~10 family members (parents, siblings, spouse, children, friends) → **~1,800** milestone objects in one save. Legacy carry-over preserves `Person` rows (siblings/friends), so counts **compound across generations** on inherited members — same risk profile as pre-cap `ancestryHistory`.
+
+**Decision:** Cap at **25 per person** (keeps newest; UI already shows 8 with “earlier memories” hint). Slower than `eventLog` growth but same nested, multi-generation shape — worth bounding on save.
+
+### `::DEATH:` marker robustness (P54)
+
+`EventLogCap` uses **`startsWith("::DEATH:")`** on whole log lines only — not substring search. `MortalityEngine` writes markers as dedicated log lines (`::DEATH:CAUSE::flavor`). Ordinary flavor text containing `::DEATH:` mid-string is **not** protected and is trimmed like any other line. Case-sensitive; collision with player-facing event copy is implausible.
+
 ## Slot corruption UX
 
 `SlotSummary.isCorrupted` — row exists but core load failed (e.g. invalid gender enum).

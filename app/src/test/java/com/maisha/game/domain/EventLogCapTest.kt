@@ -23,4 +23,13 @@ class EventLogCapTest {
         assertTrue(result.any { it.startsWith(EventLogCap.DEATH_MARKER_PREFIX) })
         assertEquals(EventLogCap.MAX_ENTRIES, result.size)
     }
+
+    @Test
+    fun trim_doesNotTreatDeathMarkerInMiddleOfLineAsProtected() {
+        val regular = List(EventLogCap.MAX_ENTRIES + 5) { "event-$it" }
+        val embedded = regular + "Flavor text with ${EventLogCap.DEATH_MARKER_PREFIX} in the middle"
+        val result = EventLogCap.trim(embedded)
+        assertEquals(EventLogCap.MAX_ENTRIES, result.size)
+        assertTrue(result.none { it.contains(EventLogCap.DEATH_MARKER_PREFIX) })
+    }
 }

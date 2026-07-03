@@ -35,6 +35,8 @@ Captured in CI/dev environment (Windows, debug build). Device-only metrics flagg
 | `checkAchievements()` | `calculateNetWorth()` up to **2×** per age-up | Code audit |
 | `ancestryHistory` cap | **None** (unbounded across legacy) | Code audit |
 | `eventLog` cap | **150 entries** (`EventLogCap`) | Already implemented (P37) |
+| `ancestryHistory` cap | **25 entries** (`AncestryHistoryCap`) | P43 |
+| `Person.milestones` cap | **25 per person** (`RelationshipMilestoneCap`) | P54 — nested in `familyJson` |
 | Confetti particles | **28** | `CelebrationOverlay` |
 | `AvatarConfig` stability | No `@Immutable` | Code audit |
 | `PersonCard` expression | Recomputed every recomposition | Code audit |
@@ -80,7 +82,18 @@ All 31 achievement conditions remain field comparisons / small collection scans 
 
 **Justification:** Long dynasty chains were the remaining unbounded persisted list (Prompt 37 flag).
 
-### 4. Compose stability
+### 4. `RelationshipMilestoneCap` — bound per-person milestone JSON (P54)
+
+**Change:** `MAX_ENTRIES = 25` per `Person.milestones`; applied in `RelationshipEngine` on append and `CharacterRepository.saveGame` via `trimFamily`.
+
+**Justification:** Nested list inside `familyJson` — same multi-generation carry-over risk as ancestry, but slower growth due to significance-only logging (~1–3 milestones/year/person in heavy play vs 1 event log line per age-up). Uncapped worst case ~180/person × ~10 family ≈ 1,800 objects/save before cap.
+
+| Metric | Before | After |
+|--------|--------|-------|
+| Max milestones / person | Unbounded | **25** (newest kept) |
+| `familyJson` growth from milestones | Compounds with legacy | Bounded at save |
+
+### 5. Compose stability
 
 | Component | Change |
 |-----------|--------|
@@ -88,7 +101,7 @@ All 31 achievement conditions remain field comparisons / small collection scans 
 | `PersonCard` | `remember(person.id, person.relationshipLevel)` for expression + tier |
 | `LifeScreen` | Already split (`CharacterHeader`, `StatsCard`, tab `AnimatedContent`) — verified, no change |
 
-### 5. `CelebrationOverlay` — particle budget
+### 6. `CelebrationOverlay` — particle budget
 
 | Metric | Before | After |
 |--------|--------|-------|
@@ -104,7 +117,7 @@ All 31 achievement conditions remain field comparisons / small collection scans 
 
 No particle-count adjustment needed; 18 remains the shipped budget.
 
-### 6. `PerformanceBenchmarkTest` (JVM)
+### 7. `PerformanceBenchmarkTest` (JVM)
 
 Automated guardrails for regressions:
 
@@ -145,6 +158,7 @@ Delta ~+30 KB from new indexing/cap code — negligible vs install size.
 | `FeedbackManager` | `@ApplicationContext` only |
 | `eventLog` | Capped at 150 on save |
 | `ancestryHistory` | Capped at 25 on save + legacy handoff |
+| `Person.milestones` | Capped at 25 per person on save (`RelationshipMilestoneCap`) |
 | `rememberCoroutineScope` in screens | Standard ViewModel-scoped work; no Activity capture found |
 
 ---
@@ -157,7 +171,7 @@ Delta ~+30 KB from new indexing/cap code — negligible vs install size.
 | 2 | `calculateNetWorth()` redundancy | **Closed — intentional split.** `AchievementEngine.checkAchievements()` computes net worth **once** per call. `LifeViewModel` computes net worth **once** after state mutations for UI display — not duplicate work inside the achievement check path. |
 | 3 | Avatar vector layer caching | **Closed — not needed without jank evidence.** `@Immutable` on `AvatarConfig` + `remember` on `PersonCard` retained. No `drawWithCache` added; scroll jank not measured on device in this pass. Re-open only if device profiling shows Family list jank traced to avatars. |
 | 4 | Event JSON pool > ~300 | **Closed — defer.** Current pool: **100 events** (7 files, unchanged). Lazy per-category loading **not implemented**; revisit if pool exceeds ~300. |
-| 5 | 50+ year memory soak | **Pass (JVM proxy).** `MemorySoakTest.fiftyAgeUps_eventLogStaysWithinCap` + `legacyChain_ancestryHistoryStaysWithinCap`. Device heap timeline still recommended before ship. |
+| 5 | 50+ year memory soak | **Pass (JVM proxy).** `MemorySoakTest` — event log, ancestry, and per-person milestone caps. Device heap timeline still recommended before ship. |
 
 ### Prompt 49 — device capture checklist (manual)
 

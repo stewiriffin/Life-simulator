@@ -171,7 +171,13 @@ Representative IDs covered: `first_job`, `graduate`, `true_friend`, `second_gene
 
 | Function | Status | Test(s) | Notes |
 |----------|--------|---------|-------|
-| `prepend` / `append` / `trim` | Tested | `EventLogCapTest`; `MemorySoakTest` | Death-marker preservation |
+| `prepend` / `append` / `trim` | Tested | `EventLogCapTest`; `MemorySoakTest` | Death-marker prefix at line start only (P54) |
+
+## `RelationshipMilestoneCap`
+
+| Function | Status | Test(s) | Notes |
+|----------|--------|---------|-------|
+| `trim` / `trimFamily` | Tested | `RelationshipMilestoneCapTest`; `MemorySoakTest` | Max 25 per person; save + append |
 
 ---
 

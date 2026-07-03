@@ -101,11 +101,13 @@ class RelationshipEngine @Inject constructor() {
                 person
             } else {
                 person.copy(
-                    milestones = person.milestones + RelationshipMilestone.fromKind(
-                        age = character.age,
-                        kind = MilestoneKind.LEGACY_CONTINUED,
-                        subjectName = person.name
-                    )
+            milestones = RelationshipMilestoneCap.trim(
+                person.milestones + RelationshipMilestone.fromKind(
+                    age = character.age,
+                    kind = MilestoneKind.LEGACY_CONTINUED,
+                    subjectName = person.name
+                )
+            )
                 )
             }
         }
@@ -119,10 +121,12 @@ class RelationshipEngine @Inject constructor() {
             relation = RelationType.SPOUSE,
             dateOfPartnership = character.age,
             isMarried = false,
-            milestones = prospect.milestones + RelationshipMilestone.fromKind(
-                age = character.age,
-                kind = MilestoneKind.STARTED_DATING,
-                subjectName = prospect.name
+            milestones = RelationshipMilestoneCap.trim(
+                prospect.milestones + RelationshipMilestone.fromKind(
+                    age = character.age,
+                    kind = MilestoneKind.STARTED_DATING,
+                    subjectName = prospect.name
+                )
             )
         )
         return character.copy(family = character.family + partner)
@@ -187,10 +191,12 @@ class RelationshipEngine @Inject constructor() {
         return if (accepted) {
             val marriedPartner = partner.copy(
                 isMarried = true,
-                milestones = partner.milestones + RelationshipMilestone.fromKind(
-                    age = character.age,
-                    kind = MilestoneKind.MARRIED,
-                    subjectName = partner.name
+                milestones = RelationshipMilestoneCap.trim(
+                    partner.milestones + RelationshipMilestone.fromKind(
+                        age = character.age,
+                        kind = MilestoneKind.MARRIED,
+                        subjectName = partner.name
+                    )
                 )
             ).coerceRelationship()
             val updated = character.copy(
@@ -616,7 +622,7 @@ class RelationshipEngine @Inject constructor() {
                 interactionType
             )
         }
-        person = person.copy(milestones = milestones)
+        person = person.copy(milestones = RelationshipMilestoneCap.trim(milestones))
         return character.copy(family = character.family.replaceAt(memberIndex, person.coerceRelationship()))
     }
 

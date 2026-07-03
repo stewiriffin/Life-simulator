@@ -60,4 +60,22 @@ class MemorySoakTest {
         }
         assertTrue(history.size <= AncestryHistoryCap.MAX_ENTRIES)
     }
+
+    @Test
+    fun repeatedMilestones_perPersonStaysWithinCap() {
+        var milestones = emptyList<com.maisha.game.data.model.RelationshipMilestone>()
+        repeat(40) { year ->
+            milestones = RelationshipMilestoneCap.trim(
+                milestones + com.maisha.game.data.model.RelationshipMilestone(
+                    ageAtEvent = 20 + year,
+                    kind = com.maisha.game.data.model.MilestoneKind.BIG_ARGUMENT.name,
+                    subjectName = "Pat"
+                )
+            )
+        }
+        assertTrue(
+            "milestones should stay <= ${RelationshipMilestoneCap.MAX_ENTRIES}, was ${milestones.size}",
+            milestones.size <= RelationshipMilestoneCap.MAX_ENTRIES
+        )
+    }
 }

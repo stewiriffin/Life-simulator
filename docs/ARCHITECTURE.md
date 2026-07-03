@@ -54,7 +54,7 @@ Order is fixed and has been stable since the mortality-last rule (Prompt 8):
 
 ### Persistence layer
 
-14. **`CharacterRepository.saveGame(slotId, character, triggeredEventIds)`** — maps `Character` → `CharacterEntity`, JSON-serializes nested lists, applies **`EventLogCap.trim`** on save (max 150 log lines).
+14. **`CharacterRepository.saveGame(slotId, character, triggeredEventIds)`** — maps `Character` → `CharacterEntity`, JSON-serializes nested lists, applies **`EventLogCap.trim`** on save (max 150 log lines), **`AncestryHistoryCap.trim`** on ancestry, and **`RelationshipMilestoneCap.trimFamily`** on family milestones (max 25 per person).
 15. Room DAO write; no `StateFlow` from repository on Life screen — ViewModel holds authoritative UI state updated synchronously after save.
 
 ### UI recomposition
@@ -243,7 +243,12 @@ One-line responsibility + key public entry points. See KDoc on each class for pa
 ### `EventLogCap` (utility)
 **Bounds event log size on disk.**
 
-`prepend`, `append`, `trim` — preserves `::DEATH:` markers
+`prepend`, `append`, `trim` — preserves lines starting with `::DEATH:` (prefix match at line start only; see `SAVE_DATA_INTEGRITY.md` P54).
+
+### `RelationshipMilestoneCap` (utility)
+**Bounds per-person milestone list inside `familyJson`.**
+
+`trim`, `trimFamily` — keeps newest 25 entries per `Person.milestones` (append-oldest order).
 
 ### `FamilyGenerator`
 **Initial family at character creation.**

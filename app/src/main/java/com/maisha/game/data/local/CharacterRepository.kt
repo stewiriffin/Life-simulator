@@ -5,6 +5,7 @@ import com.maisha.game.data.model.AvatarConfig
 import com.maisha.game.data.model.Character
 import com.maisha.game.domain.AncestryHistoryCap
 import com.maisha.game.domain.EventLogCap
+import com.maisha.game.domain.RelationshipMilestoneCap
 import com.maisha.game.util.SerializationUtils
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flowOf
@@ -152,7 +153,7 @@ class CharacterRepository @Inject constructor(
             avatarConfigJson = json.encodeToString(avatarConfig),
             eventLogJson = json.encodeToString(EventLogCap.trim(eventLog)),
             triggeredEventIdsJson = json.encodeToString(triggeredEventIds.toList()),
-            familyJson = json.encodeToString(family),
+            familyJson = json.encodeToString(RelationshipMilestoneCap.trimFamily(family)),
             educationJson = json.encodeToString(education),
             careerJson = json.encodeToString(career),
             assetsJson = json.encodeToString(assets),
