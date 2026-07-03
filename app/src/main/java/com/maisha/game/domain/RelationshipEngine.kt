@@ -37,6 +37,26 @@ class RelationshipEngine @Inject constructor() {
         relationshipTierFor(person.relationshipLevel)
 
     /**
+     * Parents react sharply when the player is expelled — significant relationship penalty.
+     * Call after [EducationEngine.processExpulsion] sets [com.maisha.game.data.model.EducationState.expelled].
+     */
+    fun applyExpulsionFamilyEffect(character: Character): Character {
+        if (!character.education.expelled) return character
+        val updatedFamily = character.family.map { person ->
+            if (person.relation == RelationType.MOTHER || person.relation == RelationType.FATHER) {
+                person.copy(
+                    relationshipLevel = clampRelationshipLevel(
+                        person.relationshipLevel + EXPULSION_PARENT_RELATIONSHIP_PENALTY
+                    )
+                )
+            } else {
+                person
+            }
+        }
+        return character.copy(family = updatedFamily)
+    }
+
+    /**
      * Gentle annual drift toward neutral (50) for family not interacted with this year.
      * Spouse/child: 1 pt/year; others: 2 pts/year.
      */
@@ -289,15 +309,46 @@ class RelationshipEngine @Inject constructor() {
         return "${firstPool.randomFirstName(gender)} ${surnamePool.randomSurname()}"
     }
 
-    /** Event-choice hook: adjusts spouse [Person.relationshipLevel] by [delta]. */
-    fun applySpouseRelationshipEffect(character: Character, delta: Int): Character {
+    /**
+     * Adjusts spouse [Person.relationshipLevel]: explicit [delta] from event choices,
+     * or passive drift when [netWorth] is supplied (annual tick from [GameEngine.ageUp]).
+     */
+    fun applySpouseRelationshipEffect(
+        character: Character,
+        delta: Int = 0,
+        netWorth: Int? = null
+    ): Character {
         val spouseIndex = character.family.indexOfFirst { it.relation == RelationType.SPOUSE }
         if (spouseIndex == -1) return character
+
+        val spouseDelta = when {
+            delta != 0 -> delta
+            netWorth != null -> passiveSpouseDelta(character, netWorth)
+            else -> 0
+        }
+        if (spouseDelta == 0) return character
+
         val spouse = character.family[spouseIndex]
         val updated = spouse.copy(
-            relationshipLevel = clampRelationshipLevel(spouse.relationshipLevel + delta)
+            relationshipLevel = clampRelationshipLevel(spouse.relationshipLevel + spouseDelta)
         ).coerceRelationship()
         return character.copy(family = character.family.replaceAt(spouseIndex, updated))
+    }
+
+    private fun passiveSpouseDelta(character: Character, netWorth: Int): Int {
+        if (character.criminalRecord.currentlyIncarcerated) {
+            return SPOUSE_PASSIVE_INCARCERATION_PENALTY
+        }
+        return when {
+            character.stats.happiness >= 70 && netWorth >= WEALTHY_NET_WORTH_THRESHOLD ->
+                SPOUSE_PASSIVE_PROSPERITY_BOOST
+            character.stats.happiness >= 60 && netWorth >= COMFORTABLE_NET_WORTH_THRESHOLD ->
+                SPOUSE_PASSIVE_STABILITY_BOOST
+            netWorth < STRUGGLING_NET_WORTH_THRESHOLD -> SPOUSE_PASSIVE_FINANCIAL_STRESS
+            character.stats.happiness < 35 && netWorth < COMFORTABLE_NET_WORTH_THRESHOLD ->
+                SPOUSE_PASSIVE_LOW_MOOD
+            else -> 0
+        }
     }
 
     private fun applySpendTime(
@@ -681,6 +732,15 @@ class RelationshipEngine @Inject constructor() {
 
         const val PROPOSAL_THRESHOLD = 70
         const val TRAVEL_MIN_RELATIONSHIP = 40
+        const val EXPULSION_PARENT_RELATIONSHIP_PENALTY = -30
+        private const val SPOUSE_PASSIVE_INCARCERATION_PENALTY = -15
+        private const val SPOUSE_PASSIVE_FINANCIAL_STRESS = -8
+        private const val SPOUSE_PASSIVE_LOW_MOOD = -5
+        private const val SPOUSE_PASSIVE_STABILITY_BOOST = 3
+        private const val SPOUSE_PASSIVE_PROSPERITY_BOOST = 5
+        private const val WEALTHY_NET_WORTH_THRESHOLD = 200_000
+        private const val COMFORTABLE_NET_WORTH_THRESHOLD = 100_000
+        private const val STRUGGLING_NET_WORTH_THRESHOLD = 20_000
         const val TRAVEL_BASE_COST_KENYA = 10_000
         private const val MIN_DATING_AGE = 18
         private const val MIN_FRIEND_AGE = 6

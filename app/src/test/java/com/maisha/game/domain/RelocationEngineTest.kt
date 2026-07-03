@@ -100,5 +100,47 @@ class RelocationEngineTest {
         assertFalse(engine.shouldOfferRelocation(character, emptySet()))
     }
 
+    @Test
+    fun relocate_resetsYearsInCurrentCountryToZero() {
+        val character = baseCharacter().copy(
+            age = 30,
+            yearsInCurrentCountry = 8,
+            countryCode = "KE",
+            birthCountryCode = "KE"
+        )
+        val canada = CountryCatalog.getCountry("CA")
+        val relocated = engine.relocate(character, canada)
+        assertEquals(0, relocated.yearsInCurrentCountry)
+    }
+
+    @Test
+    fun careerEngine_appliesCultureShockPenaltyToExpatJobSeekers() {
+        val careerEngine = CareerEngine(HealthEngine())
+        val base = TestFixtures.character(
+            age = 28,
+            countryCode = "KE",
+            stats = Stats(smarts = 70, happiness = 70, health = 80, looks = 60, money = 50_000),
+            education = com.maisha.game.data.model.EducationState(
+                stage = SchoolStage.GRADUATED,
+                gpa = 3.2f
+            )
+        )
+        val native = base.copy(
+            birthCountryCode = "KE",
+            yearsInCurrentCountry = 1
+        )
+        val expat = base.copy(
+            countryCode = "CA",
+            birthCountryCode = "KE",
+            yearsInCurrentCountry = 1
+        )
+        assertTrue(careerEngine.isCultureShockActive(expat))
+        assertFalse(careerEngine.isCultureShockActive(native))
+        assertTrue(
+            careerEngine.hireSuccessChance(expat) <=
+                careerEngine.hireSuccessChance(native) - 0.09f
+        )
+    }
+
     private fun baseCharacter() = TestFixtures.character(age = 22, countryCode = "KE")
 }

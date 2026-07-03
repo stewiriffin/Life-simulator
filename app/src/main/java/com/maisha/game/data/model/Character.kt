@@ -25,6 +25,7 @@ data class Character(
     val birthCountryCode: String = "KE",
     val secondaryCountryCode: String? = null,
     val relocationCount: Int = 0,
+    val yearsInCurrentCountry: Int = 0,
     val lastRelocationAge: Int? = null,
     val lastHolidayAge: Int? = null,
     val relocationHistory: List<String> = emptyList(),
@@ -37,5 +38,7 @@ data class Character(
     val assets: List<Asset> = emptyList(),
     val criminalRecord: CriminalRecord = CriminalRecord(),
     val activeConditions: List<HealthCondition> = emptyList(),
-    val generationNumber: Int = 1
+    val generationNumber: Int = 1,
+    val economicState: EconomicState = EconomicState(),
+    val lifestyle: LifestyleState = LifestyleState()
 )

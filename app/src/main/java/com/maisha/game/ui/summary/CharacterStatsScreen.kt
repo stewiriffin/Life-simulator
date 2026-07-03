@@ -52,6 +52,9 @@ import com.maisha.game.ui.components.StatType
 import com.maisha.game.ui.main.CareerFormatter
 import com.maisha.game.ui.main.EducationFormatter
 import com.maisha.game.domain.AncestrySummary
+import com.maisha.game.domain.IntegrationLevel
+import com.maisha.game.domain.integrationLevel
+import com.maisha.game.domain.isExpat
 import com.maisha.game.ui.theme.GoldAccent
 import com.maisha.game.ui.theme.TealPrimary
 import com.maisha.game.util.formatMoney
@@ -288,27 +291,10 @@ private fun CurrentLifeHeader(character: Character) {
                 overflow = TextOverflow.Ellipsis
             )
         }
-        if (character.birthCountryCode != character.countryCode) {
-            Row(
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(6.dp)
-            ) {
-                com.maisha.game.ui.components.CountryFlag(
-                    countryCode = character.birthCountryCode,
-                    size = 16.dp
-                )
-                Text(
-                    text = stringResource(
-                        R.string.format_originally_from,
-                        CountryCatalog.getCountry(character.birthCountryCode).displayName
-                    ),
-                    style = MaterialTheme.typography.labelMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    textAlign = TextAlign.Center,
-                    maxLines = 2,
-                    overflow = TextOverflow.Ellipsis
-                )
-            }
+        if (character.isExpat()) {
+            ExpatJourneyRow(character = character)
+            Spacer(modifier = Modifier.height(8.dp))
+            IntegrationStatusCard(character = character)
         }
         Text(
             text = stringResource(
@@ -334,6 +320,81 @@ private fun CurrentLifeHeader(character: Character) {
                 fontWeight = FontWeight.SemiBold,
                 color = MaterialTheme.colorScheme.onPrimary,
                 modifier = Modifier.padding(horizontal = 16.dp, vertical = 6.dp)
+            )
+        }
+    }
+}
+
+@Composable
+private fun ExpatJourneyRow(character: Character) {
+    Row(
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(8.dp)
+    ) {
+        com.maisha.game.ui.components.CountryFlag(
+            countryCode = character.birthCountryCode,
+            size = 18.dp
+        )
+        Text(
+            text = "→",
+            style = MaterialTheme.typography.labelLarge,
+            color = MaterialTheme.colorScheme.onSurfaceVariant
+        )
+        com.maisha.game.ui.components.CountryFlag(
+            countryCode = character.countryCode,
+            size = 18.dp
+        )
+        Text(
+            text = stringResource(
+                R.string.format_expat_journey,
+                CountryCatalog.getCountry(character.birthCountryCode).displayName,
+                CountryCatalog.getCountry(character.countryCode).displayName
+            ),
+            style = MaterialTheme.typography.labelMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            maxLines = 2,
+            overflow = TextOverflow.Ellipsis
+        )
+    }
+}
+
+@Composable
+private fun IntegrationStatusCard(character: Character) {
+    val level = character.integrationLevel()
+    val levelLabel = when (level) {
+        IntegrationLevel.RECENT_ARRIVAL -> stringResource(R.string.integration_recent_arrival)
+        IntegrationLevel.ADAPTING -> stringResource(R.string.integration_adapting)
+        IntegrationLevel.FULLY_INTEGRATED -> stringResource(R.string.integration_fully_integrated)
+    }
+    val progressYears = character.yearsInCurrentCountry.coerceIn(0, 5)
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(12.dp),
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.85f)
+        )
+    ) {
+        Column(
+            modifier = Modifier.padding(horizontal = 12.dp, vertical = 10.dp),
+            verticalArrangement = Arrangement.spacedBy(6.dp)
+        ) {
+            Text(
+                text = stringResource(R.string.section_integration),
+                style = MaterialTheme.typography.labelMedium,
+                fontWeight = FontWeight.SemiBold,
+                color = TealPrimary
+            )
+            Text(
+                text = levelLabel,
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+            StatBar(
+                type = StatType.PERFORMANCE,
+                value = progressYears,
+                maxValue = 5,
+                label = stringResource(R.string.label_integration_progress),
+                showIcon = false
             )
         }
     }

@@ -102,6 +102,7 @@ class RelocationEngine @Inject constructor() {
         return character.copy(
             countryCode = newCountry.code,
             relocationCount = character.relocationCount + 1,
+            yearsInCurrentCountry = 0,
             lastRelocationAge = character.age,
             relocationHistory = character.relocationHistory + newCountry.code,
             career = updatedCareer,
@@ -114,6 +115,7 @@ class RelocationEngine @Inject constructor() {
     companion object {
         const val RELOCATION_SYSTEM_TAG = "relocation_system"
         const val REQUIRES_RELOCATION_TAG = "requires_relocation"
+        const val REQUIRES_EXPAT_TAG = "requires_expat"
         const val RELOCATION_OPPORTUNITY_EVENT_ID = "relocation_opportunity_system"
         private const val ONE_TIME_TAG = "one_time"
 

@@ -18,6 +18,8 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.maisha.game.R
@@ -60,8 +62,19 @@ private fun MilestoneTimelineRow(
     milestone: RelationshipMilestone,
     isLast: Boolean
 ) {
+    val description = milestoneDescription(milestone)
+    val ageLabel = stringResource(R.string.format_age, milestone.ageAtEvent)
+    val entryDescription = stringResource(
+        R.string.content_desc_milestone_entry,
+        ageLabel,
+        description
+    )
     Row(
-        modifier = Modifier.fillMaxWidth(),
+        modifier = Modifier
+            .fillMaxWidth()
+            .semantics(mergeDescendants = true) {
+                contentDescription = entryDescription
+            },
         horizontalArrangement = Arrangement.spacedBy(10.dp)
     ) {
         Column(horizontalAlignment = Alignment.CenterHorizontally) {

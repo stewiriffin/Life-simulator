@@ -33,7 +33,8 @@ enum class EmptyStateIllustration {
     FAMILY,
     ASSETS,
     ACTIONS,
-    ACHIEVEMENTS
+    ACHIEVEMENTS,
+    RETIRED
 }
 
 @Composable
@@ -209,6 +210,32 @@ fun EmptyStateIllustrationView(
                 }
                 drawPath(trophy, TealPrimary.copy(alpha = 0.55f))
                 drawPath(trophy, TealPrimary, style = Stroke(width = 2.5f))
+            }
+            EmptyStateIllustration.RETIRED -> {
+                drawCircle(
+                    GoldAccent.copy(alpha = 0.35f),
+                    radius = w * 0.22f,
+                    center = Offset(w * 0.72f, h * 0.22f)
+                )
+                drawRoundRect(
+                    TealPrimary.copy(alpha = 0.25f),
+                    topLeft = Offset(w * 0.18f, h * 0.48f),
+                    size = Size(w * 0.64f, h * 0.32f),
+                    cornerRadius = CornerRadius(10f, 10f)
+                )
+                drawLine(
+                    TealPrimary,
+                    Offset(w * 0.22f, h * 0.52f),
+                    Offset(w * 0.78f, h * 0.52f),
+                    strokeWidth = 3f
+                )
+                drawLine(
+                    TealPrimary,
+                    Offset(w * 0.28f, h * 0.68f),
+                    Offset(w * 0.72f, h * 0.68f),
+                    strokeWidth = 3f
+                )
+                drawCircle(TealLight.copy(alpha = 0.5f), radius = w * 0.06f, center = Offset(w * 0.32f, h * 0.38f))
             }
         }
     }

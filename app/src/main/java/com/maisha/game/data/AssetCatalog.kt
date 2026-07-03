@@ -10,7 +10,9 @@ data class CatalogAsset(
     val type: AssetType,
     val name: String,
     val purchasePrice: Int,
-    val monthlyUpkeep: Int
+    val monthlyUpkeep: Int,
+    val isHeirloom: Boolean = false,
+    val isPurchasable: Boolean = true
 )
 
 /**
@@ -103,6 +105,55 @@ object AssetCatalog {
         )
     )
 
+    /** Rare generational items — acquired only via events, never sold in the shop. */
+    private val heirloomAssets: List<CatalogAsset> = listOf(
+        CatalogAsset(
+            id = "heirloom_pocket_watch",
+            type = AssetType.HEIRLOOM,
+            name = "18th Century Pocket Watch",
+            purchasePrice = 250_000,
+            monthlyUpkeep = 0,
+            isHeirloom = true,
+            isPurchasable = false
+        ),
+        CatalogAsset(
+            id = "heirloom_rare_gemstone",
+            type = AssetType.HEIRLOOM,
+            name = "Rare Gemstone",
+            purchasePrice = 400_000,
+            monthlyUpkeep = 0,
+            isHeirloom = true,
+            isPurchasable = false
+        ),
+        CatalogAsset(
+            id = "heirloom_ancient_manuscript",
+            type = AssetType.HEIRLOOM,
+            name = "Ancient Manuscript",
+            purchasePrice = 180_000,
+            monthlyUpkeep = 0,
+            isHeirloom = true,
+            isPurchasable = false
+        ),
+        CatalogAsset(
+            id = "heirloom_ivory_comb",
+            type = AssetType.HEIRLOOM,
+            name = "Carved Ivory Comb",
+            purchasePrice = 120_000,
+            monthlyUpkeep = 0,
+            isHeirloom = true,
+            isPurchasable = false
+        ),
+        CatalogAsset(
+            id = "heirloom_gold_signet",
+            type = AssetType.HEIRLOOM,
+            name = "Gold Signet Ring",
+            purchasePrice = 320_000,
+            monthlyUpkeep = 0,
+            isHeirloom = true,
+            isPurchasable = false
+        )
+    )
+
     private val kenyaAssets: List<CatalogAsset> = listOf(
         CatalogAsset(
             id = "boda_basic",
@@ -187,16 +238,26 @@ object AssetCatalog {
 
     /** Legacy flat list — all catalog entries for global lookup. */
     val items: List<CatalogAsset> by lazy {
-        (kenyaAssets + universalAssets).distinctBy { it.id }
+        (kenyaAssets + universalAssets + heirloomAssets).distinctBy { it.id }
     }
 
-    fun getAssetsForCountry(countryCode: String): List<CatalogAsset> {
-        if (countryCode == "KE") return kenyaAssets
-        val overrides = housingNameOverrides[countryCode] ?: emptyMap()
-        return universalAssets.map { asset ->
-            overrides[asset.id]?.let { localizedName -> asset.copy(name = localizedName) } ?: asset
+    fun getAssetsForCountry(countryCode: String): List<CatalogAsset> =
+        getPurchasableAssetsForCountry(countryCode)
+
+    fun getPurchasableAssetsForCountry(countryCode: String): List<CatalogAsset> {
+        val base = if (countryCode == "KE") kenyaAssets else {
+            val overrides = housingNameOverrides[countryCode] ?: emptyMap()
+            universalAssets.map { asset ->
+                overrides[asset.id]?.let { localizedName -> asset.copy(name = localizedName) } ?: asset
+            }
         }
+        return base.filter { it.isPurchasable }
     }
+
+    fun findHeirloomById(catalogId: String): CatalogAsset? =
+        heirloomAssets.find { it.id == catalogId }
+
+    fun getHeirloomAssets(): List<CatalogAsset> = heirloomAssets
 
     fun hasCountryFlavorAssets(countryCode: String): Boolean =
         countryCode == "KE" || countryCode in housingNameOverrides

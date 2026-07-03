@@ -189,6 +189,227 @@
           "resultText": "It works for now. Other parts look worn."
         }
       ]
+    },
+    {
+      "id": "housing_market_boom",
+      "minAge": 25,
+      "maxAge": 60,
+      "text": "Property prices in your area climb steadily. Neighbours talk about selling at a tidy profit.",
+      "weight": 4,
+      "tags": ["finance"],
+      "choices": [
+        {
+          "label": "Ride the wave and hold",
+          "statEffects": { "happiness": 4 },
+          "economicShift": "boom",
+          "resultText": "Your home's paper value rises. You feel a little richer on paper."
+        },
+        {
+          "label": "Stay cautious",
+          "statEffects": { "happiness": 1 },
+          "resultText": "You keep a level head while others celebrate."
+        }
+      ]
+    },
+    {
+      "id": "recession_hits",
+      "minAge": 22,
+      "maxAge": 65,
+      "text": "Headlines warn of a slowdown. Shops quiet down and landlords whisper about lower rents.",
+      "weight": 4,
+      "tags": ["finance"],
+      "choices": [
+        {
+          "label": "Tighten spending",
+          "statEffects": { "happiness": -2 },
+          "economicShift": "bust",
+          "resultText": "You cut extras and wait for calmer days."
+        },
+        {
+          "label": "Carry on as usual",
+          "statEffects": { "happiness": -4, "money": -5000 },
+          "economicShift": "random",
+          "resultText": "The downturn still nipped at your wallet."
+        }
+      ]
+    },
+    {
+      "id": "inheritance_tax_surprise",
+      "minAge": 30,
+      "maxAge": 70,
+      "text": "A letter arrives about taxes on a small inheritance you received years ago. The amount due is higher than expected.",
+      "weight": 3,
+      "tags": ["finance", "one_time"],
+      "choices": [
+        {
+          "label": "Pay in full promptly",
+          "statEffects": { "money": -35000, "happiness": -3 },
+          "resultText": "The matter closes cleanly. Your books are square again."
+        },
+        {
+          "label": "Negotiate a payment plan",
+          "statEffects": { "money": -20000, "happiness": -1 },
+          "resultText": "You spread the cost over months. Manageable, if annoying."
+        }
+      ]
+    },
+    {
+      "id": "local_property_bubble",
+      "minAge": 28,
+      "maxAge": 55,
+      "text": "Investors flood your neighbourhood with offers well above asking price. Your street feels like a gold rush.",
+      "weight": 3,
+      "tags": ["finance"],
+      "choices": [
+        {
+          "label": "Decline every offer",
+          "statEffects": { "happiness": 2 },
+          "economicShift": "boom",
+          "resultText": "You chose roots over profit — but your asset values still rose."
+        },
+        {
+          "label": "Sell a secondary plot if you had one",
+          "statEffects": { "money": 80000, "happiness": 5 },
+          "conditionEffect": -10,
+          "targetAssetType": "HOUSE",
+          "resultText": "You cashed in on the frenzy and banked a windfall."
+        }
+      ]
+    },
+    {
+      "id": "burst_pipe_floods_home",
+      "minAge": 22,
+      "maxAge": 65,
+      "text": "A burst pipe floods your home overnight. Water soaks the floors and the walls smell of mildew.",
+      "weight": 5,
+      "tags": ["finance"],
+      "choices": [
+        {
+          "label": "Pay for emergency repairs",
+          "statEffects": { "money": -55000, "happiness": -2 },
+          "conditionEffect": 25,
+          "targetAssetType": "HOUSE",
+          "resultText": "Plumbers work through the night. The damage is contained before it spreads."
+        },
+        {
+          "label": "Ignore it and hope it dries out",
+          "statEffects": { "happiness": -18 },
+          "forceConditionValue": 0,
+          "targetAssetType": "HOUSE",
+          "resultText": "Mould spreads. The property is essentially ruined."
+        }
+      ]
+    },
+    {
+      "id": "car_engine_sputters",
+      "minAge": 18,
+      "maxAge": 60,
+      "text": "Your car engine sputters on the highway and white smoke pours from the bonnet. Traffic honks behind you.",
+      "weight": 5,
+      "tags": ["finance"],
+      "choices": [
+        {
+          "label": "Pay for emergency repairs",
+          "statEffects": { "money": -45000, "happiness": -3 },
+          "conditionEffect": 20,
+          "targetAssetType": "CAR",
+          "resultText": "The mechanic rebuilds the engine block. Expensive, but you are mobile again."
+        },
+        {
+          "label": "Abandon the car on the roadside",
+          "statEffects": { "happiness": -20 },
+          "forceConditionValue": 0,
+          "targetAssetType": "CAR",
+          "resultText": "The car is towed for scrap. You watch it leave on a flatbed."
+        }
+      ]
+    },
+    {
+      "id": "boda_engine_seized",
+      "minAge": 18,
+      "maxAge": 50,
+      "text": "Your boda's engine seizes mid-ride with a loud clunk. You push it to the nearest fundi in the blazing sun.",
+      "weight": 5,
+      "tags": ["finance"],
+      "choices": [
+        {
+          "label": "Pay for a full engine rebuild",
+          "statEffects": { "money": -18000, "happiness": -2 },
+          "conditionEffect": 22,
+          "targetAssetType": "MOTORBIKE",
+          "resultText": "The fundi works miracles. The bike roars back to life."
+        },
+        {
+          "label": "Walk away and leave it",
+          "statEffects": { "happiness": -15 },
+          "forceConditionValue": 0,
+          "targetAssetType": "MOTORBIKE",
+          "resultText": "Rust takes over. The bike never runs again."
+        }
+      ]
+    },
+    {
+      "id": "heirloom_attic_discovery",
+      "minAge": 25,
+      "maxAge": 80,
+      "text": "While clearing out the attic, you find a dusty wooden box wrapped in cloth — inside rests an old pocket watch that still ticks faintly.",
+      "weight": 1,
+      "tags": ["finance", "one_time"],
+      "choices": [
+        {
+          "label": "Keep it in the family",
+          "statEffects": { "happiness": 8 },
+          "grantHeirloom": "heirloom_pocket_watch",
+          "resultText": "The watch becomes a treasured family heirloom."
+        },
+        {
+          "label": "Sell it to a collector",
+          "statEffects": { "money": 180000, "happiness": 3 },
+          "resultText": "A dealer pays well, but the watch leaves your family forever."
+        }
+      ]
+    },
+    {
+      "id": "heirloom_auction_mishap",
+      "minAge": 30,
+      "maxAge": 75,
+      "text": "At a chaotic estate auction, a bidding war erupts over a velvet pouch. You accidentally win with a wave of your paddle.",
+      "weight": 1,
+      "tags": ["finance"],
+      "choices": [
+        {
+          "label": "Pay up and claim the gem",
+          "statEffects": { "money": -120000, "happiness": 6 },
+          "grantHeirloom": "heirloom_rare_gemstone",
+          "resultText": "Inside the pouch: a rare gemstone that catches every light."
+        },
+        {
+          "label": "Forfeit the bid",
+          "statEffects": { "happiness": -4 },
+          "resultText": "The auctioneer glares, but you walk away poorer in pride only."
+        }
+      ]
+    },
+    {
+      "id": "heirloom_manuscript_find",
+      "minAge": 35,
+      "maxAge": 85,
+      "text": "A relative passes down a brittle leather folio — pages of an ancient manuscript in a language almost forgotten.",
+      "weight": 1,
+      "tags": ["finance", "one_time"],
+      "choices": [
+        {
+          "label": "Preserve it carefully",
+          "statEffects": { "happiness": 10, "smarts": 2 },
+          "grantHeirloom": "heirloom_ancient_manuscript",
+          "resultText": "Scholars would envy you. The manuscript stays in your care."
+        },
+        {
+          "label": "Donate it to a museum",
+          "statEffects": { "happiness": 6, "money": 40000 },
+          "resultText": "Your name is etched on a small plaque at the entrance."
+        }
+      ]
     }
   ]
 }

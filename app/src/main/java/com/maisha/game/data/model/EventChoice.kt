@@ -22,6 +22,16 @@ data class EventChoice(
     val triggersHaveChild: Boolean = false,
     val triggersCrime: String? = null,
     val triggersIllnessRoll: Boolean = false,
+    val triggersExpulsion: Boolean = false,
+    val triggersDropout: Boolean = false,
     val doctorCareTier: String? = null,
-    val relocateToCountry: String? = null
+    val relocateToCountry: String? = null,
+    /** Forces asset condition to this value (0–100) instead of applying [conditionEffect] delta. */
+    val forceConditionValue: Int? = null,
+    /** Forces or rolls macro-economic shift: `boom`, `bust`, or `random`. */
+    val economicShift: String? = null,
+    /** Prison-only: positive boosts parole chance; negative marks bad behavior. */
+    val paroleEffect: Int = 0,
+    /** Grants a catalog heirloom id (see [com.maisha.game.data.AssetCatalog]). */
+    val grantHeirloom: String? = null
 )

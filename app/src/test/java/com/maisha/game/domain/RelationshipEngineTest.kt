@@ -1,6 +1,7 @@
 package com.maisha.game.domain
 
 import com.maisha.game.data.model.Gender
+import com.maisha.game.data.model.CriminalRecord
 import com.maisha.game.data.model.RelationType
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
@@ -86,5 +87,39 @@ class RelationshipEngineTest {
         val child = engine.haveChild(character).family.first { it.relation == RelationType.CHILD }
         assertEquals("KE", child.countryCode)
         assertEquals("NG", child.secondaryCountryCode)
+    }
+
+    @Test
+    fun applySpouseRelationshipEffect_modifiesLevelBasedOnCharacterState() {
+        val spouse = TestFixtures.person(
+            id = "sp",
+            relation = RelationType.SPOUSE,
+            relationshipLevel = 60,
+            isMarried = true
+        )
+        val base = TestFixtures.character(
+            family = listOf(spouse),
+            stats = com.maisha.game.data.model.Stats(happiness = 75, money = 250_000)
+        )
+
+        val prosperous = engine.applySpouseRelationshipEffect(base, netWorth = 250_000)
+        assertEquals(65, prosperous.family.first().relationshipLevel)
+
+        val struggling = engine.applySpouseRelationshipEffect(
+            base.copy(stats = base.stats.copy(happiness = 50, money = 5_000)),
+            netWorth = 5_000
+        )
+        assertEquals(52, struggling.family.first().relationshipLevel)
+
+        val jailed = engine.applySpouseRelationshipEffect(
+            base.copy(
+                criminalRecord = CriminalRecord(currentlyIncarcerated = true, yearsRemaining = 2)
+            ),
+            netWorth = 250_000
+        )
+        assertEquals(45, jailed.family.first().relationshipLevel)
+
+        val eventBoost = engine.applySpouseRelationshipEffect(base, delta = 10)
+        assertEquals(70, eventBoost.family.first().relationshipLevel)
     }
 }

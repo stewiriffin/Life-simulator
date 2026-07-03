@@ -294,6 +294,71 @@
           "resultText": "A small habit formed. One book became two."
         }
       ]
+    },
+    {
+      "id": "exam_cheating_caught",
+      "minAge": 14,
+      "maxAge": 18,
+      "text": "A teacher catches you with hidden notes during a {secondaryExam} practice paper. The whole class goes quiet as you are marched to the office.",
+      "weight": 4,
+      "tags": ["education", "one_time"],
+      "choices": [
+        {
+          "label": "Accept the consequences",
+          "statEffects": { "happiness": -10, "smarts": -3 },
+          "triggersExpulsion": true,
+          "resultText": "The school expelled you. Your parents were called in — it was a long, painful day."
+        },
+        {
+          "label": "Beg for one more chance",
+          "statEffects": { "happiness": -6 },
+          "gpaEffect": -0.5,
+          "resultText": "You were suspended for a term instead. The shame followed you back to class."
+        }
+      ]
+    },
+    {
+      "id": "school_fight_serious",
+      "minAge": 12,
+      "maxAge": 17,
+      "text": "A hallway argument with another pupil turns into a shove that knocks a teacher aside. Staff say they cannot tolerate this anymore.",
+      "weight": 3,
+      "tags": ["education"],
+      "choices": [
+        {
+          "label": "Apologize publicly",
+          "statEffects": { "happiness": -5 },
+          "familyRelationshipEffect": -5,
+          "resultText": "You read a statement at assembly. Some classmates forgave you; others did not."
+        },
+        {
+          "label": "Refuse to back down",
+          "statEffects": { "happiness": -8, "health": -2 },
+          "triggersExpulsion": true,
+          "resultText": "The head teacher expelled you on the spot. Your parents were furious."
+        }
+      ]
+    },
+    {
+      "id": "vandalism_caught",
+      "minAge": 13,
+      "maxAge": 18,
+      "text": "Security footage shows you damaging school property after hours. The administration says this crosses a line.",
+      "weight": 3,
+      "tags": ["education", "one_time"],
+      "choices": [
+        {
+          "label": "Pay for repairs and apologize",
+          "statEffects": { "money": -15000, "happiness": -4 },
+          "resultText": "You drained your savings to fix what you broke. You kept your place — barely."
+        },
+        {
+          "label": "Deny everything",
+          "statEffects": { "happiness": -3 },
+          "triggersExpulsion": true,
+          "resultText": "Nobody believed you. Expulsion papers arrived the next morning."
+        }
+      ]
     }
   ]
 }

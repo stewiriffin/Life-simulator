@@ -1,8 +1,11 @@
 package com.maisha.game.domain
 
+import com.maisha.game.data.model.AssetType
 import com.maisha.game.data.model.AvatarConfig
 import com.maisha.game.data.model.Character
 import com.maisha.game.data.model.Gender
+import com.maisha.game.data.model.HealthCondition
+import com.maisha.game.data.model.CriminalRecord
 import com.maisha.game.data.model.Person
 import com.maisha.game.data.model.RelationType
 import com.maisha.game.data.model.Stats
@@ -14,7 +17,7 @@ import org.junit.Test
 
 class LegacyEngineTest {
 
-    private val engine = LegacyEngine(MortalityEngine())
+    private val engine = LegacyEngine(MortalityEngine(), FinanceEngine())
 
     @Test
     fun `deceased father maps surviving spouse to mother`() {
@@ -120,6 +123,32 @@ class LegacyEngineTest {
     }
 
     @Test
+    fun createLegacyCharacter_deductsEstateTaxesBeforeSplittingInheritance() {
+        val heir = TestFixtures.child("heir", age = 20, relationship = 70)
+        val sibling = TestFixtures.child("sibling", age = 18, relationship = 65)
+        val deceased = Character(
+            name = "Parent",
+            age = 60,
+            gender = Gender.MALE,
+            stats = Stats(money = 200_000),
+            birthYear = 1965,
+            alive = false,
+            activeConditions = listOf(
+                HealthCondition(id = "h1", name = "Chronic illness", severity = 3, treated = false)
+            ),
+            criminalRecord = CriminalRecord(hasRecord = true, timesArrested = 2),
+            family = listOf(heir, sibling)
+        )
+
+        val legacy = engine.createLegacyCharacter(deceased, heir)
+        assertTrue("Estate fees should reduce the heir's share", legacy.stats.money < 100_000)
+        assertTrue("Heir should never inherit negative cash", legacy.stats.money >= 0)
+        assertTrue(
+            legacy.eventLog.any { it.contains("Estate settlement", ignoreCase = true) }
+        )
+    }
+
+    @Test
     fun `eligible heirs require minimum age`() {
         val young = TestFixtures.child("young", age = 10, relationship = 80)
         val oldEnough = TestFixtures.child("adult", age = 18, relationship = 80)
@@ -136,5 +165,48 @@ class LegacyEngineTest {
         val heirs = engine.eligibleHeirs(deceased)
         assertEquals(1, heirs.size)
         assertEquals("adult", heirs.first().id)
+    }
+
+    @Test
+    fun createLegacyCharacter_transfersHeirloomsWithoutLiquidating() {
+        val heirloom = TestFixtures.asset(
+            id = "watch",
+            name = "18th Century Pocket Watch",
+            currentValue = 300_000,
+            monthlyUpkeep = 0,
+            type = AssetType.HEIRLOOM,
+            isHeirloom = true,
+            generationAcquired = 1
+        )
+        val standard = TestFixtures.asset(
+            id = "car",
+            currentValue = 200_000,
+            type = AssetType.CAR
+        )
+        val heir = TestFixtures.child("heir", age = 20, relationship = 70)
+        val deceased = Character(
+            name = "Parent",
+            age = 60,
+            gender = Gender.MALE,
+            stats = Stats(money = 100_000),
+            birthYear = 1965,
+            alive = false,
+            generationNumber = 2,
+            assets = listOf(heirloom, standard),
+            family = listOf(heir)
+        )
+
+        val legacy = engine.createLegacyCharacter(deceased, heir)
+        assertEquals(1, legacy.assets.size)
+        assertTrue(legacy.assets.first().isHeirloom)
+        assertEquals("watch", legacy.assets.first().id)
+        assertEquals(300_000, legacy.assets.first().currentValue)
+        assertTrue(
+            "Standard asset value should be liquidated into inherited cash",
+            legacy.stats.money > 100_000
+        )
+        assertTrue(
+            legacy.eventLog.any { it.contains("heirloom", ignoreCase = true) }
+        )
     }
 }

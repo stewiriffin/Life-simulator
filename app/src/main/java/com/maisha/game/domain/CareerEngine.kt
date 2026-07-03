@@ -23,26 +23,30 @@ sealed class CareerResult {
     data object Rejected : CareerResult()
 }
 
-@Singleton
-class CareerEngine @Inject constructor() {
+sealed class RetirementResult {
+    data class Success(val character: Character) : RetirementResult()
+    data object Ineligible : RetirementResult()
+}
 
-    /** Minimum age and secondary+ education required to seek employment. */
+@Singleton
+class CareerEngine @Inject constructor(
+    private val healthEngine: HealthEngine
+) {
+
+    /** Minimum age and completed-or-enrolled secondary+ education; rejects expelled and incomplete dropouts. */
     fun isJobEligible(character: Character): Boolean {
         if (character.age < MIN_JOB_AGE) return false
-        return when (character.education.stage) {
-            SchoolStage.SECONDARY,
-            SchoolStage.UNIVERSITY,
-            SchoolStage.GRADUATED -> true
-            else -> false
-        }
+        if (character.education.expelled) return false
+        return meetsEducationRequirement(character, SchoolStage.SECONDARY)
     }
 
-    /** Country-scoped job list filtered by education; empty if already employed or ineligible. */
+    /** Country-scoped job list filtered by education; empty if already employed, retired, or ineligible. */
     fun getEligibleJobs(character: Character): List<Job> {
+        if (character.career.isRetired) return emptyList()
         if (!isJobEligible(character) || character.career.currentJob != null) return emptyList()
 
         return JobPool.getJobsForCountry(character.countryCode).filter { job ->
-            meetsEducationRequirement(character.education.stage, job.minEducation)
+            meetsEducationRequirement(character, job.minEducation)
         }
     }
 
@@ -52,12 +56,15 @@ class CareerEngine @Inject constructor() {
      * @return [CareerResult.Hired] with salary scaled to country, or [CareerResult.Rejected].
      */
     fun applyForJob(character: Character, jobId: String): Pair<Character, CareerResult> {
-        if (character.career.currentJob != null) {
+        if (character.criminalRecord.awaitingTrial ||
+            character.career.isRetired ||
+            character.career.currentJob != null
+        ) {
             return character to CareerResult.Rejected
         }
 
         val jobTemplate = JobPool.findById(jobId) ?: return character to CareerResult.Rejected
-        if (!meetsEducationRequirement(character.education.stage, jobTemplate.minEducation)) {
+        if (!meetsEducationRequirement(character, jobTemplate.minEducation)) {
             return character to CareerResult.Rejected
         }
 
@@ -86,23 +93,24 @@ class CareerEngine @Inject constructor() {
 
         val performanceDelta = EffortResolver.workYearPerformanceDelta(effort)
         val happinessDelta = EffortResolver.workYearHappinessDelta(effort)
-        val healthDelta = EffortResolver.workYearHealthDelta(effort)
 
         val annualPay = calculateAnnualSalary(job)
         val newPerformance = clampPerformanceScore(job.performanceScore + performanceDelta)
         val updatedJob = job.copy(performanceScore = newPerformance)
         val updatedStats = character.stats.copy(
             money = character.stats.money + annualPay,
-            happiness = clampStat(character.stats.happiness + happinessDelta),
-            health = clampStat(character.stats.health + healthDelta)
+            happiness = clampStat(character.stats.happiness + happinessDelta)
         )
 
-        return character.copy(
-            stats = updatedStats,
-            career = character.career.copy(
-                currentJob = updatedJob,
-                yearsAtCurrentJob = character.career.yearsAtCurrentJob + 1
-            )
+        return healthEngine.applyWorkEffortStress(
+            character.copy(
+                stats = updatedStats,
+                career = character.career.copy(
+                    currentJob = updatedJob,
+                    yearsAtCurrentJob = character.career.yearsAtCurrentJob + 1
+                )
+            ),
+            effort
         )
     }
 
@@ -112,18 +120,19 @@ class CareerEngine @Inject constructor() {
 
         val performanceDelta = EffortResolver.workEventPerformanceDelta(effort)
         val happinessDelta = EffortResolver.workEventHappinessDelta(effort)
-        val healthDelta = EffortResolver.workEventHealthDelta(effort)
         val newPerformance = clampPerformanceScore(job.performanceScore + performanceDelta)
         val updatedStats = character.stats.copy(
-            happiness = clampStat(character.stats.happiness + happinessDelta),
-            health = clampStat(character.stats.health + healthDelta)
+            happiness = clampStat(character.stats.happiness + happinessDelta)
         )
 
-        return character.copy(
-            stats = updatedStats,
-            career = character.career.copy(
-                currentJob = job.copy(performanceScore = newPerformance)
-            )
+        return healthEngine.applyWorkEffortStress(
+            character.copy(
+                stats = updatedStats,
+                career = character.career.copy(
+                    currentJob = job.copy(performanceScore = newPerformance)
+                )
+            ),
+            effort
         )
     }
 
@@ -174,6 +183,54 @@ class CareerEngine @Inject constructor() {
                 currentJob = null,
                 yearsAtCurrentJob = 0,
                 jobHistory = character.career.jobHistory + job.title
+            )
+        )
+    }
+
+    fun canRetire(character: Character): Boolean =
+        character.age >= MIN_RETIREMENT_AGE &&
+            character.career.currentJob != null &&
+            !character.career.isRetired
+
+    /** Mid-point pension quote for confirmation UI (actual rate is rolled at retirement). */
+    fun estimateRetirementPension(character: Character): Int {
+        val job = character.career.currentJob ?: return 0
+        return calculatePensionAmount(
+            annualSalary = calculateAnnualSalary(job),
+            pensionRate = PENSION_RATE_MIDPOINT
+        )
+    }
+
+    /**
+     * Retires a character age 60+ with an active job: clears employment and sets yearly pension
+     * to 40–60% of final salary (economy-scaled at retirement).
+     */
+    fun retire(character: Character): RetirementResult {
+        if (!canRetire(character)) return RetirementResult.Ineligible
+
+        val job = character.career.currentJob!!
+        val pensionRate = Random.nextDouble(PENSION_RATE_MIN, PENSION_RATE_MAX)
+        val pension = calculatePensionAmount(
+            annualSalary = calculateAnnualSalary(job),
+            pensionRate = pensionRate
+        )
+
+        return RetirementResult.Success(
+            character.copy(
+                career = character.career.copy(
+                    isRetired = true,
+                    pensionAmount = pension,
+                    currentJob = null,
+                    yearsAtCurrentJob = 0,
+                    jobHistory = character.career.jobHistory + job.title
+                ),
+                stats = character.stats.copy(
+                    happiness = clampStat(character.stats.happiness + RETIREMENT_HAPPINESS_BONUS)
+                ),
+                eventLog = EventLogCap.prepend(
+                    character.eventLog,
+                    "Retired from ${job.title} with a pension of ${formatMoney(pension, character.countryCode)} per year."
+                )
             )
         )
     }
@@ -270,7 +327,7 @@ class CareerEngine @Inject constructor() {
         return character.age >= MIN_JOB_AGE && Random.nextFloat() < DOWNSIZING_CHANCE
     }
 
-    /** Clears job without performance check; returns former title for event text. */
+    /** Clears job without performance check; applies happiness penalty and logs layoff. */
     fun applyDownsizing(character: Character): Pair<Character, String> {
         val job = character.career.currentJob ?: return character to ""
         val title = job.title
@@ -279,6 +336,13 @@ class CareerEngine @Inject constructor() {
                 currentJob = null,
                 yearsAtCurrentJob = 0,
                 jobHistory = character.career.jobHistory + title
+            ),
+            stats = character.stats.copy(
+                happiness = clampStat(character.stats.happiness - DOWNSIZING_HAPPINESS_PENALTY)
+            ),
+            eventLog = EventLogCap.prepend(
+                character.eventLog,
+                "Laid off from $title during company downsizing."
             )
         )
         return updated to title
@@ -290,15 +354,34 @@ class CareerEngine @Inject constructor() {
         return "${job.title} — Level ${job.level}"
     }
 
+    /** Whether the character is still in the culture-shock window after moving abroad. */
+    fun isCultureShockActive(character: Character): Boolean =
+        character.birthCountryCode != character.countryCode &&
+            character.yearsInCurrentCountry < CULTURE_SHOCK_YEARS
+
+    /** Exposed for tests and UI hire previews. */
+    fun hireSuccessChance(character: Character): Float = calculateHireChance(character)
+
     /** Annual gross pay equals [Job.baseSalary] (already economy-scaled at hire). */
     fun calculateAnnualSalary(job: Job): Int = job.baseSalary
+
+    private fun calculatePensionAmount(
+        annualSalary: Int,
+        pensionRate: Double
+    ): Int = (annualSalary * pensionRate).roundToInt()
 
     private fun calculateHireChance(character: Character): Float {
         val smartsFactor = character.stats.smarts / 100f * 0.35f
         val gpaFactor = (character.education.gpa / 4f).coerceIn(0f, 1f) * 0.25f
         val recordPenalty = criminalRecordHirePenalty(character)
+        val cultureShockPenalty = if (isCultureShockActive(character)) {
+            CULTURE_SHOCK_HIRE_PENALTY
+        } else {
+            0f
+        }
         val base = 0.35f
-        return (base + smartsFactor + gpaFactor - recordPenalty).coerceIn(0.1f, 0.95f)
+        return (base + smartsFactor + gpaFactor - recordPenalty - cultureShockPenalty)
+            .coerceIn(0.1f, 0.95f)
     }
 
     private fun criminalRecordHirePenalty(character: Character): Float {
@@ -314,16 +397,29 @@ class CareerEngine @Inject constructor() {
     }
 
     private fun meetsEducationRequirement(
-        currentStage: SchoolStage,
+        character: Character,
         required: SchoolStage
     ): Boolean {
+        val education = character.education
+        if (education.expelled) return false
+
         return when (required) {
-            SchoolStage.SECONDARY -> currentStage in setOf(
-                SchoolStage.SECONDARY,
-                SchoolStage.UNIVERSITY,
-                SchoolStage.GRADUATED
-            )
-            SchoolStage.GRADUATED -> currentStage == SchoolStage.GRADUATED
+            SchoolStage.SECONDARY -> {
+                if (education.droppedOutFrom == SchoolStage.SECONDARY && education.kcseGrade == null) {
+                    return false
+                }
+                when (education.stage) {
+                    SchoolStage.SECONDARY,
+                    SchoolStage.UNIVERSITY,
+                    SchoolStage.GRADUATED -> true
+                    SchoolStage.NONE -> education.kcseGrade != null
+                    else -> false
+                }
+            }
+            SchoolStage.GRADUATED -> {
+                if (education.droppedOutFrom == SchoolStage.UNIVERSITY) return false
+                education.stage == SchoolStage.GRADUATED
+            }
             else -> false
         }
     }
@@ -339,10 +435,18 @@ class CareerEngine @Inject constructor() {
         private const val ONE_TIME_TAG = "one_time"
 
         private const val MIN_JOB_AGE = 18
+        private const val MIN_RETIREMENT_AGE = 60
+        private const val PENSION_RATE_MIN = 0.40
+        private const val PENSION_RATE_MAX = 0.60
+        private const val PENSION_RATE_MIDPOINT = 0.50
+        private const val RETIREMENT_HAPPINESS_BONUS = 8
         private const val PROMOTION_THRESHOLD = 65
         private const val FIRING_THRESHOLD = 20
         private const val PROMOTION_INTERVAL_YEARS = 3
         private const val DOWNSIZING_CHANCE = 0.04f
+        private const val DOWNSIZING_HAPPINESS_PENALTY = 15
         private const val CRIMINAL_RECORD_HIRE_PENALTY = 0.15f
+        const val CULTURE_SHOCK_YEARS = 3
+        const val CULTURE_SHOCK_HIRE_PENALTY = 0.10f
     }
 }

@@ -8,6 +8,7 @@ import com.maisha.game.data.model.AchievementProgress
 import com.maisha.game.data.model.Character
 import com.maisha.game.data.model.EventChoice
 import com.maisha.game.data.model.ExamType
+import com.maisha.game.data.model.LifestyleOption
 import com.maisha.game.data.model.LifeEvent
 import com.maisha.game.data.model.Achievement
 import com.maisha.game.data.model.Person
@@ -81,7 +82,11 @@ class GameEngine @Inject constructor(
         }
 
         val preStage = character.education.stage
-        var updatedCharacter = character.copy(age = character.age + 1)
+        var updatedCharacter = character.copy(
+            age = character.age + 1,
+            yearsInCurrentCountry = character.yearsInCurrentCountry + 1,
+            criminalRecord = character.criminalRecord.copy(crimeAttemptsThisYear = 0)
+        )
         var decayNotices = emptyList<com.maisha.game.data.model.RelationshipDecayNotice>()
 
         val incarceratedAtYearStart = updatedCharacter.criminalRecord.currentlyIncarcerated
@@ -95,9 +100,15 @@ class GameEngine @Inject constructor(
 
         updatedCharacter = processFinanceProgression(updatedCharacter)
 
+        updatedCharacter = applyCultureShockPenalty(updatedCharacter)
+
         val tickResult = relationshipEngine.tickFamilyYear(updatedCharacter)
         updatedCharacter = updatedCharacter.copy(family = tickResult.family)
         decayNotices = tickResult.decayNotices
+        updatedCharacter = relationshipEngine.applySpouseRelationshipEffect(
+            updatedCharacter,
+            netWorth = financeEngine.calculateNetWorth(updatedCharacter)
+        )
 
         updatedCharacter = processHealthProgression(updatedCharacter)
 
@@ -153,13 +164,18 @@ class GameEngine @Inject constructor(
         }
     }
 
-    private fun processHealthProgression(character: Character): Character {
-        var updated = character
-        healthEngine.rollForIllness(updated)?.let { condition ->
-            updated = healthEngine.addCondition(updated, condition)
-        }
-        updated = healthEngine.applyUntreatedConditions(updated)
-        return updated
+    private fun processHealthProgression(character: Character): Character =
+        healthEngine.processHealthProgression(character)
+
+    private fun applyCultureShockPenalty(character: Character): Character {
+        if (!careerEngine.isCultureShockActive(character)) return character
+        return character.copy(
+            stats = character.stats.copy(
+                happiness = com.maisha.game.util.clampStat(
+                    character.stats.happiness - CULTURE_SHOCK_HAPPINESS_PENALTY
+                )
+            )
+        )
     }
 
     private fun finalizeYear(
@@ -271,6 +287,13 @@ class GameEngine @Inject constructor(
             )
         }
 
+        if (choice.paroleEffect != 0) {
+            updatedCharacter = crimeEngine.applyPrisonChoiceEffect(
+                updatedCharacter,
+                choice.paroleEffect
+            )
+        }
+
         if (choice.relocateToCountry != null) {
             val destination = com.maisha.game.data.CountryCatalog.getCountry(choice.relocateToCountry)
             updatedCharacter = relocationEngine.relocate(updatedCharacter, destination)
@@ -294,6 +317,23 @@ class GameEngine @Inject constructor(
             }
         }
 
+        if (choice.forceConditionValue != null) {
+            updatedCharacter = if (choice.targetAssetType != null) {
+                runCatching {
+                    financeEngine.setAssetConditionByType(
+                        updatedCharacter,
+                        AssetType.valueOf(choice.targetAssetType),
+                        choice.forceConditionValue
+                    )
+                }.getOrDefault(updatedCharacter)
+            } else {
+                financeEngine.applyConditionToFirstAsset(
+                    updatedCharacter,
+                    choice.forceConditionValue - (updatedCharacter.assets.firstOrNull()?.condition ?: 0)
+                )
+            }
+        }
+
         updatedCharacter = educationEngine.applyGpaEffect(updatedCharacter, choice.gpaEffect)
 
         if (choice.universityCourse != null) {
@@ -301,6 +341,26 @@ class GameEngine @Inject constructor(
                 updatedCharacter,
                 choice.universityCourse
             )
+        }
+
+        if (choice.triggersExpulsion) {
+            updatedCharacter = educationEngine.processExpulsion(updatedCharacter)
+            updatedCharacter = relationshipEngine.applyExpulsionFamilyEffect(updatedCharacter)
+        }
+
+        if (choice.triggersDropout) {
+            updatedCharacter = educationEngine.processDropout(updatedCharacter)
+        }
+
+        if (choice.economicShift != null) {
+            updatedCharacter = financeEngine.applyEconomicShift(
+                updatedCharacter,
+                forced = choice.economicShift
+            ).character
+        }
+
+        if (choice.grantHeirloom != null) {
+            updatedCharacter = financeEngine.grantHeirloom(updatedCharacter, choice.grantHeirloom)
         }
 
         val updatedStats = updatedCharacter.stats.applyEffects(choice.statEffects)
@@ -321,6 +381,16 @@ class GameEngine @Inject constructor(
         return careerEngine.quitJob(character)
     }
 
+    /** Delegates to [CareerEngine.retire]. */
+    fun retire(character: Character): RetirementResult {
+        return careerEngine.retire(character)
+    }
+
+    /** Voluntary school leave — delegates to [EducationEngine.processDropout]. */
+    fun dropOut(character: Character): Character {
+        return educationEngine.processDropout(character)
+    }
+
     /** Delegates to [CareerEngine.getEligibleJobs]. */
     fun getEligibleJobs(character: Character) = careerEngine.getEligibleJobs(character)
 
@@ -332,6 +402,11 @@ class GameEngine @Inject constructor(
     /** Delegates to [FinanceEngine.sellAsset]. */
     fun sellAsset(character: Character, assetId: String): Character {
         return financeEngine.sellAsset(character, assetId)
+    }
+
+    /** Delegates to [FinanceEngine.repairAsset]. */
+    fun repairAsset(character: Character, assetId: String): RepairResult {
+        return financeEngine.repairAsset(character, assetId)
     }
 
     /** Delegates to [FinanceEngine.calculateNetWorth]. */
@@ -377,12 +452,46 @@ class GameEngine @Inject constructor(
     fun attemptCrime(character: Character, crimeType: com.maisha.game.data.model.CrimeType): CrimeResult =
         crimeEngine.attemptCrime(character, crimeType)
 
+    /** Delegates to [CrimeEngine.goToTrial]. */
+    fun goToTrial(
+        character: Character,
+        lawyerTier: com.maisha.game.data.model.LawyerTier
+    ): TrialResult = crimeEngine.goToTrial(
+        character = character,
+        lawyerTier = lawyerTier,
+        netWorth = financeEngine.calculateNetWorth(character)
+    )
+
+    fun lawyerFee(
+        character: Character,
+        lawyerTier: com.maisha.game.data.model.LawyerTier
+    ): Int = crimeEngine.lawyerFee(
+        lawyerTier = lawyerTier,
+        netWorth = financeEngine.calculateNetWorth(character)
+    )
+
+    fun canAffordLawyer(
+        character: Character,
+        lawyerTier: com.maisha.game.data.model.LawyerTier
+    ): Boolean = crimeEngine.canAffordLawyer(
+        character = character,
+        lawyerTier = lawyerTier,
+        netWorth = financeEngine.calculateNetWorth(character)
+    )
+
     /** Delegates to [HealthEngine.visitDoctor]. */
     fun visitDoctor(
         character: Character,
         conditionId: String,
         usePrivateCare: Boolean
     ): DoctorResult = healthEngine.visitDoctor(character, conditionId, usePrivateCare)
+
+    /** Toggles a recurring lifestyle subscription on or off. */
+    fun setLifestyleOption(
+        character: Character,
+        option: LifestyleOption,
+        enabled: Boolean
+    ): Character = healthEngine.setLifestyleOption(character, option, enabled)
 
     private fun applyCrimeChoice(character: Character, crimeTypeName: String): Character {
         val crimeType = runCatching {
@@ -421,13 +530,16 @@ class GameEngine @Inject constructor(
     }
 
     private fun processCareerProgression(character: Character): Character {
+        if (character.career.isRetired) return character
         if (character.career.currentJob == null) return character
         return careerEngine.workYear(character, WorkEffort.NORMAL)
     }
 
     private fun processFinanceProgression(character: Character): Character {
-        if (character.assets.isEmpty()) return character
-        var updated = financeEngine.applyUpkeep(character)
+        var updated = financeEngine.applyEconomicShift(character).character
+        updated = financeEngine.applyPension(updated)
+        if (updated.assets.isEmpty()) return updated
+        updated = financeEngine.applyUpkeep(updated)
         updated = financeEngine.degradeAssets(updated)
         return updated
     }
@@ -569,4 +681,8 @@ class GameEngine @Inject constructor(
 
     private fun List<Person>.replaceAt(index: Int, person: Person): List<Person> =
         toMutableList().apply { this[index] = person }
+
+    private companion object {
+        private const val CULTURE_SHOCK_HAPPINESS_PENALTY = 10
+    }
 }

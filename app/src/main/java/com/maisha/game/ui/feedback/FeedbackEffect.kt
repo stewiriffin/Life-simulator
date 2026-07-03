@@ -20,8 +20,7 @@ fun FeedbackEffect(
     LaunchedEffect(cues) {
         if (cues.isEmpty()) return@LaunchedEffect
         cues.forEach { cue ->
-            cue.sound?.let { feedbackManager.playSound(context, it) }
-            cue.haptic?.let { feedbackManager.triggerHaptic(view, it) }
+            feedbackManager.playCue(context, cue, view)
         }
         onHandled()
     }

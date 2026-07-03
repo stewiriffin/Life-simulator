@@ -37,7 +37,8 @@ data class ExamResult(
  *
  * Internal exam fields use KCPE/KCSE names historically; UI shows country-specific exam names.
  *
- * @property expelled When true, blocks enrollment and grade advance. **Note:** no gameplay path currently sets this.
+ * @property expelled When true, blocks enrollment and grade advance (set by expulsion events).
+ * @property droppedOutFrom Stage voluntarily left (SECONDARY or UNIVERSITY); blocks re-enrollment in that tier.
  * @property kcpePassed Primary exit exam pass flag; gates secondary enrollment at age 14.
  * @property kcseGrade Letter grade string; gates university via points threshold.
  */
@@ -47,6 +48,7 @@ data class EducationState(
     val currentGrade: Int = 0,
     val gpa: Float = 0f,
     val expelled: Boolean = false,
+    val droppedOutFrom: SchoolStage? = null,
     val courseOfStudy: String? = null,
     val schoolName: String? = null,
     val kcpePassed: Boolean? = null,

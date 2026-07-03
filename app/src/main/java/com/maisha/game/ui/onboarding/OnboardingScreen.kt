@@ -1,6 +1,10 @@
 // app/src/main/java/com/maisha/game/ui/onboarding/OnboardingScreen.kt (modified — Maisha illustrations)
 package com.maisha.game.ui.onboarding
 
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
@@ -31,6 +35,8 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
@@ -47,6 +53,15 @@ import com.maisha.game.ui.theme.TealPrimary
 import kotlinx.coroutines.launch
 
 private const val SLIDE_COUNT = 5
+private const val PARALLAX_SHIFT_DP = 56f
+
+@Composable
+private fun Modifier.onboardingIllustrationParallax(pageOffset: Float): Modifier {
+    val shiftPx = with(LocalDensity.current) { PARALLAX_SHIFT_DP.dp.toPx() }
+    return graphicsLayer {
+        translationX = pageOffset * shiftPx
+    }
+}
 
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
@@ -70,15 +85,17 @@ fun OnboardingScreen(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.End
             ) {
-                if (!isLastSlide) {
+                AnimatedVisibility(
+                    visible = !isLastSlide,
+                    enter = fadeIn(animationSpec = tween(200)),
+                    exit = fadeOut(animationSpec = tween(300))
+                ) {
                     TextButton(onClick = onSkip) {
                         Text(
                             text = stringResource(R.string.onboarding_skip),
                             color = GoldAccent
                         )
                     }
-                } else {
-                    Spacer(modifier = Modifier.height(48.dp))
                 }
             }
 
@@ -88,12 +105,13 @@ fun OnboardingScreen(
                     .weight(1f)
                     .fillMaxWidth()
             ) { page ->
+                val pageOffset = (pagerState.currentPage - page) + pagerState.currentPageOffsetFraction
                 when (page) {
-                    0 -> WelcomeSlide()
-                    1 -> AgeUpSlide()
-                    2 -> ChoicesSlide()
-                    3 -> WorldIdentitySlide()
-                    else -> StartLifeSlide()
+                    0 -> WelcomeSlide(pageOffset)
+                    1 -> AgeUpSlide(pageOffset)
+                    2 -> ChoicesSlide(pageOffset)
+                    3 -> WorldIdentitySlide(pageOffset)
+                    else -> StartLifeSlide(pageOffset)
                 }
             }
 
@@ -155,7 +173,7 @@ fun OnboardingScreen(
 }
 
 @Composable
-private fun WelcomeSlide() {
+private fun WelcomeSlide(pageOffset: Float) {
     Column(
         modifier = Modifier
             .fillMaxSize()
@@ -165,7 +183,9 @@ private fun WelcomeSlide() {
     ) {
         OnboardingIllustrationView(
             type = OnboardingIllustration.WELCOME,
-            modifier = Modifier.padding(bottom = MaishaSpacing.sm)
+            modifier = Modifier
+                .onboardingIllustrationParallax(pageOffset)
+                .padding(bottom = MaishaSpacing.sm)
         )
         Spacer(modifier = Modifier.height(MaishaSpacing.sm))
         Text(
@@ -193,7 +213,7 @@ private fun WelcomeSlide() {
 }
 
 @Composable
-private fun AgeUpSlide() {
+private fun AgeUpSlide(pageOffset: Float) {
     Column(
         modifier = Modifier
             .fillMaxSize()
@@ -204,7 +224,9 @@ private fun AgeUpSlide() {
         OnboardingIllustrationView(
             type = OnboardingIllustration.AGE_UP,
             size = 140.dp,
-            modifier = Modifier.padding(bottom = MaishaSpacing.md)
+            modifier = Modifier
+                .onboardingIllustrationParallax(pageOffset)
+                .padding(bottom = MaishaSpacing.md)
         )
         Text(
             text = stringResource(R.string.onboarding_age_up_title),
@@ -271,7 +293,7 @@ private fun AgeUpMockup() {
 }
 
 @Composable
-private fun ChoicesSlide() {
+private fun ChoicesSlide(pageOffset: Float) {
     Column(
         modifier = Modifier
             .fillMaxSize()
@@ -282,7 +304,9 @@ private fun ChoicesSlide() {
         OnboardingIllustrationView(
             type = OnboardingIllustration.CHOICES,
             size = 120.dp,
-            modifier = Modifier.padding(bottom = MaishaSpacing.md)
+            modifier = Modifier
+                .onboardingIllustrationParallax(pageOffset)
+                .padding(bottom = MaishaSpacing.md)
         )
         Text(
             text = stringResource(R.string.onboarding_choices_title),
@@ -342,7 +366,7 @@ private fun ChoicesSlide() {
 }
 
 @Composable
-private fun WorldIdentitySlide() {
+private fun WorldIdentitySlide(pageOffset: Float) {
     Column(
         modifier = Modifier
             .fillMaxSize()
@@ -352,7 +376,9 @@ private fun WorldIdentitySlide() {
     ) {
         OnboardingIllustrationView(
             type = OnboardingIllustration.WORLD,
-            modifier = Modifier.padding(bottom = MaishaSpacing.sm)
+            modifier = Modifier
+                .onboardingIllustrationParallax(pageOffset)
+                .padding(bottom = MaishaSpacing.sm)
         )
         Spacer(modifier = Modifier.height(MaishaSpacing.sm))
         Text(
@@ -372,7 +398,7 @@ private fun WorldIdentitySlide() {
 }
 
 @Composable
-private fun StartLifeSlide() {
+private fun StartLifeSlide(pageOffset: Float) {
     Column(
         modifier = Modifier
             .fillMaxSize()
@@ -382,7 +408,9 @@ private fun StartLifeSlide() {
     ) {
         OnboardingIllustrationView(
             type = OnboardingIllustration.READY,
-            modifier = Modifier.padding(bottom = MaishaSpacing.sm)
+            modifier = Modifier
+                .onboardingIllustrationParallax(pageOffset)
+                .padding(bottom = MaishaSpacing.sm)
         )
         Spacer(modifier = Modifier.height(MaishaSpacing.sm))
         Text(

@@ -97,15 +97,20 @@ object TestFixtures {
         currentValue: Int = 100_000,
         monthlyUpkeep: Int = 2_000,
         condition: Int = 100,
-        type: AssetType = AssetType.MOTORBIKE
+        type: AssetType = AssetType.MOTORBIKE,
+        isHeirloom: Boolean = false,
+        generationAcquired: Int = 1,
+        name: String = "Test Asset"
     ): Asset = Asset(
         id = id,
         type = type,
-        name = "Test Asset",
+        name = name,
         purchasePrice = currentValue,
         currentValue = currentValue,
         condition = condition,
-        monthlyUpkeep = monthlyUpkeep
+        monthlyUpkeep = monthlyUpkeep,
+        isHeirloom = isHeirloom,
+        generationAcquired = generationAcquired
     )
 
     fun child(
@@ -129,16 +134,17 @@ object TestFixtures {
 
     fun gameEngine(): GameEngine {
         val financeEngine = FinanceEngine()
+        val healthEngine = HealthEngine()
         val eventRepository = EventRepository.forTesting(financeEngine)
         return GameEngine(
             eventRepository = eventRepository,
             educationEngine = EducationEngine(),
-            careerEngine = CareerEngine(),
+            careerEngine = CareerEngine(healthEngine),
             financeEngine = financeEngine,
             relationshipEngine = RelationshipEngine(),
             mortalityEngine = MortalityEngine(),
             crimeEngine = CrimeEngine(),
-            healthEngine = HealthEngine(),
+            healthEngine = healthEngine,
             achievementEngine = AchievementEngine(financeEngine),
             notificationScheduler = NotificationScheduler.forTesting(),
             relocationEngine = RelocationEngine()

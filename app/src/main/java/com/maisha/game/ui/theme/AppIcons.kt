@@ -448,6 +448,7 @@ object AppIcons {
         StatType.SMARTS -> Smarts
         StatType.LOOKS -> Looks
         StatType.MONEY -> Money
+        StatType.NET_WORTH -> Money
         StatType.RELATIONSHIP -> Relationship
         StatType.CONDITION -> Condition
         StatType.PERFORMANCE -> Performance

@@ -79,6 +79,7 @@
     <string name="btn_apply">Omba</string>
     <string name="btn_locked">Imefungwa</string>
     <string name="btn_quit_job">Acha Kazi</string>
+    <string name="btn_retire">Staafu</string>
     <string name="btn_attempt">Jaribu</string>
     <string name="btn_visit_doctor">Tembelea daktari</string>
     <string name="btn_find_date">Tafuta Mpenzi</string>
@@ -104,6 +105,19 @@
     <string name="content_desc_back">Rudi</string>
     <string name="content_desc_view_full_life">Angalia maisha kamili</string>
     <string name="content_desc_settings">Mipangilio</string>
+    <string name="content_desc_asset_value_up">Thamani imepanda tangu ununuzi</string>
+    <string name="content_desc_asset_value_down">Thamani imeshuka tangu ununuzi</string>
+    <string name="content_desc_avatar_expression">Picha ya mhusika, anaonekana %1$s</string>
+    <string name="content_desc_player_avatar_expression">Uso wa mhusika wako, unaonekana %1$s</string>
+    <string name="content_desc_person_card">%1$s, uhusiano wa %2$s, %3$s</string>
+    <string name="content_desc_milestone_entry">%1$s, %2$s</string>
+    <string name="a11y_stat_percent">%1$s, asilimia %2$d</string>
+    <string name="a11y_stat_value">%1$s, %2$s</string>
+    <string name="a11y_expression_neutral">tulivu</string>
+    <string name="a11y_expression_happy">mchangamfu</string>
+    <string name="a11y_expression_sad">huzuni</string>
+    <string name="a11y_expression_angry">hasira</string>
+    <string name="a11y_expression_surprised">mshangao</string>
 
     <!-- Settings -->
     <string name="settings_screen_title">Mipangilio</string>
@@ -240,6 +254,14 @@
     <string name="edu_secondary_school">Shule ya sekondari</string>
     <string name="edu_primary_school">Shule ya msingi</string>
     <string name="edu_no_formal_education">Hakuna elimu rasmi</string>
+    <string name="edu_dropped_out_secondary">Aliacha shule ya sekondari</string>
+    <string name="edu_dropped_out_university">Aliacha chuo kikuu</string>
+    <string name="btn_drop_out">Acha Shule</string>
+    <string name="dialog_drop_out_title">Acha Shule?</string>
+    <string name="dialog_drop_out_description">Una uhakika unataka kuacha shule? Hii itapunguza fursa zako za kazi baadaye.</string>
+    <string name="msg_dropped_out">Uliacha shule. Njia mpya zimefunguka, lakini milango mingine imefungwa.</string>
+    <string name="job_ineligible_expelled">Alifukuzwa — hatoi mahitaji ya elimu</string>
+    <string name="job_ineligible_dropout">Elimu haijakamilika kwa kazi hii</string>
 
     <!-- Assets -->
     <string name="dialog_confirm_purchase_title">Thibitisha ununuzi</string>
@@ -249,6 +271,10 @@
     <string name="empty_assets">Bado hakuna mali zako. Angalia duka hapa chini ukiwa tayari kuwekeza.</string>
     <string name="section_shop">Duka</string>
     <string name="format_upkeep_monthly">Matengenezo: %s/mwezi</string>
+    <string name="label_heirloom">Urithi wa Kifamilia</string>
+    <string name="label_heirloom_new">Mpya kwenye familia</string>
+    <string name="format_heirloom_generations">Imekuwa kwenye familia kwa vizazi %1$d</string>
+    <string name="heirloom_no_upkeep">Imepitishwa kizazi hadi kizazi — thamani huongezeka na haiwezi kuuzwa.</string>
     <string name="format_asset_price_upkeep">%1$s · %2$s/mwezi</string>
     <string name="label_insufficient_funds">Fedha hazitoshi</string>
 
@@ -397,6 +423,13 @@
     <string name="msg_hired">Ameajiriwa kama %s!</string>
     <string name="msg_job_rejected">Ombi limekataliwa. Jaribu tena au jenga ujuzi wako.</string>
     <string name="msg_quit_job">Umeacha kazi yako.</string>
+    <string name="msg_retired">Hongera kwa kustaafu!</string>
+    <string name="dialog_retire_title">Unataka kustaafu kutoka kazi?</string>
+    <string name="dialog_retire_description">Utaacha kazi na upate pensheni ya takriban %1$s kwa mwaka (40–60%% ya mshahara wako wa mwisho). Huwezi kuchukua kazi nyingine baada ya kustaafu.</string>
+    <string name="label_retired">Amestaafu</string>
+    <string name="label_annual_pension">Pensheni ya mwaka</string>
+    <string name="empty_retired_message">Miaka yako ya kazi imepita. Furahia miaka ya dhahabu — pensheni yako inakuja kila unapongezeka umri.</string>
+    <string name="format_annual_pension">%1$s / mwaka</string>
     <string name="msg_purchase_success">Ununuzi umefanikiwa!</string>
     <string name="msg_purchase_insufficient">Fedha hazitoshi kwa ununuzi huu.</string>
     <string name="msg_asset_sold">Mali imeuzwa.</string>
@@ -412,6 +445,19 @@
     <string name="msg_crime_got_away_log">Alitoroka na %1$s na akapata %2$s.</string>
     <string name="msg_crime_success">Imefanikiwa! Umepata %1$s.</string>
     <string name="msg_crime_caught">Umekamatwa! Adhabu ya miaka %d.</string>
+    <string name="msg_crime_arrested">Umekamatwa! Chagua mwanasheria wako.</string>
+    <string name="msg_trial_acquitted">Hukumu imekupatia haki! Kesi imefutwa!</string>
+    <string name="msg_trial_no_prison_time">Umepatikana na hatia, lakini hukupata kifungo cha gerezani.</string>
+    <string name="dialog_arrest_title">Umekamatwa!</string>
+    <string name="dialog_arrest_description">Lazima uchague mwanasheria kabla ya kesi yako. Wanasheria bora wanagharimu zaidi lakini wanaweza kupunguza adhabu — au kukushinda kesi.</string>
+    <string name="lawyer_public_defender">Mwanasheria wa Umma</string>
+    <string name="lawyer_public_defender_desc">Bila malipo, lakini kawaida husababisha adhabu ya juu.</string>
+    <string name="lawyer_average">Mwanasheria wa Kawaida</string>
+    <string name="lawyer_average_desc">Ada ya wastani na nafasi nzuri ya adhabu iliyopunguzwa.</string>
+    <string name="lawyer_expensive">Mwanasheria wa Gharama Kubwa</string>
+    <string name="lawyer_expensive_desc">Inagharimu sehemu kubwa ya mali yako, lakini inaweza kukusaidia au kupunguza adhabu sana.</string>
+    <string name="lawyer_fee_free">Bila malipo</string>
+    <string name="lawyer_fee_amount">Ada: %1$s</string>
     <string name="msg_treatment_success">Matibabu yamefanikiwa. Unajisikia vizuri zaidi.</string>
     <string name="msg_treatment_failed">Matibabu hayakusaidia wakati huu, au gharama haikuwezekana. Jaribu tena ukiwa tayari.</string>
 

@@ -1,0 +1,67 @@
+{
+  "events": [
+    {
+      "id": "prison_gang_recruitment",
+      "minAge": 16,
+      "maxAge": 70,
+      "text": "A hardened inmate approaches you in the yard and asks whether you want protection — at a price.",
+      "weight": 5,
+      "tags": ["prison", "requires_incarcerated"],
+      "choices": [
+        { "label": "Join the group", "statEffects": { "happiness": -4, "health": -3 }, "paroleEffect": -2, "resultText": "You gained protection but made enemies of rivals." },
+        { "label": "Politely refuse", "statEffects": { "happiness": -2 }, "paroleEffect": 1, "resultText": "They backed off — for now." },
+        { "label": "Report it to a guard", "statEffects": { "happiness": 1 }, "paroleEffect": 2, "resultText": "The warden noted your cooperation." }
+      ]
+    },
+    {
+      "id": "prison_contraband_search",
+      "minAge": 16,
+      "maxAge": 70,
+      "text": "Guards announce a surprise cell search. You notice something questionable tucked under a bunk nearby.",
+      "weight": 5,
+      "tags": ["prison", "requires_incarcerated"],
+      "choices": [
+        { "label": "Stay silent", "statEffects": { "happiness": -3 }, "paroleEffect": -1, "resultText": "The search passed without incident — this time." },
+        { "label": "Speak up honestly", "statEffects": { "happiness": 2 }, "paroleEffect": 2, "resultText": "The guards thanked you for cooperating." },
+        { "label": "Hide contraband for a cellmate", "statEffects": { "happiness": -6, "health": -2 }, "paroleEffect": -3, "resultText": "You were caught holding the goods." }
+      ]
+    },
+    {
+      "id": "prison_library_duty",
+      "minAge": 16,
+      "maxAge": 70,
+      "text": "The prison librarian offers you a quiet shift sorting books and tutoring inmates who want to read.",
+      "weight": 4,
+      "tags": ["prison", "requires_incarcerated"],
+      "choices": [
+        { "label": "Volunteer for library duty", "statEffects": { "happiness": 5, "smarts": 2 }, "paroleEffect": 3, "resultText": "The warden noted your good behavior." },
+        { "label": "Decline and rest", "statEffects": { "happiness": 1 }, "resultText": "You spent the afternoon on your bunk." }
+      ]
+    },
+    {
+      "id": "prison_yard_fight",
+      "minAge": 16,
+      "maxAge": 70,
+      "text": "Tension boils over in the yard and someone shoves you during an argument over food rations.",
+      "weight": 4,
+      "tags": ["prison", "requires_incarcerated"],
+      "choices": [
+        { "label": "Walk away", "statEffects": { "happiness": -2 }, "paroleEffect": 2, "resultText": "You kept your record clean." },
+        { "label": "Fight back", "statEffects": { "happiness": -5, "health": -8 }, "paroleEffect": -3, "resultText": "Both of you landed in solitary." },
+        { "label": "Call for a guard", "statEffects": { "happiness": -1 }, "paroleEffect": 1, "resultText": "Order was restored quickly." }
+      ]
+    },
+    {
+      "id": "prison_family_visit",
+      "minAge": 18,
+      "maxAge": 80,
+      "text": "A family member travels a long distance to visit you through the glass partition.",
+      "weight": 3,
+      "tags": ["prison", "requires_incarcerated"],
+      "choices": [
+        { "label": "Promise to do better", "statEffects": { "happiness": 8 }, "paroleEffect": 2, "resultText": "Their eyes welled up with hope." },
+        { "label": "Stay guarded and quiet", "statEffects": { "happiness": 2 }, "resultText": "The visit was awkward but meaningful." }
+      ]
+    }
+  ]
+}

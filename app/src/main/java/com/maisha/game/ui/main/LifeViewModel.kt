@@ -20,6 +20,7 @@ import com.maisha.game.data.model.CrimeType
 import com.maisha.game.data.model.Expression
 import com.maisha.game.data.model.EventChoice
 import com.maisha.game.data.model.Job
+import com.maisha.game.data.model.LawyerTier
 import com.maisha.game.data.model.LifeEvent
 import com.maisha.game.data.model.Person
 import com.maisha.game.data.model.RelationshipDecayNotice
@@ -39,6 +40,9 @@ import com.maisha.game.domain.GiftTier
 import com.maisha.game.domain.InteractionType
 import com.maisha.game.domain.ProposalResult
 import com.maisha.game.domain.PurchaseResult
+import com.maisha.game.domain.RepairResult
+import com.maisha.game.domain.RetirementResult
+import com.maisha.game.domain.TrialResult
 import com.maisha.game.domain.hasSpouse
 import com.maisha.game.feedback.FeedbackCue
 import com.maisha.game.ui.avatar.EventOutcome
@@ -155,6 +159,7 @@ class LifeViewModel @Inject constructor(
     fun onAgeUp() {
         val character = _uiState.value.character ?: return
         if (!character.alive) return
+        if (character.criminalRecord.awaitingTrial) return
         if (_uiState.value.isAgingUp || _uiState.value.currentEvent != null) return
 
         enqueueFeedback(FeedbackCue(sound = SoundEffect.AGE_UP, haptic = HapticType.LIGHT_TAP))
@@ -165,6 +170,7 @@ class LifeViewModel @Inject constructor(
             val hadJob = character.career.currentJob != null
             val educationBefore = character.education.stage
             val statsBefore = character.stats
+            val netWorthBefore = financeEngine.calculateNetWorth(character)
             val ageBefore = character.age
             val progress = achievementRepository.getProgressSnapshot()
             val outcome = gameEngine.ageUp(character, triggeredEventIds, progress, slotId)
@@ -173,7 +179,12 @@ class LifeViewModel @Inject constructor(
                 enqueueAchievementDialogs(outcome.newlyUnlockedAchievements)
             }
             applyAgeUpResult(outcome.character, outcome.result, persistAge = true)
-            val statDeltas = buildStatDeltas(statsBefore, outcome.character.stats)
+            val statDeltas = buildStatDeltas(statsBefore, outcome.character.stats) +
+                buildNetWorthDelta(
+                    before = netWorthBefore,
+                    after = financeEngine.calculateNetWorth(outcome.character),
+                    countryCode = outcome.character.countryCode
+                )
             if (educationBefore != SchoolStage.GRADUATED &&
                 outcome.character.education.stage == SchoolStage.GRADUATED
             ) {
@@ -349,6 +360,62 @@ class LifeViewModel @Inject constructor(
         }
     }
 
+    fun onRetire() {
+        val character = _uiState.value.character ?: return
+        if (!character.alive) return
+
+        viewModelScope.launch {
+            when (val result = gameEngine.retire(character)) {
+                is RetirementResult.Success -> {
+                    val updatedCharacter = result.character
+                    persist(updatedCharacter)
+                    enqueueFeedback(
+                        FeedbackCue(sound = SoundEffect.EVENT_POSITIVE, haptic = HapticType.SUCCESS)
+                    )
+                    _uiState.update {
+                        it.copy(
+                            character = updatedCharacter,
+                            careerMessage = context.getString(R.string.msg_retired),
+                            eligibleJobs = careerEngine.getEligibleJobs(updatedCharacter),
+                            netWorth = financeEngine.calculateNetWorth(updatedCharacter)
+                        )
+                    }
+                }
+                RetirementResult.Ineligible -> Unit
+            }
+        }
+    }
+
+    /** Mid-point pension quote for the retire confirmation dialog. */
+    fun retirementPensionEstimate(): Int {
+        val character = _uiState.value.character ?: return 0
+        return careerEngine.estimateRetirementPension(character)
+    }
+
+    fun onDropOut() {
+        val character = _uiState.value.character ?: return
+        if (!character.alive) return
+        val stage = character.education.stage
+        if (stage != SchoolStage.SECONDARY && stage != SchoolStage.UNIVERSITY) return
+
+        viewModelScope.launch {
+            val updatedCharacter = gameEngine.dropOut(character)
+            persist(updatedCharacter)
+            processMidLifeAchievements(updatedCharacter)
+            enqueueFeedback(
+                FeedbackCue(sound = SoundEffect.EVENT_NEGATIVE, haptic = HapticType.WARNING)
+            )
+            _uiState.update {
+                it.copy(
+                    character = updatedCharacter,
+                    careerMessage = context.getString(R.string.msg_dropped_out),
+                    eligibleJobs = careerEngine.getEligibleJobs(updatedCharacter),
+                    netWorth = financeEngine.calculateNetWorth(updatedCharacter)
+                )
+            }
+        }
+    }
+
     fun onPurchaseAsset(catalogId: String) {
         val character = _uiState.value.character ?: return
         if (!character.alive) return
@@ -389,6 +456,32 @@ class LifeViewModel @Inject constructor(
                     assetsMessage = context.getString(R.string.msg_asset_sold),
                     netWorth = financeEngine.calculateNetWorth(updatedCharacter)
                 )
+            }
+        }
+    }
+
+    fun onRepairAsset(assetId: String) {
+        val character = _uiState.value.character ?: return
+        if (!character.alive) return
+
+        viewModelScope.launch {
+            when (val result = gameEngine.repairAsset(character, assetId)) {
+                is RepairResult.Success -> {
+                    persist(result.character)
+                    _uiState.update {
+                        it.copy(
+                            character = result.character,
+                            assetsMessage = context.getString(R.string.msg_asset_repaired),
+                            netWorth = financeEngine.calculateNetWorth(result.character)
+                        )
+                    }
+                }
+                is RepairResult.InsufficientFunds -> {
+                    _uiState.update {
+                        it.copy(assetsMessage = context.getString(R.string.msg_repair_insufficient))
+                    }
+                }
+                is RepairResult.AssetNotFound -> Unit
             }
         }
     }
@@ -595,10 +688,7 @@ class LifeViewModel @Inject constructor(
                     _uiState.update {
                         it.copy(
                             character = result.character,
-                            actionMessage = context.getString(
-                                R.string.msg_crime_caught,
-                                result.character.criminalRecord.yearsRemaining
-                            ),
+                            actionMessage = context.getString(R.string.msg_crime_arrested),
                             eligibleJobs = careerEngine.getEligibleJobs(result.character),
                             netWorth = financeEngine.calculateNetWorth(result.character)
                         )
@@ -606,6 +696,62 @@ class LifeViewModel @Inject constructor(
                 }
             }
         }
+    }
+
+    fun onGoToTrial(lawyerTier: LawyerTier) {
+        val character = _uiState.value.character ?: return
+        if (!character.criminalRecord.awaitingTrial) return
+
+        viewModelScope.launch {
+            when (val result = gameEngine.goToTrial(character, lawyerTier)) {
+                is TrialResult.Acquitted -> {
+                    persist(result.character)
+                    enqueueFeedback(
+                        FeedbackCue(sound = SoundEffect.EVENT_POSITIVE, haptic = HapticType.SUCCESS)
+                    )
+                    _uiState.update {
+                        it.copy(
+                            character = result.character,
+                            actionMessage = context.getString(R.string.msg_trial_acquitted),
+                            eligibleJobs = careerEngine.getEligibleJobs(result.character),
+                            netWorth = financeEngine.calculateNetWorth(result.character)
+                        )
+                    }
+                }
+                is TrialResult.Sentenced -> {
+                    persist(result.character)
+                    val message = if (result.sentenceYears > 0) {
+                        context.getString(R.string.msg_crime_caught, result.sentenceYears)
+                    } else {
+                        context.getString(R.string.msg_trial_no_prison_time)
+                    }
+                    if (result.sentenceYears > 0) {
+                        enqueueFeedback(
+                            FeedbackCue(sound = SoundEffect.EVENT_NEGATIVE, haptic = HapticType.WARNING)
+                        )
+                    }
+                    _uiState.update {
+                        it.copy(
+                            character = result.character,
+                            actionMessage = message,
+                            eligibleJobs = careerEngine.getEligibleJobs(result.character),
+                            netWorth = financeEngine.calculateNetWorth(result.character)
+                        )
+                    }
+                }
+                TrialResult.Ineligible -> Unit
+            }
+        }
+    }
+
+    fun lawyerFee(tier: LawyerTier): Int {
+        val character = _uiState.value.character ?: return 0
+        return gameEngine.lawyerFee(character, tier)
+    }
+
+    fun canAffordLawyer(tier: LawyerTier): Boolean {
+        val character = _uiState.value.character ?: return false
+        return gameEngine.canAffordLawyer(character, tier)
     }
 
     fun onVisitDoctor(conditionId: String, careType: CareType) {
@@ -640,6 +786,25 @@ class LifeViewModel @Inject constructor(
 
     fun onActionMessageDismissed() {
         _uiState.update { it.copy(actionMessage = null) }
+    }
+
+    fun onSetLifestyleOption(option: com.maisha.game.data.model.LifestyleOption, enabled: Boolean) {
+        val character = _uiState.value.character ?: return
+        if (!character.alive || character.criminalRecord.currentlyIncarcerated) return
+
+        viewModelScope.launch {
+            val updated = gameEngine.setLifestyleOption(character, option, enabled)
+            persist(updated)
+            _uiState.update {
+                it.copy(
+                    character = updated,
+                    actionMessage = context.getString(
+                        if (enabled) R.string.msg_lifestyle_enabled else R.string.msg_lifestyle_disabled
+                    ),
+                    netWorth = financeEngine.calculateNetWorth(updated)
+                )
+            }
+        }
     }
 
     fun onAchievementDialogDismissed() {
@@ -735,6 +900,19 @@ class LifeViewModel @Inject constructor(
             delta(StatType.SMARTS, before.smarts, after.smarts),
             delta(StatType.LOOKS, before.looks, after.looks),
             delta(StatType.MONEY, before.money, after.money)
+        )
+    }
+
+    private fun buildNetWorthDelta(before: Int, after: Int, countryCode: String): List<StatDeltaEvent> {
+        val change = after - before
+        if (change == 0) return emptyList()
+        val sign = if (change > 0) "+" else "-"
+        return listOf(
+            StatDeltaEvent(
+                type = StatType.NET_WORTH,
+                delta = change,
+                displayText = "$sign${formatMoney(kotlin.math.abs(change), countryCode)}"
+            )
         )
     }
 

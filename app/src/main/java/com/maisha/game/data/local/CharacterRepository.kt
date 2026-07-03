@@ -146,6 +146,7 @@ class CharacterRepository @Inject constructor(
             birthCountryCode = birthCountryCode,
             secondaryCountryCode = secondaryCountryCode,
             relocationCount = relocationCount,
+            yearsInCurrentCountry = yearsInCurrentCountry,
             lastRelocationAge = lastRelocationAge,
             lastHolidayAge = lastHolidayAge,
             relocationHistoryJson = json.encodeToString(relocationHistory),
@@ -159,7 +160,8 @@ class CharacterRepository @Inject constructor(
             assetsJson = json.encodeToString(assets),
             criminalRecordJson = json.encodeToString(criminalRecord),
             healthConditionsJson = json.encodeToString(activeConditions),
-            generationNumber = generationNumber
+            generationNumber = generationNumber,
+            lifestyleJson = json.encodeToString(lifestyle)
         )
     }
 }

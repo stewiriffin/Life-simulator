@@ -82,6 +82,7 @@
     <string name="btn_apply">Apply</string>
     <string name="btn_locked">Locked</string>
     <string name="btn_quit_job">Quit Job</string>
+    <string name="btn_retire">Retire</string>
     <string name="btn_attempt">Attempt</string>
     <string name="btn_visit_doctor">Visit Doctor</string>
     <string name="btn_find_date">Find a Date</string>
@@ -111,8 +112,21 @@
     <string name="content_desc_view_full_life">View full life</string>
     <string name="content_desc_settings">Settings</string>
     <string name="content_desc_avatar">Character avatar</string>
+    <string name="content_desc_avatar_expression">Character avatar, currently looking %1$s</string>
+    <string name="content_desc_player_avatar_expression">Your character\'s face, currently looking %1$s</string>
+    <string name="content_desc_person_card">%1$s, %2$s relationship, %3$s</string>
+    <string name="content_desc_milestone_entry">%1$s, %2$s</string>
+    <string name="a11y_stat_percent">%1$s, %2$d percent</string>
+    <string name="a11y_stat_value">%1$s, %2$s</string>
+    <string name="a11y_expression_neutral">neutral</string>
+    <string name="a11y_expression_happy">happy</string>
+    <string name="a11y_expression_sad">sad</string>
+    <string name="a11y_expression_angry">angry</string>
+    <string name="a11y_expression_surprised">surprised</string>
     <string name="content_desc_country_flag">Country flag</string>
     <string name="content_desc_locked">Locked</string>
+    <string name="content_desc_asset_value_up">Value up since purchase</string>
+    <string name="content_desc_asset_value_down">Value down since purchase</string>
     <string name="content_desc_illustration">Illustration</string>
 
     <!-- Settings -->
@@ -176,6 +190,12 @@
     <string name="format_character_birth_info">%1$s · Born %2$d</string>
     <string name="format_character_stats_header">%1$s · Age %2$d · Born %3$d</string>
     <string name="format_originally_from">Originally from %1$s</string>
+    <string name="format_expat_journey">%1$s → %2$s</string>
+    <string name="section_integration">Integration level</string>
+    <string name="label_integration_progress">Years in country</string>
+    <string name="integration_recent_arrival">Recent arrival</string>
+    <string name="integration_adapting">Adapting</string>
+    <string name="integration_fully_integrated">Fully integrated</string>
     <string name="value_none">None</string>
     <string name="status_living">Living</string>
 
@@ -251,6 +271,14 @@
     <string name="edu_secondary_school">Secondary school</string>
     <string name="edu_primary_school">Primary school</string>
     <string name="edu_no_formal_education">No formal education</string>
+    <string name="edu_dropped_out_secondary">Dropped out of secondary school</string>
+    <string name="edu_dropped_out_university">Dropped out of university</string>
+    <string name="btn_drop_out">Drop Out</string>
+    <string name="dialog_drop_out_title">Drop Out?</string>
+    <string name="dialog_drop_out_description">Are you sure you want to drop out? This will limit your future career options.</string>
+    <string name="msg_dropped_out">You left school. New paths are open, but some doors closed too.</string>
+    <string name="job_ineligible_expelled">Expelled — cannot meet education requirements</string>
+    <string name="job_ineligible_dropout">Education incomplete for this role</string>
 
     <!-- Assets -->
     <string name="dialog_confirm_purchase_title">Confirm Purchase</string>
@@ -260,6 +288,10 @@
     <string name="empty_assets">Nothing in your name yet. Browse the shop below when you\'re ready to invest.</string>
     <string name="section_shop">Shop</string>
     <string name="format_upkeep_monthly">Upkeep: %s/mo</string>
+    <string name="label_heirloom">Heirloom</string>
+    <string name="label_heirloom_new">New to the family</string>
+    <string name="format_heirloom_generations">In the family for %1$d generation(s)</string>
+    <string name="heirloom_no_upkeep">Passed down through generations — appreciates over time and cannot be sold.</string>
     <string name="format_asset_price_upkeep">%1$s · %2$s/mo</string>
     <string name="label_insufficient_funds">Insufficient funds</string>
 
@@ -268,6 +300,25 @@
     <string name="msg_incarcerated">Currently incarcerated — %d year(s) remaining</string>
     <string name="section_health">Health</string>
     <string name="section_opportunities">Opportunities</string>
+    <string name="section_lifestyle">Lifestyle &amp; wellness</string>
+    <string name="lifestyle_gym_title">Join gym</string>
+    <string name="lifestyle_gym_active">Gym membership (active)</string>
+    <string name="lifestyle_gym_desc">Boost health and looks with a yearly membership.</string>
+    <string name="lifestyle_diet_title">Start premium diet</string>
+    <string name="lifestyle_diet_active">Premium diet (active)</string>
+    <string name="lifestyle_diet_desc">Eat cleaner for steady health and looks gains.</string>
+    <string name="lifestyle_therapist_title">See therapist</string>
+    <string name="lifestyle_therapist_active">Therapy (active)</string>
+    <string name="lifestyle_therapist_desc">Manage stress and protect happiness each year.</string>
+    <string name="format_yearly_cost">%s / year</string>
+    <string name="dialog_lifestyle_enable_title">Start recurring subscription?</string>
+    <string name="dialog_lifestyle_enable_desc">%1$s costs %2$s every year when you age up. You can cancel anytime from Actions.</string>
+    <string name="dialog_lifestyle_disable_title">Cancel subscription?</string>
+    <string name="dialog_lifestyle_disable_desc">You will stop paying for %1$s on your next age up.</string>
+    <string name="btn_subscribe">Subscribe</string>
+    <string name="btn_cancel_subscription">Cancel</string>
+    <string name="msg_lifestyle_enabled">Subscription started.</string>
+    <string name="msg_lifestyle_disabled">Subscription cancelled.</string>
     <string name="care_public_clinic">Public clinic</string>
     <string name="care_nairobi_hospital">Nairobi Hospital</string>
     <string name="format_treatment_cost">Cost: %s</string>
@@ -412,9 +463,22 @@
     <string name="msg_hired">Hired as %s!</string>
     <string name="msg_job_rejected">Application rejected. Try again or build your skills.</string>
     <string name="msg_quit_job">You quit your job.</string>
+    <string name="msg_retired">Congratulations on your retirement!</string>
+    <string name="dialog_retire_title">Retire from your career?</string>
+    <string name="dialog_retire_description">You will leave your job and receive an estimated pension of %1$s per year (40–60%% of your final salary). You cannot take another job after retiring.</string>
+    <string name="label_retired">Retired</string>
+    <string name="label_annual_pension">Annual pension</string>
+    <string name="empty_retired_message">Your working years are behind you. Enjoy the golden years — your pension arrives each year when you age up.</string>
+    <string name="format_annual_pension">%1$s / year</string>
     <string name="msg_purchase_success">Purchase successful!</string>
     <string name="msg_purchase_insufficient">Insufficient funds for this purchase.</string>
     <string name="msg_asset_sold">Asset sold.</string>
+    <string name="msg_asset_repaired">Asset fully repaired.</string>
+    <string name="msg_repair_insufficient">Not enough cash for repairs.</string>
+    <string name="btn_repair">Repair</string>
+    <string name="btn_repair_with_cost">Repair (%1$s)</string>
+    <string name="dialog_repair_asset_title">Repair asset?</string>
+    <string name="dialog_repair_asset_body">Restore %1$s to full condition for %2$s. This is a one-time cash payment.</string>
     <string name="msg_date_too_young">You must be 18 to date.</string>
     <string name="msg_already_in_relationship">You\'re already in a relationship.</string>
     <string name="msg_no_prospects">No prospects available right now.</string>
@@ -427,6 +491,19 @@
     <string name="msg_crime_got_away_log">Got away with a %1$s and gained %2$s.</string>
     <string name="msg_crime_success">Success! You gained %1$s.</string>
     <string name="msg_crime_caught">Caught! Sentenced to %d year(s).</string>
+    <string name="msg_crime_arrested">You were arrested! Choose your legal representation.</string>
+    <string name="msg_trial_acquitted">The jury found you not guilty. Case dismissed!</string>
+    <string name="msg_trial_no_prison_time">Found guilty, but you received no prison time.</string>
+    <string name="dialog_arrest_title">You\'re Under Arrest!</string>
+    <string name="dialog_arrest_description">You must choose legal representation before your trial. Better lawyers cost more but can reduce your sentence — or beat the case entirely.</string>
+    <string name="lawyer_public_defender">Public Defender</string>
+    <string name="lawyer_public_defender_desc">Free, but usually results in the maximum sentence.</string>
+    <string name="lawyer_average">Average Lawyer</string>
+    <string name="lawyer_average_desc">Moderate fee with a fair chance of a reduced sentence.</string>
+    <string name="lawyer_expensive">Expensive Lawyer</string>
+    <string name="lawyer_expensive_desc">Costs a large share of your net worth, but may acquit you or slash the sentence.</string>
+    <string name="lawyer_fee_free">Free</string>
+    <string name="lawyer_fee_amount">Fee: %1$s</string>
     <string name="msg_treatment_success">Treatment successful. You feel much better.</string>
     <string name="msg_treatment_failed">The treatment didn\'t help this time, or care wasn\'t affordable. Try again when you can.</string>
 

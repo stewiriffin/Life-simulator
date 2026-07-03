@@ -239,6 +239,66 @@
           "resultText": "You learned rumours, not facts. Productivity dipped."
         }
       ]
+    },
+    {
+      "id": "coworker_rivalry_project",
+      "minAge": 22,
+      "maxAge": 55,
+      "text": "A coworker volunteers for the same promotion track and starts copying your ideas in meetings.",
+      "weight": 4,
+      "tags": ["career"],
+      "choices": [
+        { "label": "Document your work and speak up", "statEffects": { "happiness": -2 }, "performanceEffect": 6, "resultText": "Your manager noticed who delivered first. The rivalry sharpened." },
+        { "label": "Confront them in the break room", "statEffects": { "happiness": -4 }, "performanceEffect": -4, "resultText": "Voices rose. HR asked you both to cool off." }
+      ]
+    },
+    {
+      "id": "boss_weekend_overtime_push",
+      "minAge": 20,
+      "maxAge": 58,
+      "text": "Your boss emails late Friday demanding a finished report by Monday — unpaid weekend hours implied.",
+      "weight": 5,
+      "tags": ["career"],
+      "choices": [
+        { "label": "Grind through the weekend", "statEffects": { "happiness": -5, "health": -3 }, "performanceEffect": 10, "resultText": "The report landed on their desk at dawn. Exhaustion followed." },
+        { "label": "Push back politely", "statEffects": { "happiness": 2 }, "performanceEffect": -3, "resultText": "You delivered Monday noon. They frowned but accepted it." }
+      ]
+    },
+    {
+      "id": "company_buyout_rumors",
+      "minAge": 25,
+      "maxAge": 60,
+      "text": "Rumours swirl that a larger firm wants to buy your company. Desks empty early as people refresh job boards.",
+      "weight": 4,
+      "tags": ["career"],
+      "choices": [
+        { "label": "Update your CV quietly", "statEffects": { "happiness": -3, "smarts": 2 }, "performanceEffect": -2, "resultText": "You prepared for the worst while still showing up." },
+        { "label": "Stay loyal and focus on work", "statEffects": { "happiness": -1 }, "performanceEffect": 5, "resultText": "Leadership noticed who kept their head down." }
+      ]
+    },
+    {
+      "id": "colleague_steals_credit",
+      "minAge": 23,
+      "maxAge": 55,
+      "text": "In a team presentation your colleague claims credit for research you stayed late to finish.",
+      "weight": 4,
+      "tags": ["career"],
+      "choices": [
+        { "label": "Correct the record in the meeting", "statEffects": { "happiness": -2 }, "performanceEffect": 4, "resultText": "Awkward silence, then nods from the director." },
+        { "label": "Let it slide this once", "statEffects": { "happiness": -5 }, "performanceEffect": -6, "resultText": "They smiled at the applause. You simmered at your desk." }
+      ]
+    },
+    {
+      "id": "break_room_toxic_gossip",
+      "minAge": 19,
+      "maxAge": 50,
+      "text": "Coworkers trade cruel gossip about a quiet teammate in the break room. They look at you expecting a reaction.",
+      "weight": 3,
+      "tags": ["career"],
+      "choices": [
+        { "label": "Change the subject", "statEffects": { "happiness": 1 }, "performanceEffect": 2, "resultText": "You steered talk back to weekend plans. Tension eased." },
+        { "label": "Join in with a joke", "statEffects": { "happiness": 2 }, "performanceEffect": -5, "resultText": "Laughs rippled, but you felt smaller afterward." }
+      ]
     }
   ]
 }

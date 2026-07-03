@@ -10,6 +10,7 @@ import com.maisha.game.data.model.CriminalRecord
 import com.maisha.game.data.model.EducationState
 import com.maisha.game.data.model.Gender
 import com.maisha.game.data.model.HealthCondition
+import com.maisha.game.data.model.LifestyleState
 import com.maisha.game.data.model.Person
 import com.maisha.game.data.model.Stats
 import com.maisha.game.util.SerializationUtils
@@ -94,6 +95,12 @@ internal object CharacterSaveMapper {
                 default = emptyList<AncestryEntry>(),
                 slotId = slotId
             )
+            val lifestyle = SerializationUtils.safeDeserialize(
+                entity.lifestyleJson,
+                fieldName = "lifestyle",
+                default = LifestyleState(),
+                slotId = slotId
+            )
             SavedGameLoadResult.Success(
                 SavedGame(
                     character = Character(
@@ -113,6 +120,7 @@ internal object CharacterSaveMapper {
                         birthCountryCode = entity.birthCountryCode,
                         secondaryCountryCode = entity.secondaryCountryCode,
                         relocationCount = entity.relocationCount,
+                        yearsInCurrentCountry = entity.yearsInCurrentCountry,
                         lastRelocationAge = entity.lastRelocationAge,
                         lastHolidayAge = entity.lastHolidayAge,
                         relocationHistory = relocationHistory,
@@ -125,7 +133,8 @@ internal object CharacterSaveMapper {
                         assets = assets,
                         criminalRecord = criminalRecord,
                         activeConditions = healthConditions,
-                        generationNumber = entity.generationNumber
+                        generationNumber = entity.generationNumber,
+                        lifestyle = lifestyle
                     ),
                     triggeredEventIds = triggeredIds.toSet()
                 )

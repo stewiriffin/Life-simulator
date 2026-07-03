@@ -40,7 +40,8 @@ object IllustrationCatalog {
     private val assetTypeIllustrations: Map<AssetType, IllustrationRef> = mapOf(
         AssetType.HOUSE to vector("asset_house", "ill_asset_house"),
         AssetType.CAR to vector("asset_car", "ill_asset_car"),
-        AssetType.MOTORBIKE to vector("asset_motorbike", "ill_asset_motorbike")
+        AssetType.MOTORBIKE to vector("asset_motorbike", "ill_asset_motorbike"),
+        AssetType.HEIRLOOM to vector("asset_house", "ill_asset_house")
     )
 
     private val achievementIllustrations: Map<AchievementCategory, IllustrationRef> = mapOf(

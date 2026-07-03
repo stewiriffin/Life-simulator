@@ -230,6 +230,66 @@
       ]
     },
     {
+      "id": "senior_spoil_grandkids",
+      "minAge": 60,
+      "maxAge": 85,
+      "text": "Your grandchildren visit and you cannot resist buying them treats and small gifts.",
+      "weight": 3,
+      "tags": ["general", "requires_child"],
+      "choices": [
+        { "label": "Spoil them a little", "statEffects": { "happiness": 10, "money": -8000 }, "familyRelationshipEffect": 6, "resultText": "Their laughter filled the house." },
+        { "label": "Set a modest budget", "statEffects": { "happiness": 6, "money": -2000 }, "familyRelationshipEffect": 3, "resultText": "They appreciated the thought more than the price tag." }
+      ]
+    },
+    {
+      "id": "senior_scam_attempt",
+      "minAge": 60,
+      "maxAge": 90,
+      "text": "A caller claims you won a lottery you never entered and asks for your bank details.",
+      "weight": 3,
+      "tags": ["general"],
+      "choices": [
+        { "label": "Hang up and report it", "statEffects": { "happiness": 3, "smarts": 2 }, "resultText": "Classic scam — you saw through it." },
+        { "label": "Share your account number", "statEffects": { "happiness": -12, "money": -25000, "smarts": -4 }, "resultText": "Money vanished before you realised it was fraud." }
+      ]
+    },
+    {
+      "id": "senior_peaceful_hobby",
+      "minAge": 60,
+      "maxAge": 90,
+      "text": "With more free time, you pick up a quiet hobby — gardening, chess, or knitting on the veranda.",
+      "weight": 4,
+      "tags": ["general"],
+      "choices": [
+        { "label": "Commit to it daily", "statEffects": { "happiness": 9, "health": 2 }, "resultText": "Slow mornings became your favourite part of the day." },
+        { "label": "Dabble when you feel like it", "statEffects": { "happiness": 5 }, "resultText": "No pressure — just pleasant afternoons." }
+      ]
+    },
+    {
+      "id": "senior_community_volunteer",
+      "minAge": 60,
+      "maxAge": 85,
+      "text": "A local church or community group asks if you can help mentor young people once a week.",
+      "weight": 3,
+      "tags": ["general"],
+      "choices": [
+        { "label": "Volunteer your time", "statEffects": { "happiness": 8, "health": 1 }, "resultText": "The youngsters listened to every story." },
+        { "label": "Politely decline", "statEffects": { "happiness": -1 }, "resultText": "You kept your evenings to yourself." }
+      ]
+    },
+    {
+      "id": "senior_old_friend_visit",
+      "minAge": 60,
+      "maxAge": 90,
+      "text": "An old friend you have not seen in years drops by for tea and reminiscing.",
+      "weight": 3,
+      "tags": ["general"],
+      "choices": [
+        { "label": "Share stories all afternoon", "statEffects": { "happiness": 10 }, "resultText": "You laughed until your sides hurt." },
+        { "label": "Keep the visit short", "statEffects": { "happiness": 4 }, "resultText": "A warm hello was enough for today." }
+      ]
+    },
+    {
       "id": "crime_pickpocket_chance",
       "minAge": 16,
       "maxAge": 40,
@@ -471,6 +531,290 @@
       "choices": [
         { "label": "Share stories from both sides", "statEffects": { "happiness": 6 }, "familyRelationshipEffect": 8, "resultText": "Their eyes lit up with every detail." },
         { "label": "Plan a celebration together", "statEffects": { "happiness": 5, "money": -2000 }, "familyRelationshipEffect": 6, "resultText": "You picked music and food from each heritage." }
+      ]
+    },
+    {
+      "id": "dropout_hustle_temptation",
+      "minAge": 16,
+      "maxAge": 22,
+      "text": "A cousin offers to teach you a street hustle that pays more than school ever could. Classes feel slow compared to real money on {moneyApp}.",
+      "weight": 5,
+      "tags": ["education"],
+      "choices": [
+        {
+          "label": "Leave school and join the hustle",
+          "statEffects": { "money": 8000, "happiness": 3, "smarts": -2 },
+          "triggersDropout": true,
+          "resultText": "You walked out of the school gate and never looked back — for now."
+        },
+        {
+          "label": "Stay in school and finish",
+          "statEffects": { "smarts": 2, "happiness": 1 },
+          "gpaEffect": 0.1,
+          "resultText": "You told your cousin education comes first. The books stayed open."
+        }
+      ]
+    },
+    {
+      "id": "dropout_stress_overwhelmed",
+      "minAge": 15,
+      "maxAge": 19,
+      "text": "Exam pressure and family expectations pile up until you cannot sleep. A friend whispers that plenty of people quit and still made something of themselves.",
+      "weight": 4,
+      "tags": ["education"],
+      "choices": [
+        {
+          "label": "Drop out to clear your head",
+          "statEffects": { "happiness": 5, "health": 3, "smarts": -3 },
+          "triggersDropout": true,
+          "resultText": "You handed in your books. The relief was real — and so was the uncertainty."
+        },
+        {
+          "label": "Talk to a teacher you trust",
+          "statEffects": { "happiness": 4, "smarts": 1 },
+          "gpaEffect": 0.05,
+          "resultText": "They helped you make a study plan. The weight eased a little."
+        }
+      ]
+    },
+    {
+      "id": "found_wallet_moral",
+      "minAge": 16,
+      "maxAge": 70,
+      "text": "You find a thick wallet on a bench with no owner in sight. Cash and ID cards peek out from the fold.",
+      "weight": 4,
+      "tags": ["general"],
+      "choices": [
+        { "label": "Hand it to the nearest shopkeeper", "statEffects": { "happiness": 5, "smarts": 1 }, "resultText": "The owner called later to thank you. Your conscience stayed clean." },
+        { "label": "Keep the cash and ditch the wallet", "statEffects": { "money": 3000, "happiness": -4 }, "resultText": "The money helped this month, but guilt nagged you for weeks." }
+      ]
+    },
+    {
+      "id": "witness_pickpocket",
+      "minAge": 14,
+      "maxAge": 65,
+      "text": "On a crowded street you see someone slip a phone from a stranger's pocket and melt into the crowd.",
+      "weight": 3,
+      "tags": ["general"],
+      "choices": [
+        { "label": "Shout and point them out", "statEffects": { "happiness": 3, "health": -2 }, "resultText": "The thief bolted. The victim grabbed your arm in gratitude." },
+        { "label": "Pretend you saw nothing", "statEffects": { "happiness": -2 }, "resultText": "You kept walking. The moment replayed in your head all evening." }
+      ]
+    },
+    {
+      "id": "minor_chest_tightness",
+      "minAge": 35,
+      "maxAge": 75,
+      "text": "A tight ache flutters across your chest after climbing stairs. It fades, but the worry does not.",
+      "weight": 4,
+      "tags": ["general"],
+      "choices": [
+        { "label": "Book a check-up", "statEffects": { "money": -5000, "happiness": 2 }, "doctorCareTier": "public", "resultText": "The nurse said watch your diet and rest. You slept easier that night." },
+        { "label": "Ignore it for now", "statEffects": { "happiness": -3 }, "triggersIllnessRoll": true, "resultText": "You told yourself it was nothing. Your body might disagree later." }
+      ]
+    },
+    {
+      "id": "photography_hobby",
+      "minAge": 18,
+      "maxAge": 60,
+      "text": "A friend lends you an old camera and suggests you try street photography on weekends.",
+      "weight": 3,
+      "tags": ["general"],
+      "choices": [
+        { "label": "Shoot around the neighbourhood", "statEffects": { "happiness": 6, "smarts": 2 }, "resultText": "Golden-hour portraits of strangers became your new obsession." },
+        { "label": "Return the camera politely", "statEffects": { "happiness": 1 }, "resultText": "You thanked them but said your schedule was full." }
+      ]
+    },
+    {
+      "id": "charity_tin_temptation",
+      "minAge": 12,
+      "maxAge": 80,
+      "text": "A charity tin sits unattended near a market stall. A few notes already jingle inside when you walk past.",
+      "weight": 3,
+      "tags": ["general"],
+      "choices": [
+        { "label": "Drop in spare change", "statEffects": { "money": -500, "happiness": 4 }, "resultText": "The volunteer smiled. Small kindness, small warmth." },
+        { "label": "Slide a note into your pocket", "statEffects": { "money": 2000, "happiness": -6 }, "resultText": "Nobody saw you. You wished they had." }
+      ]
+    },
+    {
+      "id": "bus_fare_kindness",
+      "minAge": 10,
+      "maxAge": 70,
+      "text": "A student on the {transportMode} realises their fare card is empty. The queue behind them grows restless.",
+      "weight": 4,
+      "tags": ["general"],
+      "choices": [
+        { "label": "Cover their fare", "statEffects": { "money": -300, "happiness": 5 }, "resultText": "They thanked you twice before hopping off at the next stop." },
+        { "label": "Look away", "statEffects": { "happiness": -1 }, "resultText": "The conductor grumbled and waved them through anyway." }
+      ]
+    },
+    {
+      "id": "community_cleanup_day",
+      "minAge": 14,
+      "maxAge": 65,
+      "text": "Neighbours organise a Saturday cleanup along the drainage ditch and roadside verges.",
+      "weight": 3,
+      "tags": ["general"],
+      "choices": [
+        { "label": "Join with gloves and a rake", "statEffects": { "happiness": 5, "health": 2 }, "familyRelationshipEffect": 3, "resultText": "Sweaty work, cleaner streets, nods from people you barely knew." },
+        { "label": "Skip and sleep in", "statEffects": { "happiness": 1 }, "resultText": "You heard praise for the team from your window." }
+      ]
+    },
+    {
+      "id": "lost_neighbour_pet",
+      "minAge": 8,
+      "maxAge": 55,
+      "text": "A neighbour knocks, frantic — their cat slipped out during a storm and has not returned.",
+      "weight": 3,
+      "tags": ["general"],
+      "choices": [
+        { "label": "Help search the alleys", "statEffects": { "happiness": 4, "health": -1 }, "familyRelationshipEffect": 5, "resultText": "You found the shivering cat under a parked car. Relief all around." },
+        { "label": "Wish them luck and close the door", "statEffects": { "happiness": -1 }, "resultText": "You heard them calling its name long into the night." }
+      ]
+    },
+    {
+      "id": "street_performer_tip",
+      "minAge": 12,
+      "maxAge": 70,
+      "text": "A street performer juggles for a small crowd. Their hat has only a few coins rattling inside.",
+      "weight": 3,
+      "tags": ["general"],
+      "choices": [
+        { "label": "Toss in a generous tip", "statEffects": { "money": -800, "happiness": 4 }, "resultText": "They bowed mid-routine. The crowd clapped louder." },
+        { "label": "Enjoy the show for free", "statEffects": { "happiness": 2 }, "resultText": "You applauded with everyone else and moved on." }
+      ]
+    },
+    {
+      "id": "power_outage_bonding",
+      "minAge": 6,
+      "maxAge": 60,
+      "text": "A blackout plunges the house into darkness. Candles flicker and phones glow like fireflies.",
+      "weight": 4,
+      "tags": ["general"],
+      "choices": [
+        { "label": "Tell stories by candlelight", "statEffects": { "happiness": 6 }, "familyRelationshipEffect": 5, "resultText": "Laughter replaced the hum of appliances for one evening." },
+        { "label": "Complain about the heat", "statEffects": { "happiness": -3 }, "familyRelationshipEffect": -2, "resultText": "Everyone snapped at each other until the lights returned." }
+      ]
+    },
+    {
+      "id": "old_friend_reconnect",
+      "minAge": 22,
+      "maxAge": 70,
+      "text": "An old school friend messages you out of the blue. They want to catch up over coffee.",
+      "weight": 4,
+      "tags": ["general"],
+      "choices": [
+        { "label": "Meet them this weekend", "statEffects": { "happiness": 6, "money": -1500 }, "resultText": "Inside jokes and embarrassing memories filled the afternoon." },
+        { "label": "Reply later when life calms down", "statEffects": { "happiness": -2 }, "resultText": "The chat went quiet. Maybe next year." }
+      ]
+    },
+    {
+      "id": "phishing_email_moral",
+      "minAge": 18,
+      "maxAge": 65,
+      "text": "An email claims you won a lottery you never entered. All it needs is your bank details to release the prize.",
+      "weight": 4,
+      "tags": ["general"],
+      "choices": [
+        { "label": "Delete and warn friends", "statEffects": { "smarts": 3, "happiness": 2 }, "resultText": "You spotted the scam instantly and shared a warning in the group chat." },
+        { "label": "Click the link just in case", "statEffects": { "money": -8000, "happiness": -5, "smarts": -2 }, "resultText": "Your account drained before you finished reading the fine print." }
+      ]
+    },
+    {
+      "id": "gym_trial_membership",
+      "minAge": 16,
+      "maxAge": 55,
+      "text": "A new gym offers a free week trial. Posters promise transformation by month end.",
+      "weight": 3,
+      "tags": ["general"],
+      "choices": [
+        { "label": "Sign up and go daily", "statEffects": { "health": 6, "happiness": 3, "money": -2000 }, "resultText": "Sore muscles, better sleep, and a habit you almost kept." },
+        { "label": "Pass — too busy", "statEffects": { "happiness": 1 }, "resultText": "The flyers peeled off the wall before you thought twice." }
+      ]
+    },
+    {
+      "id": "neighbour_noise_dispute",
+      "minAge": 20,
+      "maxAge": 70,
+      "text": "Your neighbour blasts music past midnight again. Tomorrow is an early morning for you.",
+      "weight": 4,
+      "tags": ["general"],
+      "choices": [
+        { "label": "Knock and ask calmly", "statEffects": { "happiness": 2 }, "resultText": "They apologised and turned it down. Peace restored." },
+        { "label": "Bang on the wall and shout", "statEffects": { "happiness": -4, "health": -1 }, "resultText": "The volume dropped, but so did goodwill on both sides." }
+      ]
+    },
+    {
+      "id": "rainy_day_reading",
+      "minAge": 8,
+      "maxAge": 80,
+      "text": "Rain hammers the roof all afternoon. A stack of unread books waits on your shelf.",
+      "weight": 3,
+      "tags": ["general"],
+      "choices": [
+        { "label": "Curl up with a novel", "statEffects": { "happiness": 5, "smarts": 3 }, "resultText": "You finished a chapter you had postponed for months." },
+        { "label": "Scroll on your phone instead", "statEffects": { "happiness": 2, "smarts": -1 }, "resultText": "Hours vanished into short videos and group chats." }
+      ]
+    },
+    {
+      "id": "expat_lost_in_translation",
+      "minAge": 18,
+      "maxAge": 55,
+      "text": "You order lunch using hand gestures and broken phrases. The waiter smiles politely — and brings something you did not expect.",
+      "weight": 5,
+      "tags": ["general", "requires_expat"],
+      "choices": [
+        { "label": "Laugh it off and try again", "statEffects": { "happiness": -3, "smarts": 2 }, "resultText": "You wrote down three new words and ate something adventurous." },
+        { "label": "Feel embarrassed and leave", "statEffects": { "happiness": -8 }, "resultText": "You walked out hungry and frustrated." }
+      ]
+    },
+    {
+      "id": "expat_homesickness",
+      "minAge": 18,
+      "maxAge": 60,
+      "text": "A song from home plays in a shop. You stand still in the aisle longer than you meant to.",
+      "weight": 5,
+      "tags": ["general", "requires_expat"],
+      "choices": [
+        { "label": "Call family back home", "statEffects": { "happiness": 6, "money": -1500 }, "resultText": "Their voices grounded you for another month." },
+        { "label": "Push the feeling down", "statEffects": { "happiness": -10 }, "resultText": "The ache stayed with you all week." }
+      ]
+    },
+    {
+      "id": "expat_local_food_discovery",
+      "minAge": 16,
+      "maxAge": 65,
+      "text": "A coworker drags you to a hole-in-the-wall spot locals swear by. The menu has no English.",
+      "weight": 4,
+      "tags": ["general", "requires_expat"],
+      "choices": [
+        { "label": "Order whatever they recommend", "statEffects": { "happiness": 8, "health": 2 }, "resultText": "You found a new favourite dish and a story to tell." },
+        { "label": "Stick to familiar food", "statEffects": { "happiness": 1 }, "resultText": "Safe, but you still feel like an outsider." }
+      ]
+    },
+    {
+      "id": "expat_credential_rejection",
+      "minAge": 22,
+      "maxAge": 55,
+      "text": "Human resources says your qualifications need local certification before you can start. The process could take months.",
+      "weight": 4,
+      "tags": ["general", "requires_expat"],
+      "choices": [
+        { "label": "Pay for the conversion course", "statEffects": { "money": -25000, "happiness": -2, "smarts": 3 }, "resultText": "Paperwork and exams, but doors finally open." },
+        { "label": "Take a lower-tier job for now", "statEffects": { "happiness": -6, "money": 5000 }, "resultText": "You swallow pride and start somewhere." }
+      ]
+    },
+    {
+      "id": "expat_neighbour_welcome",
+      "minAge": 20,
+      "maxAge": 70,
+      "text": "A neighbour knocks with a housewarming plate and slow, careful English. They ask where you are from.",
+      "weight": 4,
+      "tags": ["general", "requires_expat"],
+      "choices": [
+        { "label": "Invite them in for tea", "statEffects": { "happiness": 10 }, "resultText": "You traded stories until midnight." },
+        { "label": "Thank them and keep the door closed", "statEffects": { "happiness": -2 }, "resultText": "Politeness without connection." }
       ]
     }
   ]

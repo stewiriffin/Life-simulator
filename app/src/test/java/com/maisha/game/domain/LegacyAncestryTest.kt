@@ -12,7 +12,7 @@ import org.junit.Test
 class LegacyAncestryTest {
 
     private val mortalityEngine = MortalityEngine()
-    private val engine = LegacyEngine(mortalityEngine)
+    private val engine = LegacyEngine(mortalityEngine, FinanceEngine())
 
     @Test
     fun `createLegacyCharacter appends deceased to ancestry history`() {

@@ -1,6 +1,8 @@
 // app/src/main/java/com/maisha/game/ui/main/AssetsScreen.kt
 package com.maisha.game.ui.main
 
+import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -15,6 +17,8 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.KeyboardArrowDown
+import androidx.compose.material.icons.filled.KeyboardArrowUp
 import androidx.compose.material.icons.filled.Lock
 import androidx.compose.material.icons.filled.ShoppingBag
 import com.maisha.game.ui.components.ConfirmActionDialog
@@ -40,6 +44,8 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
+import androidx.compose.ui.draw.shadow
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
@@ -56,8 +62,11 @@ import com.maisha.game.ui.components.StatBar
 import com.maisha.game.ui.components.StatType
 import com.maisha.game.ui.illustrations.EmptyStateIllustration
 import com.maisha.game.ui.theme.GoldAccent
+import com.maisha.game.domain.FinanceEngine
 import com.maisha.game.ui.theme.MaishaRadius
 import com.maisha.game.ui.theme.MaishaSpacing
+import com.maisha.game.ui.theme.SuccessGreen
+import com.maisha.game.ui.theme.CoralNegative
 import com.maisha.game.ui.theme.TealPrimary
 import com.maisha.game.util.formatMoney
 
@@ -69,10 +78,13 @@ fun AssetsScreen(
     snackbarHostState: SnackbarHostState,
     onPurchaseAsset: (String) -> Unit,
     onSellAsset: (String) -> Unit,
+    onRepairAsset: (String) -> Unit,
     onAssetsMessageDismissed: () -> Unit,
     modifier: Modifier = Modifier
 ) {
     val pendingPurchase = rememberConfirmableAction<CatalogAsset>()
+    val pendingRepair = rememberConfirmableAction<Asset>()
+    val financeEngine = remember { FinanceEngine() }
 
     LaunchedEffect(uiState.assetsMessage) {
         uiState.assetsMessage?.let { message ->
@@ -94,6 +106,24 @@ fun AssetsScreen(
                 formatMoney(item.monthlyUpkeep, character.countryCode)
             ),
             confirmLabel = stringResource(R.string.btn_buy),
+            severity = ConfirmSeverity.NEUTRAL,
+            onConfirm = onConfirm,
+            onDismiss = onDismiss
+        )
+    }
+
+    ConfirmableActionHost(
+        state = pendingRepair,
+        onConfirmed = { asset -> onRepairAsset(asset.id) }
+    ) { asset, onConfirm, onDismiss ->
+        ConfirmActionDialog(
+            title = stringResource(R.string.dialog_repair_asset_title),
+            description = stringResource(
+                R.string.dialog_repair_asset_body,
+                asset.name,
+                formatMoney(financeEngine.calculateRepairCost(asset, character.countryCode), character.countryCode)
+            ),
+            confirmLabel = stringResource(R.string.btn_repair),
             severity = ConfirmSeverity.NEUTRAL,
             onConfirm = onConfirm,
             onDismiss = onDismiss
@@ -146,7 +176,10 @@ fun AssetsScreen(
                 OwnedAssetCard(
                     asset = asset,
                     countryCode = character.countryCode,
-                    onSell = { onSellAsset(asset.id) }
+                    currentGeneration = character.generationNumber,
+                    repairCost = financeEngine.calculateRepairCost(asset, character.countryCode),
+                    onSell = { onSellAsset(asset.id) },
+                    onRepair = { pendingRepair.request(asset) }
                 )
             }
         }
@@ -175,13 +208,31 @@ fun AssetsScreen(
 private fun OwnedAssetCard(
     asset: Asset,
     countryCode: String,
-    onSell: () -> Unit
+    currentGeneration: Int,
+    repairCost: Int,
+    onSell: () -> Unit,
+    onRepair: () -> Unit
 ) {
+    val isHeirloom = asset.isHeirloom
+    val generationsHeld = (currentGeneration - asset.generationAcquired).coerceAtLeast(0)
+    val cardModifier = if (isHeirloom) {
+        Modifier
+            .fillMaxWidth()
+            .shadow(8.dp, MaishaRadius.cardShape, spotColor = GoldAccent.copy(alpha = 0.45f))
+            .border(1.5.dp, GoldAccent.copy(alpha = 0.85f), MaishaRadius.cardShape)
+    } else {
+        Modifier.fillMaxWidth()
+    }
+
     Card(
-        modifier = Modifier.fillMaxWidth(),
+        modifier = cardModifier,
         shape = MaishaRadius.cardShape,
         colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surfaceVariant
+            containerColor = if (isHeirloom) {
+                GoldAccent.copy(alpha = 0.10f)
+            } else {
+                MaterialTheme.colorScheme.surfaceVariant
+            }
         )
     ) {
         Column(modifier = Modifier.padding(12.dp)) {
@@ -206,11 +257,31 @@ private fun OwnedAssetCard(
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis
                     )
-                    Text(
-                        text = asset.type.name.lowercase().replaceFirstChar { it.uppercase() },
-                        style = MaterialTheme.typography.labelSmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
+                    if (isHeirloom) {
+                        HeirloomBadge()
+                        if (generationsHeld > 0) {
+                            Text(
+                                text = stringResource(
+                                    R.string.format_heirloom_generations,
+                                    generationsHeld
+                                ),
+                                style = MaterialTheme.typography.labelSmall,
+                                color = GoldAccent
+                            )
+                        } else {
+                            Text(
+                                text = stringResource(R.string.label_heirloom_new),
+                                style = MaterialTheme.typography.labelSmall,
+                                color = GoldAccent
+                            )
+                        }
+                    } else {
+                        Text(
+                            text = asset.type.name.lowercase().replaceFirstChar { it.uppercase() },
+                            style = MaterialTheme.typography.labelSmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
                 }
                 Text(
                     text = formatMoney(asset.currentValue, countryCode),
@@ -220,37 +291,101 @@ private fun OwnedAssetCard(
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis
                 )
+                when {
+                    asset.currentValue > asset.purchasePrice -> {
+                        Icon(
+                            imageVector = Icons.Filled.KeyboardArrowUp,
+                            contentDescription = stringResource(R.string.content_desc_asset_value_up),
+                            tint = SuccessGreen,
+                            modifier = Modifier.size(20.dp)
+                        )
+                    }
+                    asset.currentValue < asset.purchasePrice -> {
+                        Icon(
+                            imageVector = Icons.Filled.KeyboardArrowDown,
+                            contentDescription = stringResource(R.string.content_desc_asset_value_down),
+                            tint = CoralNegative,
+                            modifier = Modifier.size(20.dp)
+                        )
+                    }
+                }
             }
 
             Spacer(modifier = Modifier.height(8.dp))
 
-            StatBar(
-                type = StatType.CONDITION,
-                value = asset.condition,
-                label = stringResource(R.string.stat_condition)
-            )
+            if (!isHeirloom) {
+                StatBar(
+                    type = StatType.CONDITION,
+                    value = asset.condition,
+                    label = stringResource(R.string.stat_condition),
+                    barColorOverride = conditionBarColor(asset.condition)
+                )
 
-            Text(
-                text = stringResource(
-                    R.string.format_upkeep_monthly,
-                    formatMoney(asset.monthlyUpkeep, countryCode)
-                ),
-                style = MaterialTheme.typography.labelSmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                modifier = Modifier.padding(top = 4.dp)
-            )
+                Text(
+                    text = stringResource(
+                        R.string.format_upkeep_monthly,
+                        formatMoney(asset.monthlyUpkeep, countryCode)
+                    ),
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.padding(top = 4.dp)
+                )
 
-            Spacer(modifier = Modifier.height(8.dp))
+                Spacer(modifier = Modifier.height(8.dp))
 
-            OutlinedButton(
-                onClick = onSell,
-                modifier = Modifier.fillMaxWidth(),
-                shape = MaishaRadius.buttonShape
-            ) {
-                Text(stringResource(R.string.btn_sell))
+                if (asset.condition < FinanceEngine.REPAIR_UI_THRESHOLD) {
+                    Button(
+                        onClick = onRepair,
+                        modifier = Modifier.fillMaxWidth(),
+                        shape = MaishaRadius.buttonShape,
+                        colors = ButtonDefaults.buttonColors(containerColor = TealPrimary)
+                    ) {
+                        Text(
+                            text = stringResource(
+                                R.string.btn_repair_with_cost,
+                                formatMoney(repairCost, countryCode)
+                            )
+                        )
+                    }
+                    Spacer(modifier = Modifier.height(8.dp))
+                }
+
+                OutlinedButton(
+                    onClick = onSell,
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = MaishaRadius.buttonShape
+                ) {
+                    Text(stringResource(R.string.btn_sell))
+                }
+            } else {
+                Text(
+                    text = stringResource(R.string.heirloom_no_upkeep),
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
             }
         }
     }
+}
+
+@Composable
+private fun HeirloomBadge() {
+    Text(
+        text = stringResource(R.string.label_heirloom),
+        style = MaterialTheme.typography.labelSmall,
+        fontWeight = FontWeight.Bold,
+        color = Color(0xFF1A1200),
+        modifier = Modifier
+            .background(GoldAccent.copy(alpha = 0.35f), RoundedCornerShape(6.dp))
+            .border(1.dp, GoldAccent, RoundedCornerShape(6.dp))
+            .padding(horizontal = 8.dp, vertical = 2.dp)
+    )
+}
+
+private fun conditionBarColor(condition: Int): androidx.compose.ui.graphics.Color = when {
+    condition >= 70 -> SuccessGreen
+    condition >= 40 -> GoldAccent
+    else -> CoralNegative
 }
 
 @Composable

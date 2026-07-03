@@ -39,19 +39,27 @@ import com.maisha.game.R
 import com.maisha.game.data.IllustrationCatalog
 import com.maisha.game.data.JobPool
 import com.maisha.game.data.model.Character
+import com.maisha.game.data.model.EducationState
 import com.maisha.game.data.model.Job
 import com.maisha.game.data.model.SchoolStage
+import com.maisha.game.ui.components.ConfirmActionDialog
+import com.maisha.game.ui.components.ConfirmSeverity
+import com.maisha.game.ui.components.ConfirmableActionHost
 import com.maisha.game.ui.components.EmptyStateCard
+import com.maisha.game.ui.components.rememberConfirmableAction
 import com.maisha.game.ui.components.IllustrationImage
 import com.maisha.game.ui.components.RecordBadge
 import com.maisha.game.ui.components.StatBar
 import com.maisha.game.ui.components.StatType
 import com.maisha.game.ui.illustrations.EmptyStateIllustration
+import com.maisha.game.ui.illustrations.EmptyStateIllustrationView
 import com.maisha.game.ui.theme.GoldAccent
 import com.maisha.game.ui.theme.MaishaRadius
 import com.maisha.game.ui.theme.MaishaSpacing
 import com.maisha.game.ui.theme.TealPrimary
 import com.maisha.game.util.formatMoney
+
+private const val MIN_RETIREMENT_AGE = 60
 
 @Composable
 fun CareerScreen(
@@ -61,9 +69,46 @@ fun CareerScreen(
     snackbarHostState: SnackbarHostState,
     onApplyForJob: (String) -> Unit,
     onQuitJob: () -> Unit,
+    onRetire: () -> Unit,
+    retirementPensionEstimate: Int,
+    onDropOut: () -> Unit,
     onCareerMessageDismissed: () -> Unit,
     modifier: Modifier = Modifier
 ) {
+    val dropOutConfirm = rememberConfirmableAction<Unit>()
+    val retireConfirm = rememberConfirmableAction<Unit>()
+
+    ConfirmableActionHost(
+        state = dropOutConfirm,
+        onConfirmed = { onDropOut() }
+    ) { _, onConfirm, onDismiss ->
+        ConfirmActionDialog(
+            title = stringResource(R.string.dialog_drop_out_title),
+            description = stringResource(R.string.dialog_drop_out_description),
+            confirmLabel = stringResource(R.string.btn_drop_out),
+            severity = ConfirmSeverity.WARNING,
+            onConfirm = onConfirm,
+            onDismiss = onDismiss
+        )
+    }
+
+    ConfirmableActionHost(
+        state = retireConfirm,
+        onConfirmed = { onRetire() }
+    ) { _, onConfirm, onDismiss ->
+        ConfirmActionDialog(
+            title = stringResource(R.string.dialog_retire_title),
+            description = stringResource(
+                R.string.dialog_retire_description,
+                formatMoney(retirementPensionEstimate, character.countryCode)
+            ),
+            confirmLabel = stringResource(R.string.btn_retire),
+            severity = ConfirmSeverity.NEUTRAL,
+            onConfirm = onConfirm,
+            onDismiss = onDismiss
+        )
+    }
+
     LaunchedEffect(uiState.careerMessage) {
         uiState.careerMessage?.let { message ->
             snackbarHostState.showSnackbar(message)
@@ -72,6 +117,7 @@ fun CareerScreen(
     }
 
     val currentJob = character.career.currentJob
+    val isRetired = character.career.isRetired
     val eligibleIds = eligibleJobs.map { it.id }.toSet()
 
     Column(
@@ -92,15 +138,32 @@ fun CareerScreen(
             Spacer(modifier = Modifier.height(8.dp))
         }
 
-        if (currentJob != null) {
-            CurrentJobCard(
-                character = character,
-                onQuitJob = onQuitJob
-            )
-            Spacer(modifier = Modifier.height(12.dp))
+        EducationSectionCard(
+            education = character.education,
+            onDropOut = { dropOutConfirm.request(Unit) }
+        )
+
+        Spacer(modifier = Modifier.height(12.dp))
+
+        when {
+            isRetired -> {
+                RetiredStateCard(
+                    pensionAmount = character.career.pensionAmount,
+                    countryCode = character.countryCode
+                )
+            }
+            currentJob != null -> {
+                CurrentJobCard(
+                    character = character,
+                    canRetire = character.age >= MIN_RETIREMENT_AGE,
+                    onQuitJob = onQuitJob,
+                    onRetire = { retireConfirm.request(Unit) }
+                )
+                Spacer(modifier = Modifier.height(12.dp))
+            }
         }
 
-        if (currentJob == null) {
+        if (!isRetired && currentJob == null) {
             Text(
                 text = stringResource(R.string.section_job_listings),
                 style = MaterialTheme.typography.titleSmall,
@@ -151,9 +214,117 @@ fun CareerScreen(
 }
 
 @Composable
+private fun RetiredStateCard(
+    pensionAmount: Int,
+    countryCode: String
+) {
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        shape = MaishaRadius.cardShape,
+        colors = CardDefaults.cardColors(
+            containerColor = GoldAccent.copy(alpha = 0.12f)
+        )
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(20.dp),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.spacedBy(12.dp)
+        ) {
+            EmptyStateIllustrationView(
+                type = EmptyStateIllustration.RETIRED,
+                size = 96.dp
+            )
+            Text(
+                text = stringResource(R.string.label_retired),
+                style = MaterialTheme.typography.titleMedium,
+                fontWeight = FontWeight.Bold,
+                color = GoldAccent
+            )
+            Text(
+                text = stringResource(R.string.empty_retired_message),
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+            if (pensionAmount > 0) {
+                Text(
+                    text = stringResource(R.string.label_annual_pension),
+                    style = MaterialTheme.typography.labelMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+                Text(
+                    text = stringResource(
+                        R.string.format_annual_pension,
+                        formatMoney(pensionAmount, countryCode)
+                    ),
+                    style = MaterialTheme.typography.titleLarge,
+                    fontWeight = FontWeight.Bold,
+                    color = TealPrimary
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun EducationSectionCard(
+    education: EducationState,
+    onDropOut: () -> Unit
+) {
+    val resources = LocalContext.current.resources
+    val canDropOut = education.stage == SchoolStage.SECONDARY ||
+        education.stage == SchoolStage.UNIVERSITY
+
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        shape = MaishaRadius.cardShape,
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.surfaceVariant
+        )
+    ) {
+        Column(modifier = Modifier.padding(14.dp)) {
+            Text(
+                text = stringResource(R.string.label_education),
+                style = MaterialTheme.typography.labelMedium,
+                color = GoldAccent
+            )
+            Spacer(modifier = Modifier.height(6.dp))
+            Text(
+                text = EducationFormatter.formatStatus(education, resources),
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurface
+            )
+            if (education.gpa > 0f && education.stage != SchoolStage.NONE &&
+                education.stage != SchoolStage.GRADUATED && !education.expelled
+            ) {
+                Spacer(modifier = Modifier.height(4.dp))
+                Text(
+                    text = stringResource(R.string.format_gpa, education.gpa),
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
+            if (canDropOut) {
+                Spacer(modifier = Modifier.height(12.dp))
+                OutlinedButton(
+                    onClick = onDropOut,
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(12.dp)
+                ) {
+                    Text(stringResource(R.string.btn_drop_out))
+                }
+            }
+        }
+    }
+}
+
+@Composable
 private fun CurrentJobCard(
     character: Character,
-    onQuitJob: () -> Unit
+    canRetire: Boolean,
+    onQuitJob: () -> Unit,
+    onRetire: () -> Unit
 ) {
     val job = character.career.currentJob ?: return
     val resources = LocalContext.current.resources
@@ -217,12 +388,26 @@ private fun CurrentJobCard(
 
             Spacer(modifier = Modifier.height(12.dp))
 
-            OutlinedButton(
-                onClick = onQuitJob,
-                modifier = Modifier.fillMaxWidth(),
-                shape = RoundedCornerShape(12.dp)
-            ) {
-                Text(stringResource(R.string.btn_quit_job))
+            if (canRetire) {
+                Button(
+                    onClick = onRetire,
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(12.dp),
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = GoldAccent,
+                        contentColor = MaterialTheme.colorScheme.onPrimary
+                    )
+                ) {
+                    Text(stringResource(R.string.btn_retire))
+                }
+            } else {
+                OutlinedButton(
+                    onClick = onQuitJob,
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(12.dp)
+                ) {
+                    Text(stringResource(R.string.btn_quit_job))
+                }
             }
         }
     }
@@ -322,11 +507,29 @@ private fun JobListingCard(
 
 @Composable
 private fun jobIneligibilityReason(character: Character, job: Job): String? {
+    if (character.career.isRetired) {
+        return stringResource(R.string.label_retired)
+    }
     if (character.career.currentJob != null) {
         return stringResource(R.string.job_ineligible_employed)
     }
     if (character.age < 18) {
         return stringResource(R.string.job_ineligible_age)
+    }
+    if (character.education.expelled) {
+        return stringResource(R.string.job_ineligible_expelled)
+    }
+    val education = character.education
+    if (job.minEducation == SchoolStage.GRADUATED &&
+        education.droppedOutFrom == SchoolStage.UNIVERSITY
+    ) {
+        return stringResource(R.string.job_ineligible_dropout)
+    }
+    if (job.minEducation == SchoolStage.SECONDARY &&
+        education.droppedOutFrom == SchoolStage.SECONDARY &&
+        education.kcseGrade == null
+    ) {
+        return stringResource(R.string.job_ineligible_dropout)
     }
     val stageOrder = listOf(
         SchoolStage.NONE,

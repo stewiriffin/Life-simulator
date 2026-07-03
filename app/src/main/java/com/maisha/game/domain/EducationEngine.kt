@@ -41,7 +41,8 @@ class EducationEngine @Inject constructor() {
 
             character.age >= SECONDARY_ENROLL_AGE &&
                 education.kcpePassed == true &&
-                education.stage == SchoolStage.PRIMARY -> {
+                education.stage == SchoolStage.PRIMARY &&
+                education.droppedOutFrom != SchoolStage.SECONDARY -> {
                 character.copy(
                     education = education.copy(
                         stage = SchoolStage.SECONDARY,
@@ -61,7 +62,7 @@ class EducationEngine @Inject constructor() {
      */
     fun advanceGrade(character: Character, studyChoice: StudyEffort): Character {
         val education = character.education
-        if (education.expelled) return character
+        if (education.expelled || education.droppedOutFrom != null) return character
         if (education.stage != SchoolStage.PRIMARY && education.stage != SchoolStage.SECONDARY) {
             return character
         }
@@ -91,7 +92,7 @@ class EducationEngine @Inject constructor() {
         incrementGrade: Boolean
     ): Character {
         val education = character.education
-        if (education.expelled) return character
+        if (education.expelled || education.droppedOutFrom != null) return character
         if (education.stage != SchoolStage.PRIMARY && education.stage != SchoolStage.SECONDARY) {
             return character
         }
@@ -125,6 +126,7 @@ class EducationEngine @Inject constructor() {
     /** Increments university year or graduates when [UNIVERSITY_YEARS] completed. */
     fun advanceUniversityYear(character: Character): Character {
         val education = character.education
+        if (education.expelled || education.droppedOutFrom == SchoolStage.UNIVERSITY) return character
         if (education.stage != SchoolStage.UNIVERSITY) return character
 
         val nextGrade = education.currentGrade + 1
@@ -174,6 +176,7 @@ class EducationEngine @Inject constructor() {
     /** Enrolls in university with [course] if [isEligibleForUniversity]; otherwise returns character unchanged. */
     fun applyToUniversity(character: Character, course: String): Character {
         if (!isEligibleForUniversity(character)) return character
+        if (character.education.droppedOutFrom == SchoolStage.UNIVERSITY) return character
         return character.copy(
             education = character.education.copy(
                 stage = SchoolStage.UNIVERSITY,
@@ -265,6 +268,50 @@ class EducationEngine @Inject constructor() {
                 gpa = clampGpa(character.education.gpa + gpaEffect)
             )
         )
+    }
+
+    /**
+     * Voluntary leave from secondary or university. Records [EducationState.droppedOutFrom] so the same
+     * tier cannot be re-entered; preserves exam flags already earned.
+     */
+    fun processDropout(character: Character): Character {
+        val education = character.education
+        if (education.expelled) return character
+        val stage = education.stage
+        if (stage != SchoolStage.SECONDARY && stage != SchoolStage.UNIVERSITY) return character
+
+        return character.copy(
+            education = education.copy(
+                droppedOutFrom = stage,
+                stage = SchoolStage.NONE,
+                currentGrade = 0,
+                schoolName = null,
+                courseOfStudy = null
+            )
+        )
+    }
+
+    /** Forced removal from school — blocks all future enrollment and progression. */
+    fun processExpulsion(character: Character): Character {
+        val education = character.education
+        if (education.expelled) return character
+
+        return character.copy(
+            education = education.copy(
+                expelled = true,
+                stage = SchoolStage.NONE,
+                currentGrade = 0,
+                schoolName = null,
+                courseOfStudy = null
+            )
+        )
+    }
+
+    /** True when still enrolled in secondary or university and eligible to leave voluntarily. */
+    fun canVoluntarilyDropOut(character: Character): Boolean {
+        val education = character.education
+        if (education.expelled) return false
+        return education.stage == SchoolStage.SECONDARY || education.stage == SchoolStage.UNIVERSITY
     }
 
     private fun buildExamChoices(

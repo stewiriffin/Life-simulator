@@ -52,6 +52,7 @@ private val tabs = listOf(
 fun MaishaBottomNav(
     selectedTab: MainTab,
     onTabSelected: (MainTab) -> Unit,
+    disabledTabs: Set<MainTab> = emptySet(),
     modifier: Modifier = Modifier
 ) {
     NavigationBar(
@@ -61,10 +62,12 @@ fun MaishaBottomNav(
     ) {
         tabs.forEach { item ->
             val selected = selectedTab == item.tab
+            val disabled = item.tab in disabledTabs
             val label = stringResource(item.labelRes)
             NavigationBarItem(
                 selected = selected,
-                onClick = { onTabSelected(item.tab) },
+                onClick = { if (!disabled) onTabSelected(item.tab) },
+                enabled = !disabled,
                 icon = {
                     if (selected) {
                         Box(

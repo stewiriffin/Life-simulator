@@ -27,6 +27,7 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
@@ -46,6 +47,11 @@ import com.maisha.game.ui.illustrations.EmptyStateIllustration
 import com.maisha.game.ui.theme.GoldAccent
 import com.maisha.game.ui.theme.MaishaRadius
 import com.maisha.game.ui.theme.TealPrimary
+
+private enum class AchievementListContentType {
+    CategoryHeader,
+    AchievementCard
+}
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -112,6 +118,13 @@ fun AchievementsScreen(
             return@Scaffold
         }
 
+        val categoriesWithItems = remember(uiState.items) {
+            AchievementCategory.entries.mapNotNull { category ->
+                val categoryItems = uiState.items.filter { it.achievement.category == category }
+                if (categoryItems.isEmpty()) null else category to categoryItems
+            }
+        }
+
         LazyColumn(
             modifier = Modifier
                 .fillMaxSize()
@@ -119,11 +132,8 @@ fun AchievementsScreen(
                 .padding(horizontal = 12.dp),
             verticalArrangement = Arrangement.spacedBy(10.dp)
         ) {
-            AchievementCategory.entries.forEach { category ->
-                val categoryItems = uiState.items.filter { it.achievement.category == category }
-                if (categoryItems.isEmpty()) return@forEach
-
-                item {
+            categoriesWithItems.forEach { (category, categoryItems) ->
+                item(contentType = AchievementListContentType.CategoryHeader) {
                     Row(
                         modifier = Modifier.padding(top = 8.dp, bottom = 4.dp),
                         verticalAlignment = Alignment.CenterVertically,
@@ -142,7 +152,11 @@ fun AchievementsScreen(
                     }
                 }
 
-                items(categoryItems, key = { it.achievement.id }) { item ->
+                items(
+                    categoryItems,
+                    key = { it.achievement.id },
+                    contentType = { AchievementListContentType.AchievementCard }
+                ) { item ->
                     AchievementCard(
                         item = item,
                         unlockDate = formatUnlockDate(item.progress.unlockedAt),

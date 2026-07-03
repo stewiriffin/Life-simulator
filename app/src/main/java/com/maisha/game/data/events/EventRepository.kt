@@ -9,6 +9,7 @@ import com.maisha.game.data.model.LifeEvent
 import com.maisha.game.data.model.LifeEventList
 import com.maisha.game.data.model.RelationType
 import com.maisha.game.domain.CareerEngine
+import com.maisha.game.domain.CrimeEngine
 import com.maisha.game.domain.EducationEngine
 import com.maisha.game.domain.FinanceEngine
 import com.maisha.game.domain.RelationshipEngine
@@ -19,6 +20,10 @@ import com.maisha.game.domain.hasMixedHeritageContext
 import com.maisha.game.domain.hasSpouse
 import com.maisha.game.domain.isMarried
 import dagger.hilt.android.qualifiers.ApplicationContext
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
+import kotlinx.coroutines.withContext
 import kotlinx.serialization.json.Json
 import javax.inject.Inject
 import javax.inject.Singleton
@@ -51,6 +56,29 @@ class EventRepository private constructor(
         buildAgeIndex(allEvents)
     }
 
+    private val loadMutex = Mutex()
+
+    @Volatile
+    private var isLoaded = false
+
+    /**
+     * Parses JSON event files and builds the age index off the main thread.
+     * Safe to call multiple times; subsequent calls are no-ops.
+     */
+    suspend fun ensureLoaded() {
+        if (isLoaded) return
+        loadMutex.withLock {
+            if (!isLoaded) {
+                withContext(Dispatchers.Default) {
+                    eventsByAge.size
+                }
+                isLoaded = true
+            }
+        }
+    }
+
+    fun isLoaded(): Boolean = isLoaded
+
     private fun buildAgeIndex(events: List<LifeEvent>): Array<List<LifeEvent>> {
         if (events.isEmpty()) return arrayOf(emptyList())
         val maxAge = events.maxOf { it.maxAge }.coerceAtLeast(DEFAULT_MAX_AGE)
@@ -67,7 +95,8 @@ class EventRepository private constructor(
         val relationship = loadEventsFromAsset(context, "data/events/relationship_events.json")
         val general = loadEventsFromAsset(context, "data/events/general_events.json")
         val holidays = loadEventsFromAsset(context, "data/events/holiday_events.json")
-        return starter + education + career + finance + relationship + general + holidays
+        val crime = loadEventsFromAsset(context, "data/events/crime_events.json")
+        return starter + education + career + finance + relationship + general + holidays + crime
     }
 
     private fun loadEventsFromAsset(context: Context, path: String): List<LifeEvent> {
@@ -93,8 +122,10 @@ class EventRepository private constructor(
                 passesRelationshipGate(event, character) &&
                 passesCountryGate(event, character) &&
                 passesRelocationGate(event, character) &&
+                passesExpatGate(event, character) &&
                 passesHolidayGate(event, character) &&
-                passesMixedHeritageGate(event, character)
+                passesMixedHeritageGate(event, character) &&
+                passesIncarcerationGate(event, character)
         }.mapNotNull { event -> resolveFlavorForCharacter(event, character) }
     }
 
@@ -129,6 +160,12 @@ class EventRepository private constructor(
         if (character == null) return false
         return character.relocationCount > 0 ||
             character.birthCountryCode != character.countryCode
+    }
+
+    private fun passesExpatGate(event: LifeEvent, character: Character?): Boolean {
+        if (RelocationEngine.REQUIRES_EXPAT_TAG !in event.tags) return true
+        if (character == null) return false
+        return character.birthCountryCode != character.countryCode
     }
 
     private fun passesCountryGate(event: LifeEvent, character: Character?): Boolean {
@@ -181,6 +218,16 @@ class EventRepository private constructor(
         if (FinanceEngine.FINANCE_TAG !in event.tags) return true
         if (character == null) return false
         return financeEngine.meetsFinanceEventThreshold(character)
+    }
+
+    private fun passesIncarcerationGate(event: LifeEvent, character: Character?): Boolean {
+        val requiresPrison = CrimeEngine.REQUIRES_INCARCERATED_TAG in event.tags
+        val incarcerated = character?.criminalRecord?.currentlyIncarcerated == true
+        return when {
+            requiresPrison -> incarcerated
+            incarcerated -> false
+            else -> true
+        }
     }
 
     fun pickRandomEvent(eligible: List<LifeEvent>): LifeEvent? {

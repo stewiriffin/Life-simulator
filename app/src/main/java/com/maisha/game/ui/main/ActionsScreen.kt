@@ -28,13 +28,15 @@ import com.maisha.game.R
 import com.maisha.game.data.model.Character
 import com.maisha.game.data.model.CrimeType
 import com.maisha.game.data.model.HealthCondition
+import com.maisha.game.data.model.LifestyleOption
+import com.maisha.game.domain.HealthEngine
 import com.maisha.game.ui.components.ActionCard
 import com.maisha.game.ui.components.ConditionBadge
 import com.maisha.game.ui.components.ConfirmActionDialog
 import com.maisha.game.ui.components.ConfirmSeverity
 import com.maisha.game.ui.components.ConfirmableActionHost
-import com.maisha.game.ui.components.rememberConfirmableAction
 import com.maisha.game.ui.components.EmptyStateCard
+import com.maisha.game.ui.components.rememberConfirmableAction
 import com.maisha.game.ui.illustrations.EmptyStateIllustration
 import com.maisha.game.ui.theme.AppIcons
 import com.maisha.game.ui.theme.CoralNegative
@@ -47,6 +49,7 @@ private const val CRIME_UI_MIN_AGE = 16
 private sealed class PendingAction {
     data class Crime(val type: CrimeType) : PendingAction()
     data class Treatment(val condition: HealthCondition, val careType: CareType) : PendingAction()
+    data class Lifestyle(val option: LifestyleOption, val enable: Boolean) : PendingAction()
 }
 
 @Composable
@@ -56,13 +59,16 @@ fun ActionsScreen(
     snackbarHostState: SnackbarHostState,
     onAttemptCrime: (CrimeType) -> Unit,
     onVisitDoctor: (String, CareType) -> Unit,
+    onSetLifestyleOption: (LifestyleOption, Boolean) -> Unit,
     onActionMessageDismissed: () -> Unit,
     modifier: Modifier = Modifier
 ) {
     val incarcerated = character.criminalRecord.currentlyIncarcerated
+    val awaitingTrial = character.criminalRecord.awaitingTrial
     val untreated = character.activeConditions.filter { !it.treated }
-    val showCrimeActions = character.age >= CRIME_UI_MIN_AGE && !incarcerated && character.alive
-    val hasContent = untreated.isNotEmpty() || showCrimeActions || incarcerated
+    val showCrimeActions = character.age >= CRIME_UI_MIN_AGE && !incarcerated && !awaitingTrial && character.alive
+    val showLifestyleActions = character.alive && !incarcerated && !awaitingTrial
+    val hasContent = untreated.isNotEmpty() || showCrimeActions || incarcerated || awaitingTrial || showLifestyleActions
 
     val pendingAction = rememberConfirmableAction<PendingAction>()
     var expandedConditionId by remember { mutableStateOf<String?>(null) }
@@ -107,6 +113,17 @@ fun ActionsScreen(
                 modifier = Modifier.fillMaxSize(),
                 verticalArrangement = Arrangement.spacedBy(10.dp)
             ) {
+                if (awaitingTrial) {
+                    item {
+                        Text(
+                            text = stringResource(R.string.msg_crime_arrested),
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = CoralNegative,
+                            fontWeight = FontWeight.Medium
+                        )
+                    }
+                }
+
                 if (incarcerated) {
                     item {
                         Text(
@@ -206,6 +223,54 @@ fun ActionsScreen(
                         )
                     }
                 }
+
+                if (showLifestyleActions) {
+                    item {
+                        SectionHeader(title = stringResource(R.string.section_lifestyle))
+                    }
+                    item {
+                        LifestyleActionCard(
+                            character = character,
+                            option = LifestyleOption.GYM,
+                            activeTitleRes = R.string.lifestyle_gym_active,
+                            inactiveTitleRes = R.string.lifestyle_gym_title,
+                            descriptionRes = R.string.lifestyle_gym_desc,
+                            yearlyCost = HealthEngine.GYM_YEARLY_COST,
+                            icon = AppIcons.Health,
+                            onToggle = { enable ->
+                                pendingAction.request(PendingAction.Lifestyle(LifestyleOption.GYM, enable))
+                            }
+                        )
+                    }
+                    item {
+                        LifestyleActionCard(
+                            character = character,
+                            option = LifestyleOption.DIET,
+                            activeTitleRes = R.string.lifestyle_diet_active,
+                            inactiveTitleRes = R.string.lifestyle_diet_title,
+                            descriptionRes = R.string.lifestyle_diet_desc,
+                            yearlyCost = HealthEngine.DIET_YEARLY_COST,
+                            icon = AppIcons.Looks,
+                            onToggle = { enable ->
+                                pendingAction.request(PendingAction.Lifestyle(LifestyleOption.DIET, enable))
+                            }
+                        )
+                    }
+                    item {
+                        LifestyleActionCard(
+                            character = character,
+                            option = LifestyleOption.THERAPIST,
+                            activeTitleRes = R.string.lifestyle_therapist_active,
+                            inactiveTitleRes = R.string.lifestyle_therapist_title,
+                            descriptionRes = R.string.lifestyle_therapist_desc,
+                            yearlyCost = HealthEngine.THERAPIST_YEARLY_COST,
+                            icon = AppIcons.Happiness,
+                            onToggle = { enable ->
+                                pendingAction.request(PendingAction.Lifestyle(LifestyleOption.THERAPIST, enable))
+                            }
+                        )
+                    }
+                }
             }
         }
     }
@@ -216,6 +281,7 @@ fun ActionsScreen(
             when (action) {
                 is PendingAction.Crime -> onAttemptCrime(action.type)
                 is PendingAction.Treatment -> onVisitDoctor(action.condition.id, action.careType)
+                is PendingAction.Lifestyle -> onSetLifestyleOption(action.option, action.enable)
             }
         }
     ) { action, onConfirm, onDismiss ->
@@ -251,8 +317,87 @@ fun ActionsScreen(
                     onDismiss = onDismiss
                 )
             }
+            is PendingAction.Lifestyle -> {
+                val label = lifestyleLabel(action.option, action.enable)
+                if (action.enable) {
+                    ConfirmActionDialog(
+                        title = stringResource(R.string.dialog_lifestyle_enable_title),
+                        description = stringResource(
+                            R.string.dialog_lifestyle_enable_desc,
+                            label,
+                            stringResource(
+                                R.string.format_yearly_cost,
+                                formatMoney(lifestyleYearlyCost(action.option), character.countryCode)
+                            )
+                        ),
+                        confirmLabel = stringResource(R.string.btn_subscribe),
+                        severity = ConfirmSeverity.NEUTRAL,
+                        onConfirm = onConfirm,
+                        onDismiss = onDismiss
+                    )
+                } else {
+                    ConfirmActionDialog(
+                        title = stringResource(R.string.dialog_lifestyle_disable_title),
+                        description = stringResource(
+                            R.string.dialog_lifestyle_disable_desc,
+                            label
+                        ),
+                        confirmLabel = stringResource(R.string.btn_cancel_subscription),
+                        severity = ConfirmSeverity.NEUTRAL,
+                        onConfirm = onConfirm,
+                        onDismiss = onDismiss
+                    )
+                }
+            }
         }
     }
+}
+
+@Composable
+private fun LifestyleActionCard(
+    character: Character,
+    option: LifestyleOption,
+    activeTitleRes: Int,
+    inactiveTitleRes: Int,
+    descriptionRes: Int,
+    yearlyCost: Int,
+    icon: androidx.compose.ui.graphics.vector.ImageVector,
+    onToggle: (Boolean) -> Unit
+) {
+    val active = when (option) {
+        LifestyleOption.GYM -> character.lifestyle.hasGymMembership
+        LifestyleOption.DIET -> character.lifestyle.isVegan
+        LifestyleOption.THERAPIST -> character.lifestyle.hasTherapist
+    }
+    ActionCard(
+        icon = icon,
+        title = stringResource(if (active) activeTitleRes else inactiveTitleRes),
+        description = stringResource(descriptionRes),
+        metaLabel = stringResource(
+            R.string.format_yearly_cost,
+            formatMoney(yearlyCost, character.countryCode)
+        ),
+        onClick = { onToggle(!active) }
+    )
+}
+
+@Composable
+private fun lifestyleLabel(option: LifestyleOption, enabling: Boolean): String = when (option) {
+    LifestyleOption.GYM -> stringResource(
+        if (enabling) R.string.lifestyle_gym_title else R.string.lifestyle_gym_active
+    )
+    LifestyleOption.DIET -> stringResource(
+        if (enabling) R.string.lifestyle_diet_title else R.string.lifestyle_diet_active
+    )
+    LifestyleOption.THERAPIST -> stringResource(
+        if (enabling) R.string.lifestyle_therapist_title else R.string.lifestyle_therapist_active
+    )
+}
+
+private fun lifestyleYearlyCost(option: LifestyleOption): Int = when (option) {
+    LifestyleOption.GYM -> HealthEngine.GYM_YEARLY_COST
+    LifestyleOption.DIET -> HealthEngine.DIET_YEARLY_COST
+    LifestyleOption.THERAPIST -> HealthEngine.THERAPIST_YEARLY_COST
 }
 
 @Composable

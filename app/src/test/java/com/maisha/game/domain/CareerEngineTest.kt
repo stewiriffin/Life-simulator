@@ -13,7 +13,7 @@ import org.junit.Test
 
 class CareerEngineTest {
 
-    private val engine = CareerEngine()
+    private val engine = CareerEngine(HealthEngine())
 
     @Test
     fun getEligibleJobs_filtersByEducationStage() {
@@ -125,5 +125,62 @@ class CareerEngineTest {
     fun shouldTriggerDownsizing_falseWhenUnemployed() {
         val unemployed = TestFixtures.character(age = 30)
         assertFalse(engine.shouldTriggerDownsizing(unemployed))
+    }
+
+    @Test
+    fun applyDownsizing_removesJobAndReducesHappiness() {
+        val job = TestFixtures.job()
+        val character = TestFixtures.character(
+            stats = Stats(happiness = 60),
+            career = CareerState(currentJob = job, yearsAtCurrentJob = 2)
+        )
+        val (after, title) = engine.applyDownsizing(character)
+        assertEquals(job.title, title)
+        assertEquals(null, after.career.currentJob)
+        assertEquals(0, after.career.yearsAtCurrentJob)
+        assertEquals(45, after.stats.happiness)
+        assertTrue(after.eventLog.first().contains("downsizing", ignoreCase = true))
+
+        val (unchanged, emptyTitle) = engine.applyDownsizing(TestFixtures.character())
+        assertEquals("", emptyTitle)
+        assertEquals(null, unchanged.career.currentJob)
+        assertEquals(50, unchanged.stats.happiness)
+    }
+
+    @Test
+    fun retire_setsRetirementStateAndCalculatesPension() {
+        val salary = 500_000
+        val character = TestFixtures.character(
+            age = 62,
+            career = CareerState(currentJob = TestFixtures.job(baseSalary = salary))
+        )
+        val result = engine.retire(character)
+        assertTrue(result is RetirementResult.Success)
+        val updated = (result as RetirementResult.Success).character
+        assertTrue(updated.career.isRetired)
+        assertEquals(null, updated.career.currentJob)
+        assertTrue(updated.career.pensionAmount in (salary * 0.40).toInt()..(salary * 0.60).toInt())
+        assertTrue(updated.career.jobHistory.isNotEmpty())
+    }
+
+    @Test
+    fun retire_ineligibleWhenTooYoung() {
+        val character = TestFixtures.character(
+            age = 55,
+            career = CareerState(currentJob = TestFixtures.job())
+        )
+        assertTrue(engine.retire(character) is RetirementResult.Ineligible)
+    }
+
+    @Test
+    fun financeEngine_addsPensionToNetWorthDuringRetirement() {
+        val financeEngine = FinanceEngine()
+        val character = TestFixtures.character(
+            stats = Stats(money = 100_000),
+            career = CareerState(isRetired = true, pensionAmount = 25_000)
+        )
+        val after = financeEngine.applyPension(character)
+        assertEquals(125_000, after.stats.money)
+        assertEquals(125_000, financeEngine.calculateNetWorth(after))
     }
 }

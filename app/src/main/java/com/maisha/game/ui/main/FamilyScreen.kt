@@ -27,6 +27,7 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.key
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -55,6 +56,11 @@ import com.maisha.game.ui.components.PersonDetailSheet
 import com.maisha.game.ui.theme.AccentPink
 import com.maisha.game.ui.theme.MaishaSpacing
 import com.maisha.game.ui.theme.NavyDeep
+
+private enum class FamilyListContentType {
+    SectionHeader,
+    PersonCard
+}
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -188,66 +194,96 @@ fun FamilyScreen(
                 verticalArrangement = Arrangement.spacedBy(8.dp)
             ) {
                 if (parents.isNotEmpty()) {
-                    item { FamilySectionHeader(stringResource(R.string.section_parents)) }
-                    items(parents, key = { it.id }) { member ->
-                        PersonCard(
-                            person = member,
-                            relationLabel = relationLabel(member),
+                    item(contentType = FamilyListContentType.SectionHeader) {
+                        FamilySectionHeader(stringResource(R.string.section_parents))
+                    }
+                    items(
+                        parents,
+                        key = { it.id },
+                        contentType = { FamilyListContentType.PersonCard }
+                    ) { member ->
+                        FamilyPersonCard(
+                            member = member,
                             playerCountryCode = character.countryCode,
                             onClick = { onMemberClick(member) }
                         )
                     }
                 }
                 if (siblings.isNotEmpty()) {
-                    item { FamilySectionHeader(stringResource(R.string.section_siblings)) }
-                    items(siblings, key = { it.id }) { member ->
-                        PersonCard(
-                            person = member,
-                            relationLabel = relationLabel(member),
+                    item(contentType = FamilyListContentType.SectionHeader) {
+                        FamilySectionHeader(stringResource(R.string.section_siblings))
+                    }
+                    items(
+                        siblings,
+                        key = { it.id },
+                        contentType = { FamilyListContentType.PersonCard }
+                    ) { member ->
+                        FamilyPersonCard(
+                            member = member,
                             playerCountryCode = character.countryCode,
                             onClick = { onMemberClick(member) }
                         )
                     }
                 }
                 if (partner.isNotEmpty()) {
-                    item { FamilySectionHeader(stringResource(R.string.section_partner)) }
-                    items(partner, key = { it.id }) { member ->
-                        PersonCard(
-                            person = member,
-                            relationLabel = relationLabel(member),
+                    item(contentType = FamilyListContentType.SectionHeader) {
+                        FamilySectionHeader(stringResource(R.string.section_partner))
+                    }
+                    items(
+                        partner,
+                        key = { it.id },
+                        contentType = { FamilyListContentType.PersonCard }
+                    ) { member ->
+                        FamilyPersonCard(
+                            member = member,
                             playerCountryCode = character.countryCode,
                             onClick = { onMemberClick(member) }
                         )
                     }
                 }
                 if (children.isNotEmpty()) {
-                    item { FamilySectionHeader(stringResource(R.string.section_children)) }
-                    items(children, key = { it.id }) { member ->
-                        PersonCard(
-                            person = member,
-                            relationLabel = relationLabel(member),
+                    item(contentType = FamilyListContentType.SectionHeader) {
+                        FamilySectionHeader(stringResource(R.string.section_children))
+                    }
+                    items(
+                        children,
+                        key = { it.id },
+                        contentType = { FamilyListContentType.PersonCard }
+                    ) { member ->
+                        FamilyPersonCard(
+                            member = member,
                             playerCountryCode = character.countryCode,
                             onClick = { onMemberClick(member) }
                         )
                     }
                 }
                 if (friends.isNotEmpty()) {
-                    item { FamilySectionHeader(stringResource(R.string.section_friends)) }
-                    items(friends, key = { it.id }) { member ->
-                        PersonCard(
-                            person = member,
-                            relationLabel = relationLabel(member),
+                    item(contentType = FamilyListContentType.SectionHeader) {
+                        FamilySectionHeader(stringResource(R.string.section_friends))
+                    }
+                    items(
+                        friends,
+                        key = { it.id },
+                        contentType = { FamilyListContentType.PersonCard }
+                    ) { member ->
+                        FamilyPersonCard(
+                            member = member,
                             playerCountryCode = character.countryCode,
                             onClick = { onMemberClick(member) }
                         )
                     }
                 }
                 if (others.isNotEmpty()) {
-                    item { FamilySectionHeader(stringResource(R.string.section_other)) }
-                    items(others, key = { it.id }) { member ->
-                        PersonCard(
-                            person = member,
-                            relationLabel = relationLabel(member),
+                    item(contentType = FamilyListContentType.SectionHeader) {
+                        FamilySectionHeader(stringResource(R.string.section_other))
+                    }
+                    items(
+                        others,
+                        key = { it.id },
+                        contentType = { FamilyListContentType.PersonCard }
+                    ) { member ->
+                        FamilyPersonCard(
+                            member = member,
                             playerCountryCode = character.countryCode,
                             onClick = { onMemberClick(member) }
                         )
@@ -291,6 +327,22 @@ fun FamilyScreen(
                 onHaveChild = onHaveChild
             )
         }
+    }
+}
+
+@Composable
+private fun FamilyPersonCard(
+    member: Person,
+    playerCountryCode: String,
+    onClick: () -> Unit
+) {
+    key(member.id, member.relation, member.isMarried) {
+        PersonCard(
+            person = member,
+            relationLabel = relationLabel(member),
+            playerCountryCode = playerCountryCode,
+            onClick = onClick
+        )
     }
 }
 

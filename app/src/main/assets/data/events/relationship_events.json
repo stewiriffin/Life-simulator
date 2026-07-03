@@ -174,6 +174,66 @@
           "resultText": "You table the idea for later. Relief and disappointment share the room."
         }
       ]
+    },
+    {
+      "id": "spouse_adopt_pet",
+      "minAge": 22,
+      "maxAge": 55,
+      "text": "Your spouse shows you photos of rescue puppies online. They want to adopt one this weekend.",
+      "weight": 4,
+      "tags": ["relationship", "requires_spouse"],
+      "choices": [
+        { "label": "Visit the shelter together", "statEffects": { "happiness": 7, "money": -4000 }, "spouseRelationshipEffect": 8, "resultText": "A wagging tail greeted you at the door that evening." },
+        { "label": "Say the timing is wrong", "statEffects": { "happiness": -3 }, "spouseRelationshipEffect": -6, "resultText": "They closed the laptop quietly. The apartment felt colder." }
+      ]
+    },
+    {
+      "id": "sibling_massive_loan",
+      "minAge": 25,
+      "maxAge": 60,
+      "text": "Your sibling calls in tears. They need a large loan to cover rent and medical bills before month end.",
+      "weight": 4,
+      "tags": ["relationship"],
+      "choices": [
+        { "label": "Lend what you can afford", "statEffects": { "money": -25000, "happiness": 3 }, "siblingRelationshipEffect": 12, "resultText": "They promised to repay you. Family came first." },
+        { "label": "Refuse — you are saving too", "statEffects": { "happiness": -4 }, "siblingRelationshipEffect": -10, "resultText": "The call ended abruptly. Silence lingered for weeks." }
+      ]
+    },
+    {
+      "id": "dating_prospect_secret",
+      "minAge": 18,
+      "maxAge": 40,
+      "text": "Someone you have been dating admits they are still paying off a hidden debt from a failed business.",
+      "weight": 4,
+      "tags": ["relationship", "requires_single"],
+      "choices": [
+        { "label": "Appreciate the honesty", "statEffects": { "happiness": 4, "smarts": 1 }, "resultText": "Trust deepened, even if the future looked complicated." },
+        { "label": "End things tonight", "statEffects": { "happiness": -5 }, "resultText": "You wished they had told you sooner. The door closed firmly." }
+      ]
+    },
+    {
+      "id": "spouse_relocation_talk",
+      "minAge": 24,
+      "maxAge": 55,
+      "text": "Your spouse suggests relocating for their dream job in another city. Boxes and goodbyes flash through your mind.",
+      "weight": 3,
+      "tags": ["relationship", "requires_married"],
+      "choices": [
+        { "label": "Agree to explore the move", "statEffects": { "happiness": 2 }, "spouseRelationshipEffect": 10, "resultText": "You started researching neighbourhoods together." },
+        { "label": "Insist on staying put", "statEffects": { "happiness": -4 }, "spouseRelationshipEffect": -8, "resultText": "They nodded, but disappointment hung in the air." }
+      ]
+    },
+    {
+      "id": "parent_expects_financial_help",
+      "minAge": 28,
+      "maxAge": 65,
+      "text": "Your parent hints they cannot cover upcoming medical bills alone. Pride wars with need in their voice.",
+      "weight": 4,
+      "tags": ["relationship", "requires_parent"],
+      "choices": [
+        { "label": "Send money this week", "statEffects": { "money": -15000, "happiness": 4 }, "familyRelationshipEffect": 10, "resultText": "Gratitude poured through the phone. Duty felt like love." },
+        { "label": "Offer emotional support only", "statEffects": { "happiness": -3 }, "familyRelationshipEffect": -6, "resultText": "They thanked you stiffly. The bills remained." }
+      ]
     }
   ]
 }

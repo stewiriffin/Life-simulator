@@ -21,6 +21,7 @@ data class CharacterEntity(
     val birthCountryCode: String = "KE",
     val secondaryCountryCode: String? = null,
     val relocationCount: Int = 0,
+    val yearsInCurrentCountry: Int = 0,
     val lastRelocationAge: Int? = null,
     val lastHolidayAge: Int? = null,
     val relocationHistoryJson: String = "[]",
@@ -34,5 +35,6 @@ data class CharacterEntity(
     val assetsJson: String = "[]",
     val criminalRecordJson: String = "{}",
     val healthConditionsJson: String = "[]",
-    val generationNumber: Int = 1
+    val generationNumber: Int = 1,
+    val lifestyleJson: String = "{}"
 )

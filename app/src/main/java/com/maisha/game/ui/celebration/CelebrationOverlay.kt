@@ -6,6 +6,7 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -15,12 +16,13 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.drawscope.rotate
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.dp
-import com.maisha.game.ui.theme.GoldAccent
-import com.maisha.game.ui.theme.TealPrimary
 import kotlinx.coroutines.delay
+import kotlin.math.abs
 import kotlin.math.cos
 import kotlin.math.sin
 import kotlin.random.Random
@@ -40,8 +42,11 @@ private data class Particle(
     val velocityX: Float,
     val velocityY: Float,
     val color: Color,
-    val size: Float,
+    val width: Float,
+    val height: Float,
+    val initialRotation: Float,
     val rotationSpeed: Float,
+    val isStrip: Boolean,
     var age: Float = 0f
 )
 
@@ -52,26 +57,30 @@ fun CelebrationOverlay(
     modifier: Modifier = Modifier
 ) {
     val density = LocalDensity.current
+    val primary = MaterialTheme.colorScheme.primary
+    val accent = MaterialTheme.colorScheme.secondary
+    val error = MaterialTheme.colorScheme.error
     var progress by remember(type) { mutableFloatStateOf(0f) }
     var dismissed by remember(type) { mutableStateOf(false) }
-    val particles = remember(type) {
-        val palette = when (type) {
-            CelebrationType.MARRIAGE, CelebrationType.CHILD_BORN -> listOf(GoldAccent, TealPrimary, Color(0xFFFF8FAB))
-            CelebrationType.GRADUATION -> listOf(TealPrimary, GoldAccent, Color.White)
-            CelebrationType.ACHIEVEMENT -> listOf(GoldAccent, Color(0xFFFFD54F), TealPrimary)
-            else -> listOf(GoldAccent, TealPrimary, Color(0xFFB39DDB))
-        }
+    val particles = remember(type, primary, accent, error) {
+        val palette = listOf(primary, accent, error)
         List(PARTICLE_COUNT) {
-            val angle = Random.nextFloat() * 6.28f
-            val speed = Random.nextFloat() * 3.5f + 2f
+            val angle = Random.nextFloat() * (Math.PI * 2).toFloat()
+            val speed = Random.nextFloat() * 6f + 1.2f
+            val horizontalBias = Random.nextFloat() * 2.4f - 1.2f
+            val verticalBoost = Random.nextFloat() * 5f + 1.5f
+            val sizeBase = with(density) { (3.5f + Random.nextFloat() * 5f).dp.toPx() }
             Particle(
-                originX = Random.nextFloat(),
-                originY = -0.05f - Random.nextFloat() * 0.1f,
-                velocityX = cos(angle) * speed,
-                velocityY = sin(angle) * speed + 2.5f,
+                originX = 0.15f + Random.nextFloat() * 0.7f,
+                originY = -0.08f - Random.nextFloat() * 0.15f,
+                velocityX = cos(angle) * speed * horizontalBias,
+                velocityY = sin(angle).coerceAtLeast(0.05f) * speed + verticalBoost,
                 color = palette[Random.nextInt(palette.size)],
-                size = with(density) { (4 + Random.nextFloat() * 4).dp.toPx() },
-                rotationSpeed = Random.nextFloat() * 4f - 2f
+                width = sizeBase * (0.8f + Random.nextFloat() * 0.9f),
+                height = sizeBase * (0.35f + Random.nextFloat() * 0.55f),
+                initialRotation = Random.nextFloat() * 360f,
+                rotationSpeed = Random.nextFloat() * 720f - 360f,
+                isStrip = Random.nextBoolean()
             )
         }
     }
@@ -107,15 +116,29 @@ fun CelebrationOverlay(
             val h = size.height
             particles.forEach { p ->
                 p.age = progress
-                val x = (p.originX * w) + p.velocityX * p.age * w * 0.12f
-                val y = (p.originY * h) + p.velocityY * p.age * h * 0.14f + 0.5f * 9.8f * p.age * p.age * h * 0.02f
-                val alpha = (1f - p.age).coerceIn(0f, 1f)
-                if (alpha > 0.02f && y < h + 40f) {
-                    drawCircle(
-                        color = p.color.copy(alpha = alpha),
-                        radius = p.size,
-                        center = Offset(x, y)
-                    )
+                val driftScaleX = w * (0.10f + (p.originX * 0.04f))
+                val driftScaleY = h * (0.12f + abs(p.originY) * 0.03f)
+                val x = (p.originX * w) + p.velocityX * p.age * driftScaleX
+                val y = (p.originY * h) + p.velocityY * p.age * driftScaleY +
+                    0.5f * 9.8f * p.age * p.age * h * 0.022f
+                val alpha = (1f - p.age * p.age).coerceIn(0f, 1f)
+                val rotation = p.initialRotation + p.rotationSpeed * p.age
+                if (alpha > 0.02f && y < h + 60f) {
+                    rotate(degrees = rotation, pivot = Offset(x, y)) {
+                        if (p.isStrip) {
+                            drawRect(
+                                color = p.color.copy(alpha = alpha),
+                                topLeft = Offset(x - p.width / 2f, y - p.height / 2f),
+                                size = Size(p.width, p.height)
+                            )
+                        } else {
+                            drawCircle(
+                                color = p.color.copy(alpha = alpha),
+                                radius = p.width * 0.45f,
+                                center = Offset(x, y)
+                            )
+                        }
+                    }
                 }
             }
         }

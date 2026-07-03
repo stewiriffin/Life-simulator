@@ -2,6 +2,7 @@ package com.maisha.game.domain
 
 import com.maisha.game.data.model.EducationState
 import com.maisha.game.data.model.ExamType
+import com.maisha.game.data.model.RelationType
 import com.maisha.game.data.model.SchoolStage
 import com.maisha.game.data.model.Stats
 import org.junit.Assert.assertEquals
@@ -186,5 +187,101 @@ class EducationEngineTest {
                 engine.shouldTriggerSecondaryExam(character)
             )
         }
+    }
+
+    @Test
+    fun processDropout_capsEducationLevelAndPreventsProgression() {
+        val inSecondary = TestFixtures.character(
+            age = 16,
+            education = EducationState(
+                stage = SchoolStage.SECONDARY,
+                currentGrade = 2,
+                gpa = 2.5f,
+                schoolName = "Test High",
+                kcpePassed = true
+            )
+        )
+        val afterDropout = engine.processDropout(inSecondary)
+        assertEquals(SchoolStage.NONE, afterDropout.education.stage)
+        assertEquals(SchoolStage.SECONDARY, afterDropout.education.droppedOutFrom)
+        assertEquals(true, afterDropout.education.kcpePassed)
+
+        val advanced = engine.advanceGrade(afterDropout, com.maisha.game.data.model.StudyEffort.NORMAL)
+        assertEquals(SchoolStage.NONE, advanced.education.stage)
+
+        val reEnrollAttempt = engine.enrollIfEligible(
+            afterDropout.copy(
+                age = 15,
+                education = afterDropout.education.copy(
+                    stage = SchoolStage.PRIMARY,
+                    currentGrade = 8,
+                    kcpePassed = true
+                )
+            )
+        )
+        assertEquals(SchoolStage.PRIMARY, reEnrollAttempt.education.stage)
+        assertEquals(SchoolStage.SECONDARY, reEnrollAttempt.education.droppedOutFrom)
+    }
+
+    @Test
+    fun processExpulsion_updatesStateAndTriggersFamilyPenalty() {
+        val relationshipEngine = RelationshipEngine()
+        val mother = TestFixtures.person(
+            id = "mom",
+            relation = RelationType.MOTHER,
+            relationshipLevel = 80
+        )
+        val father = TestFixtures.person(
+            id = "dad",
+            relation = RelationType.FATHER,
+            relationshipLevel = 75
+        )
+        val student = TestFixtures.character(
+            age = 15,
+            family = listOf(mother, father),
+            education = EducationState(
+                stage = SchoolStage.SECONDARY,
+                currentGrade = 2,
+                schoolName = "Test High"
+            )
+        )
+
+        val expelled = engine.processExpulsion(student)
+        assertTrue(expelled.education.expelled)
+        assertEquals(SchoolStage.NONE, expelled.education.stage)
+
+        val withFamilyPenalty = relationshipEngine.applyExpulsionFamilyEffect(expelled)
+        assertEquals(50, withFamilyPenalty.family.first { it.relation == RelationType.MOTHER }.relationshipLevel)
+        assertEquals(45, withFamilyPenalty.family.first { it.relation == RelationType.FATHER }.relationshipLevel)
+    }
+
+    @Test
+    fun careerEngine_rejectsDropoutForDegreeRequiredJobs() {
+        val careerEngine = CareerEngine(HealthEngine())
+        val secondaryDropout = TestFixtures.character(
+            age = 20,
+            education = EducationState(
+                stage = SchoolStage.NONE,
+                droppedOutFrom = SchoolStage.SECONDARY,
+                kcpePassed = true,
+                kcseGrade = null
+            )
+        )
+        assertFalse(careerEngine.isJobEligible(secondaryDropout))
+        assertTrue(careerEngine.getEligibleJobs(secondaryDropout).isEmpty())
+
+        val universityDropout = TestFixtures.character(
+            age = 22,
+            education = EducationState(
+                stage = SchoolStage.NONE,
+                droppedOutFrom = SchoolStage.UNIVERSITY,
+                kcseGrade = "B",
+                kcpePassed = true
+            )
+        )
+        assertTrue(careerEngine.isJobEligible(universityDropout))
+        val graduatedJobs = careerEngine.getEligibleJobs(universityDropout)
+            .filter { it.minEducation == SchoolStage.GRADUATED }
+        assertTrue(graduatedJobs.isEmpty())
     }
 }

@@ -1,6 +1,8 @@
 // app/src/main/java/com/maisha/game/ui/components/StatBar.kt (modified — AppIcons for stat glyphs)
 package com.maisha.game.ui.components
 
+import androidx.compose.animation.animateColorAsState
+import androidx.compose.animation.core.EaseOutCubic
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
@@ -29,6 +31,8 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.semantics.stateDescription
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.maisha.game.R
@@ -52,6 +56,7 @@ enum class StatType {
     SMARTS,
     LOOKS,
     MONEY,
+    NET_WORTH,
     RELATIONSHIP,
     CONDITION,
     PERFORMANCE
@@ -63,6 +68,7 @@ fun StatType.color(): Color = when (this) {
     StatType.SMARTS -> StatSmarts
     StatType.LOOKS -> StatLooks
     StatType.MONEY -> StatMoney
+    StatType.NET_WORTH -> StatMoney
     StatType.RELATIONSHIP -> StatRelationship
     StatType.CONDITION -> StatCondition
     StatType.PERFORMANCE -> StatPerformance
@@ -77,6 +83,7 @@ private fun StatType.defaultLabel(): String = when (this) {
     StatType.SMARTS -> stringResource(R.string.stat_smarts)
     StatType.LOOKS -> stringResource(R.string.stat_looks)
     StatType.MONEY -> stringResource(R.string.stat_money)
+    StatType.NET_WORTH -> stringResource(R.string.label_net_worth)
     StatType.RELATIONSHIP -> stringResource(R.string.stat_relationship)
     StatType.CONDITION -> stringResource(R.string.stat_condition)
     StatType.PERFORMANCE -> stringResource(R.string.stat_performance)
@@ -91,17 +98,35 @@ fun StatBar(
     maxValue: Int = 100,
     showIcon: Boolean = true,
     showBar: Boolean = true,
-    displayValue: String? = null
+    displayValue: String? = null,
+    barColorOverride: Color? = null
 ) {
-    val barColor = type.color()
     val progress = (value.toFloat() / maxValue).coerceIn(0f, 1f)
+    val statAnimationSpec = tween<Float>(durationMillis = 600, easing = EaseOutCubic)
     val animatedProgress by animateFloatAsState(
         targetValue = progress,
-        animationSpec = tween(durationMillis = 400),
+        animationSpec = statAnimationSpec,
         label = "statProgress"
+    )
+
+    val normalBarColor = barColorOverride ?: type.color()
+    val criticalBarColor = if (barColorOverride == null && type in CRITICAL_STAT_TYPES && value < CRITICAL_THRESHOLD) {
+        CoralNegative
+    } else {
+        normalBarColor
+    }
+    val barColor by animateColorAsState(
+        targetValue = criticalBarColor,
+        animationSpec = tween(durationMillis = 600, easing = EaseOutCubic),
+        label = "statBarColor"
     )
     val resolvedLabel = label ?: type.defaultLabel()
     val resolvedValue = displayValue ?: value.toString()
+    val stateDescriptionText = if (showBar && type !in VALUE_STAT_TYPES) {
+        stringResource(R.string.a11y_stat_percent, resolvedLabel, value.coerceIn(0, maxValue))
+    } else {
+        stringResource(R.string.a11y_stat_value, resolvedLabel, resolvedValue)
+    }
 
     var previousValue by remember { mutableIntStateOf(value) }
     var flashAlpha by remember { mutableStateOf(0f) }
@@ -121,11 +146,17 @@ fun StatBar(
 
     val animatedFlashAlpha by animateFloatAsState(
         targetValue = flashAlpha,
-        animationSpec = tween(200),
+        animationSpec = tween(durationMillis = 300, easing = EaseOutCubic),
         label = "statFlash"
     )
 
-    Column(modifier = modifier.fillMaxWidth()) {
+    Column(
+        modifier = modifier
+            .fillMaxWidth()
+            .semantics {
+                stateDescription = stateDescriptionText
+            }
+    ) {
         Row(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.SpaceBetween,
@@ -187,6 +218,20 @@ fun StatBar(
         }
     }
 }
+
+private val VALUE_STAT_TYPES = setOf(StatType.MONEY, StatType.NET_WORTH)
+
+private val CRITICAL_STAT_TYPES = setOf(
+    StatType.HEALTH,
+    StatType.HAPPINESS,
+    StatType.SMARTS,
+    StatType.LOOKS,
+    StatType.CONDITION,
+    StatType.PERFORMANCE,
+    StatType.RELATIONSHIP
+)
+
+private const val CRITICAL_THRESHOLD = 30
 
 @Composable
 fun MoneyStatRow(

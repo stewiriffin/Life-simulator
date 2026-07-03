@@ -94,6 +94,7 @@ class AchievementEngine @Inject constructor(
 
     private fun checkDropout(character: Character): Boolean =
         character.education.expelled ||
+            character.education.droppedOutFrom != null ||
             (character.education.kcpePassed == false) ||
             (character.education.kcseGrade?.uppercase() in setOf("D", "E"))
 

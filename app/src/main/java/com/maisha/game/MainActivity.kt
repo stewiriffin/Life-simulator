@@ -10,12 +10,12 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
-import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.lifecycle.lifecycleScope
 import androidx.navigation.compose.rememberNavController
 import com.maisha.game.ads.AdManager
+import com.maisha.game.data.events.EventRepository
 import com.maisha.game.data.local.SettingsRepository
 import com.maisha.game.feedback.FeedbackManager
 import com.maisha.game.ui.feedback.LocalFeedbackManager
@@ -27,6 +27,7 @@ import com.maisha.game.util.LocaleManager
 import dagger.hilt.android.AndroidEntryPoint
 import java.util.concurrent.atomic.AtomicBoolean
 import javax.inject.Inject
+import kotlinx.coroutines.async
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
 
@@ -41,6 +42,9 @@ class MainActivity : ComponentActivity() {
 
     @Inject
     lateinit var feedbackManager: FeedbackManager
+
+    @Inject
+    lateinit var eventRepository: EventRepository
 
     private var deepLinkSlotId by mutableIntStateOf(-1)
     private val keepSplashOnScreen = AtomicBoolean(true)
@@ -59,7 +63,9 @@ class MainActivity : ComponentActivity() {
         var startDestination by mutableStateOf(Routes.SLOT_PICKER)
 
         lifecycleScope.launch {
+            val eventsLoad = async { eventRepository.ensureLoaded() }
             val onboardingComplete = settingsRepository.hasCompletedOnboardingSnapshot()
+            eventsLoad.await()
             startDestination = if (onboardingComplete) {
                 Routes.SLOT_PICKER
             } else {

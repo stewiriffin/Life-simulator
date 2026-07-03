@@ -5,7 +5,11 @@ import android.app.Application
 import androidx.core.app.NotificationManagerCompat
 import androidx.hilt.work.HiltWorkerFactory
 import androidx.work.Configuration
+import androidx.lifecycle.DefaultLifecycleObserver
+import androidx.lifecycle.LifecycleOwner
+import androidx.lifecycle.ProcessLifecycleOwner
 import com.google.android.gms.ads.MobileAds
+import com.maisha.game.data.events.EventRepository
 import com.maisha.game.data.local.SettingsRepository
 import com.maisha.game.feedback.FeedbackManager
 import com.maisha.game.notifications.NotificationHelper
@@ -32,6 +36,9 @@ class MaishaApplication : Application(), Configuration.Provider {
     @Inject
     lateinit var settingsRepository: SettingsRepository
 
+    @Inject
+    lateinit var eventRepository: EventRepository
+
     private val applicationScope = CoroutineScope(SupervisorJob() + Dispatchers.Main)
 
     override val workManagerConfiguration: Configuration
@@ -42,8 +49,17 @@ class MaishaApplication : Application(), Configuration.Provider {
     override fun onCreate() {
         super.onCreate()
         MobileAds.initialize(this)
-        feedbackManager.preloadSounds(this)
         NotificationHelper.createNotificationChannel(this)
+
+        applicationScope.launch(Dispatchers.Default) {
+            eventRepository.ensureLoaded()
+        }
+
+        ProcessLifecycleOwner.get().lifecycle.addObserver(object : DefaultLifecycleObserver {
+            override fun onDestroy(owner: LifecycleOwner) {
+                feedbackManager.release()
+            }
+        })
 
         applicationScope.launch {
             if (settingsRepository.isNotificationsEnabledNow() &&
@@ -52,5 +68,11 @@ class MaishaApplication : Application(), Configuration.Provider {
                 notificationScheduler.scheduleDailyReminder()
             }
         }
+    }
+
+    @Suppress("DEPRECATION")
+    override fun onTerminate() {
+        feedbackManager.release()
+        super.onTerminate()
     }
 }

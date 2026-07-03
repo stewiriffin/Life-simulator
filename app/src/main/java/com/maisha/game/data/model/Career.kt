@@ -23,7 +23,9 @@ data class Job(
 data class CareerState(
     val currentJob: Job? = null,
     val jobHistory: List<String> = emptyList(),
-    val yearsAtCurrentJob: Int = 0
+    val yearsAtCurrentJob: Int = 0,
+    val isRetired: Boolean = false,
+    val pensionAmount: Int = 0
 )
 
 @Serializable

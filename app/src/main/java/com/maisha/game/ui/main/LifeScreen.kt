@@ -4,6 +4,7 @@ package com.maisha.game.ui.main
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -77,6 +78,8 @@ import com.maisha.game.ui.theme.AppIcons
 import com.maisha.game.ui.theme.GoldAccent
 import com.maisha.game.ui.theme.MaishaRadius
 import com.maisha.game.ui.theme.MaishaSpacing
+import com.maisha.game.ui.theme.NavyDeep
+import com.maisha.game.ui.theme.NavyElevated
 import com.maisha.game.ui.theme.TealPrimary
 import com.maisha.game.util.formatMoney
 
@@ -98,12 +101,23 @@ fun LifeScreen(
     onRelationshipMessageDismissed: () -> Unit,
     onApplyForJob: (String) -> Unit,
     onQuitJob: () -> Unit,
+    onRetire: () -> Unit,
+    retirementPensionEstimate: Int,
+    onDropOut: () -> Unit,
     onCareerMessageDismissed: () -> Unit,
     onPurchaseAsset: (String) -> Unit,
     onSellAsset: (String) -> Unit,
+    onRepairAsset: (String) -> Unit,
     onAssetsMessageDismissed: () -> Unit,
     onAttemptCrime: (CrimeType) -> Unit,
+    onGoToTrial: (com.maisha.game.data.model.LawyerTier) -> Unit,
+    lawyerPublicAffordable: Boolean,
+    lawyerAverageFee: Int,
+    lawyerAverageAffordable: Boolean,
+    lawyerExpensiveFee: Int,
+    lawyerExpensiveAffordable: Boolean,
     onVisitDoctor: (String, CareType) -> Unit,
+    onSetLifestyleOption: (com.maisha.game.data.model.LifestyleOption, Boolean) -> Unit,
     onActionMessageDismissed: () -> Unit,
     onViewCharacterStats: () -> Unit,
     onOpenSettings: () -> Unit,
@@ -185,16 +199,50 @@ fun LifeScreen(
         }
     }
 
-    var selectedTabOrdinal by rememberSaveable { mutableIntStateOf(MainTab.LIFE.ordinal) }
-    val selectedTab = MainTab.entries[selectedTabOrdinal]
-    val snackbarHostState = rememberFamilySnackbarHostState()
+    if (character.criminalRecord.awaitingTrial) {
+        ArrestTrialDialog(
+            character = character,
+            publicDefenderAffordable = lawyerPublicAffordable,
+            averageFee = lawyerAverageFee,
+            averageAffordable = lawyerAverageAffordable,
+            expensiveFee = lawyerExpensiveFee,
+            expensiveAffordable = lawyerExpensiveAffordable,
+            onSelectLawyer = onGoToTrial
+        )
+    }
 
+    val incarcerated = character.criminalRecord.currentlyIncarcerated
+    val disabledTabs = if (incarcerated) {
+        setOf(MainTab.CAREER, MainTab.ASSETS)
+    } else {
+        emptySet()
+    }
+
+    var selectedTabOrdinal by rememberSaveable { mutableIntStateOf(MainTab.LIFE.ordinal) }
+    val selectedTab = MainTab.entries[selectedTabOrdinal.coerceIn(MainTab.entries.indices)]
+
+    LaunchedEffect(incarcerated, selectedTab) {
+        if (selectedTab in disabledTabs) {
+            selectedTabOrdinal = MainTab.LIFE.ordinal
+        }
+    }
+
+    val snackbarHostState = rememberFamilySnackbarHostState()
+    val prisonBackground = if (incarcerated) NavyElevated else MaterialTheme.colorScheme.background
+
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(if (incarcerated) NavyDeep else MaterialTheme.colorScheme.background)
+    ) {
     Scaffold(
+        containerColor = prisonBackground,
         snackbarHost = { SnackbarHost(snackbarHostState) },
         bottomBar = {
             MaishaBottomNav(
                 selectedTab = selectedTab,
-                onTabSelected = { selectedTabOrdinal = it.ordinal }
+                onTabSelected = { selectedTabOrdinal = it.ordinal },
+                disabledTabs = disabledTabs
             )
         }
     ) { innerPadding ->
@@ -242,6 +290,9 @@ fun LifeScreen(
                 snackbarHostState = snackbarHostState,
                 onApplyForJob = onApplyForJob,
                 onQuitJob = onQuitJob,
+                onRetire = onRetire,
+                retirementPensionEstimate = retirementPensionEstimate,
+                onDropOut = onDropOut,
                 onCareerMessageDismissed = onCareerMessageDismissed,
                 modifier = Modifier.padding(innerPadding)
             )
@@ -252,6 +303,7 @@ fun LifeScreen(
                 snackbarHostState = snackbarHostState,
                 onPurchaseAsset = onPurchaseAsset,
                 onSellAsset = onSellAsset,
+                onRepairAsset = onRepairAsset,
                 onAssetsMessageDismissed = onAssetsMessageDismissed,
                 modifier = Modifier.padding(innerPadding)
             )
@@ -261,11 +313,13 @@ fun LifeScreen(
                 snackbarHostState = snackbarHostState,
                 onAttemptCrime = onAttemptCrime,
                 onVisitDoctor = onVisitDoctor,
+                onSetLifestyleOption = onSetLifestyleOption,
                 onActionMessageDismissed = onActionMessageDismissed,
                 modifier = Modifier.padding(innerPadding)
             )
             }
         }
+    }
     }
 }
 
@@ -312,6 +366,7 @@ private fun LifeTabContent(
                                 StatType.SMARTS -> stringResource(R.string.stat_smarts)
                                 StatType.LOOKS -> stringResource(R.string.stat_looks)
                                 StatType.MONEY -> stringResource(R.string.stat_money)
+                                StatType.NET_WORTH -> stringResource(R.string.label_net_worth)
                                 else -> ""
                             }
                         },
@@ -366,7 +421,10 @@ private fun LifeTabContent(
 
         AgeUpButton(
             onClick = onAgeUp,
-            enabled = character.alive && !uiState.isAgingUp && uiState.currentEvent == null,
+            enabled = character.alive &&
+                !uiState.isAgingUp &&
+                uiState.currentEvent == null &&
+                !character.criminalRecord.awaitingTrial,
             isLoading = uiState.isAgingUp,
             modifier = Modifier.padding(vertical = 10.dp)
         )
@@ -394,7 +452,8 @@ private fun CharacterHeader(
             avatarConfig = character.avatarConfig,
             size = 52,
             age = character.age,
-            expression = expression
+            expression = expression,
+            forPlayerCharacter = true
         )
 
         Column(modifier = Modifier.weight(1f)) {

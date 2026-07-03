@@ -10,7 +10,11 @@ import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.clearAndSetSemantics
+import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.unit.Dp
+import com.maisha.game.R
 import com.maisha.game.data.model.AgeStage
 import com.maisha.game.data.model.AvatarConfig
 import com.maisha.game.data.model.Expression
@@ -37,8 +41,30 @@ fun AvatarImage(
     size: Dp,
     modifier: Modifier = Modifier,
     age: Int = 18,
-    expression: Expression = Expression.NEUTRAL
+    expression: Expression = Expression.NEUTRAL,
+    forPlayerCharacter: Boolean = false,
+    hideFromAccessibility: Boolean = false
 ) {
+    val expressionLabel = expressionAccessibilityLabel(expression)
+    val accessibilityDescription = when {
+        hideFromAccessibility -> null
+        forPlayerCharacter -> stringResource(
+            R.string.content_desc_player_avatar_expression,
+            expressionLabel
+        )
+        else -> stringResource(
+            R.string.content_desc_avatar_expression,
+            expressionLabel
+        )
+    }
+    val accessibilityModifier = if (accessibilityDescription == null) {
+        Modifier.clearAndSetSemantics { }
+    } else {
+        Modifier.clearAndSetSemantics {
+            contentDescription = accessibilityDescription
+        }
+    }
+
     val stage = ageStageFor(age)
     val skin = skinTones[config.skinTone % skinTones.size]
     val hair = hairColors[config.hairColor % hairColors.size]
@@ -59,7 +85,7 @@ fun AvatarImage(
         else -> 1.0f
     }
 
-    Canvas(modifier = modifier.size(size)) {
+    Canvas(modifier = modifier.then(accessibilityModifier).size(size)) {
         val w = size.toPx()
         val h = size.toPx()
         val headRadius = w * 0.28f * headScale
@@ -142,6 +168,15 @@ fun AvatarImage(
             )
         }
     }
+}
+
+@Composable
+fun expressionAccessibilityLabel(expression: Expression): String = when (expression) {
+    Expression.NEUTRAL -> stringResource(R.string.a11y_expression_neutral)
+    Expression.HAPPY -> stringResource(R.string.a11y_expression_happy)
+    Expression.SAD -> stringResource(R.string.a11y_expression_sad)
+    Expression.ANGRY -> stringResource(R.string.a11y_expression_angry)
+    Expression.SURPRISED -> stringResource(R.string.a11y_expression_surprised)
 }
 
 private fun androidx.compose.ui.graphics.drawscope.DrawScope.drawHair(

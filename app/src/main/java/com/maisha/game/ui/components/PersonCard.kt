@@ -21,7 +21,9 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.role
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
@@ -30,6 +32,7 @@ import com.maisha.game.R
 import com.maisha.game.data.model.AvatarConfig
 import com.maisha.game.data.model.Expression
 import com.maisha.game.data.model.Person
+import com.maisha.game.data.model.RelationshipTier
 import com.maisha.game.data.model.relationshipTierFor
 import com.maisha.game.ui.avatar.AvatarImage
 import com.maisha.game.ui.avatar.ExpressionResolver
@@ -48,13 +51,25 @@ fun PersonCard(
     val expression = remember(person.id, person.relationshipLevel) {
         ExpressionResolver.resolvePersonExpression(person)
     }
-    val tier = remember(person.relationshipLevel) {
+    val tier = remember(person.id, person.relationshipLevel) {
         relationshipTierFor(person.relationshipLevel)
     }
+    val tierLabel = rememberRelationshipTierLabel(tier)
+    val ageLabel = stringResource(R.string.format_age, person.age)
+    val cardDescription = stringResource(
+        R.string.content_desc_person_card,
+        person.name,
+        tierLabel,
+        ageLabel
+    )
 
     Card(
         modifier = modifier
             .fillMaxWidth()
+            .semantics(mergeDescendants = true) {
+                contentDescription = cardDescription
+                role = Role.Button
+            }
             .clickable(onClick = onClick),
         shape = MaishaRadius.cardShape,
         colors = CardDefaults.cardColors(
@@ -73,7 +88,8 @@ fun PersonCard(
                 avatarConfig = person.avatarConfig,
                 size = 44,
                 age = person.age,
-                expression = expression
+                expression = expression,
+                hideFromAccessibility = true
             )
 
             Column(
@@ -110,7 +126,7 @@ fun PersonCard(
                     overflow = TextOverflow.Ellipsis
                 )
                 Text(
-                    text = relationshipTierLabel(tier),
+                    text = tierLabel,
                     style = MaterialTheme.typography.labelSmall,
                     color = MaterialTheme.colorScheme.primary,
                     maxLines = 1,
@@ -129,20 +145,33 @@ fun PersonCard(
 }
 
 @Composable
+private fun rememberRelationshipTierLabel(tier: RelationshipTier): String = when (tier) {
+    RelationshipTier.ESTRANGED -> stringResource(R.string.tier_estranged)
+    RelationshipTier.DISTANT -> stringResource(R.string.tier_distant)
+    RelationshipTier.COOL -> stringResource(R.string.tier_cool)
+    RelationshipTier.FRIENDLY -> stringResource(R.string.tier_friendly)
+    RelationshipTier.CLOSE -> stringResource(R.string.tier_close)
+    RelationshipTier.INSEPARABLE -> stringResource(R.string.tier_inseparable)
+}
+
+@Composable
 fun PersonAvatar(
     avatarConfig: AvatarConfig,
     modifier: Modifier = Modifier,
     size: Int = 44,
     age: Int = 18,
-    expression: Expression = Expression.NEUTRAL
+    expression: Expression = Expression.NEUTRAL,
+    forPlayerCharacter: Boolean = false,
+    hideFromAccessibility: Boolean = false
 ) {
-    val description = stringResource(R.string.content_desc_avatar)
     AvatarImage(
         config = avatarConfig,
         size = size.dp,
-        modifier = modifier.semantics { contentDescription = description },
+        modifier = modifier,
         age = age,
-        expression = expression
+        expression = expression,
+        forPlayerCharacter = forPlayerCharacter,
+        hideFromAccessibility = hideFromAccessibility
     )
 }
 
