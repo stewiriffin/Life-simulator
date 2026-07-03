@@ -25,24 +25,39 @@ import javax.inject.Singleton
 import kotlin.random.Random
 
 @Singleton
-class EventRepository @Inject constructor(
-    @ApplicationContext private val context: Context,
-    private val financeEngine: FinanceEngine
+class EventRepository private constructor(
+    private val financeEngine: FinanceEngine,
+    private val assetContext: Context?,
+    private val testEvents: List<LifeEvent>?
 ) {
+    @Inject
+    constructor(
+        @ApplicationContext context: Context,
+        financeEngine: FinanceEngine
+    ) : this(financeEngine, context, null)
+
     private val json = Json { ignoreUnknownKeys = true }
 
     private val allEvents: List<LifeEvent> by lazy {
-        val starter = loadEventsFromAsset("data/events/starter_events.json")
-        val education = loadEventsFromAsset("data/events/education_events.json")
-        val career = loadEventsFromAsset("data/events/career_events.json")
-        val finance = loadEventsFromAsset("data/events/finance_events.json")
-        val relationship = loadEventsFromAsset("data/events/relationship_events.json")
-        val general = loadEventsFromAsset("data/events/general_events.json")
-        val holidays = loadEventsFromAsset("data/events/holiday_events.json")
-        starter + education + career + finance + relationship + general + holidays
+        when {
+            testEvents != null -> testEvents
+            assetContext != null -> loadAllFromAssets(assetContext)
+            else -> emptyList()
+        }
     }
 
-    private fun loadEventsFromAsset(path: String): List<LifeEvent> {
+    private fun loadAllFromAssets(context: Context): List<LifeEvent> {
+        val starter = loadEventsFromAsset(context, "data/events/starter_events.json")
+        val education = loadEventsFromAsset(context, "data/events/education_events.json")
+        val career = loadEventsFromAsset(context, "data/events/career_events.json")
+        val finance = loadEventsFromAsset(context, "data/events/finance_events.json")
+        val relationship = loadEventsFromAsset(context, "data/events/relationship_events.json")
+        val general = loadEventsFromAsset(context, "data/events/general_events.json")
+        val holidays = loadEventsFromAsset(context, "data/events/holiday_events.json")
+        return starter + education + career + finance + relationship + general + holidays
+    }
+
+    private fun loadEventsFromAsset(context: Context, path: String): List<LifeEvent> {
         val inputStream = context.assets.open(path)
         val jsonString = inputStream.bufferedReader().use { it.readText() }
         return json.decodeFromString<LifeEventList>(jsonString).events
@@ -166,6 +181,11 @@ class EventRepository @Inject constructor(
     }
 
     companion object {
+        fun forTesting(
+            financeEngine: FinanceEngine = FinanceEngine(),
+            events: List<LifeEvent> = emptyList()
+        ): EventRepository = EventRepository(financeEngine, null, events)
+
         const val ONE_TIME_TAG = "one_time"
         const val STUDY_EFFORT_TAG = "study_effort"
         const val WORK_EFFORT_TAG = "work_effort"

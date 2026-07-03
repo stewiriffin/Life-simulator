@@ -14,12 +14,17 @@ import javax.inject.Inject
 import javax.inject.Singleton
 
 @Singleton
-class NotificationScheduler @Inject constructor(
-    @ApplicationContext private val context: Context
+class NotificationScheduler private constructor(
+  private val assetContext: Context?,
+  private val noop: Boolean
 ) {
-    private val workManager = WorkManager.getInstance(context)
+    @Inject
+    constructor(@ApplicationContext context: Context) : this(context, false)
+
+    private val workManager by lazy { WorkManager.getInstance(requireNotNull(assetContext)) }
 
     fun scheduleDailyReminder() {
+        if (noop) return
         val request = PeriodicWorkRequestBuilder<DailyReminderWorker>(24, TimeUnit.HOURS)
             .addTag(DAILY_REMINDER_TAG)
             .build()
@@ -31,10 +36,12 @@ class NotificationScheduler @Inject constructor(
     }
 
     fun cancelDailyReminder() {
+        if (noop) return
         workManager.cancelUniqueWork(DAILY_REMINDER_WORK)
     }
 
     fun scheduleContextualNudge(slotId: Int, nudgeType: NudgeType, delayHours: Long) {
+        if (noop) return
         val data = Data.Builder()
             .putInt(ContextualNudgeWorker.KEY_SLOT_ID, slotId)
             .putString(ContextualNudgeWorker.KEY_NUDGE_TYPE, nudgeType.name)
@@ -53,6 +60,7 @@ class NotificationScheduler @Inject constructor(
     }
 
     fun cancelAllContextualNudges() {
+        if (noop) return
         workManager.cancelAllWorkByTag(CONTEXTUAL_NUDGE_TAG)
     }
 
@@ -62,6 +70,8 @@ class NotificationScheduler @Inject constructor(
     }
 
     companion object {
+        fun forTesting(): NotificationScheduler = NotificationScheduler(null, true)
+
         private const val DAILY_REMINDER_WORK = "daily_life_reminder"
         private const val DAILY_REMINDER_TAG = "daily_reminder"
         const val CONTEXTUAL_NUDGE_TAG = "contextual_nudge"
