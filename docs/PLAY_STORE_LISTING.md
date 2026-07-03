@@ -136,18 +136,71 @@ Priority order for **4–8 phone screenshots** (1080×1920 or 9:16). Capture on 
 
 ### Content rating (IARC questionnaire — answer honestly)
 
-This prompt cannot complete the questionnaire. Relevant **built** content to disclose:
+Relevant **built** content to disclose. Rows marked **Verified (P51)** were grep-audited against all seven shipped event JSON files under `app/src/main/assets/data/events/` on 2026-07-03 (no `_world` or country-variant event files exist beyond country `restrictedToCountry` gates inside these files).
 
-| Topic | In-app reality | Questionnaire relevance |
-|-------|----------------|-------------------------|
-| **Crime** | Pickpocket, shoplift, fraud; arrest, jail, criminal record | Likely "crime" or "illegal activities" — **non-violent**, no graphic violence |
+| Topic | In-app reality | Questionnaire answer |
+|-------|----------------|----------------------|
+| **Crime** | Pickpocket, shoplift, fraud; arrest, jail, criminal record — **Verified (P51):** non-violent only (see crime spot-check below) | **Yes** — crime / illegal activities; **non-violent**, no graphic violence |
 | **Romance / sexuality** | Dating, marriage, divorce, children; **no explicit sexual content** | Mild romantic themes; no nudity |
 | **Death** | Character death, life summary, legacy continuation; **gentle phrasing** in copy | Mortality / death themes — typically mild, not graphic |
-| **Drugs / alcohol** | Check event JSON if any references appear in random events | Disclose if present in shipped content |
-| **Gambling** | No casino/gambling mechanics identified in feature inventory | Likely "No" unless event content adds it |
-| **User-generated content** | None — no chat, forums, or UGC | "No" |
+| **Drugs / alcohol** | **Verified (P51): No explicit references.** Zero matches for alcohol, tobacco, drugs, intoxication, or substance-use consequences across all event JSON. One ambiguous family-flavor line only (see sweep below). | **No** — no depictions or consequence-driving substance use |
+| **Gambling** | **Verified (P51): No gambling mechanics or gambling-adjacent events.** `investment_tip` is a fixed-outcome savings-group event, not wager-for-uncertain-outcome (see sweep below). No lottery/casino/betting content. | **No** |
+| **User-generated content** | None — no chat, forums, or UGC | **No** |
 | **Location sharing** | No GPS collection by app; AdMob may infer approximate location (see Prompt 47) | Separate from content rating; covered in Data Safety |
 | **Ads** | Banner, interstitial, rewarded (Second Wind) | Ad-supported app disclosure in questionnaire |
+
+#### Content rating verification sweep (Prompt 51)
+
+**Files searched:** `starter_events.json`, `education_events.json`, `career_events.json`, `relationship_events.json`, `finance_events.json`, `general_events.json`, `holiday_events.json` (+ `CrimeEngine.kt` arrest log strings for crime severity).
+
+##### Drugs & alcohol — grep results
+
+| Event ID | File | Exact text | Severity |
+|----------|------|------------|----------|
+| *(none explicit)* | — | No matches for `alcohol`, `beer`, `wine`, `drunk`, `intoxicat`, `tobacco`, `cigarette`, `smoking`, `marijuana`, `cannabis`, `weed`, `drug`, or `narcotic` in any event JSON. | — |
+| `za_braai_weekend` | `general_events.json` | Choice label: **"Bring drinks only"** — result: *"You still had a great time."* | **Background flavor only.** Generic “drinks” at a family backyard braai; does not name alcohol, does not depict consumption, and has no substance-use consequences. |
+| `za_braai_weekend` | `general_events.json` | Choice result: *"Stories and smoke filled the air."* (grill option) | **Not tobacco.** BBQ/grill smoke in a family cooking scene. |
+
+**IARC framing:** Answer **No** for drugs and alcohol. The single “drinks” line is optional cultural flavor, not substance-themed gameplay. If a questionnaire uses an unusually broad “any mention of drinks at a social gathering” interpretation, the only cite is `za_braai_weekend` — still mild, non-consequence-driving background flavor.
+
+##### Gambling — grep results & `investment_tip` resolution
+
+| Event ID | File | Exact text | Assessment |
+|----------|------|------------|------------|
+| `investment_tip` | `finance_events.json` | *"A friend swears they have a hot tip on a local savings group — pay in easily with {moneyApp}. They want you in."* | **Not gambling.** Describes a community savings group (chama/ROSCA-style), not a casino or lottery. |
+| `investment_tip` | `finance_events.json` | **"Invest a solid amount"** → `money: +45000`; **"Invest cautiously"** → `money: +5000`; **"Decline politely"** → no money change, result *"You heard later it went sideways. Bullet dodged."* | **Fixed outcomes, not chance wagering.** Both invest choices always grant money in JSON; there is no random loss branch on invest. Decline text implies peer risk but the player does not wager on an uncertain payout. This is **not** the early design-doc “gamble a portion for payout or loss” mechanic — shipped content differs. |
+| `windfall_inheritance` | `finance_events.json` | *"A distant relative leaves you a modest inheritance. The lawyer calls with good news."* | **Not gambling.** Unconditional windfall; no ticket/wager. |
+| `crime_shoplift_temptation` | `general_events.json` | Result: *"You tried your luck at the shop."* | **Colloquial idiom**, not a gambling mechanic (crime choice, not wagering). |
+| `career_events` (interview fail) | `career_events.json` | *"The interview was awkward. You hope for better luck next time."* | **Colloquial idiom**, not gambling. |
+
+**Broader search:** Zero matches for `gambl`, `wager`, `lottery`, `casino`, `poker`, `roulette`, `jackpot`, `scratch card`, or `betting` across all event JSON.
+
+**IARC framing:** Answer **No** for simulated gambling / betting / casino content.
+
+##### Crime severity spot-check (P51)
+
+| Event ID | Exact text | Verdict |
+|----------|------------|---------|
+| `crime_pickpocket_chance` | *"You're low on cash and spot an easy-looking wallet in a crowded market."* | Non-violent property crime |
+| `crime_shoplift_temptation` | *"A shop attendant is distracted. A small item sits near the counter."* | Non-violent property crime |
+| `adult_fraud_scam_email` | *"An email promises easy money if you 'help process a transfer'."* | Non-violent financial crime |
+| `CrimeEngine` arrest logs | *"Caught pickpocketing. Sentenced to N year(s)."* / shoplift / fraud equivalents | Administrative consequences; no violence |
+| `school_bullying` → "Fight back" | *"A scuffle broke out. Everyone got in trouble."* | Mild schoolyard scuffle; not player-initiated violent crime |
+| `sibling_remote_battle` | *"You and your sibling fight over the TV remote…"* | Sibling squabble; choices are share or argue loudly |
+
+**Confirmed:** No violent crime, weapons, assault, murder, or graphic harm in event JSON or `CrimeEngine` copy. Existing **non-violent crime** disclosure remains accurate.
+
+##### Tone cross-check (`UI_COPY_AUDIT.md` standard)
+
+**No glamorization fixes required.** Findings reviewed separately from disclosure:
+
+| Content | Tone assessment |
+|---------|-----------------|
+| `investment_tip` | Neutral/light; modest gains, decline path frames risk without celebrating betting |
+| Crime events + `strings.xml` crime dialogs | Factual stakes (arrest, record); aligned with UI_COPY_AUDIT “neutral, not glamorizing” |
+| `za_braai_weekend` “drinks” | Warm family gathering; not aspirational substance use |
+
+No minimal text rewrite warranted for this prompt.
 
 **After questionnaire:** Play Console assigns an age rating (e.g. PEGI, ESRB). If you target children under 13, revisit AdMob child-directed settings and [PRIVACY_POLICY.md](PRIVACY_POLICY.md) — same cross-check as Prompt 47.
 
@@ -166,4 +219,4 @@ This prompt cannot complete the questionnaire. Relevant **built** content to dis
 
 ---
 
-*Maisha Life Simulator — Play Store listing draft (Prompt 48). Not legal advice; verify Play Console field limits at submission time.*
+*Maisha Life Simulator — Play Store listing draft (Prompt 48; content rating verified Prompt 51). Not legal advice; verify Play Console field limits at submission time.*
