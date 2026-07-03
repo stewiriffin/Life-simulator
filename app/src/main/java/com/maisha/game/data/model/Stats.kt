@@ -1,6 +1,7 @@
 // app/src/main/java/com/maisha/game/data/model/Stats.kt
 package com.maisha.game.data.model
 
+import com.maisha.game.util.clampStat
 import kotlinx.serialization.Serializable
 
 /**
@@ -18,10 +19,10 @@ data class Stats(
     val money: Int = 0
 ) {
     fun coerceCapped(): Stats = copy(
-        health = health.coerceIn(0, 100),
-        happiness = happiness.coerceIn(0, 100),
-        smarts = smarts.coerceIn(0, 100),
-        looks = looks.coerceIn(0, 100),
+        health = clampStat(health),
+        happiness = clampStat(happiness),
+        smarts = clampStat(smarts),
+        looks = clampStat(looks),
         money = money.coerceAtLeast(0)
     )
 

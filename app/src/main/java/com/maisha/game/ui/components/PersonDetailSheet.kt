@@ -16,10 +16,6 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
@@ -56,8 +52,8 @@ fun PersonDetailSheet(
     val isChild = member.relation == RelationType.CHILD
     val canAskForMoney = !isSpouse && !isChild
     val canSetUpDate = member.relation == RelationType.SIBLING || member.relation == RelationType.FRIEND
-    var pendingGiftTier by remember { mutableStateOf<GiftTier?>(null) }
-    var showTravelConfirm by remember { mutableStateOf(false) }
+    val pendingGiftTier = rememberConfirmableAction<GiftTier>()
+    val pendingTravel = rememberConfirmableAction<Unit>()
     val travelCost = EconomyScaler.scaleRelationshipCost(
         RelationshipEngine.TRAVEL_BASE_COST_KENYA,
         playerCountryCode,
@@ -73,32 +69,32 @@ fun PersonDetailSheet(
         playerAge
     )
 
-    pendingGiftTier?.let { giftTier ->
+    ConfirmableActionHost(
+        state = pendingGiftTier,
+        onConfirmed = { giftTier -> onInteraction(InteractionType.GIFT, giftTier) }
+    ) { giftTier, onConfirm, onDismiss ->
         val cost = giftCost(giftTier)
         ConfirmActionDialog(
             title = stringResource(R.string.confirm_gift_title),
             description = stringResource(R.string.confirm_cost_body, formatMoney(cost, playerCountryCode)),
             confirmLabel = stringResource(R.string.btn_confirm),
             severity = ConfirmSeverity.NEUTRAL,
-            onConfirm = {
-                onInteraction(InteractionType.GIFT, giftTier)
-                pendingGiftTier = null
-            },
-            onDismiss = { pendingGiftTier = null }
+            onConfirm = onConfirm,
+            onDismiss = onDismiss
         )
     }
 
-    if (showTravelConfirm) {
+    ConfirmableActionHost(
+        state = pendingTravel,
+        onConfirmed = { onInteraction(InteractionType.TRAVEL_TOGETHER, null) }
+    ) { _, onConfirm, onDismiss ->
         ConfirmActionDialog(
             title = stringResource(R.string.confirm_travel_title),
             description = stringResource(R.string.confirm_cost_body, formatMoney(travelCost, playerCountryCode)),
             confirmLabel = stringResource(R.string.btn_confirm),
             severity = ConfirmSeverity.NEUTRAL,
-            onConfirm = {
-                onInteraction(InteractionType.TRAVEL_TOGETHER, null)
-                showTravelConfirm = false
-            },
-            onDismiss = { showTravelConfirm = false }
+            onConfirm = onConfirm,
+            onDismiss = onDismiss
         )
     }
 
@@ -207,22 +203,22 @@ fun PersonDetailSheet(
             )
             DetailSheetButton(
                 text = "${stringResource(R.string.btn_gift_small)} (${formatMoney(giftCost(GiftTier.SMALL), playerCountryCode)})",
-                onClick = { pendingGiftTier = GiftTier.SMALL },
+                onClick = { pendingGiftTier.request(GiftTier.SMALL) },
                 enabled = playerMoney >= giftCost(GiftTier.SMALL)
             )
             DetailSheetButton(
                 text = "${stringResource(R.string.btn_gift_medium)} (${formatMoney(giftCost(GiftTier.MEDIUM), playerCountryCode)})",
-                onClick = { pendingGiftTier = GiftTier.MEDIUM },
+                onClick = { pendingGiftTier.request(GiftTier.MEDIUM) },
                 enabled = playerMoney >= giftCost(GiftTier.MEDIUM)
             )
             DetailSheetButton(
                 text = "${stringResource(R.string.btn_gift_large)} (${formatMoney(giftCost(GiftTier.LARGE), playerCountryCode)})",
-                onClick = { pendingGiftTier = GiftTier.LARGE },
+                onClick = { pendingGiftTier.request(GiftTier.LARGE) },
                 enabled = playerMoney >= giftCost(GiftTier.LARGE)
             )
             DetailSheetButton(
                 text = "${stringResource(R.string.btn_travel_together)} (${formatMoney(travelCost, playerCountryCode)})",
-                onClick = { showTravelConfirm = true },
+                onClick = { pendingTravel.request(Unit) },
                 enabled = travelEnabled && playerMoney >= travelCost
             )
             if (!travelEnabled && isIncarcerated) {

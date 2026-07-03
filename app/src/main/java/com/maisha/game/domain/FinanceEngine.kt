@@ -7,6 +7,8 @@ import com.maisha.game.data.model.Asset
 import com.maisha.game.data.model.AssetType
 import com.maisha.game.data.model.Character
 import java.util.UUID
+import com.maisha.game.util.clampCondition
+import com.maisha.game.util.clampStat
 import javax.inject.Inject
 import javax.inject.Singleton
 import kotlin.random.Random
@@ -86,7 +88,7 @@ class FinanceEngine @Inject constructor() {
             character.copy(
                 stats = character.stats.copy(
                     money = 0,
-                    happiness = (character.stats.happiness - DEBT_HAPPINESS_PENALTY).coerceIn(0, 100)
+                    happiness = clampStat(character.stats.happiness - DEBT_HAPPINESS_PENALTY)
                 )
             )
         } else {
@@ -102,7 +104,7 @@ class FinanceEngine @Inject constructor() {
 
         val degraded = character.assets.map { asset ->
             val degradation = Random.nextInt(MIN_DEGRADATION, MAX_DEGRADATION + 1)
-            val newCondition = (asset.condition - degradation).coerceIn(0, 100)
+            val newCondition = clampCondition(asset.condition - degradation)
             recalculateValue(asset.copy(condition = newCondition))
         }
         return character.copy(assets = degraded)
@@ -124,7 +126,7 @@ class FinanceEngine @Inject constructor() {
         if (index == -1) return character
 
         val asset = character.assets[index]
-        val newCondition = (asset.condition + conditionDelta).coerceIn(0, 100)
+        val newCondition = clampCondition(asset.condition + conditionDelta)
         val updatedAsset = recalculateValue(asset.copy(condition = newCondition))
         return character.copy(
             assets = character.assets.toMutableList().apply { this[index] = updatedAsset }
@@ -138,7 +140,7 @@ class FinanceEngine @Inject constructor() {
     ): Character {
         if (character.assets.isEmpty()) return character
         val asset = character.assets.first()
-        val newCondition = (asset.condition + conditionDelta).coerceIn(0, 100)
+        val newCondition = clampCondition(asset.condition + conditionDelta)
         val updatedAsset = recalculateValue(asset.copy(condition = newCondition))
         return character.copy(
             assets = listOf(updatedAsset) + character.assets.drop(1)

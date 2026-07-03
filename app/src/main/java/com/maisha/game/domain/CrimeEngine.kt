@@ -4,6 +4,7 @@ package com.maisha.game.domain
 import com.maisha.game.data.model.Character
 import com.maisha.game.data.model.CrimeType
 import com.maisha.game.data.model.CriminalRecord
+import com.maisha.game.util.clampStat
 import javax.inject.Inject
 import javax.inject.Singleton
 import kotlin.random.Random
@@ -77,7 +78,7 @@ class CrimeEngine @Inject constructor() {
             } ?: character.career,
             eventLog = EventLogCap.prepend(character.eventLog, logEntry),
             stats = character.stats.copy(
-                happiness = (character.stats.happiness - 12).coerceIn(0, 100)
+                happiness = clampStat(character.stats.happiness - 12)
             )
         )
     }
@@ -106,7 +107,7 @@ class CrimeEngine @Inject constructor() {
         return character.copy(
             criminalRecord = updatedRecord,
             stats = character.stats.copy(
-                happiness = (character.stats.happiness - INCARCERATION_HAPPINESS_PENALTY).coerceIn(0, 100)
+                happiness = clampStat(character.stats.happiness - INCARCERATION_HAPPINESS_PENALTY)
             ),
             eventLog = releaseLog
         )

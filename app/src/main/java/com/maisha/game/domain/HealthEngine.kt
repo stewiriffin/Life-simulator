@@ -4,6 +4,7 @@ package com.maisha.game.domain
 import com.maisha.game.data.model.Character
 import com.maisha.game.data.model.HealthCondition
 import java.util.UUID
+import com.maisha.game.util.clampStat
 import javax.inject.Inject
 import javax.inject.Singleton
 import kotlin.random.Random
@@ -58,7 +59,7 @@ class HealthEngine @Inject constructor() {
         if (untreated.isEmpty()) return character
 
         val totalDrain = untreated.sumOf { severityDrain(it.severity) }
-        val updatedHealth = (character.stats.health - totalDrain).coerceIn(0, 100)
+        val updatedHealth = clampStat(character.stats.health - totalDrain)
         val updatedConditions = character.activeConditions.map { condition ->
             if (!condition.treated) {
                 condition.copy(yearsUntreated = condition.yearsUntreated + 1)

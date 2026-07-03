@@ -10,6 +10,8 @@ import com.maisha.game.data.model.Job
 import com.maisha.game.data.model.LifeEvent
 import com.maisha.game.data.model.SchoolStage
 import com.maisha.game.data.model.WorkEffort
+import com.maisha.game.util.clampPerformanceScore
+import com.maisha.game.util.clampStat
 import javax.inject.Inject
 import javax.inject.Singleton
 import kotlin.math.roundToInt
@@ -81,30 +83,17 @@ class CareerEngine @Inject constructor() {
     fun workYear(character: Character, effort: WorkEffort): Character {
         val job = character.career.currentJob ?: return character
 
-        val performanceDelta = when (effort) {
-            WorkEffort.COAST -> -Random.nextInt(5, 16)
-            WorkEffort.NORMAL -> Random.nextInt(-2, 6)
-            WorkEffort.GRIND -> Random.nextInt(5, 16)
-        }
-
-        val happinessDelta = when (effort) {
-            WorkEffort.COAST -> Random.nextInt(1, 4)
-            WorkEffort.NORMAL -> Random.nextInt(0, 2)
-            WorkEffort.GRIND -> -Random.nextInt(2, 6)
-        }
-
-        val healthDelta = when (effort) {
-            WorkEffort.GRIND -> -Random.nextInt(1, 4)
-            else -> 0
-        }
+        val performanceDelta = EffortResolver.workYearPerformanceDelta(effort)
+        val happinessDelta = EffortResolver.workYearHappinessDelta(effort)
+        val healthDelta = EffortResolver.workYearHealthDelta(effort)
 
         val annualPay = calculateAnnualSalary(job)
-        val newPerformance = (job.performanceScore + performanceDelta).coerceIn(0, 100)
+        val newPerformance = clampPerformanceScore(job.performanceScore + performanceDelta)
         val updatedJob = job.copy(performanceScore = newPerformance)
         val updatedStats = character.stats.copy(
             money = character.stats.money + annualPay,
-            happiness = (character.stats.happiness + happinessDelta).coerceIn(0, 100),
-            health = (character.stats.health + healthDelta).coerceIn(0, 100)
+            happiness = clampStat(character.stats.happiness + happinessDelta),
+            health = clampStat(character.stats.health + healthDelta)
         )
 
         return character.copy(
@@ -120,23 +109,13 @@ class CareerEngine @Inject constructor() {
     fun applyWorkEffort(character: Character, effort: WorkEffort): Character {
         val job = character.career.currentJob ?: return character
 
-        val performanceDelta = when (effort) {
-            WorkEffort.COAST -> -Random.nextInt(8, 18)
-            WorkEffort.NORMAL -> Random.nextInt(0, 6)
-            WorkEffort.GRIND -> Random.nextInt(8, 18)
-        }
-
-        val happinessDelta = when (effort) {
-            WorkEffort.COAST -> Random.nextInt(2, 6)
-            WorkEffort.NORMAL -> 0
-            WorkEffort.GRIND -> -Random.nextInt(4, 10)
-        }
-
-        val healthDelta = if (effort == WorkEffort.GRIND) -Random.nextInt(2, 6) else 0
-        val newPerformance = (job.performanceScore + performanceDelta).coerceIn(0, 100)
+        val performanceDelta = EffortResolver.workEventPerformanceDelta(effort)
+        val happinessDelta = EffortResolver.workEventHappinessDelta(effort)
+        val healthDelta = EffortResolver.workEventHealthDelta(effort)
+        val newPerformance = clampPerformanceScore(job.performanceScore + performanceDelta)
         val updatedStats = character.stats.copy(
-            happiness = (character.stats.happiness + happinessDelta).coerceIn(0, 100),
-            health = (character.stats.health + healthDelta).coerceIn(0, 100)
+            happiness = clampStat(character.stats.happiness + happinessDelta),
+            health = clampStat(character.stats.health + healthDelta)
         )
 
         return character.copy(
@@ -201,7 +180,7 @@ class CareerEngine @Inject constructor() {
     /** Event-driven delta to [Job.performanceScore], clamped 0–100. */
     fun applyPerformanceEffect(character: Character, delta: Int): Character {
         val job = character.career.currentJob ?: return character
-        val newScore = (job.performanceScore + delta).coerceIn(0, 100)
+        val newScore = clampPerformanceScore(job.performanceScore + delta)
         return character.copy(
             career = character.career.copy(
                 currentJob = job.copy(performanceScore = newScore)

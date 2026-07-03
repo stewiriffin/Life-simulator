@@ -16,6 +16,8 @@ import com.maisha.game.data.model.RelationshipMilestone
 import com.maisha.game.data.model.RelationshipTier
 import com.maisha.game.data.model.Stats
 import com.maisha.game.data.model.relationshipTierFor
+import com.maisha.game.util.clampRelationshipLevel
+import com.maisha.game.util.clampStat
 import com.maisha.game.util.formatMoney
 import java.util.UUID
 import javax.inject.Inject
@@ -89,23 +91,7 @@ class RelationshipEngine @Inject constructor() {
         }
         if (Random.nextFloat() >= chance) return null
 
-        val gender = if (Random.nextBoolean()) Gender.MALE else Gender.FEMALE
-        val friendAge = (character.age + Random.nextInt(-3, 4)).coerceAtLeast(MIN_FRIEND_AGE)
-        return Person(
-            id = UUID.randomUUID().toString(),
-            name = NamePool.randomFullName(gender, character.countryCode),
-            relation = RelationType.FRIEND,
-            gender = gender,
-            age = friendAge,
-            relationshipLevel = Random.nextInt(40, 61),
-            stats = Stats(
-                health = Random.nextInt(50, 81),
-                happiness = Random.nextInt(45, 76),
-                looks = Random.nextInt(40, 81)
-            ),
-            avatarConfig = AvatarConfig.random(),
-            countryCode = character.countryCode
-        )
+        return PersonGenerator.buildFriend(character, MIN_FRIEND_AGE)
     }
 
     /** Logs legacy-continuation milestones on inherited family when Legacy Mode selects an heir. */
@@ -210,13 +196,13 @@ class RelationshipEngine @Inject constructor() {
             val updated = character.copy(
                 family = character.family.replaceAt(memberIndex, marriedPartner),
                 stats = character.stats.copy(
-                    happiness = (character.stats.happiness + 10).coerceIn(0, 100)
+                    happiness = clampStat(character.stats.happiness + 10)
                 )
             )
             updated to ProposalResult.Accepted(updated)
         } else {
             val declinedPartner = partner.copy(
-                relationshipLevel = (partner.relationshipLevel - 15).coerceIn(0, 100)
+                relationshipLevel = clampRelationshipLevel(partner.relationshipLevel - 15)
             ).coerceRelationship()
             val updated = character.copy(
                 family = character.family.replaceAt(memberIndex, declinedPartner)
@@ -238,7 +224,7 @@ class RelationshipEngine @Inject constructor() {
         return character.copy(
             family = character.family.filterNot { it.id == personId },
             stats = character.stats.copy(
-                happiness = (character.stats.happiness - happinessPenalty).coerceIn(0, 100)
+                happiness = clampStat(character.stats.happiness - happinessPenalty)
             ),
             eventLog = EventLogCap.prepend(
                 character.eventLog,
@@ -280,7 +266,7 @@ class RelationshipEngine @Inject constructor() {
         return character.copy(
             family = character.family + child,
             stats = character.stats.copy(
-                happiness = (character.stats.happiness + 5).coerceIn(0, 100)
+                happiness = clampStat(character.stats.happiness + 5)
             )
         )
     }
@@ -303,7 +289,7 @@ class RelationshipEngine @Inject constructor() {
         if (spouseIndex == -1) return character
         val spouse = character.family[spouseIndex]
         val updated = spouse.copy(
-            relationshipLevel = (spouse.relationshipLevel + delta).coerceIn(0, 100)
+            relationshipLevel = clampRelationshipLevel(spouse.relationshipLevel + delta)
         ).coerceRelationship()
         return character.copy(family = character.family.replaceAt(spouseIndex, updated))
     }
@@ -314,10 +300,10 @@ class RelationshipEngine @Inject constructor() {
         member: Person
     ): FamilyInteractionResult {
         val updatedMember = member.copy(
-            relationshipLevel = (member.relationshipLevel + 10).coerceIn(0, 100)
+            relationshipLevel = clampRelationshipLevel(member.relationshipLevel + 10)
         ).coerceRelationship()
         val updatedStats = character.stats.copy(
-            happiness = (character.stats.happiness + 5).coerceIn(0, 100)
+            happiness = clampStat(character.stats.happiness + 5)
         )
         val message = when (member.relation) {
             RelationType.SPOUSE -> "You spent quality time with ${member.name}."
@@ -340,10 +326,10 @@ class RelationshipEngine @Inject constructor() {
         member: Person
     ): FamilyInteractionResult {
         val updatedMember = member.copy(
-            relationshipLevel = (member.relationshipLevel - 10).coerceIn(0, 100)
+            relationshipLevel = clampRelationshipLevel(member.relationshipLevel - 10)
         ).coerceRelationship()
         val updatedStats = character.stats.copy(
-            happiness = (character.stats.happiness - 5).coerceIn(0, 100)
+            happiness = clampStat(character.stats.happiness - 5)
         )
         val message = when (member.relation) {
             RelationType.SPOUSE -> "You argued with ${member.name}."
@@ -391,7 +377,7 @@ class RelationshipEngine @Inject constructor() {
             )
         } else {
             val updatedMember = member.copy(
-                relationshipLevel = (member.relationshipLevel - 5).coerceIn(0, 100),
+                relationshipLevel = clampRelationshipLevel(member.relationshipLevel - 5),
                 interactedThisYear = true
             ).coerceRelationship()
             FamilyInteractionResult(
@@ -418,7 +404,7 @@ class RelationshipEngine @Inject constructor() {
             )
         }
         val updatedMember = member.copy(
-            relationshipLevel = (member.relationshipLevel + tier.relationshipBoost).coerceIn(0, 100)
+            relationshipLevel = clampRelationshipLevel(member.relationshipLevel + tier.relationshipBoost)
         ).coerceRelationship()
         return FamilyInteractionResult(
             character = commitMemberUpdate(
@@ -430,7 +416,7 @@ class RelationshipEngine @Inject constructor() {
             ).copy(
                 stats = character.stats.copy(
                     money = character.stats.money - cost,
-                    happiness = (character.stats.happiness + 3).coerceIn(0, 100)
+                    happiness = clampStat(character.stats.happiness + 3)
                 )
             ),
             message = "You gave ${member.name} a gift. They loved it!"
@@ -445,7 +431,7 @@ class RelationshipEngine @Inject constructor() {
         val diminishing = (member.complimentsThisYear * 2).coerceAtMost(8)
         val boost = (5 - diminishing).coerceAtLeast(1)
         val updatedMember = member.copy(
-            relationshipLevel = (member.relationshipLevel + boost).coerceIn(0, 100),
+            relationshipLevel = clampRelationshipLevel(member.relationshipLevel + boost),
             complimentsThisYear = member.complimentsThisYear + 1
         ).coerceRelationship()
         return FamilyInteractionResult(
@@ -454,7 +440,7 @@ class RelationshipEngine @Inject constructor() {
                 interactionType = InteractionType.COMPLIMENT
             ).copy(
                 stats = character.stats.copy(
-                    happiness = (character.stats.happiness + 1).coerceIn(0, 100)
+                    happiness = clampStat(character.stats.happiness + 1)
                 )
             ),
             message = "You complimented ${member.name}. They smiled."
@@ -467,7 +453,7 @@ class RelationshipEngine @Inject constructor() {
         member: Person
     ): FamilyInteractionResult {
         val updatedMember = member.copy(
-            relationshipLevel = (member.relationshipLevel - 12).coerceIn(0, 100)
+            relationshipLevel = clampRelationshipLevel(member.relationshipLevel - 12)
         ).coerceRelationship()
         return FamilyInteractionResult(
             character = commitMemberUpdate(
@@ -477,7 +463,7 @@ class RelationshipEngine @Inject constructor() {
                 subjectName = member.name
             ).copy(
                 stats = character.stats.copy(
-                    happiness = (character.stats.happiness + 2).coerceIn(0, 100)
+                    happiness = clampStat(character.stats.happiness + 2)
                 )
             ),
             message = "You threw a petty insult at ${member.name}. You felt a little satisfied — they did not."
@@ -507,7 +493,7 @@ class RelationshipEngine @Inject constructor() {
             )
         }
         val updatedMember = member.copy(
-            relationshipLevel = (member.relationshipLevel + 18).coerceIn(0, 100)
+            relationshipLevel = clampRelationshipLevel(member.relationshipLevel + 18)
         ).coerceRelationship()
         return FamilyInteractionResult(
             character = commitMemberUpdate(
@@ -518,7 +504,7 @@ class RelationshipEngine @Inject constructor() {
             ).copy(
                 stats = character.stats.copy(
                     money = character.stats.money - cost,
-                    happiness = (character.stats.happiness + 8).coerceIn(0, 100)
+                    happiness = clampStat(character.stats.happiness + 8)
                 )
             ),
             message = "You and ${member.name} took a trip together. Great memories!"
@@ -531,7 +517,7 @@ class RelationshipEngine @Inject constructor() {
         member: Person
     ): FamilyInteractionResult {
         val updatedMember = member.copy(
-            relationshipLevel = (member.relationshipLevel + 3).coerceIn(0, 100)
+            relationshipLevel = clampRelationshipLevel(member.relationshipLevel + 3)
         ).coerceRelationship()
         return FamilyInteractionResult(
             character = commitMemberUpdate(
@@ -539,7 +525,7 @@ class RelationshipEngine @Inject constructor() {
                 interactionType = InteractionType.ASK_FOR_ADVICE
             ).copy(
                 stats = character.stats.copy(
-                    smarts = (character.stats.smarts + 2).coerceIn(0, 100)
+                    smarts = clampStat(character.stats.smarts + 2)
                 )
             ),
             message = "${member.name} shared some wisdom. You feel a bit smarter."
@@ -558,7 +544,7 @@ class RelationshipEngine @Inject constructor() {
             Triple(-6, 2, "Your prank on ${member.name} backfired. Oops.")
         }
         val updatedMember = member.copy(
-            relationshipLevel = (member.relationshipLevel + relDelta).coerceIn(0, 100)
+            relationshipLevel = clampRelationshipLevel(member.relationshipLevel + relDelta)
         ).coerceRelationship()
         return FamilyInteractionResult(
             character = commitMemberUpdate(
@@ -566,7 +552,7 @@ class RelationshipEngine @Inject constructor() {
                 interactionType = InteractionType.PRANK
             ).copy(
                 stats = character.stats.copy(
-                    happiness = (character.stats.happiness + happyDelta).coerceIn(0, 100)
+                    happiness = clampStat(character.stats.happiness + happyDelta)
                 )
             ),
             message = message
@@ -585,7 +571,7 @@ class RelationshipEngine @Inject constructor() {
             )
         }
         val updatedMember = member.copy(
-            relationshipLevel = (member.relationshipLevel + 6).coerceIn(0, 100)
+            relationshipLevel = clampRelationshipLevel(member.relationshipLevel + 6)
         ).coerceRelationship()
         val countryName = CountryCatalog.getCountry(character.countryCode).displayName
         return FamilyInteractionResult(

@@ -17,7 +17,10 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Lock
 import androidx.compose.material.icons.filled.ShoppingBag
-import androidx.compose.material3.AlertDialog
+import com.maisha.game.ui.components.ConfirmActionDialog
+import com.maisha.game.ui.components.ConfirmSeverity
+import com.maisha.game.ui.components.ConfirmableActionHost
+import com.maisha.game.ui.components.rememberConfirmableAction
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
@@ -69,7 +72,7 @@ fun AssetsScreen(
     onAssetsMessageDismissed: () -> Unit,
     modifier: Modifier = Modifier
 ) {
-    var pendingPurchase by remember { mutableStateOf<CatalogAsset?>(null) }
+    val pendingPurchase = rememberConfirmableAction<CatalogAsset>()
 
     LaunchedEffect(uiState.assetsMessage) {
         uiState.assetsMessage?.let { message ->
@@ -78,35 +81,22 @@ fun AssetsScreen(
         }
     }
 
-    pendingPurchase?.let { item ->
-        AlertDialog(
-            onDismissRequest = { pendingPurchase = null },
-            title = { Text(stringResource(R.string.dialog_confirm_purchase_title)) },
-            text = {
-                Text(
-                    stringResource(
-                        R.string.dialog_confirm_purchase_body,
-                        item.name,
-                        formatMoney(item.purchasePrice, character.countryCode),
-                        formatMoney(item.monthlyUpkeep, character.countryCode)
-                    )
-                )
-            },
-            confirmButton = {
-                TextButton(
-                    onClick = {
-                        onPurchaseAsset(item.id)
-                        pendingPurchase = null
-                    }
-                ) {
-                    Text(stringResource(R.string.btn_buy))
-                }
-            },
-            dismissButton = {
-                TextButton(onClick = { pendingPurchase = null }) {
-                    Text(stringResource(R.string.btn_cancel))
-                }
-            }
+    ConfirmableActionHost(
+        state = pendingPurchase,
+        onConfirmed = { item -> onPurchaseAsset(item.id) }
+    ) { item, onConfirm, onDismiss ->
+        ConfirmActionDialog(
+            title = stringResource(R.string.dialog_confirm_purchase_title),
+            description = stringResource(
+                R.string.dialog_confirm_purchase_body,
+                item.name,
+                formatMoney(item.purchasePrice, character.countryCode),
+                formatMoney(item.monthlyUpkeep, character.countryCode)
+            ),
+            confirmLabel = stringResource(R.string.btn_buy),
+            severity = ConfirmSeverity.NEUTRAL,
+            onConfirm = onConfirm,
+            onDismiss = onDismiss
         )
     }
 
@@ -175,7 +165,7 @@ fun AssetsScreen(
                 item = catalogItem,
                 countryCode = character.countryCode,
                 canAfford = character.stats.money >= catalogItem.purchasePrice,
-                onBuy = { pendingPurchase = catalogItem }
+                onBuy = { pendingPurchase.request(catalogItem) }
             )
         }
     }

@@ -17,6 +17,7 @@ import com.maisha.game.data.model.StudyEffort
 import com.maisha.game.data.model.WorkEffort
 import com.maisha.game.notifications.NotificationScheduler
 import com.maisha.game.notifications.NudgeType
+import com.maisha.game.util.clampRelationshipLevel
 import javax.inject.Inject
 import javax.inject.Singleton
 import kotlin.random.Random
@@ -477,7 +478,7 @@ class GameEngine @Inject constructor(
         if (siblingIndex == -1) return character
         val sibling = character.family[siblingIndex]
         val updatedSibling = sibling.copy(
-            relationshipLevel = (sibling.relationshipLevel + delta).coerceIn(0, 100)
+            relationshipLevel = clampRelationshipLevel(sibling.relationshipLevel + delta)
         ).coerceRelationship()
         return character.copy(
             family = character.family.replaceAt(siblingIndex, updatedSibling)
@@ -494,7 +495,7 @@ class GameEngine @Inject constructor(
         }.let { if (it >= 0) it else 0 }
         val member = character.family[memberIndex]
         val updatedMember = member.copy(
-            relationshipLevel = (member.relationshipLevel + delta).coerceIn(0, 100)
+            relationshipLevel = clampRelationshipLevel(member.relationshipLevel + delta)
         ).coerceRelationship()
         return character.copy(
             family = character.family.replaceAt(memberIndex, updatedMember)

@@ -9,6 +9,8 @@ import com.maisha.game.data.model.ExamType
 import com.maisha.game.data.model.LifeEvent
 import com.maisha.game.data.model.SchoolStage
 import com.maisha.game.data.model.StudyEffort
+import com.maisha.game.util.clampGpa
+import com.maisha.game.util.clampStat
 import javax.inject.Inject
 import javax.inject.Singleton
 import kotlin.math.roundToInt
@@ -101,24 +103,14 @@ class EducationEngine @Inject constructor() {
         }
         if (incrementGrade && education.currentGrade >= maxGrade) return character
 
-        val gpaDelta = when (studyChoice) {
-            StudyEffort.SLACK -> -Random.nextDouble(0.1, 0.31).toFloat()
-            StudyEffort.NORMAL -> Random.nextDouble(0.05, 0.16).toFloat()
-            StudyEffort.HARD -> Random.nextDouble(0.1, 0.31).toFloat()
-        }
+        val gpaDelta = EffortResolver.studyGpaDelta(studyChoice)
+        val smartsDelta = EffortResolver.studySmartsDelta(studyChoice)
+        val happinessDelta = EffortResolver.studyHappinessDelta(studyChoice)
 
-        val smartsDelta = when (studyChoice) {
-            StudyEffort.SLACK -> -1
-            StudyEffort.NORMAL -> 1
-            StudyEffort.HARD -> 2
-        }
-
-        val happinessDelta = if (studyChoice == StudyEffort.HARD) -1 else 0
-
-        val newGpa = (education.gpa + gpaDelta).coerceIn(0f, 4f)
+        val newGpa = clampGpa(education.gpa + gpaDelta)
         val newStats = character.stats.copy(
-            smarts = (character.stats.smarts + smartsDelta).coerceIn(0, 100),
-            happiness = (character.stats.happiness + happinessDelta).coerceIn(0, 100)
+            smarts = clampStat(character.stats.smarts + smartsDelta),
+            happiness = clampStat(character.stats.happiness + happinessDelta)
         )
 
         return character.copy(
@@ -270,7 +262,7 @@ class EducationEngine @Inject constructor() {
         if (gpaEffect == 0f) return character
         return character.copy(
             education = character.education.copy(
-                gpa = (character.education.gpa + gpaEffect).coerceIn(0f, 4f)
+                gpa = clampGpa(character.education.gpa + gpaEffect)
             )
         )
     }

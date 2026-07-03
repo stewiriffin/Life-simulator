@@ -32,6 +32,8 @@ import com.maisha.game.ui.components.ActionCard
 import com.maisha.game.ui.components.ConditionBadge
 import com.maisha.game.ui.components.ConfirmActionDialog
 import com.maisha.game.ui.components.ConfirmSeverity
+import com.maisha.game.ui.components.ConfirmableActionHost
+import com.maisha.game.ui.components.rememberConfirmableAction
 import com.maisha.game.ui.components.EmptyStateCard
 import com.maisha.game.ui.illustrations.EmptyStateIllustration
 import com.maisha.game.ui.theme.AppIcons
@@ -62,7 +64,7 @@ fun ActionsScreen(
     val showCrimeActions = character.age >= CRIME_UI_MIN_AGE && !incarcerated && character.alive
     val hasContent = untreated.isNotEmpty() || showCrimeActions || incarcerated
 
-    var pendingAction by remember { mutableStateOf<PendingAction?>(null) }
+    val pendingAction = rememberConfirmableAction<PendingAction>()
     var expandedConditionId by remember { mutableStateOf<String?>(null) }
 
     LaunchedEffect(untreated.map { it.id }) {
@@ -143,9 +145,11 @@ fun ActionsScreen(
                                     CareType.PUBLIC_CLINIC
                                 ),
                                 onClick = {
-                                    pendingAction = PendingAction.Treatment(
-                                        condition = condition,
-                                        careType = CareType.PUBLIC_CLINIC
+                                    pendingAction.request(
+                                        PendingAction.Treatment(
+                                            condition = condition,
+                                            careType = CareType.PUBLIC_CLINIC
+                                        )
                                     )
                                 }
                             )
@@ -158,9 +162,11 @@ fun ActionsScreen(
                                     CareType.PRIVATE_HOSPITAL
                                 ),
                                 onClick = {
-                                    pendingAction = PendingAction.Treatment(
-                                        condition = condition,
-                                        careType = CareType.PRIVATE_HOSPITAL
+                                    pendingAction.request(
+                                        PendingAction.Treatment(
+                                            condition = condition,
+                                            careType = CareType.PRIVATE_HOSPITAL
+                                        )
                                     )
                                 }
                             )
@@ -178,7 +184,7 @@ fun ActionsScreen(
                             title = stringResource(R.string.crime_pickpocket_title),
                             description = stringResource(R.string.crime_pickpocket_desc),
                             metaLabel = stringResource(R.string.risk_moderate),
-                            onClick = { pendingAction = PendingAction.Crime(CrimeType.PICKPOCKET) }
+                            onClick = { pendingAction.request(PendingAction.Crime(CrimeType.PICKPOCKET)) }
                         )
                     }
                     item {
@@ -187,7 +193,7 @@ fun ActionsScreen(
                             title = stringResource(R.string.crime_shoplift_title),
                             description = stringResource(R.string.crime_shoplift_desc),
                             metaLabel = stringResource(R.string.risk_moderate),
-                            onClick = { pendingAction = PendingAction.Crime(CrimeType.SHOPLIFT) }
+                            onClick = { pendingAction.request(PendingAction.Crime(CrimeType.SHOPLIFT)) }
                         )
                     }
                     item {
@@ -196,7 +202,7 @@ fun ActionsScreen(
                             title = stringResource(R.string.crime_fraud_title),
                             description = stringResource(R.string.crime_fraud_desc),
                             metaLabel = stringResource(R.string.risk_high),
-                            onClick = { pendingAction = PendingAction.Crime(CrimeType.FRAUD) }
+                            onClick = { pendingAction.request(PendingAction.Crime(CrimeType.FRAUD)) }
                         )
                     }
                 }
@@ -204,7 +210,15 @@ fun ActionsScreen(
         }
     }
 
-    pendingAction?.let { action ->
+    ConfirmableActionHost(
+        state = pendingAction,
+        onConfirmed = { action ->
+            when (action) {
+                is PendingAction.Crime -> onAttemptCrime(action.type)
+                is PendingAction.Treatment -> onVisitDoctor(action.condition.id, action.careType)
+            }
+        }
+    ) { action, onConfirm, onDismiss ->
         when (action) {
             is PendingAction.Crime -> {
                 val (title, description) = crimeConfirmCopy(action.type)
@@ -213,11 +227,8 @@ fun ActionsScreen(
                     description = description,
                     confirmLabel = stringResource(R.string.btn_attempt),
                     severity = ConfirmSeverity.WARNING,
-                    onConfirm = {
-                        onAttemptCrime(action.type)
-                        pendingAction = null
-                    },
-                    onDismiss = { pendingAction = null }
+                    onConfirm = onConfirm,
+                    onDismiss = onDismiss
                 )
             }
             is PendingAction.Treatment -> {
@@ -236,11 +247,8 @@ fun ActionsScreen(
                     ),
                     confirmLabel = stringResource(R.string.btn_visit_doctor),
                     severity = ConfirmSeverity.NEUTRAL,
-                    onConfirm = {
-                        onVisitDoctor(action.condition.id, action.careType)
-                        pendingAction = null
-                    },
-                    onDismiss = { pendingAction = null }
+                    onConfirm = onConfirm,
+                    onDismiss = onDismiss
                 )
             }
         }

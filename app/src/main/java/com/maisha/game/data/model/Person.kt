@@ -1,6 +1,7 @@
 // app/src/main/java/com/maisha/game/data/model/Person.kt (modified — milestones + country + interaction tracking)
 package com.maisha.game.data.model
 
+import com.maisha.game.util.clampRelationshipLevel
 import kotlinx.serialization.Serializable
 
 @Serializable
@@ -41,6 +42,6 @@ data class Person(
     val interactedThisYear: Boolean = false
 ) {
     fun coerceRelationship(): Person = copy(
-        relationshipLevel = relationshipLevel.coerceIn(0, 100)
+        relationshipLevel = clampRelationshipLevel(relationshipLevel)
     )
 }

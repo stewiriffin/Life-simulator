@@ -6,6 +6,7 @@ import com.maisha.game.data.model.Character
 import com.maisha.game.data.model.Country
 import com.maisha.game.data.model.EventChoice
 import com.maisha.game.data.model.LifeEvent
+import com.maisha.game.util.clampStat
 import javax.inject.Inject
 import javax.inject.Singleton
 import kotlin.random.Random
@@ -105,7 +106,7 @@ class RelocationEngine @Inject constructor() {
             relocationHistory = character.relocationHistory + newCountry.code,
             career = updatedCareer,
             stats = character.stats.copy(
-                happiness = (character.stats.happiness - happinessDip).coerceIn(0, 100)
+                happiness = clampStat(character.stats.happiness - happinessDip)
             )
         )
     }
