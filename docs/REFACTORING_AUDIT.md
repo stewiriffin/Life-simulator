@@ -1,8 +1,8 @@
 # Prompt 41: Duplication & Refactoring Audit
 
-## Part 1: Effort-Based Year Processing — **CONFIRMED, CONSOLIDATED**
+## Part 1: Effort-Based Year Processing — CONFIRMED, CONSOLIDATED
 
-`EducationEngine` and `CareerEngine` duplicated three-branch effort logic with separate tuned ranges. Crime clean-streak and relationship decay use different semantics (hire penalty curve, drift-to-neutral) — **left separate**.
+`EducationEngine` and `CareerEngine` duplicated three-branch effort logic. Crime clean-streak and relationship decay use different semantics — **left separate**.
 
 **Extracted:** `domain/EffortResolver.kt`
 
@@ -10,57 +10,56 @@
 |-----------|------------------|
 | Study GPA | SLACK: -0.1..-0.31, NORMAL: +0.05..+0.16, HARD: +0.1..+0.31 |
 | Study smarts | SLACK: -1, NORMAL: +1, HARD: +2 |
-| Study happiness | HARD only: -1 |
 | Work year performance | COAST: -5..-15, NORMAL: -2..+5, GRIND: +5..+15 |
-| Work year happiness | COAST: +1..+3, NORMAL: +0..+1, GRIND: -2..-5 |
-| Work year health | GRIND only: -1..-3 |
 | Work event performance | COAST: -8..-17, NORMAL: 0..+5, GRIND: +8..+17 |
-| Work event happiness | COAST: +2..+5, NORMAL: 0, GRIND: -4..-9 |
-| Work event health | GRIND only: -2..-5 |
 
-## Part 2: Confirm-Then-Execute UI — **PARTIALLY CONFIRMED, CONSOLIDATED**
+## Part 2: Confirm-Then-Execute UI — PARTIALLY CONFIRMED, CONSOLIDATED
 
 **Extracted:** `ui/components/ConfirmableAction.kt` (`rememberConfirmableAction`, `ConfirmableActionHost`)
 
-| Site | Before | After |
-|------|--------|-------|
-| Crime / doctor (`ActionsScreen`) | Hand-rolled `mutableStateOf` + `ConfirmActionDialog` | `ConfirmableActionHost` |
-| Asset purchase (`AssetsScreen`) | Raw `AlertDialog` (no haptic, different button styling) | `ConfirmActionDialog` via host — visual + haptic on confirm via `LifeViewModel.onPurchaseAsset` (P49 verified) |
-| Gift / travel (`PersonDetailSheet`) | Separate boolean + tier state | `ConfirmableActionHost` |
-| Job apply (`CareerScreen`) | No confirmation (direct apply) | **Unchanged** — adding confirm would be behavior change |
-| Marriage propose (`PersonDetailSheet`) | Direct `onPropose` | **Unchanged** — never had confirm step |
-| Dating break-up (`PersonDetailSheet`) | Immediate tap | **Prompt 49:** `ConfirmableActionHost` + NEUTRAL `ConfirmActionDialog` when not married; **divorce stays immediate** (higher-stakes label, existing behavior) |
-| Relocation | Life-event choice in `GameEngine` | **Unchanged** — different flow by design |
+| Site | After |
+|------|-------|
+| Crime / doctor (`ActionsScreen`) | `ConfirmableActionHost` |
+| Asset purchase (`AssetsScreen`) | `ConfirmActionDialog` via host |
+| Gift / travel (`PersonDetailSheet`) | `ConfirmableActionHost` |
+| Dating break-up (`PersonDetailSheet`) | **P49:** confirm when not married; divorce immediate |
+| Job apply (`CareerScreen`) | **Unchanged** — no confirm |
+| Marriage propose | **Unchanged** — no confirm step |
 
-**Asset purchase haptics (Prompt 49):** Verified — `LifeViewModel.onPurchaseAsset` enqueues `FeedbackCue(sound = PURCHASE, haptic = LIGHT_TAP)` on success; same pattern as crime/doctor confirms via `ActionsScreen` → ViewModel.
-
-All consolidated dialogs dismiss on backdrop tap via `ConfirmActionDialog.onDismissRequest`.
-
-## Part 3: Random Person Generation — **CONFIRMED, CONSOLIDATED**
+## Part 3: Random Person Generation — CONFIRMED, CONSOLIDATED
 
 **Extracted:** `domain/PersonGenerator.kt`
 
 | Call site | Preserved parameters |
 |-----------|---------------------|
-| `DatingPool` | 15% foreign country, age offset -5..+5, min age 18, relationship 30..60, stats ranges |
-| `RelationshipEngine.generateFriendshipOpportunity` | Age offset -3..+3, relationship 40..60, same NPC stat ranges |
-| `FamilyGenerator` | Parent age 20..40, sibling chance 40%, sibling offset -5..+5, relationship 50, parent/sibling stat ranges, shared surname logic stays in generator |
+| `DatingPool` | 15% foreign country, age offset -5..+5, min age 18 |
+| `RelationshipEngine.generateFriendshipOpportunity` | Age offset -3..+3 |
+| `FamilyGenerator` | Parent age 20..40, sibling chance 40% |
 
-Family structure (mother/father/siblings with shared surname) remains in `FamilyGenerator`; shared `buildPerson` + stat helpers deduplicate boilerplate.
-
-## Part 4: Stat Clamping — **CONFIRMED, CONSOLIDATED**
+## Part 4: Stat Clamping — CONFIRMED, CONSOLIDATED
 
 **Extracted:** `util/ClampUtils.kt` (`clampStat`, `clampRelationshipLevel`, `clampPerformanceScore`, `clampCondition`, `clampGpa`)
 
-Routed through helpers in: `Stats`, `Person`, all domain engines with stat mutations. Left alone: `HealthEngine.illnessChance` normalization `(100 - health).coerceIn(0, 100)` — not a stat clamp.
+Routed through helpers in: `Stats`, `Person`, all domain engines with stat mutations.
+
+## Part 5: Bounded list caps — P37, P43, P54 (not Prompt 41, but same pattern)
+
+| Utility | File | Purpose |
+|---------|------|---------|
+| `EventLogCap` | `domain/EventLogCap.kt` | Max 150 event log lines |
+| `AncestryHistoryCap` | `domain/AncestryHistoryCap.kt` | Max 25 ancestry entries |
+| `RelationshipMilestoneCap` | `domain/RelationshipMilestoneCap.kt` | Max 25 milestones per person |
+
+All follow: `object` + `MAX_ENTRIES` + `trim()` + apply at mutation + `CharacterRepository.saveGame`.
 
 ## Maintenance benefit
 
 - Effort balance: **1 file** (`EffortResolver.kt`) instead of 2 engines × 2 code paths
 - Person tuning: **1 file** (`PersonGenerator.kt`) for dating/friend/NPC stat constants
-- Stat bounds: grep for raw `.coerceIn(0, 100)` outside `ClampUtils` / `illnessChance` = review flag
-- Confirm flows: **1 host** pattern for action screens; dating break-up added P49
+- Stat bounds: grep for raw `.coerceIn(0, 100)` outside `ClampUtils` = review flag
+- Confirm flows: **1 host** pattern for action screens
+- Growth caps: **3 cap utilities** with identical architectural shape
 
 ---
 
-*Prompt 41 audit. Updated Prompt 49 (July 2026).*
+*Prompt 41 audit. Updated Prompts 49, 54 (July 2026).*

@@ -2,7 +2,7 @@
 
 **Last updated:** July 3, 2026
 
-> **Developer note:** This file is the source text for your privacy policy. Google Play requires a **publicly hosted URL** (not a GitHub repo link alone). Host this content at a stable HTTPS URL and set that URL in `app/build.gradle.kts` → `PRIVACY_POLICY_URL` before release. Revisit this policy whenever you add data-collecting features (e.g. Firebase Analytics, if Prompt 19 is ever implemented).
+> **Developer note:** This file is the source text for your privacy policy. Google Play requires a **publicly hosted URL** (not a GitHub repo link alone). Host this content at a stable HTTPS URL and set that URL in `app/build.gradle.kts` → `PRIVACY_POLICY_URL` before release.
 
 ---
 
@@ -38,7 +38,7 @@ The app's own code does **not** collect:
 - Your real name, address, or government ID
 - Precise GPS location
 - Real health or financial records
-- Contacts, photos, or files from your device (except when **you** choose to share a life-summary image via the system share sheet — see below)
+- Contacts, photos, or files from your device (except when **you** choose to share a life-summary image via the system share sheet)
 
 ---
 
@@ -54,7 +54,7 @@ Typical categories processed by the AdMob SDK (not by Maisha's own servers) incl
 
 We use test ad unit IDs in debug builds; production builds use Google's ad network as configured in the AdMob console.
 
-**Your choices:** You can reset or limit ad personalization in your device **Google → Ads** settings. On some Android versions you can opt out of personalized ads.
+**Your choices:** You can reset or limit ad personalization in your device **Google → Ads** settings.
 
 The app declares the `AD_ID` permission because the AdMob SDK may access the advertising identifier where permitted by device and policy settings.
 
@@ -80,12 +80,7 @@ The app uses the internet connection to **load and display ads** through AdMob. 
 
 ## Children's privacy
 
-**Action required before Play Store submission:** You must decide whether Maisha is directed at children under 13 (or under applicable age in your target countries). That choice affects:
-
-- Google Play age ratings and "Designed for Families" eligibility
-- AdMob **tagging for child-directed treatment** and whether ads must be non-personalized or from certified networks
-
-This policy cannot make that classification for you. If the app is child-directed, configure AdMob and Play Console accordingly and update this section with your final audience statement.
+**Action required before Play Store submission:** You must decide whether Maisha is directed at children under 13. That choice affects Google Play age ratings, AdMob child-directed treatment, and whether ads must be non-personalized.
 
 ---
 
@@ -98,7 +93,7 @@ This policy cannot make that classification for you. If the app is child-directe
 
 ## Changes to this policy
 
-We may update this policy when the app changes (e.g. new analytics, new third-party SDKs). The "Last updated" date at the top will change. Material changes should also be reflected in the Play Store listing.
+We may update this policy when the app changes (e.g. new analytics, new third-party SDKs). The "Last updated" date at the top will change.
 
 ---
 
@@ -113,4 +108,4 @@ For questions about **Google's** use of data in ads, see [Google's privacy polic
 
 ---
 
-*Maisha Life Simulator — privacy policy draft (Prompt 47). Not legal advice; consider review before publication.*
+*Maisha Life Simulator — privacy policy draft (Prompt 47). Not legal advice.*

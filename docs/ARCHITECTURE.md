@@ -1,6 +1,6 @@
 # Maisha — Architecture
 
-This document explains how the major systems connect. It reflects **current implementation** (post Prompts 1–39), including balance and edge-case fixes from later audit passes.
+This document explains how the major systems connect. It reflects **current implementation** (post Prompts 1–54), including balance, edge-case fixes, bounded-growth caps, and ADR-001.
 
 ---
 
@@ -16,7 +16,7 @@ When the player taps **Age Up** on the Life tab, the following chain runs. This 
 ### ViewModel layer (`LifeViewModel`)
 
 3. Guards: character alive, not already aging, no blocking event.
-4. Enqueues age-up **feedback cue** (sound/haptic) into `pendingFeedbackCues` (consumed by `FeedbackEffect` in Compose — not played in the ViewModel).
+4. Enqueues age-up **feedback cue** into `pendingFeedbackCues` (consumed by `FeedbackEffect` in Compose — not played in the ViewModel).
 5. **`viewModelScope.launch`**:
    - Sets `isAgingUp = true`.
    - Loads achievement progress snapshot from **`AchievementRepository`** (global, not per-slot).
@@ -28,7 +28,7 @@ When the player taps **Age Up** on the Life tab, the following chain runs. This 
 
 `triggeredEventIds` is held in the ViewModel (not inside `Character`) and saved with each `CharacterRepository.saveGame()`.
 
-**Process-death safety (verified P52):** On age-up, one-time event ids from the offered event(s) are added to `triggeredEventIds` **in the same `persist()` call** that saves the advanced character (`LifeViewModel.applyAgeUpResult`, `persistAge = true`). This closes the window where age was saved but a one-time milestone could re-eligible on a later age-up after OS kill before the player tapped a choice. Intro-at-birth (`persistAge = false`) still marks ids on choice resolution only — character is not advanced until then. Duplicate stat effects from re-fired one-time JSON events were the gameplay risk; cosmetic-only re-shows without stat re-apply were already unlikely because `currentEvent` is not restored from disk.
+**Process-death safety (verified P52):** On age-up, one-time event ids from the offered event(s) are added to `triggeredEventIds` **in the same `persist()` call** that saves the advanced character (`LifeViewModel.applyAgeUpResult`, `persistAge = true`). This closes the window where age was saved but a one-time milestone could re-eligible on a later age-up after OS kill before the player tapped a choice.
 
 ### Domain layer (`GameEngine.ageUp`)
 
@@ -54,7 +54,10 @@ Order is fixed and has been stable since the mortality-last rule (Prompt 8):
 
 ### Persistence layer
 
-14. **`CharacterRepository.saveGame(slotId, character, triggeredEventIds)`** — maps `Character` → `CharacterEntity`, JSON-serializes nested lists, applies **`EventLogCap.trim`** on save (max 150 log lines), **`AncestryHistoryCap.trim`** on ancestry, and **`RelationshipMilestoneCap.trimFamily`** on family milestones (max 25 per person).
+14. **`CharacterRepository.saveGame(slotId, character, triggeredEventIds)`** — maps `Character` → `CharacterEntity`, JSON-serializes nested lists, applies:
+    - **`EventLogCap.trim`** (max 150 log lines)
+    - **`AncestryHistoryCap.trim`** (max 25 ancestry entries)
+    - **`RelationshipMilestoneCap.trimFamily`** (max 25 milestones per `Person`)
 15. Room DAO write; no `StateFlow` from repository on Life screen — ViewModel holds authoritative UI state updated synchronously after save.
 
 ### UI recomposition
@@ -85,14 +88,14 @@ Each slot stores one `Character` at a time: name, age, stats, `familyJson`, `edu
 
 When a character **dies**:
 
-1. **`LifeSummaryScreen`** shows recap; **`LegacyEngine.eligibleHeirs()`** returns living children age ≥ minimum.
+1. **`LifeSummaryScreen`** shows recap; **`LegacyEngine.eligibleHeirs()`** returns living children age ≥ 16.
 2. If heirs exist, **Continue Legacy** → heir picker → confirmation.
 3. **`LegacyEngine.createLegacyCharacter(deceased, heir)`**:
    - Heir becomes the new `Character` (same slot).
    - `generationNumber = deceased.generationNumber + 1`.
-   - **`ancestryHistory`** += `buildAncestryEntry(deceased)` (name, birth country, relocations, age/cause at death).
+   - **`ancestryHistory`** += `buildAncestryEntry(deceased)` (capped at 25 on save).
    - Money split evenly among living children; heir gets their share added.
-   - Surviving spouse remapped to MOTHER/FATHER; other children → SIBLING; friends may carry over.
+   - Surviving spouse remapped to MOTHER/FATHER; other children → SIBLING; friends may carry over (with existing `Person.milestones`, capped at 25).
    - Fresh `career`, `assets`, `criminalRecord`, `eventLog` (one legacy intro line); education from heir's age.
 4. **`GameEngine.applyLegacyFamilyMilestones`** tags family with legacy milestone.
 5. Save with **empty `triggeredEventIds`** (new life event pool).
@@ -127,28 +130,18 @@ On death + legacy pick child "A":
 
 ### Example: Nigerian character sees a templated exam event
 
-1. **Event JSON** (`education_events.json` or `general_events.json`) contains text like:  
-   `"{secondaryExam} season looms…"`  
-   No `restrictedToCountry` → eligible for all countries (subject to age/tags).
-
+1. **Event JSON** contains text like: `"{secondaryExam} season looms…"` — no `restrictedToCountry` → eligible for all countries (subject to age/tags).
 2. **Age up** → `EventRepository.getEligibleEvents(age, usedIds, character)` filters by age, one-time tags, relationship/crime/finance gates, and **`restrictedToCountry`** if set.
-
-3. **`FlavorInterpolator.resolveEvent(event, "NG")`** replaces placeholders using **`CountryCatalog.flavorFor("NG")`**:
-   - `{secondaryExam}` → e.g. **WAEC** (from `CountryFlavor.secondaryExamName`)
-   - `{transportMode}` → country-specific transport string
-   - `{moneyApp}` → e.g. **OPay** (or fallback `"mobile banking"`)
-
-4. **Education system events** (`exam_system` tag) bypass random pool — `EducationEngine.buildExamResultEvent` uses **`ExamNames.primaryExamName` / `ExamNames.secondaryExamName(countryCode)`** for display text. Internal `ExamType.KCPE` / `ExamType.KCSE` enum values are legacy names only; trigger logic is country-agnostic (see §4 `EducationEngine`).
-
-5. **Jobs** — `JobPool.getJobsForCountry("NG")` returns NG overrides + universal jobs; salaries scaled by **`EconomyScaler`**.
-
-6. **Assets** — `AssetCatalog` country-specific entries (e.g. self-contain) + universal; prices scaled.
-
+3. **`FlavorInterpolator.resolveEvent(event, "NG")`** replaces placeholders using **`CountryCatalog.flavorFor("NG")`**.
+4. **Education system events** (`exam_system` tag) bypass random pool — `EducationEngine.buildExamResultEvent` uses **`ExamNames`** for display text. Trigger logic is country-agnostic (`shouldTriggerPrimaryExam` / `shouldTriggerSecondaryExam` at ages 13 / 17).
+5. **Jobs** — `JobPool.getJobsForCountry("NG")`; salaries scaled by **`EconomyScaler`**.
+6. **Assets** — `AssetCatalog` country-specific entries + universal; prices scaled.
 7. **Names** — `NamePool.randomFullName(gender, "NG")` for prospects, children, friends.
+8. **Holidays** — events tagged `holiday` resolve from `CountryFlavor.notableHolidays`; gated by `lastHolidayAge` cooldown.
 
-8. **Holidays** — events tagged `holiday` resolve `{holidayName}` / `{holidayDescription}` from `CountryFlavor.notableHolidays`; gated by `lastHolidayAge` cooldown.
+### Kenya-only events (verified P53)
 
-9. **Kenya-only events (verified P53)** — **9** events carry `restrictedToCountry: "KE"`; **all 9** have a universal counterpart at the same age range/theme (4 use `_world` ids; 5 use parallel universal ids). Non-Kenyan players are not missing a life-stage bucket. Inventory:
+**9** events carry `restrictedToCountry: "KE"`; **all 9** have a universal counterpart at the same age range/theme.
 
 | KE-only id | Universal counterpart | Age range |
 |------------|----------------------|-----------|
@@ -161,8 +154,6 @@ On death + legacy pick child "A":
 | `side_hustle_matatu` | `side_hustle_delivery` | 20–40 |
 | `motorbike_repair` | `scooter_repair` | 18–45 |
 | `teen_matatu_wash` | `teen_car_wash` | 14–18 |
-
-KE-restricted events remain for Kenya-flavor authenticity; they are never offered outside KE.
 
 ---
 
@@ -191,8 +182,6 @@ One-line responsibility + key public entry points. See KDoc on each class for pa
 
 `enrollIfEligible`, `advanceGrade`, `applyStudyEffort`, `advanceUniversityYear`, `takeExam`, `applyToUniversity`, `isEligibleForUniversity`, `shouldTriggerPrimaryExam` / `shouldTriggerSecondaryExam`, `buildExamResultEvent`, `applyGpaEffect`
 
-**Exam triggers (verified P53):** `shouldTriggerPrimaryExam` / `shouldTriggerSecondaryExam` (renamed from `shouldTriggerKcpe` / `shouldTriggerKcse`) check **school stage, final grade, and universal age thresholds** (13 / 17) only — **no `countryCode` gate**. Display localization is in `buildExamResultEvent` via `ExamNames`. `EducationState.kcpePassed` / `kcseGrade` field names are persistence legacy; behavior applies to all countries. `EducationEngineTest` confirms triggers for KE, NG, US/GB at exit ages.
-
 ### `CareerEngine`
 **Jobs, work years, promotions, firing.**
 
@@ -207,6 +196,8 @@ One-line responsibility + key public entry points. See KDoc on each class for pa
 **Family, dating, interactions, children, decay.**
 
 `tickFamilyYear`, `findDatingProspects`, `generateFriendshipOpportunity`, `progressRelationship`, `proposeMarriage`, `startDating`, `breakUpOrDivorce`, `haveChild`, `applySpouseRelationshipEffect`, `applyLegacyFamilyMilestones`, `getRelationshipTier`, `canTravelTogether`
+
+Milestone appends call **`RelationshipMilestoneCap.trim`** after each write.
 
 ### `CrimeEngine`
 **Crime attempts, arrest, prison years.**
@@ -223,6 +214,8 @@ One-line responsibility + key public entry points. See KDoc on each class for pa
 
 `checkDeath`, `applyDeath`, `parseDeathCause`, `deathFlavorText`, `gentleCauseLabel`
 
+Writes `::DEATH:CAUSE::flavor` as dedicated log lines.
+
 ### `AchievementEngine`
 **Achievement condition checks.**
 
@@ -238,12 +231,17 @@ One-line responsibility + key public entry points. See KDoc on each class for pa
 
 `hasRelocated`, `shouldOfferRelocation`, `getRelocationOpportunities`, `buildRelocationOpportunityEvent`, `relocate`
 
-**Multi-relocation (verified P52):** `hasRelocated(character): Boolean` is a yes/no helper (`relocationCount > 0` or birth ≠ current country) — not a count API. Full history lives on `Character.relocationCount` (int), `Character.relocationHistory` (list of country codes), and `Character.lastRelocationAge`. `shouldOfferRelocation` uses **per-index** one-time event ids (`relocation_opportunity_system_0`, `_1`, …) and enforces `MIN_YEARS_BETWEEN_RELOCATIONS` (4) after the first move — a second relocation is supported. `AchievementEngine.checkWorldTraveler` requires `relocationCount >= 2` (achievement id `world_traveler`) — achievable with the shipped engine.
+**Multi-relocation (verified P52):** `relocationCount`, `relocationHistory`, per-index one-time event ids. `world_traveler` achievement requires `relocationCount >= 2`.
 
 ### `EventLogCap` (utility)
 **Bounds event log size on disk.**
 
 `prepend`, `append`, `trim` — preserves lines starting with `::DEATH:` (prefix match at line start only; see `SAVE_DATA_INTEGRITY.md` P54).
+
+### `AncestryHistoryCap` (utility)
+**Bounds ancestry history across legacy chains.**
+
+`trim` — keeps earliest 25 generations (lowest `generationNumber`).
 
 ### `RelationshipMilestoneCap` (utility)
 **Bounds per-person milestone list inside `familyJson`.**
@@ -260,9 +258,9 @@ One-line responsibility + key public entry points. See KDoc on each class for pa
 ## 5. Cross-cutting notes
 
 - **One-shot UI events** (ads, achievements, celebrations, navigation): boolean flags + `*Handled()` callbacks in `UiState`, not `SharedFlow`.
-- **`LifeViewModel`** is intentionally monolithic — see **ADR-001** (§6). Do not re-audit sizing unless revisit triggers are met.
-- **Notifications:** `NotificationScheduler` enqueues `DailyReminderWorker` (24h + 6h flex, `KEEP` policy) and one-time `ContextualNudgeWorker` jobs. No battery-optimization exemption — see [KNOWN_PLATFORM_LIMITATIONS.md](KNOWN_PLATFORM_LIMITATIONS.md).
-- **Tests:** `EventRepository.forTesting()` and `NotificationScheduler.forTesting()` exist for JVM unit tests only. All domain tests should use these via `TestFixtures.gameEngine()` or direct `forTesting()` — never the production Android-dependent constructors. See [TEST_COVERAGE.md](TEST_COVERAGE.md) for the full engine × test map and fixture convention.
+- **`LifeViewModel`** is intentionally monolithic — see **ADR-001** (§6).
+- **Notifications:** `NotificationScheduler` enqueues `DailyReminderWorker` (24h + 6h flex, `KEEP` policy) and one-time `ContextualNudgeWorker` jobs. See [KNOWN_PLATFORM_LIMITATIONS.md](KNOWN_PLATFORM_LIMITATIONS.md).
+- **Tests:** `EventRepository.forTesting()` and `NotificationScheduler.forTesting()` for JVM unit tests. See [TEST_COVERAGE.md](TEST_COVERAGE.md).
 - **Test fixtures:** `app/src/test/java/com/maisha/game/domain/TestFixtures.kt` — shared `character()` / `person()` / `child()` / `gameEngine()` builders.
 
 ---
@@ -273,11 +271,13 @@ One-line responsibility + key public entry points. See KDoc on each class for pa
 
 | | |
 |---|---|
-| **Question** | Should `LifeViewModel` be split into smaller per-concern ViewModels (career, family, assets, etc.)? |
+| **Question** | Should `LifeViewModel` be split into smaller per-concern ViewModels? |
 | **Decision** | **No** — keep a single `LifeViewModel` per life screen. |
-| **Context** | Earlier audit passes (Prompts 26–37) noted accumulated pass-through methods (`onAgeUp`, `onChoiceSelected`, family interactions, crime, doctor visits, ad/achievement handlers). `LifeViewModel` currently exposes ~34 public methods. |
-| **Reasoning** | Shared slot state, ad-deferral during achievement celebrations, and achievement-queue sequencing all need visibility into the same `ageUp()` result within one ViewModel to emit one-shot UI events (`showInterstitial`, achievement dialog, celebration overlay, navigation) in the correct order. Splitting would reintroduce cross–ViewModel coordination for every age-up tick without a clear benefit at the current method count. |
-| **Revisit when** | (1) `LifeViewModel` exceeds **~40 public methods**, or (2) a genuinely independent concern unrelated to age-up / event / achievement / ad sequencing needs its own lifecycle (e.g. a standalone screen with no slot coupling). |
-| **Status** | **Closed.** Future audits must **not** re-flag ViewModel sizing unless a revisit trigger above is met. This ADR is the final word on that question. |
+| **Context** | ~34 public methods; shared slot state, ad-deferral, achievement-queue sequencing. |
+| **Reasoning** | Splitting would reintroduce cross–ViewModel coordination for every age-up tick without clear benefit at current method count. |
+| **Revisit when** | (1) `LifeViewModel` exceeds **~40 public methods**, or (2) a genuinely independent screen with no slot coupling. |
+| **Status** | **Closed.** |
 
-Prior note (§5): *"`LifeViewModel` is intentionally monolithic — shared slot state, ad deferral, and achievement queues."* — superseded in detail by ADR-001 above; the decision is unchanged.
+---
+
+*Maisha Life Simulator — Architecture. Updated through Prompt 54 (July 2026).*

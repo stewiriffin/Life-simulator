@@ -1,4 +1,4 @@
-# Save Data Integrity — Prompt 45
+# Save Data Integrity — Prompt 45 (+ P54 bounded-list audit)
 
 Hardening against corrupted or unreadable persisted data. No backup/restore system — confirmation dialogs remain the only safety net for destructive actions (Reset All Data, slot overwrite, legacy).
 
@@ -18,6 +18,8 @@ Hardening against corrupted or unreadable persisted data. No backup/restore syst
 
 Malformed blobs log `Log.e` and fall back to empty/default for **that field only**.
 
+**Important:** `safeDeserialize` does **not** trim nested growing lists inside `familyJson`. Per-person milestone bounding is handled by `RelationshipMilestoneCap` at write time, not at deserialize time.
+
 ## Bounded persisted lists (P54 audit)
 
 | Field | Location | Cap | Applied |
@@ -26,19 +28,23 @@ Malformed blobs log `Log.e` and fall back to empty/default for **that field only
 | `ancestryHistory` | `Character` | 25 (`AncestryHistoryCap`) | `LegacyEngine.createLegacyCharacter` + save |
 | `Person.milestones` | nested in `family` JSON | **25 per person** (`RelationshipMilestoneCap`) | `RelationshipEngine` on append + save |
 
+All three caps follow the same architectural pattern: dedicated `object` in `domain/`, `MAX_ENTRIES` constant, `trim()` function, applied both at mutation site and on `CharacterRepository.saveGame`.
+
 ### `Person.milestones` — growth assessment (P54)
 
-**Before P54:** Uncapped. `SerializationUtils.safeDeserialize` for `familyJson` does not trim nested lists.
+**Before P54:** Uncapped. Easy to miss in a top-level `Character` field review because milestones live **nested** inside each `Person` inside `familyJson`.
 
 **Recording rules (significance filter — Prompt 21):** Only major interactions append milestones (`ARGUE`, `INSULT`, `TRAVEL_TOGETHER`, `SET_UP_ON_DATE`, `GIFT` medium/large). `QUALITY_TIME` and `LEGACY_CONTINUED` are once per person. Lifecycle adds `STARTED_DATING` / `MARRIED` once each.
 
-**Realistic worst case (uncapped):** A player repeating milestone-qualifying interactions with the same person every year for ~60 active years could accumulate **~3 milestones/year** (e.g. argue + travel + large gift) → **~180/person**. With ~10 family members (parents, siblings, spouse, children, friends) → **~1,800** milestone objects in one save. Legacy carry-over preserves `Person` rows (siblings/friends), so counts **compound across generations** on inherited members — same risk profile as pre-cap `ancestryHistory`.
+**Realistic worst case (uncapped):** ~3 milestones/year × ~60 active years → **~180/person**. With ~10 family members → **~1,800** milestone objects in one save. Legacy carry-over preserves `Person` rows (siblings/friends), so counts **compound across generations** on inherited members — same risk profile as pre-cap `ancestryHistory`.
 
-**Decision:** Cap at **25 per person** (keeps newest; UI already shows 8 with “earlier memories” hint). Slower than `eventLog` growth but same nested, multi-generation shape — worth bounding on save.
+**Decision:** Cap at **25 per person** (keeps newest via `takeLast`; UI shows 8 with "earlier memories" hint). Slower than `eventLog` growth but same nested, multi-generation shape — worth bounding on save.
 
 ### `::DEATH:` marker robustness (P54)
 
 `EventLogCap` uses **`startsWith("::DEATH:")`** on whole log lines only — not substring search. `MortalityEngine` writes markers as dedicated log lines (`::DEATH:CAUSE::flavor`). Ordinary flavor text containing `::DEATH:` mid-string is **not** protected and is trimmed like any other line. Case-sensitive; collision with player-facing event copy is implausible.
+
+**Test:** `EventLogCapTest.trim_doesNotTreatDeathMarkerInMiddleOfLineAsProtected`
 
 ## Slot corruption UX
 
@@ -52,10 +58,10 @@ Malformed blobs log `Log.e` and fall back to empty/default for **that field only
 
 When `DatabaseHealth.isAvailable = false` (Room failed to open — distinct from per-slot `isCorrupted`):
 
-- `SlotPickerViewModel` sets `isDatabaseUnavailable = true` (does not collect slot flow)
-- `SlotPickerScreen` shows a **full-screen** `DatabaseUnavailableScreen` instead of three empty slot cards (which would misleadingly look like “no saves yet”)
+- `SlotPickerViewModel` sets `isDatabaseUnavailable = true`
+- `SlotPickerScreen` shows **full-screen** `DatabaseUnavailableScreen` instead of three empty slot cards
 - **Settings remains reachable** via **Open Settings** — `SettingsRepository` uses DataStore, not Room
-- Recovery path: **Reset All Data** in Settings (honest guidance; no in-app DB reopen without process restart)
+- Recovery path: **Reset All Data** in Settings
 
 ## DataStore
 
@@ -66,10 +72,13 @@ When `DatabaseHealth.isAvailable = false` (Room failed to open — distinct from
 - `SerializationUtilsTest`
 - `CharacterSaveMapperTest` (malformed family JSON, invalid gender)
 - `CharacterRepositoryCorruptionTest` (database unavailable)
+- `EventLogCapTest`, `AncestryHistoryCapTest`, `RelationshipMilestoneCapTest`
+- `MemorySoakTest` (55 age-ups, all three caps)
 
 ## Manual verification
 
 1. Corrupt `familyJson` in a save row → character loads with empty family, stats intact
 2. Corrupt core row (invalid `gender`) → slot shows Save Data Issue; clear restores slot
+3. Force-kill during age-up → one-time event ids persisted with age (P52)
 
-*July 2026*
+*July 2026 — updated Prompt 54.*
