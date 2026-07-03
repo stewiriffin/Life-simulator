@@ -80,4 +80,52 @@ class AchievementEngineTest {
         assertFalse(unlocked.any { it.id == "half_century" })
         assertEquals(0, unlocked.count { it.id == "half_century" })
     }
+
+    @Test
+    fun firstJob_triggersWhenEmployed() {
+        val character = TestFixtures.character(
+            career = CareerState(
+                currentJob = TestFixtures.job(),
+                yearsAtCurrentJob = 1
+            )
+        )
+        val unlocked = engine.checkAchievements(character, emptyList())
+        assertTrue(unlocked.any { it.id == "first_job" })
+    }
+
+    @Test
+    fun brushWithLaw_triggersAfterArrest() {
+        val character = TestFixtures.character(
+            criminalRecord = com.maisha.game.data.model.CriminalRecord(
+                hasRecord = true,
+                timesArrested = 1,
+                lastArrestAge = 20
+            )
+        )
+        val unlocked = engine.checkAchievements(character, emptyList())
+        assertTrue(unlocked.any { it.id == "brush_with_law" })
+    }
+
+    @Test
+    fun worldCitizen_triggersWithForeignSpouse() {
+        val spouse = TestFixtures.person(
+            id = "spouse",
+            relation = RelationType.SPOUSE,
+            countryCode = "NG",
+            isMarried = true
+        )
+        val character = TestFixtures.character(countryCode = "KE", family = listOf(spouse))
+        val unlocked = engine.checkAchievements(character, emptyList())
+        assertTrue(unlocked.any { it.id == "world_citizen" })
+    }
+
+    @Test
+    fun cleanRecord_triggersAtSixtyWithoutRecord() {
+        val character = TestFixtures.character(
+            age = 60,
+            criminalRecord = com.maisha.game.data.model.CriminalRecord()
+        )
+        val unlocked = engine.checkAchievements(character, emptyList())
+        assertTrue(unlocked.any { it.id == "clean_record" })
+    }
 }

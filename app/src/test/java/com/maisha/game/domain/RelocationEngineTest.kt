@@ -65,13 +65,40 @@ class RelocationEngineTest {
         assertTrue(opportunities.none { it.code == "KE" })
     }
 
-    private fun baseCharacter() = Character(
-        name = "Test",
-        age = 22,
-        gender = Gender.FEMALE,
-        stats = Stats(health = 80, happiness = 70, smarts = 60, looks = 50, money = 0),
-        birthYear = 2003,
-        countryCode = "KE",
-        birthCountryCode = "KE"
-    )
+    @Test
+    fun `shouldOfferRelocation false when under minimum age`() {
+        val character = baseCharacter().copy(age = 17)
+        assertFalse(engine.shouldOfferRelocation(character, emptySet()))
+    }
+
+    @Test
+    fun `shouldOfferRelocation false when incarcerated`() {
+        val character = baseCharacter().copy(
+            age = 30,
+            criminalRecord = com.maisha.game.data.model.CriminalRecord(
+                currentlyIncarcerated = true,
+                yearsRemaining = 2
+            )
+        )
+        assertFalse(engine.shouldOfferRelocation(character, emptySet()))
+    }
+
+    @Test
+    fun `shouldOfferRelocation false when opportunity event already triggered`() {
+        val character = baseCharacter().copy(age = 30)
+        val eventId = engine.relocationOpportunityEventId(character.relocationCount)
+        assertFalse(engine.shouldOfferRelocation(character, setOf(eventId)))
+    }
+
+    @Test
+    fun `shouldOfferRelocation false when moved too recently`() {
+        val character = baseCharacter().copy(
+            age = 30,
+            relocationCount = 1,
+            lastRelocationAge = 28
+        )
+        assertFalse(engine.shouldOfferRelocation(character, emptySet()))
+    }
+
+    private fun baseCharacter() = TestFixtures.character(age = 22, countryCode = "KE")
 }

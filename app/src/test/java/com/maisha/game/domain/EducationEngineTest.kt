@@ -97,4 +97,56 @@ class EducationEngineTest {
         assertEquals(SchoolStage.UNIVERSITY, after.education.stage)
         assertEquals("Law", after.education.courseOfStudy)
     }
+
+    @Test
+    fun shouldTriggerKcpe_trueAtPrimaryExitBeforePass() {
+        val character = TestFixtures.character(
+            age = 13,
+            education = EducationState(
+                stage = SchoolStage.PRIMARY,
+                currentGrade = 8,
+                kcpePassed = false
+            )
+        )
+        assertTrue(engine.shouldTriggerKcpe(character))
+    }
+
+    @Test
+    fun shouldTriggerKcpe_falseAfterAlreadyPassed() {
+        val character = TestFixtures.character(
+            age = 14,
+            education = EducationState(
+                stage = SchoolStage.PRIMARY,
+                currentGrade = 8,
+                kcpePassed = true
+            )
+        )
+        assertFalse(engine.shouldTriggerKcpe(character))
+    }
+
+    @Test
+    fun shouldTriggerKcse_trueAtSecondaryExitBeforeGradeRecorded() {
+        val character = TestFixtures.character(
+            age = 18,
+            education = EducationState(
+                stage = SchoolStage.SECONDARY,
+                currentGrade = 4,
+                kcseGrade = null
+            )
+        )
+        assertTrue(engine.shouldTriggerKcse(character))
+    }
+
+    @Test
+    fun shouldTriggerKcse_falseAfterGradeRecorded() {
+        val character = TestFixtures.character(
+            age = 18,
+            education = EducationState(
+                stage = SchoolStage.SECONDARY,
+                currentGrade = 4,
+                kcseGrade = "C+"
+            )
+        )
+        assertFalse(engine.shouldTriggerKcse(character))
+    }
 }

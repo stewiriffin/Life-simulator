@@ -102,6 +102,25 @@ object TestFixtures {
         monthlyUpkeep = monthlyUpkeep
     )
 
+    fun child(
+        id: String,
+        age: Int,
+        relationship: Int,
+        relation: RelationType = RelationType.CHILD,
+        gender: Gender = Gender.MALE,
+        countryCode: String = "KE",
+        avatarConfig: com.maisha.game.data.model.AvatarConfig = com.maisha.game.data.model.AvatarConfig.DEFAULT
+    ): Person = Person(
+        id = id,
+        name = id,
+        relation = relation,
+        gender = gender,
+        age = age,
+        relationshipLevel = relationship,
+        countryCode = countryCode,
+        avatarConfig = avatarConfig
+    )
+
     fun gameEngine(): GameEngine {
         val financeEngine = FinanceEngine()
         val eventRepository = EventRepository.forTesting(financeEngine)

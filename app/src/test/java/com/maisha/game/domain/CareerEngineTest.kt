@@ -120,4 +120,10 @@ class CareerEngineTest {
         assertTrue(fired)
         assertEquals(null, after.career.currentJob)
     }
+
+    @Test
+    fun shouldTriggerDownsizing_falseWhenUnemployed() {
+        val unemployed = TestFixtures.character(age = 30)
+        assertFalse(engine.shouldTriggerDownsizing(unemployed))
+    }
 }

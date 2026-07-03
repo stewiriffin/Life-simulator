@@ -235,6 +235,24 @@ One-line responsibility + key public entry points. See KDoc on each class for pa
 ## 5. Cross-cutting notes
 
 - **One-shot UI events** (ads, achievements, celebrations, navigation): boolean flags + `*Handled()` callbacks in `UiState`, not `SharedFlow`.
-- **`LifeViewModel`** is intentionally monolithic — shared slot state, ad deferral, and achievement queues (see Prompt 37).
+- **`LifeViewModel`** is intentionally monolithic — see **ADR-001** (§6). Do not re-audit sizing unless revisit triggers are met.
 - **Notifications:** `NotificationScheduler` enqueues `DailyReminderWorker` (24h + 6h flex, `KEEP` policy) and one-time `ContextualNudgeWorker` jobs. No battery-optimization exemption — see [KNOWN_PLATFORM_LIMITATIONS.md](KNOWN_PLATFORM_LIMITATIONS.md).
-- **Tests:** `EventRepository.forTesting()` and `NotificationScheduler.forTesting()` exist for JVM unit tests only.
+- **Tests:** `EventRepository.forTesting()` and `NotificationScheduler.forTesting()` exist for JVM unit tests only. All domain tests should use these via `TestFixtures.gameEngine()` or direct `forTesting()` — never the production Android-dependent constructors. See [TEST_COVERAGE.md](TEST_COVERAGE.md) for the full engine × test map and fixture convention.
+- **Test fixtures:** `app/src/test/java/com/maisha/game/domain/TestFixtures.kt` — shared `character()` / `person()` / `child()` / `gameEngine()` builders.
+
+---
+
+## 6. Architecture Decision Records
+
+### ADR-001: Keep `LifeViewModel` monolithic (2026-07-03)
+
+| | |
+|---|---|
+| **Question** | Should `LifeViewModel` be split into smaller per-concern ViewModels (career, family, assets, etc.)? |
+| **Decision** | **No** — keep a single `LifeViewModel` per life screen. |
+| **Context** | Earlier audit passes (Prompts 26–37) noted accumulated pass-through methods (`onAgeUp`, `onChoiceSelected`, family interactions, crime, doctor visits, ad/achievement handlers). `LifeViewModel` currently exposes ~34 public methods. |
+| **Reasoning** | Shared slot state, ad-deferral during achievement celebrations, and achievement-queue sequencing all need visibility into the same `ageUp()` result within one ViewModel to emit one-shot UI events (`showInterstitial`, achievement dialog, celebration overlay, navigation) in the correct order. Splitting would reintroduce cross–ViewModel coordination for every age-up tick without a clear benefit at the current method count. |
+| **Revisit when** | (1) `LifeViewModel` exceeds **~40 public methods**, or (2) a genuinely independent concern unrelated to age-up / event / achievement / ad sequencing needs its own lifecycle (e.g. a standalone screen with no slot coupling). |
+| **Status** | **Closed.** Future audits must **not** re-flag ViewModel sizing unless a revisit trigger above is met. This ADR is the final word on that question. |
+
+Prior note (§5): *"`LifeViewModel` is intentionally monolithic — shared slot state, ad deferral, and achievement queues."* — superseded in detail by ADR-001 above; the decision is unchanged.

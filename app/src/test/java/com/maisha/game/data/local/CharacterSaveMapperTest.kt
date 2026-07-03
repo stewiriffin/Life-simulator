@@ -42,9 +42,47 @@ class CharacterSaveMapperTest {
         assertEquals(false, summary.isEmpty)
     }
 
+    @Test
+    fun toSavedGame_malformedAncestryHistory_loadsWithEmptyAncestry() {
+        val entity = sampleEntity(ancestryHistoryJson = "[{bad ancestry")
+        val result = CharacterSaveMapper.toSavedGame(entity)
+        assertTrue(result is SavedGameLoadResult.Success)
+        assertTrue((result as SavedGameLoadResult.Success).game.character.ancestryHistory.isEmpty())
+    }
+
+    @Test
+    fun toSavedGame_malformedRelocationHistory_loadsWithEmptyRelocationHistory() {
+        val entity = sampleEntity(relocationHistoryJson = "not-json")
+        val result = CharacterSaveMapper.toSavedGame(entity)
+        assertTrue(result is SavedGameLoadResult.Success)
+        assertTrue((result as SavedGameLoadResult.Success).game.character.relocationHistory.isEmpty())
+    }
+
+    @Test
+    fun toSavedGame_malformedCriminalRecord_loadsWithDefaultRecord() {
+        val entity = sampleEntity(criminalRecordJson = "{broken")
+        val result = CharacterSaveMapper.toSavedGame(entity)
+        assertTrue(result is SavedGameLoadResult.Success)
+        val record = (result as SavedGameLoadResult.Success).game.character.criminalRecord
+        assertEquals(false, record.hasRecord)
+        assertEquals(0, record.timesArrested)
+    }
+
+    @Test
+    fun toSavedGame_malformedActiveConditions_loadsWithEmptyConditions() {
+        val entity = sampleEntity(healthConditionsJson = "[invalid")
+        val result = CharacterSaveMapper.toSavedGame(entity)
+        assertTrue(result is SavedGameLoadResult.Success)
+        assertTrue((result as SavedGameLoadResult.Success).game.character.activeConditions.isEmpty())
+    }
+
     private fun sampleEntity(
         familyJson: String = "[]",
-        gender: String = Gender.MALE.name
+        gender: String = Gender.MALE.name,
+        ancestryHistoryJson: String = "[]",
+        relocationHistoryJson: String = "[]",
+        criminalRecordJson: String = "{}",
+        healthConditionsJson: String = "[]"
     ): CharacterEntity = CharacterEntity(
         slotId = 0,
         name = "Alex",
@@ -59,6 +97,10 @@ class CharacterSaveMapperTest {
         alive = true,
         eventLogJson = "[]",
         triggeredEventIdsJson = "[]",
-        familyJson = familyJson
+        familyJson = familyJson,
+        ancestryHistoryJson = ancestryHistoryJson,
+        relocationHistoryJson = relocationHistoryJson,
+        criminalRecordJson = criminalRecordJson,
+        healthConditionsJson = healthConditionsJson
     )
 }

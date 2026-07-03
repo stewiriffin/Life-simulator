@@ -55,9 +55,9 @@ class LegacyEngineTest {
 
     @Test
     fun `non chosen siblings keep relationship level as siblings`() {
-        val heir = child("heir", age = 20, relationship = 75)
-        val siblingA = child("sibling-a", age = 18, relationship = 82)
-        val siblingB = child("sibling-b", age = 16, relationship = 60)
+        val heir = TestFixtures.child("heir", age = 20, relationship = 75)
+        val siblingA = TestFixtures.child("sibling-a", age = 18, relationship = 82)
+        val siblingB = TestFixtures.child("sibling-b", age = 16, relationship = 60)
         val deceased = Character(
             name = "Parent",
             age = 55,
@@ -78,7 +78,10 @@ class LegacyEngineTest {
     @Test
     fun `heir preserves avatar and country`() {
         val avatar = AvatarConfig(skinTone = 5, hairStyle = 3, hairColor = 1, outfitColor = 2)
-        val heir = child("heir", age = 22, relationship = 70).copy(
+        val heir = TestFixtures.child(
+            id = "heir",
+            age = 22,
+            relationship = 70,
             avatarConfig = avatar,
             countryCode = "NG"
         )
@@ -100,8 +103,8 @@ class LegacyEngineTest {
 
     @Test
     fun `money inheritance splits evenly among living children`() {
-        val heir = child("heir", age = 20, relationship = 70)
-        val sibling = child("sibling", age = 18, relationship = 65)
+        val heir = TestFixtures.child("heir", age = 20, relationship = 70)
+        val sibling = TestFixtures.child("sibling", age = 18, relationship = 65)
         val deceased = Character(
             name = "Parent",
             age = 60,
@@ -118,8 +121,8 @@ class LegacyEngineTest {
 
     @Test
     fun `eligible heirs require minimum age`() {
-        val young = child("young", age = 10, relationship = 80)
-        val oldEnough = child("adult", age = 18, relationship = 80)
+        val young = TestFixtures.child("young", age = 10, relationship = 80)
+        val oldEnough = TestFixtures.child("adult", age = 18, relationship = 80)
         val deceased = Character(
             name = "Parent",
             age = 40,
@@ -134,13 +137,4 @@ class LegacyEngineTest {
         assertEquals(1, heirs.size)
         assertEquals("adult", heirs.first().id)
     }
-
-    private fun child(id: String, age: Int, relationship: Int): Person = Person(
-        id = id,
-        name = id,
-        relation = RelationType.CHILD,
-        gender = Gender.MALE,
-        age = age,
-        relationshipLevel = relationship
-    )
 }
