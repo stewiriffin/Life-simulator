@@ -56,6 +56,7 @@ object TestFixtures {
         alive = alive,
         countryCode = countryCode,
         birthCountryCode = countryCode,
+        citizenships = listOf(countryCode),
         family = family,
         education = education,
         career = career,
@@ -170,11 +171,12 @@ object TestFixtures {
     fun gameEngine(): GameEngine {
         val financeEngine = FinanceEngine()
         val healthEngine = HealthEngine()
+        val relocationEngine = RelocationEngine()
         val eventRepository = EventRepository.forTesting(financeEngine)
         return GameEngine(
             eventRepository = eventRepository,
-            educationEngine = EducationEngine(),
-            careerEngine = CareerEngine(healthEngine),
+            educationEngine = EducationEngine(relocationEngine),
+            careerEngine = CareerEngine(healthEngine, relocationEngine),
             financeEngine = financeEngine,
             relationshipEngine = RelationshipEngine(FinanceEngine()),
             mortalityEngine = MortalityEngine(),
@@ -182,10 +184,12 @@ object TestFixtures {
             healthEngine = healthEngine,
             achievementEngine = AchievementEngine(financeEngine),
             notificationScheduler = NotificationScheduler.forTesting(),
-            relocationEngine = RelocationEngine(),
+            relocationEngine = relocationEngine,
             socialMediaEngine = SocialMediaEngine(financeEngine),
             skillEngine = SkillEngine(),
-            businessEngine = BusinessEngine(financeEngine)
+            businessEngine = BusinessEngine(financeEngine),
+            politicsEngine = PoliticsEngine(financeEngine),
+            legacyEngine = LegacyEngine(MortalityEngine(), financeEngine)
         )
     }
 }

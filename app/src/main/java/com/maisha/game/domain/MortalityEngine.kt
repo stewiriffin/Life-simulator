@@ -32,36 +32,119 @@ class MortalityEngine @Inject constructor() {
 
         val age = character.age
         val health = character.stats.health
+        val deployed = character.career.isDeployed
 
-        if (Random.nextFloat() < ACCIDENT_CHANCE) {
+        if (Random.nextFloat() < accidentChance(character)) {
             return DeathResult.Died(DeathCause.ACCIDENT, age)
         }
 
         if (health < CRITICAL_HEALTH_THRESHOLD) {
-            val healthDeathChance = ((CRITICAL_HEALTH_THRESHOLD - health) / CRITICAL_HEALTH_THRESHOLD.toFloat())
-                .coerceIn(0f, 1f) * 0.2f + 0.08f
-            if (Random.nextFloat() < healthDeathChance) {
+            val healthDeathChance = healthFailureChance(health, deployed)
+            if (Random.nextFloat() < healthDeathChance && !tryKarmaMiracle(character)) {
                 return DeathResult.Died(DeathCause.HEALTH_FAILURE, age)
             }
         }
 
-        if (health < LOW_HEALTH_THRESHOLD && Random.nextFloat() < ILLNESS_CHANCE) {
+        if (health < LOW_HEALTH_THRESHOLD &&
+            Random.nextFloat() < illnessChance(character) &&
+            !tryKarmaMiracle(character)
+        ) {
             return DeathResult.Died(DeathCause.ILLNESS, age)
         }
 
         val chronicUntreated = character.activeConditions.any {
             !it.treated && it.severity >= 2 && it.yearsUntreated >= 3
         }
-        if (chronicUntreated && Random.nextFloat() < CHRONIC_ILLNESS_DEATH_CHANCE) {
+        if (chronicUntreated &&
+            Random.nextFloat() < chronicIllnessChance(character) &&
+            !tryKarmaMiracle(character)
+        ) {
             return DeathResult.Died(DeathCause.ILLNESS, age)
         }
 
-        val ageChance = ageDeathProbability(age)
-        if (Random.nextFloat() < ageChance) {
+        val ageChance = ageDeathProbability(age, deployed)
+        if (Random.nextFloat() < ageChance && !tryKarmaMiracle(character)) {
             return DeathResult.Died(DeathCause.OLD_AGE, age)
         }
 
         return DeathResult.Alive
+    }
+
+    /**
+     * High-karma characters get a small chance to survive an otherwise fatal roll.
+     * Exposed for tests via [karmaMiracleChance].
+     */
+    fun tryKarmaMiracle(character: Character): Boolean {
+        val chance = karmaMiracleChance(character)
+        if (chance <= 0f) return false
+        return Random.nextFloat() < chance
+    }
+
+    fun karmaMiracleChance(character: Character): Float {
+        val karma = character.stats.karma
+        if (karma <= HIGH_KARMA_THRESHOLD) return 0f
+        return ((karma - HIGH_KARMA_THRESHOLD) / 20f * MAX_KARMA_MIRACLE_CHANCE)
+            .coerceIn(0f, MAX_KARMA_MIRACLE_CHANCE)
+    }
+
+    /** Baseline accident probability; elevated during active military deployment. */
+    fun accidentChance(character: Character): Float =
+        if (character.career.isDeployed) {
+            ACCIDENT_CHANCE * DEPLOYMENT_MORTALITY_MULTIPLIER
+        } else {
+            ACCIDENT_CHANCE
+        }
+
+    fun illnessChance(character: Character): Float =
+        if (character.career.isDeployed) {
+            ILLNESS_CHANCE * DEPLOYMENT_MORTALITY_MULTIPLIER
+        } else {
+            ILLNESS_CHANCE
+        }
+
+    fun chronicIllnessChance(character: Character): Float =
+        if (character.career.isDeployed) {
+            CHRONIC_ILLNESS_DEATH_CHANCE * DEPLOYMENT_MORTALITY_MULTIPLIER
+        } else {
+            CHRONIC_ILLNESS_DEATH_CHANCE
+        }
+
+    fun healthFailureChance(health: Int, deployed: Boolean): Float {
+        val base = ((CRITICAL_HEALTH_THRESHOLD - health) / CRITICAL_HEALTH_THRESHOLD.toFloat())
+            .coerceIn(0f, 1f) * 0.2f + 0.08f
+        return if (deployed) {
+            (base * DEPLOYMENT_MORTALITY_MULTIPLIER).coerceIn(0f, 0.95f)
+        } else {
+            base
+        }
+    }
+
+    /** Combined one-year death probability estimate for tests (independent rolls approximated). */
+    fun estimatedDeathProbability(character: Character): Float {
+        if (!character.alive) return 0f
+        val accident = accidentChance(character)
+        val health = character.stats.health
+        val healthFail = if (health < CRITICAL_HEALTH_THRESHOLD) {
+            healthFailureChance(health, character.career.isDeployed)
+        } else {
+            0f
+        }
+        val illness = if (health < LOW_HEALTH_THRESHOLD) illnessChance(character) else 0f
+        val chronic = if (character.activeConditions.any { !it.treated && it.severity >= 2 && it.yearsUntreated >= 3 }) {
+            chronicIllnessChance(character)
+        } else {
+            0f
+        }
+        val age = ageDeathProbability(character.age, character.career.isDeployed)
+        val miracle = karmaMiracleChance(character)
+        val healthFailEff = healthFail * (1f - miracle)
+        val illnessEff = illness * (1f - miracle)
+        val chronicEff = chronic * (1f - miracle)
+        val ageEff = age * (1f - miracle)
+        // P(any) ≈ 1 - Π(1 - p_i) for independent rolls
+        return (1f - (1f - accident) * (1f - healthFailEff) * (1f - illnessEff) *
+            (1f - chronicEff) * (1f - ageEff))
+            .coerceIn(0f, 1f)
     }
 
     /**
@@ -112,7 +195,7 @@ class MortalityEngine @Inject constructor() {
         DeathCause.ILLNESS -> "After a long illness, you passed away surrounded by loved ones."
     }
 
-    private fun ageDeathProbability(age: Int): Float {
+    private fun ageDeathProbability(age: Int, deployed: Boolean = false): Float {
         val probability = when {
             age < 60 -> 0.001f
             age < 70 -> 0.01f + (age - 60) * 0.004f
@@ -121,7 +204,8 @@ class MortalityEngine @Inject constructor() {
             age < 95 -> 0.70f + (age - 90) * 0.05f
             else -> 0.95f + (age - 95).coerceAtMost(5) * 0.01f
         }
-        return probability.coerceIn(0f, 0.99f)
+        val scaled = if (deployed) probability * DEPLOYMENT_MORTALITY_MULTIPLIER else probability
+        return scaled.coerceIn(0f, 0.99f)
     }
 
     companion object {
@@ -130,5 +214,9 @@ class MortalityEngine @Inject constructor() {
         private const val LOW_HEALTH_THRESHOLD = 25
         private const val ILLNESS_CHANCE = 0.025f
         private const val CHRONIC_ILLNESS_DEATH_CHANCE = 0.018f
+        /** Combat deployments multiply baseline mortality rolls. */
+        const val DEPLOYMENT_MORTALITY_MULTIPLIER = 8f
+        const val HIGH_KARMA_THRESHOLD = 80
+        private const val MAX_KARMA_MIRACLE_CHANCE = 0.35f
     }
 }

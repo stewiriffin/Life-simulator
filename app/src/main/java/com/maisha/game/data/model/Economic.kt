@@ -13,10 +13,21 @@ enum class EconomicClimate {
 
 /**
  * Yearly market conditions affecting asset values and upkeep.
- * Persisted on [Character] for save compatibility.
+ * Portfolio fields are also stored on [Character] for Room column mapping.
  */
 @Serializable
 data class EconomicState(
     val climate: EconomicClimate = EconomicClimate.NEUTRAL,
     val marketModifier: Float = 1.0f
+)
+
+/**
+ * Fictional investment portfolio (not casino gambling).
+ * Value fluctuates yearly via [com.maisha.game.domain.FinanceEngine.applyPortfolioMarketTick].
+ */
+@Serializable
+data class InvestmentPortfolio(
+    val value: Int = 0,
+    /** Last applied return percentage, e.g. -30 to +40. */
+    val lastReturnPercent: Int = 0
 )

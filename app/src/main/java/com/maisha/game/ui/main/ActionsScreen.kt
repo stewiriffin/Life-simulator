@@ -35,8 +35,10 @@ import com.maisha.game.data.model.HustleType
 import com.maisha.game.data.model.LifestyleOption
 import com.maisha.game.data.model.PetSpecies
 import com.maisha.game.data.model.SkillType
+import com.maisha.game.domain.EducationEngine
 import com.maisha.game.domain.HealthEngine
 import com.maisha.game.domain.RelationshipEngine
+import com.maisha.game.domain.RelocationEngine
 import com.maisha.game.domain.SkillEngine
 import com.maisha.game.domain.SocialMediaEngine
 import com.maisha.game.ui.components.ActionCard
@@ -68,6 +70,11 @@ private sealed class PendingAction {
     data object MonetizeSocialAccount : PendingAction()
     data class PracticeSkill(val type: SkillType) : PendingAction()
     data class Masterclass(val type: SkillType) : PendingAction()
+    data object RenewVisa : PendingAction()
+    data object ApplyCitizenship : PendingAction()
+    data object TakeDrivingTest : PendingAction()
+    data object Volunteer : PendingAction()
+    data class Donate(val amount: Int) : PendingAction()
 }
 
 @Composable
@@ -85,6 +92,12 @@ fun ActionsScreen(
     onMonetizeSocialAccount: () -> Unit,
     onPracticeSkill: (SkillType) -> Unit,
     onTakeMasterclass: (SkillType) -> Unit,
+    onRenewVisa: () -> Unit,
+    onApplyForCitizenship: () -> Unit,
+    onTakeDrivingTest: () -> Unit,
+    onVolunteer: () -> Unit,
+    onDonateToCharity: (Int) -> Unit,
+    donationTiers: List<Int>,
     onActionMessageDismissed: () -> Unit,
     modifier: Modifier = Modifier
 ) {
@@ -110,6 +123,39 @@ fun ActionsScreen(
         character.age >= SkillEngine.MIN_SKILL_AGE &&
         !incarcerated &&
         !awaitingTrial
+    val showImmigrationOffice = character.alive &&
+        character.isLivingAbroad() &&
+        !incarcerated &&
+        !awaitingTrial
+    val showDrivingTest = character.alive &&
+        !character.hasDrivingLicense &&
+        character.age >= EducationEngine.MIN_DRIVING_AGE &&
+        !incarcerated &&
+        !awaitingTrial
+    val showPhilanthropy = character.alive &&
+        character.age >= 12 &&
+        !incarcerated &&
+        !awaitingTrial
+    val donationAmounts = donationTiers.ifEmpty {
+        listOf(100, 1_000, 10_000).map {
+            EconomyScaler.scaleAmount(it, character.countryCode)
+        }
+    }
+    val drivingTestFee = EconomyScaler.scaleAmount(
+        EducationEngine.DRIVING_TEST_FEE_KENYA,
+        character.countryCode
+    )
+    val canRenewVisa = showImmigrationOffice && character.currentVisa != null
+    val canApplyCitizenship = showImmigrationOffice &&
+        character.yearsInCurrentCountry >= RelocationEngine.NATURALIZATION_YEARS
+    val visaRenewalFee = EconomyScaler.scaleAmount(
+        RelocationEngine.VISA_RENEWAL_FEE_KENYA,
+        character.countryCode
+    )
+    val citizenshipFee = EconomyScaler.scaleAmount(
+        RelocationEngine.CITIZENSHIP_FEE_KENYA,
+        character.countryCode
+    )
     val masterclassCost = EconomyScaler.scaleAmount(
         SkillEngine.MASTERCLASS_BASE_COST_KENYA,
         character.countryCode
@@ -120,6 +166,9 @@ fun ActionsScreen(
         showAdoptPetActions ||
         showSocialMediaActions ||
         showSkillActions ||
+        showImmigrationOffice ||
+        showDrivingTest ||
+        showPhilanthropy ||
         incarcerated ||
         awaitingTrial ||
         showLifestyleActions
@@ -424,6 +473,121 @@ fun ActionsScreen(
                             }
                         )
                     }
+                    if (showDrivingTest) {
+                        item {
+                            Text(
+                                text = stringResource(R.string.section_driving),
+                                style = MaterialTheme.typography.titleMedium,
+                                fontWeight = FontWeight.SemiBold
+                            )
+                        }
+                        item {
+                            ActionCard(
+                                icon = AppIcons.Career,
+                                title = stringResource(R.string.btn_take_driving_test),
+                                description = stringResource(
+                                    R.string.driving_test_desc,
+                                    formatMoney(drivingTestFee, character.countryCode)
+                                ),
+                                metaLabel = formatMoney(drivingTestFee, character.countryCode),
+                                onClick = { pendingAction.request(PendingAction.TakeDrivingTest) }
+                            )
+                        }
+                    }
+                    if (showPhilanthropy) {
+                        item {
+                            Text(
+                                text = stringResource(R.string.section_philanthropy),
+                                style = MaterialTheme.typography.titleMedium,
+                                fontWeight = FontWeight.SemiBold
+                            )
+                        }
+                        item {
+                            ActionCard(
+                                icon = AppIcons.Happiness,
+                                title = stringResource(R.string.btn_volunteer),
+                                description = stringResource(R.string.volunteer_desc),
+                                onClick = { pendingAction.request(PendingAction.Volunteer) }
+                            )
+                        }
+                        donationAmounts.forEach { amount ->
+                            item(key = "donate_$amount") {
+                                ActionCard(
+                                    icon = AppIcons.Money,
+                                    title = stringResource(
+                                        R.string.btn_donate_amount,
+                                        formatMoney(amount, character.countryCode)
+                                    ),
+                                    description = stringResource(R.string.donate_desc),
+                                    metaLabel = formatMoney(amount, character.countryCode),
+                                    onClick = {
+                                        pendingAction.request(PendingAction.Donate(amount))
+                                    }
+                                )
+                            }
+                        }
+                    }
+                    if (showImmigrationOffice) {
+                        item {
+                            Text(
+                                text = stringResource(R.string.section_immigration_office),
+                                style = MaterialTheme.typography.titleMedium,
+                                fontWeight = FontWeight.SemiBold
+                            )
+                        }
+                        item {
+                            Text(
+                                text = stringResource(
+                                    R.string.immigration_status_summary,
+                                    character.currentVisa?.name?.lowercase()
+                                        ?: stringResource(R.string.immigration_no_visa),
+                                    character.visaYearsRemaining
+                                ),
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
+                        if (canRenewVisa) {
+                            item {
+                                ActionCard(
+                                    icon = AppIcons.Career,
+                                    title = stringResource(R.string.btn_renew_visa),
+                                    description = stringResource(
+                                        R.string.immigration_renew_visa_desc,
+                                        formatMoney(visaRenewalFee, character.countryCode)
+                                    ),
+                                    metaLabel = formatMoney(visaRenewalFee, character.countryCode),
+                                    onClick = { pendingAction.request(PendingAction.RenewVisa) }
+                                )
+                            }
+                        }
+                        if (canApplyCitizenship) {
+                            item {
+                                ActionCard(
+                                    icon = AppIcons.Family,
+                                    title = stringResource(R.string.btn_apply_citizenship),
+                                    description = stringResource(
+                                        R.string.immigration_citizenship_desc,
+                                        formatMoney(citizenshipFee, character.countryCode)
+                                    ),
+                                    metaLabel = formatMoney(citizenshipFee, character.countryCode),
+                                    onClick = { pendingAction.request(PendingAction.ApplyCitizenship) }
+                                )
+                            }
+                        } else if (showImmigrationOffice) {
+                            item {
+                                Text(
+                                    text = stringResource(
+                                        R.string.immigration_citizenship_locked,
+                                        RelocationEngine.NATURALIZATION_YEARS,
+                                        character.yearsInCurrentCountry
+                                    ),
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                                )
+                            }
+                        }
+                    }
                     item {
                         LifestyleActionCard(
                             character = character,
@@ -470,6 +634,11 @@ fun ActionsScreen(
                 PendingAction.MonetizeSocialAccount -> onMonetizeSocialAccount()
                 is PendingAction.PracticeSkill -> onPracticeSkill(action.type)
                 is PendingAction.Masterclass -> onTakeMasterclass(action.type)
+                PendingAction.RenewVisa -> onRenewVisa()
+                PendingAction.ApplyCitizenship -> onApplyForCitizenship()
+                PendingAction.TakeDrivingTest -> onTakeDrivingTest()
+                PendingAction.Volunteer -> onVolunteer()
+                is PendingAction.Donate -> onDonateToCharity(action.amount)
             }
         }
     ) { action, onConfirm, onDismiss ->
@@ -578,6 +747,68 @@ fun ActionsScreen(
                         formatMoney(masterclassCost, character.countryCode)
                     ),
                     confirmLabel = stringResource(R.string.btn_take_masterclass),
+                    severity = ConfirmSeverity.NEUTRAL,
+                    onConfirm = onConfirm,
+                    onDismiss = onDismiss
+                )
+            }
+            PendingAction.RenewVisa -> {
+                ConfirmActionDialog(
+                    title = stringResource(R.string.dialog_renew_visa_title),
+                    description = stringResource(
+                        R.string.dialog_renew_visa_body,
+                        formatMoney(visaRenewalFee, character.countryCode)
+                    ),
+                    confirmLabel = stringResource(R.string.btn_renew_visa),
+                    severity = ConfirmSeverity.NEUTRAL,
+                    onConfirm = onConfirm,
+                    onDismiss = onDismiss
+                )
+            }
+            PendingAction.ApplyCitizenship -> {
+                ConfirmActionDialog(
+                    title = stringResource(R.string.dialog_apply_citizenship_title),
+                    description = stringResource(
+                        R.string.dialog_apply_citizenship_body,
+                        formatMoney(citizenshipFee, character.countryCode)
+                    ),
+                    confirmLabel = stringResource(R.string.btn_apply_citizenship),
+                    severity = ConfirmSeverity.NEUTRAL,
+                    onConfirm = onConfirm,
+                    onDismiss = onDismiss
+                )
+            }
+            PendingAction.TakeDrivingTest -> {
+                ConfirmActionDialog(
+                    title = stringResource(R.string.dialog_driving_test_title),
+                    description = stringResource(
+                        R.string.dialog_driving_test_body,
+                        formatMoney(drivingTestFee, character.countryCode)
+                    ),
+                    confirmLabel = stringResource(R.string.btn_take_driving_test),
+                    severity = ConfirmSeverity.NEUTRAL,
+                    onConfirm = onConfirm,
+                    onDismiss = onDismiss
+                )
+            }
+            PendingAction.Volunteer -> {
+                ConfirmActionDialog(
+                    title = stringResource(R.string.dialog_volunteer_title),
+                    description = stringResource(R.string.dialog_volunteer_body),
+                    confirmLabel = stringResource(R.string.btn_volunteer),
+                    severity = ConfirmSeverity.NEUTRAL,
+                    onConfirm = onConfirm,
+                    onDismiss = onDismiss
+                )
+            }
+            is PendingAction.Donate -> {
+                ConfirmActionDialog(
+                    title = stringResource(R.string.dialog_donate_title),
+                    description = stringResource(
+                        R.string.dialog_donate_body,
+                        formatMoney(action.amount, character.countryCode)
+                    ),
+                    confirmLabel = stringResource(R.string.btn_donate),
                     severity = ConfirmSeverity.NEUTRAL,
                     onConfirm = onConfirm,
                     onDismiss = onDismiss

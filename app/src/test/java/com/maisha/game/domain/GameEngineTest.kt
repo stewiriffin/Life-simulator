@@ -158,4 +158,37 @@ class GameEngineTest {
         }
         assertEquals(0, unlocksOnDeath)
     }
+
+    @Test
+    fun takeDrivingTest_grantsLicenseOnSuccess() {
+        val tooYoung = TestFixtures.character(
+            age = 16,
+            stats = Stats(smarts = 90, money = 100_000)
+        )
+        assertTrue(engine.takeDrivingTest(tooYoung) is DrivingTestResult.TooYoung)
+
+        var candidate = TestFixtures.character(
+            age = 20,
+            stats = Stats(smarts = 100, money = 100_000)
+        ).copy(hasDrivingLicense = false)
+        var passed = false
+        repeat(40) {
+            when (val result = engine.takeDrivingTest(candidate)) {
+                is DrivingTestResult.Passed -> {
+                    assertTrue(result.character.hasDrivingLicense)
+                    assertTrue(result.character.stats.money < 100_000)
+                    passed = true
+                    return
+                }
+                is DrivingTestResult.Failed -> {
+                    candidate = result.character.copy(
+                        hasDrivingLicense = false,
+                        stats = result.character.stats.copy(money = 100_000)
+                    )
+                }
+                else -> error("Unexpected result: $result")
+            }
+        }
+        assertTrue("Expected at least one pass with max smarts", passed)
+    }
 }

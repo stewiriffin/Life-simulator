@@ -151,6 +151,10 @@ fun CharacterStatsScreen(
                 )
             }
 
+            item {
+                PassportsHeldCard(character = character)
+            }
+
             if (character.criminalRecord.hasRecord) {
                 item {
                     RecordBadge(timesArrested = character.criminalRecord.timesArrested)
@@ -291,6 +295,21 @@ private fun CurrentLifeHeader(character: Character) {
                 overflow = TextOverflow.Ellipsis
             )
         }
+        if (character.hasDrivingLicense) {
+            Spacer(modifier = Modifier.height(6.dp))
+            Card(
+                shape = RoundedCornerShape(8.dp),
+                colors = CardDefaults.cardColors(containerColor = TealPrimary.copy(alpha = 0.2f))
+            ) {
+                Text(
+                    text = stringResource(R.string.badge_licensed_driver),
+                    style = MaterialTheme.typography.labelMedium,
+                    fontWeight = FontWeight.SemiBold,
+                    color = TealPrimary,
+                    modifier = Modifier.padding(horizontal = 12.dp, vertical = 4.dp)
+                )
+            }
+        }
         if (character.isExpat()) {
             ExpatJourneyRow(character = character)
             Spacer(modifier = Modifier.height(8.dp))
@@ -321,6 +340,63 @@ private fun CurrentLifeHeader(character: Character) {
                 color = MaterialTheme.colorScheme.onPrimary,
                 modifier = Modifier.padding(horizontal = 16.dp, vertical = 6.dp)
             )
+        }
+    }
+}
+
+@Composable
+private fun PassportsHeldCard(character: Character) {
+    val passports = character.passportsHeld()
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(12.dp),
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.85f)
+        )
+    ) {
+        Column(
+            modifier = Modifier.padding(horizontal = 12.dp, vertical = 10.dp),
+            verticalArrangement = Arrangement.spacedBy(8.dp)
+        ) {
+            Text(
+                text = stringResource(R.string.section_passports_held),
+                style = MaterialTheme.typography.labelMedium,
+                fontWeight = FontWeight.SemiBold,
+                color = TealPrimary
+            )
+            Row(
+                horizontalArrangement = Arrangement.spacedBy(10.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                passports.forEach { code ->
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(4.dp)
+                    ) {
+                        com.maisha.game.ui.components.CountryFlag(
+                            countryCode = code,
+                            size = 22.dp
+                        )
+                        Text(
+                            text = CountryCatalog.getCountry(code).displayName,
+                            style = MaterialTheme.typography.bodySmall,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis
+                        )
+                    }
+                }
+            }
+            if (character.isLivingAbroad() && character.currentVisa != null) {
+                Text(
+                    text = stringResource(
+                        R.string.format_visa_status,
+                        character.currentVisa.name.lowercase(),
+                        character.visaYearsRemaining
+                    ),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
         }
     }
 }
@@ -572,4 +648,6 @@ private fun relationLabel(person: Person): String = when (person.relation) {
     }
     RelationType.CHILD -> stringResource(R.string.relation_child)
     RelationType.FRIEND -> stringResource(R.string.relation_friend)
+    RelationType.BEST_FRIEND -> stringResource(R.string.relation_best_friend)
+    RelationType.ENEMY -> stringResource(R.string.relation_enemy)
 }

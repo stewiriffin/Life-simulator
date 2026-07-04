@@ -25,6 +25,7 @@ import com.maisha.game.util.formatMoney
 import java.util.UUID
 import javax.inject.Inject
 import javax.inject.Singleton
+import kotlin.math.roundToInt
 import kotlin.random.Random
 
 sealed class ProposalResult {
@@ -37,6 +38,13 @@ sealed class AdoptPetResult {
     data object InsufficientFunds : AdoptPetResult()
     data object MaxPetsReached : AdoptPetResult()
     data object Ineligible : AdoptPetResult()
+}
+
+sealed class PartyResult {
+    data class Success(val character: Character, val boost: Int) : PartyResult()
+    data object InsufficientFunds : PartyResult()
+    data object NoGuests : PartyResult()
+    data object InvalidBudget : PartyResult()
 }
 
 data class PetYearTickResult(val character: Character)
@@ -227,7 +235,7 @@ class RelationshipEngine @Inject constructor(
             ).coerceRelationship()
         }
         return FamilyYearTickResult(
-            family = family,
+            family = applySocialStatusShifts(family),
             decayNotices = notices,
             stats = withSupport.stats
         )
@@ -244,11 +252,11 @@ class RelationshipEngine @Inject constructor(
 
     /**
      * Light annual chance of meeting a new friend during school or work years.
-     * Returns a [Person] to add to family, or null if no opportunity this year.
+     * Returns a [Person] with [RelationType.FRIEND] to add to [Character.family], or null.
      */
     fun generateFriendshipOpportunity(character: Character): Person? {
         if (character.age < MIN_FRIEND_AGE || character.age > MAX_FRIEND_AGE) return null
-        val friendCount = character.family.count { it.relation == RelationType.FRIEND }
+        val friendCount = character.family.count { it.isPlatonicAlly() }
         if (friendCount >= MAX_FRIENDS) return null
 
         val chance = when {
@@ -259,6 +267,84 @@ class RelationshipEngine @Inject constructor(
         if (Random.nextFloat() >= chance) return null
 
         return PersonGenerator.buildFriend(character, MIN_FRIEND_AGE)
+    }
+
+    /**
+     * Hosts a party: spends [budget], boosts all living friends and siblings by 5–15
+     * (scaled with budget size).
+     */
+    fun throwParty(character: Character, budget: Int): PartyResult {
+        if (budget <= 0) return PartyResult.InvalidBudget
+        if (character.stats.money < budget) return PartyResult.InsufficientFunds
+        val guests = character.family.filter {
+            it.alive && (it.isPlatonicAlly() || it.relation == RelationType.SIBLING)
+        }
+        if (guests.isEmpty()) return PartyResult.NoGuests
+
+        val boost = partyBoostForBudget(budget, character.countryCode)
+        val guestIds = guests.map { it.id }.toSet()
+        val updatedFamily = applySocialStatusShifts(
+            character.family.map { person ->
+                if (person.id in guestIds) {
+                    person.copy(
+                        relationshipLevel = clampRelationshipLevel(person.relationshipLevel + boost),
+                        interactedThisYear = true
+                    ).coerceRelationship()
+                } else {
+                    person
+                }
+            }
+        )
+        return PartyResult.Success(
+            character.copy(
+                stats = character.stats.copy(
+                    money = character.stats.money - budget,
+                    happiness = clampStat(character.stats.happiness + (boost / 2).coerceAtLeast(2))
+                ),
+                family = updatedFamily,
+                eventLog = EventLogCap.prepend(
+                    character.eventLog,
+                    "You threw a party (budget ${formatMoney(budget, character.countryCode)}). " +
+                        "Friends and siblings grew closer (+$boost)."
+                )
+            ),
+            boost = boost
+        )
+    }
+
+    fun partyBoostForBudget(budget: Int, countryCode: String): Int {
+        val minBudget = EconomyScaler.scaleAmount(PARTY_BUDGET_MIN_KENYA, countryCode).coerceAtLeast(1)
+        val maxBudget = EconomyScaler.scaleAmount(PARTY_BUDGET_MAX_KENYA, countryCode).coerceAtLeast(minBudget + 1)
+        val t = ((budget - minBudget).toFloat() / (maxBudget - minBudget)).coerceIn(0f, 1f)
+        return (PARTY_BOOST_MIN + (PARTY_BOOST_MAX - PARTY_BOOST_MIN) * t).roundToInt()
+            .coerceIn(PARTY_BOOST_MIN, PARTY_BOOST_MAX)
+    }
+
+    fun minPartyBudget(countryCode: String): Int =
+        EconomyScaler.scaleAmount(PARTY_BUDGET_MIN_KENYA, countryCode)
+
+    /**
+     * FRIEND → BEST_FRIEND above [BEST_FRIEND_THRESHOLD]; non-family below [ENEMY_THRESHOLD] → ENEMY.
+     * ENEMY can reconcile to FRIEND above [ENEMY_RECONCILE_THRESHOLD].
+     */
+    fun applySocialStatusShifts(family: List<Person>): List<Person> =
+        family.map { applySocialStatusShift(it) }
+
+    fun applySocialStatusShift(person: Person): Person {
+        if (!person.isSocialCircleMember()) return person
+        val level = person.relationshipLevel
+        val newRelation = when {
+            level < ENEMY_THRESHOLD -> RelationType.ENEMY
+            person.relation == RelationType.ENEMY && level >= ENEMY_RECONCILE_THRESHOLD ->
+                RelationType.FRIEND
+            person.relation == RelationType.FRIEND && level > BEST_FRIEND_THRESHOLD ->
+                RelationType.BEST_FRIEND
+            person.relation == RelationType.BEST_FRIEND && level <= BEST_FRIEND_THRESHOLD &&
+                level >= ENEMY_THRESHOLD -> RelationType.BEST_FRIEND
+            person.relation == RelationType.ENEMY -> RelationType.ENEMY
+            else -> person.relation
+        }
+        return if (newRelation == person.relation) person else person.copy(relation = newRelation)
     }
 
     /** Logs legacy-continuation milestones on inherited family when Legacy Mode selects an heir. */
@@ -780,7 +866,10 @@ class RelationshipEngine @Inject constructor(
         memberIndex: Int,
         member: Person
     ): FamilyInteractionResult {
-        if (member.relation != RelationType.SIBLING && member.relation != RelationType.FRIEND) {
+        if (member.relation != RelationType.SIBLING &&
+            member.relation != RelationType.FRIEND &&
+            member.relation != RelationType.BEST_FRIEND
+        ) {
             return FamilyInteractionResult(
                 character = character,
                 message = "You can only set up siblings or friends on dates."
@@ -916,7 +1005,9 @@ class RelationshipEngine @Inject constructor(
                 interactionType
             )
         }
-        person = person.copy(milestones = RelationshipMilestoneCap.trim(milestones))
+        person = applySocialStatusShift(
+            person.copy(milestones = RelationshipMilestoneCap.trim(milestones))
+        )
         return character.copy(family = character.family.replaceAt(memberIndex, person.coerceRelationship()))
     }
 
@@ -984,6 +1075,17 @@ class RelationshipEngine @Inject constructor(
         const val REQUIRES_MIXED_HERITAGE_TAG = "requires_mixed_heritage"
         const val REQUIRES_MIXED_HERITAGE_CHILD_TAG = "requires_mixed_heritage_child"
         const val REQUIRES_PET_TAG = "requires_pet"
+        const val REQUIRES_FRIEND_TAG = "requires_friend"
+        const val REQUIRES_BEST_FRIEND_TAG = "requires_best_friend"
+        const val REQUIRES_ENEMY_TAG = "requires_enemy"
+
+        const val BEST_FRIEND_THRESHOLD = 90
+        const val ENEMY_THRESHOLD = 15
+        const val ENEMY_RECONCILE_THRESHOLD = 40
+        const val PARTY_BUDGET_MIN_KENYA = 15_000
+        const val PARTY_BUDGET_MAX_KENYA = 80_000
+        const val PARTY_BOOST_MIN = 5
+        const val PARTY_BOOST_MAX = 15
 
         const val MAX_PETS = 5
         const val PET_DEATH_HAPPINESS_PENALTY = 25
@@ -1068,3 +1170,22 @@ fun Character.hasMixedHeritageContext(): Boolean {
 
 fun Character.hasMixedHeritageChild(): Boolean =
     family.any { it.relation == RelationType.CHILD && it.secondaryCountryCode != null }
+
+fun Character.hasFriend(): Boolean =
+    family.any { it.isPlatonicAlly() && it.alive }
+
+fun Character.hasBestFriend(): Boolean =
+    family.any { it.relation == RelationType.BEST_FRIEND && it.alive }
+
+fun Character.hasEnemy(): Boolean =
+    family.any { it.relation == RelationType.ENEMY && it.alive }
+
+/** Friends and best friends (not enemies). */
+fun Person.isPlatonicAlly(): Boolean =
+    relation == RelationType.FRIEND || relation == RelationType.BEST_FRIEND
+
+/** Platonic social circle that can shift between friend / best friend / enemy. */
+fun Person.isSocialCircleMember(): Boolean =
+    relation == RelationType.FRIEND ||
+        relation == RelationType.BEST_FRIEND ||
+        relation == RelationType.ENEMY

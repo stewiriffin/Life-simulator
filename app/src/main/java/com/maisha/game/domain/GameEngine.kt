@@ -1,6 +1,7 @@
 // app/src/main/java/com/maisha/game/domain/GameEngine.kt (modified — notification nudge hooks)
 package com.maisha.game.domain
 
+import com.maisha.game.data.EconomyScaler
 import com.maisha.game.data.events.EventRepository
 import com.maisha.game.data.FlavorInterpolator
 import com.maisha.game.data.model.AgingDetails
@@ -26,6 +27,7 @@ import com.maisha.game.data.model.AgeStage
 import com.maisha.game.notifications.NotificationScheduler
 import com.maisha.game.notifications.NudgeType
 import com.maisha.game.util.clampRelationshipLevel
+import com.maisha.game.util.clampStat
 import com.maisha.game.util.formatMoney
 import javax.inject.Inject
 import javax.inject.Singleton
@@ -70,7 +72,9 @@ class GameEngine @Inject constructor(
     private val relocationEngine: RelocationEngine,
     private val socialMediaEngine: SocialMediaEngine,
     private val skillEngine: SkillEngine,
-    private val businessEngine: BusinessEngine
+    private val businessEngine: BusinessEngine,
+    private val politicsEngine: PoliticsEngine,
+    private val legacyEngine: LegacyEngine
 ) {
 
     /**
@@ -104,6 +108,8 @@ class GameEngine @Inject constructor(
         )
         updatedCharacter = applyAvatarVisualEvolution(updatedCharacter, previousAge)
         updatedCharacter = socialMediaEngine.resetYearlyFlags(updatedCharacter)
+        val immigrationTick = relocationEngine.tickImmigrationYear(updatedCharacter)
+        updatedCharacter = immigrationTick.character
         var decayNotices = emptyList<com.maisha.game.data.model.RelationshipDecayNotice>()
 
         val incarceratedAtYearStart = updatedCharacter.criminalRecord.currentlyIncarcerated
@@ -117,6 +123,8 @@ class GameEngine @Inject constructor(
 
         updatedCharacter = processFinanceProgression(updatedCharacter)
         updatedCharacter = businessEngine.processBusinessYear(updatedCharacter)
+        val governanceTick = politicsEngine.tickGovernance(updatedCharacter)
+        updatedCharacter = governanceTick.character
 
         updatedCharacter = applyCultureShockPenalty(updatedCharacter)
 
@@ -138,7 +146,13 @@ class GameEngine @Inject constructor(
         var newFriendName: String? = null
         if (!incarceratedAtYearStart) {
             relationshipEngine.generateFriendshipOpportunity(updatedCharacter)?.let { friend ->
-                updatedCharacter = updatedCharacter.copy(family = updatedCharacter.family + friend)
+                updatedCharacter = updatedCharacter.copy(
+                    family = updatedCharacter.family + friend,
+                    eventLog = EventLogCap.prepend(
+                        updatedCharacter.eventLog,
+                        "You made a new friend: ${friend.name}."
+                    )
+                )
                 newFriendName = friend.name
             }
         }
@@ -147,7 +161,9 @@ class GameEngine @Inject constructor(
             updatedCharacter = crimeEngine.serveYear(updatedCharacter)
         }
 
-        val (characterAfterEvents, result) = if (incarceratedAtYearStart) {
+        val (characterAfterEvents, result) = if (governanceTick.impeachmentEvent != null) {
+            updatedCharacter to AgeUpResult.SingleEvent(governanceTick.impeachmentEvent)
+        } else if (incarceratedAtYearStart) {
             updatedCharacter to rollEvents(updatedCharacter, triggeredEventIds).toAgeUpResult()
         } else {
             resolveCareerEvent(updatedCharacter)
@@ -230,6 +246,66 @@ class GameEngine @Inject constructor(
         val eligible = eventRepository.getEligibleEvents(age = 0, usedIds = triggeredEventIds)
         val event = eventRepository.pickRandomEvent(eligible) ?: return AgeUpResult.NoEvent
         return AgeUpResult.SingleEvent(event)
+    }
+
+    sealed class VolunteerResult {
+        data class Success(val character: Character) : VolunteerResult()
+        data object Ineligible : VolunteerResult()
+    }
+
+    sealed class DonationResult {
+        data class Success(val character: Character, val karmaGained: Int) : DonationResult()
+        data object InsufficientFunds : DonationResult()
+        data object InvalidAmount : DonationResult()
+    }
+
+    /**
+     * Volunteer work: raises hidden karma at the cost of happiness and health effort.
+     */
+    fun volunteer(character: Character): VolunteerResult {
+        if (!character.alive || character.criminalRecord.currentlyIncarcerated) {
+            return VolunteerResult.Ineligible
+        }
+        val updated = character.copy(
+            stats = character.stats.copy(
+                karma = clampStat(character.stats.karma + VOLUNTEER_KARMA_GAIN),
+                happiness = clampStat(character.stats.happiness - VOLUNTEER_HAPPINESS_COST),
+                health = clampStat(character.stats.health - VOLUNTEER_HEALTH_COST)
+            ),
+            eventLog = EventLogCap.prepend(
+                character.eventLog,
+                "You volunteered at a soup kitchen. Tired, but lighter in spirit."
+            )
+        )
+        return VolunteerResult.Success(updated)
+    }
+
+    /**
+     * Donates [amount] cash; karma gain scales with share of net worth given.
+     */
+    fun donateToCharity(character: Character, amount: Int): DonationResult {
+        if (amount <= 0) return DonationResult.InvalidAmount
+        if (character.stats.money < amount) return DonationResult.InsufficientFunds
+        val netWorth = financeEngine.calculateNetWorth(character).coerceAtLeast(1)
+        val share = amount.toFloat() / netWorth
+        val karmaGained = (share * DONATION_KARMA_SCALE).toInt()
+            .coerceIn(DONATION_KARMA_MIN, DONATION_KARMA_MAX)
+        val updated = character.copy(
+            stats = character.stats.copy(
+                money = character.stats.money - amount,
+                karma = clampStat(character.stats.karma + karmaGained),
+                happiness = clampStat(character.stats.happiness + 2)
+            ),
+            eventLog = EventLogCap.prepend(
+                character.eventLog,
+                "You donated ${formatMoney(amount, character.countryCode)} to charity."
+            )
+        )
+        return DonationResult.Success(updated, karmaGained)
+    }
+
+    fun donationTiers(countryCode: String): List<Int> = DONATION_TIERS_KENYA.map {
+        EconomyScaler.scaleAmount(it, countryCode)
     }
 
     /**
@@ -389,6 +465,13 @@ class GameEngine @Inject constructor(
             ).character
         }
 
+        if (choice.portfolioReturnPercent != null) {
+            updatedCharacter = financeEngine.applyPortfolioReturn(
+                updatedCharacter,
+                choice.portfolioReturnPercent
+            )
+        }
+
         if (choice.grantHeirloom != null) {
             updatedCharacter = financeEngine.grantHeirloom(updatedCharacter, choice.grantHeirloom)
         }
@@ -450,6 +533,12 @@ class GameEngine @Inject constructor(
         name: String
     ): AdoptPetResult = relationshipEngine.adoptPet(character, species, name)
 
+    fun throwParty(character: Character, budget: Int): PartyResult =
+        relationshipEngine.throwParty(character, budget)
+
+    fun takeDrivingTest(character: Character): DrivingTestResult =
+        educationEngine.takeDrivingTest(character)
+
     fun createSocialMediaAccount(character: Character): SocialMediaResult =
         socialMediaEngine.createAccount(character)
 
@@ -495,12 +584,53 @@ class GameEngine @Inject constructor(
     /** Delegates to [CareerEngine.getEligibleJobs]. */
     fun getEligibleJobs(character: Character) = careerEngine.getEligibleJobs(character)
 
+    fun renewVisa(character: Character): VisaRenewalResult =
+        relocationEngine.renewVisa(character)
+
+    fun applyForCitizenship(character: Character): CitizenshipApplicationResult =
+        relocationEngine.applyForCitizenship(character)
+
+    fun launchCampaign(
+        character: Character,
+        office: com.maisha.game.data.model.PoliticalOffice,
+        investment: Int
+    ): CampaignResult = politicsEngine.launchCampaign(character, office, investment)
+
+    fun passTaxPolicy(
+        character: Character,
+        type: com.maisha.game.data.model.TaxPolicyType
+    ): FinanceEngine.TaxPolicyResult = financeEngine.passTaxPolicy(character, type)
+
+    fun rentOutProperty(character: Character, assetId: String): FinanceEngine.RentalResult =
+        financeEngine.rentOutProperty(character, assetId)
+
+    fun evictTenant(character: Character, assetId: String): FinanceEngine.RentalResult =
+        financeEngine.evictTenant(character, assetId)
+
     /** Delegates to [FinanceEngine.purchaseAsset]. */
     fun purchaseAsset(character: Character, catalogId: String): PurchaseResult {
         return financeEngine.purchaseAsset(character, catalogId)
     }
 
     /** Delegates to [FinanceEngine.sellAsset]. */
+    fun investFunds(character: Character, amount: Int): FinanceEngine.InvestmentResult =
+        financeEngine.investFunds(character, amount)
+
+    fun withdrawFunds(character: Character, amount: Int): FinanceEngine.InvestmentResult =
+        financeEngine.withdrawFunds(character, amount)
+
+    fun updateWill(character: Character, will: Map<String, Int>?): Character {
+        if (will == null) {
+            return character.copy(will = null)
+        }
+        require(legacyEngine.isValidWill(character, will)) {
+            "Will shares must total exactly 100% among living spouse and children."
+        }
+        return character.copy(will = will)
+    }
+
+    fun willBeneficiaries(character: Character) = legacyEngine.willBeneficiaries(character)
+
     fun sellAsset(character: Character, assetId: String): Character {
         return financeEngine.sellAsset(character, assetId)
     }
@@ -685,11 +815,14 @@ class GameEngine @Inject constructor(
 
     private fun processFinanceProgression(character: Character): Character {
         var updated = financeEngine.applyEconomicShift(character).character
+        updated = financeEngine.applyPortfolioMarketTick(updated)
         updated = financeEngine.applyPension(updated)
         updated = financeEngine.applyPetUpkeep(updated)
-        if (updated.assets.isEmpty()) return updated
-        updated = financeEngine.applyUpkeep(updated)
-        updated = financeEngine.degradeAssets(updated)
+        if (updated.assets.isNotEmpty()) {
+            updated = financeEngine.applyUpkeep(updated)
+            updated = financeEngine.collectRent(updated)
+            updated = financeEngine.degradeAssets(updated)
+        }
         return updated
     }
 
@@ -831,7 +964,7 @@ class GameEngine @Inject constructor(
 
         repeat(eventCount - pickedEvents.size) {
             if (eligible.isEmpty()) return@repeat
-            val event = eventRepository.pickRandomEvent(eligible) ?: return@repeat
+            val event = eventRepository.pickRandomEvent(eligible, character) ?: return@repeat
             pickedEvents.add(event)
             eligible.remove(event)
         }
@@ -852,6 +985,13 @@ class GameEngine @Inject constructor(
         private const val CULTURE_SHOCK_HAPPINESS_PENALTY = 10
         private const val TEEN_HAIRSTYLE_CHANGE_CHANCE = 0.35f
         private const val FACIAL_HAIR_GROWTH_CHANCE = 0.12f
+        private const val VOLUNTEER_KARMA_GAIN = 5
+        private const val VOLUNTEER_HAPPINESS_COST = 3
+        private const val VOLUNTEER_HEALTH_COST = 2
+        private const val DONATION_KARMA_SCALE = 40f
+        private const val DONATION_KARMA_MIN = 1
+        private const val DONATION_KARMA_MAX = 15
+        private val DONATION_TIERS_KENYA = listOf(100, 1_000, 10_000)
         private const val FACIAL_HAIR_MIN_AGE = 16
     }
 }

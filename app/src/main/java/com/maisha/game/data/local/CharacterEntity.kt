@@ -15,11 +15,19 @@ data class CharacterEntity(
     val smarts: Int,
     val looks: Int,
     val money: Int,
+    val karma: Int = 50,
     val birthYear: Int,
     val alive: Boolean,
     val countryCode: String = "KE",
     val birthCountryCode: String = "KE",
     val secondaryCountryCode: String? = null,
+    val citizenshipsJson: String = "[]",
+    val currentVisa: String? = null,
+    val visaYearsRemaining: Int = 0,
+    val hasDrivingLicense: Boolean = false,
+    val willJson: String? = null,
+    val investmentPortfolioValue: Int = 0,
+    val lastPortfolioReturnPercent: Int = 0,
     val relocationCount: Int = 0,
     val yearsInCurrentCountry: Int = 0,
     val lastRelocationAge: Int? = null,
@@ -40,5 +48,6 @@ data class CharacterEntity(
     val lifestyleJson: String = "{}",
     val socialMediaJson: String = "{}",
     val skillsJson: String = "[]",
-    val businessesJson: String = "[]"
+    val businessesJson: String = "[]",
+    val politicsJson: String = "{}"
 )

@@ -109,12 +109,20 @@ fun LifeScreen(
     retirementPensionEstimate: Int,
     onDropOut: () -> Unit,
     onStartBusiness: (String, com.maisha.game.data.model.BusinessIndustry, Int) -> Unit,
+    onLaunchCampaign: (com.maisha.game.data.model.PoliticalOffice, Int) -> Unit,
+    onPassTaxPolicy: (com.maisha.game.data.model.TaxPolicyType) -> Unit,
     onSellBusiness: (String) -> Unit,
     businessInvestmentTiers: List<Int>,
     onCareerMessageDismissed: () -> Unit,
     onPurchaseAsset: (String) -> Unit,
     onSellAsset: (String) -> Unit,
     onRepairAsset: (String) -> Unit,
+    onRentOutProperty: (String) -> Unit,
+    onEvictTenant: (String) -> Unit,
+    onSaveWill: (Map<String, Int>?) -> Unit,
+    willBeneficiaries: List<com.maisha.game.data.model.Person>,
+    onInvestFunds: (Int) -> Unit,
+    onWithdrawFunds: (Int) -> Unit,
     onAssetsMessageDismissed: () -> Unit,
     onAttemptCrime: (CrimeType) -> Unit,
     onGoToTrial: (com.maisha.game.data.model.LawyerTier) -> Unit,
@@ -132,6 +140,12 @@ fun LifeScreen(
     onMonetizeSocialAccount: () -> Unit,
     onPracticeSkill: (com.maisha.game.data.model.SkillType) -> Unit,
     onTakeMasterclass: (com.maisha.game.data.model.SkillType) -> Unit,
+    onRenewVisa: () -> Unit,
+    onApplyForCitizenship: () -> Unit,
+    onTakeDrivingTest: () -> Unit,
+    onVolunteer: () -> Unit,
+    onDonateToCharity: (Int) -> Unit,
+    donationTiers: List<Int>,
     onActionMessageDismissed: () -> Unit,
     onViewCharacterStats: () -> Unit,
     onOpenSettings: () -> Unit,
@@ -140,7 +154,8 @@ fun LifeScreen(
     onStatDeltaFinished: (Long) -> Unit,
     onFeedbackHandled: () -> Unit,
     onDismissFamilyDatingTip: () -> Unit,
-    onDismissFamilyDetailTip: () -> Unit
+    onDismissFamilyDetailTip: () -> Unit,
+    onThrowParty: (Int) -> Unit
 ) {
     if (uiState.isLoading) {
         Column(
@@ -301,6 +316,7 @@ fun LifeScreen(
                 onRelationshipMessageDismissed = onRelationshipMessageDismissed,
                 onDismissFamilyDatingTip = onDismissFamilyDatingTip,
                 onDismissFamilyDetailTip = onDismissFamilyDetailTip,
+                onThrowParty = onThrowParty,
                 modifier = Modifier.padding(innerPadding)
             )
             MainTab.CAREER -> CareerScreen(
@@ -316,6 +332,8 @@ fun LifeScreen(
                 onStartBusiness = onStartBusiness,
                 onSellBusiness = onSellBusiness,
                 investmentTiers = businessInvestmentTiers,
+                onLaunchCampaign = onLaunchCampaign,
+                onPassTaxPolicy = onPassTaxPolicy,
                 onCareerMessageDismissed = onCareerMessageDismissed,
                 modifier = Modifier.padding(innerPadding)
             )
@@ -327,6 +345,12 @@ fun LifeScreen(
                 onPurchaseAsset = onPurchaseAsset,
                 onSellAsset = onSellAsset,
                 onRepairAsset = onRepairAsset,
+                onRentOutProperty = onRentOutProperty,
+                onEvictTenant = onEvictTenant,
+                onSaveWill = onSaveWill,
+                willBeneficiaries = willBeneficiaries,
+                onInvestFunds = onInvestFunds,
+                onWithdrawFunds = onWithdrawFunds,
                 onAssetsMessageDismissed = onAssetsMessageDismissed,
                 modifier = Modifier.padding(innerPadding)
             )
@@ -344,6 +368,12 @@ fun LifeScreen(
                 onMonetizeSocialAccount = onMonetizeSocialAccount,
                 onPracticeSkill = onPracticeSkill,
                 onTakeMasterclass = onTakeMasterclass,
+                onRenewVisa = onRenewVisa,
+                onApplyForCitizenship = onApplyForCitizenship,
+                onTakeDrivingTest = onTakeDrivingTest,
+                onVolunteer = onVolunteer,
+                onDonateToCharity = onDonateToCharity,
+                donationTiers = donationTiers,
                 onActionMessageDismissed = onActionMessageDismissed,
                 modifier = Modifier.padding(innerPadding)
             )

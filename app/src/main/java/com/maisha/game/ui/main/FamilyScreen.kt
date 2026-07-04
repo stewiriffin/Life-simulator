@@ -2,6 +2,7 @@
 package com.maisha.game.ui.main
 
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -19,6 +20,7 @@ import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
@@ -35,6 +37,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.maisha.game.R
+import com.maisha.game.data.EconomyScaler
 import com.maisha.game.data.local.OnboardingTips
 import com.maisha.game.data.model.Character
 import com.maisha.game.data.model.Person
@@ -43,22 +46,30 @@ import com.maisha.game.data.model.PetSpecies
 import com.maisha.game.data.model.RelationType
 import com.maisha.game.domain.GiftTier
 import com.maisha.game.domain.InteractionType
+import com.maisha.game.domain.RelationshipEngine
 import com.maisha.game.domain.hasSpouse
 import com.maisha.game.domain.isMarried
+import com.maisha.game.domain.isPlatonicAlly
 import com.maisha.game.ui.avatar.ExpressionResolver
+import com.maisha.game.ui.components.ConfirmActionDialog
+import com.maisha.game.ui.components.ConfirmSeverity
+import com.maisha.game.ui.components.ConfirmableActionHost
 import com.maisha.game.ui.components.CountryFlag
 import com.maisha.game.ui.components.countryDisplayName
 import com.maisha.game.ui.components.DismissibleTipCard
 import com.maisha.game.ui.components.EmptyStateCard
 import com.maisha.game.ui.components.PersonAvatar
+import com.maisha.game.ui.components.rememberConfirmableAction
 import com.maisha.game.ui.illustrations.EmptyStateIllustration
 import com.maisha.game.ui.theme.AppIcons
 import com.maisha.game.ui.components.PersonCard
 import com.maisha.game.ui.components.PersonDetailSheet
 import com.maisha.game.ui.components.PetCard
 import com.maisha.game.ui.theme.AccentPink
+import com.maisha.game.ui.theme.GoldAccent
 import com.maisha.game.ui.theme.MaishaSpacing
 import com.maisha.game.ui.theme.NavyDeep
+import com.maisha.game.util.formatMoney
 
 private enum class FamilyListContentType {
     SectionHeader,
@@ -84,8 +95,18 @@ fun FamilyScreen(
     onRelationshipMessageDismissed: () -> Unit,
     onDismissFamilyDatingTip: () -> Unit,
     onDismissFamilyDetailTip: () -> Unit,
+    onThrowParty: (Int) -> Unit,
     modifier: Modifier = Modifier
 ) {
+    val partyConfirm = rememberConfirmableAction<Int>()
+    val partyBudget = EconomyScaler.scaleAmount(
+        RelationshipEngine.PARTY_BUDGET_MIN_KENYA,
+        character.countryCode
+    )
+    val canHostParty = character.alive &&
+        character.family.any {
+            it.alive && (it.isPlatonicAlly() || it.relation == RelationType.SIBLING)
+        }
     LaunchedEffect(uiState.familyInteractionMessage) {
         uiState.familyInteractionMessage?.let { message ->
             snackbarHostState.showSnackbar(message)
@@ -106,23 +127,48 @@ fun FamilyScreen(
         it.relation == RelationType.MOTHER || it.relation == RelationType.FATHER
     }
     val siblings = character.family.filter { it.relation == RelationType.SIBLING }
-    val friends = character.family.filter { it.relation == RelationType.FRIEND }
+    val socialCircle = character.family.filter {
+        it.relation == RelationType.FRIEND ||
+            it.relation == RelationType.BEST_FRIEND ||
+            it.relation == RelationType.ENEMY
+    }
     val others = character.family.filter {
         it.relation != RelationType.SPOUSE &&
             it.relation != RelationType.CHILD &&
             it.relation != RelationType.MOTHER &&
             it.relation != RelationType.FATHER &&
             it.relation != RelationType.SIBLING &&
-            it.relation != RelationType.FRIEND
+            it.relation != RelationType.FRIEND &&
+            it.relation != RelationType.BEST_FRIEND &&
+            it.relation != RelationType.ENEMY
+    }
+    val familyMembers = parents + siblings + partner + children
+
+    ConfirmableActionHost(
+        state = partyConfirm,
+        onConfirmed = { budget -> onThrowParty(budget) }
+    ) { budget, onConfirm, onDismiss ->
+        ConfirmActionDialog(
+            title = stringResource(R.string.dialog_throw_party_title),
+            description = stringResource(
+                R.string.dialog_throw_party_body,
+                formatMoney(budget, character.countryCode)
+            ),
+            confirmLabel = stringResource(R.string.btn_host_party),
+            severity = ConfirmSeverity.NEUTRAL,
+            onConfirm = onConfirm,
+            onDismiss = onDismiss
+        )
     }
 
+    Box(modifier = modifier.fillMaxSize()) {
     Column(
-        modifier = modifier
+        modifier = Modifier
             .fillMaxSize()
             .padding(horizontal = MaishaSpacing.md, vertical = MaishaSpacing.sm)
     ) {
         Text(
-            text = stringResource(R.string.screen_family),
+            text = stringResource(R.string.screen_relationships),
             style = MaterialTheme.typography.headlineSmall,
             fontWeight = FontWeight.Bold
         )
@@ -196,6 +242,11 @@ fun FamilyScreen(
                 modifier = Modifier.fillMaxSize(),
                 verticalArrangement = Arrangement.spacedBy(8.dp)
             ) {
+                if (familyMembers.isNotEmpty()) {
+                    item(contentType = FamilyListContentType.SectionHeader) {
+                        FamilySectionHeader(stringResource(R.string.section_family))
+                    }
+                }
                 if (parents.isNotEmpty()) {
                     item(contentType = FamilyListContentType.SectionHeader) {
                         FamilySectionHeader(stringResource(R.string.section_parents))
@@ -260,12 +311,12 @@ fun FamilyScreen(
                         )
                     }
                 }
-                if (friends.isNotEmpty()) {
+                if (socialCircle.isNotEmpty()) {
                     item(contentType = FamilyListContentType.SectionHeader) {
-                        FamilySectionHeader(stringResource(R.string.section_friends))
+                        FamilySectionHeader(stringResource(R.string.section_friends_rivals))
                     }
                     items(
-                        friends,
+                        socialCircle,
                         key = { it.id },
                         contentType = { FamilyListContentType.PersonCard }
                     ) { member ->
@@ -307,6 +358,23 @@ fun FamilyScreen(
                         )
                     }
                 }
+            }
+        }
+    }
+
+        if (canHostParty) {
+            FloatingActionButton(
+                onClick = { partyConfirm.request(partyBudget) },
+                modifier = Modifier
+                    .align(Alignment.BottomEnd)
+                    .padding(MaishaSpacing.md),
+                containerColor = GoldAccent,
+                contentColor = NavyDeep
+            ) {
+                Icon(
+                    imageVector = AppIcons.Family,
+                    contentDescription = stringResource(R.string.btn_host_party)
+                )
             }
         }
     }
@@ -486,4 +554,6 @@ private fun relationLabel(member: Person): String = when (member.relation) {
     }
     RelationType.CHILD -> stringResource(R.string.relation_child)
     RelationType.FRIEND -> stringResource(R.string.relation_friend)
+    RelationType.BEST_FRIEND -> stringResource(R.string.relation_best_friend)
+    RelationType.ENEMY -> stringResource(R.string.relation_enemy)
 }

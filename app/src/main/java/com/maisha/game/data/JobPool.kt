@@ -43,7 +43,22 @@ object JobPool {
             id = "driver",
             title = "Driver",
             minEducation = SchoolStage.SECONDARY,
-            baseSalary = 240_000
+            baseSalary = 240_000,
+            requiresDrivingLicense = true
+        ),
+        Job(
+            id = "delivery_driver",
+            title = "Delivery Driver",
+            minEducation = SchoolStage.SECONDARY,
+            baseSalary = 260_000,
+            requiresDrivingLicense = true
+        ),
+        Job(
+            id = "trucker",
+            title = "Trucker",
+            minEducation = SchoolStage.SECONDARY,
+            baseSalary = 380_000,
+            requiresDrivingLicense = true
         ),
         Job(
             id = "teacher",
@@ -135,6 +150,27 @@ object JobPool {
             minEducation = SchoolStage.SECONDARY,
             baseSalary = 600_000,
             minFollowers = 25_000
+        ),
+        Job(
+            id = "military_private",
+            title = "Private",
+            minEducation = SchoolStage.NONE,
+            baseSalary = 280_000,
+            isMilitary = true
+        ),
+        Job(
+            id = "military_sergeant",
+            title = "Sergeant",
+            minEducation = SchoolStage.NONE,
+            baseSalary = 420_000,
+            isMilitary = true
+        ),
+        Job(
+            id = "military_general",
+            title = "General",
+            minEducation = SchoolStage.NONE,
+            baseSalary = 900_000,
+            isMilitary = true
         )
     )
 
@@ -160,7 +196,8 @@ object JobPool {
                 id = "jeepney_driver",
                 title = "Jeepney Driver",
                 minEducation = SchoolStage.SECONDARY,
-                baseSalary = 175_000
+                baseSalary = 175_000,
+                requiresDrivingLicense = true
             )
         ),
         "IN" to listOf(
@@ -168,7 +205,8 @@ object JobPool {
                 id = "auto_rickshaw_driver",
                 title = "Auto-Rickshaw Driver",
                 minEducation = SchoolStage.SECONDARY,
-                baseSalary = 170_000
+                baseSalary = 170_000,
+                requiresDrivingLicense = true
             )
         ),
         "ID" to listOf(
@@ -176,7 +214,8 @@ object JobPool {
                 id = "angkot_driver",
                 title = "Angkot Driver",
                 minEducation = SchoolStage.SECONDARY,
-                baseSalary = 175_000
+                baseSalary = 175_000,
+                requiresDrivingLicense = true
             )
         ),
         "BR" to listOf(
@@ -200,7 +239,8 @@ object JobPool {
                 id = "microbus_driver",
                 title = "Microbus Driver",
                 minEducation = SchoolStage.SECONDARY,
-                baseSalary = 175_000
+                baseSalary = 175_000,
+                requiresDrivingLicense = true
             )
         )
     )

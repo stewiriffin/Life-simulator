@@ -153,11 +153,14 @@ class AchievementEngine @Inject constructor(
 
     private fun checkTrueFriend(character: Character): Boolean =
         character.family.any {
-            it.relation == RelationType.FRIEND && it.alive && it.relationshipLevel >= 70
+            (it.relation == RelationType.FRIEND || it.relation == RelationType.BEST_FRIEND) &&
+                it.alive && it.relationshipLevel >= 70
         }
 
     private fun checkSocialCircle(character: Character): Boolean =
-        character.family.count { it.relation == RelationType.FRIEND && it.alive } >= 2
+        character.family.count {
+            (it.relation == RelationType.FRIEND || it.relation == RelationType.BEST_FRIEND) && it.alive
+        } >= 2
 
     private fun checkPassportStamped(character: Character): Boolean =
         character.relocationCount >= 1

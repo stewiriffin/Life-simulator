@@ -14,7 +14,9 @@ enum class MilestoneKind {
     INSULTED,
     TRAVELED_TOGETHER,
     SET_UP_ON_DATE,
-    LEGACY_CONTINUED
+    LEGACY_CONTINUED,
+    /** Applied to heirs excluded from a custom will (inheritance feud). */
+    GRUDGE
 }
 
 /**

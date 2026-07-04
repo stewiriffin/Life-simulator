@@ -176,4 +176,89 @@ class FinanceEngineTest {
             assertEquals(10, after.assets.first().condition)
         }
     }
+
+    @Test
+    fun investFunds_movesCashToPortfolioSuccessfully() {
+        val character = TestFixtures.character(
+            stats = com.maisha.game.data.model.Stats(money = 50_000)
+        )
+        val result = engine.investFunds(character, 20_000)
+        assertTrue(result is FinanceEngine.InvestmentResult.Success)
+        val after = (result as FinanceEngine.InvestmentResult.Success).character
+        assertEquals(30_000, after.stats.money)
+        assertEquals(20_000, after.investmentPortfolioValue)
+        assertEquals(50_000, engine.calculateNetWorth(after))
+    }
+
+    @Test
+    fun yearlyTick_appliesRandomMarketModifierToPortfolio() {
+        val character = TestFixtures.character(
+            stats = com.maisha.game.data.model.Stats(money = 0)
+        ).copy(investmentPortfolioValue = 100_000)
+        var sawChange = false
+        var minValue = Int.MAX_VALUE
+        var maxValue = Int.MIN_VALUE
+        repeat(40) {
+            val after = engine.applyPortfolioMarketTick(character)
+            assertTrue(
+                after.lastPortfolioReturnPercent in
+                    FinanceEngine.PORTFOLIO_RETURN_MIN_PERCENT..FinanceEngine.PORTFOLIO_RETURN_MAX_PERCENT
+            )
+            minValue = minOf(minValue, after.investmentPortfolioValue)
+            maxValue = maxOf(maxValue, after.investmentPortfolioValue)
+            if (after.investmentPortfolioValue != 100_000) sawChange = true
+        }
+        assertTrue(sawChange)
+        assertTrue(minValue >= 70_000) // -30% floor
+        assertTrue(maxValue <= 140_000) // +40% ceiling
+    }
+
+    @Test
+    fun yearlyTick_collectsRentForRentedAssets() {
+        val house = TestFixtures.asset(
+            id = "house1",
+            type = AssetType.HOUSE,
+            currentValue = 1_000_000,
+            monthlyUpkeep = 4_000,
+            condition = 100
+        ).copy(isRentedOut = true, tenantHappiness = 70)
+        val character = TestFixtures.character(
+            stats = com.maisha.game.data.model.Stats(money = 50_000),
+            assets = listOf(house)
+        )
+        val after = engine.collectRent(character)
+        assertTrue(after.stats.money > character.stats.money)
+        val rent = after.stats.money - character.stats.money
+        assertTrue("Rent should be 5–8% of valuation (got $rent)", rent in 50_000..80_000)
+        assertTrue(after.assets.first().isRentedOut)
+        assertTrue(after.assets.first().tenantHappiness != null)
+    }
+
+    @Test
+    fun evictTenant_removesRentedStatusAndAppliesLegalFee() {
+        val house = TestFixtures.asset(
+            id = "house1",
+            type = AssetType.HOUSE,
+            currentValue = 800_000,
+            monthlyUpkeep = 4_000
+        ).copy(isRentedOut = true, tenantHappiness = 60)
+        val character = TestFixtures.character(
+            stats = com.maisha.game.data.model.Stats(
+                health = 80,
+                happiness = 70,
+                smarts = 60,
+                looks = 50,
+                money = 100_000
+            ),
+            assets = listOf(house)
+        )
+        val fee = engine.evictionFee(character)
+        val result = engine.evictTenant(character, "house1")
+        assertTrue(result is FinanceEngine.RentalResult.Success)
+        val after = (result as FinanceEngine.RentalResult.Success).character
+        assertEquals(false, after.assets.first().isRentedOut)
+        assertEquals(null, after.assets.first().tenantHappiness)
+        assertEquals(character.stats.money - fee, after.stats.money)
+        assertTrue(after.stats.happiness < character.stats.happiness)
+    }
 }

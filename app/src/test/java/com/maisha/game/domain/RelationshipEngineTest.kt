@@ -232,4 +232,76 @@ class RelationshipEngineTest {
         assertTrue(onAdult.message.contains("under 18"))
         assertTrue(onSibling.message.contains("under 18"))
     }
+
+    @Test
+    fun statusShift_upgradesFriendToBestFriendAtHighRelationship() {
+        val friend = TestFixtures.person(
+            id = "f1",
+            relation = RelationType.FRIEND,
+            relationshipLevel = 91
+        )
+        val upgraded = engine.applySocialStatusShift(friend)
+        assertEquals(RelationType.BEST_FRIEND, upgraded.relation)
+
+        val coldFriend = TestFixtures.person(
+            id = "f2",
+            relation = RelationType.FRIEND,
+            relationshipLevel = 10
+        )
+        val enemy = engine.applySocialStatusShift(coldFriend)
+        assertEquals(RelationType.ENEMY, enemy.relation)
+    }
+
+    @Test
+    fun throwParty_boostsRelationshipForAllFriendsBasedOnBudget() {
+        val friend = TestFixtures.person(
+            id = "f1",
+            relation = RelationType.FRIEND,
+            relationshipLevel = 50
+        )
+        val bestFriend = TestFixtures.person(
+            id = "f2",
+            relation = RelationType.BEST_FRIEND,
+            relationshipLevel = 92
+        )
+        val sibling = TestFixtures.person(
+            id = "s1",
+            relation = RelationType.SIBLING,
+            relationshipLevel = 40
+        )
+        val parent = TestFixtures.person(
+            id = "m1",
+            relation = RelationType.MOTHER,
+            relationshipLevel = 60
+        )
+        val character = TestFixtures.character(
+            stats = Stats(money = 200_000, happiness = 50),
+            family = listOf(friend, bestFriend, sibling, parent)
+        )
+        val smallBudget = engine.minPartyBudget(character.countryCode)
+        val largeBudget = smallBudget * 5
+        val smallBoost = engine.partyBoostForBudget(smallBudget, character.countryCode)
+        val largeBoost = engine.partyBoostForBudget(largeBudget, character.countryCode)
+        assertTrue(largeBoost > smallBoost)
+        assertTrue(smallBoost >= RelationshipEngine.PARTY_BOOST_MIN)
+        assertTrue(largeBoost <= RelationshipEngine.PARTY_BOOST_MAX)
+
+        val result = engine.throwParty(character, largeBudget)
+        assertTrue(result is PartyResult.Success)
+        val after = (result as PartyResult.Success).character
+        assertEquals(200_000 - largeBudget, after.stats.money)
+        assertEquals(
+            (50 + result.boost).coerceAtMost(100),
+            after.family.first { it.id == "f1" }.relationshipLevel
+        )
+        assertEquals(
+            (92 + result.boost).coerceAtMost(100),
+            after.family.first { it.id == "f2" }.relationshipLevel
+        )
+        assertEquals(
+            (40 + result.boost).coerceAtMost(100),
+            after.family.first { it.id == "s1" }.relationshipLevel
+        )
+        assertEquals(60, after.family.first { it.id == "m1" }.relationshipLevel)
+    }
 }

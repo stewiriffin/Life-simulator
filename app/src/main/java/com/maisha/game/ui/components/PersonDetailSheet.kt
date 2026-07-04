@@ -52,7 +52,9 @@ fun PersonDetailSheet(
     val isChild = member.relation == RelationType.CHILD
     val isMinorChild = RelationshipEngine.isMinorChild(member)
     val canAskForMoney = !isSpouse && !isChild
-    val canSetUpDate = member.relation == RelationType.SIBLING || member.relation == RelationType.FRIEND
+    val canSetUpDate = member.relation == RelationType.SIBLING ||
+        member.relation == RelationType.FRIEND ||
+        member.relation == RelationType.BEST_FRIEND
     val pendingGiftTier = rememberConfirmableAction<GiftTier>()
     val pendingTravel = rememberConfirmableAction<Unit>()
     val pendingAllowance = rememberConfirmableAction<Unit>()

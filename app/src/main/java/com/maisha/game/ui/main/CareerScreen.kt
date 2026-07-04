@@ -41,22 +41,28 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.maisha.game.R
 import com.maisha.game.data.IllustrationCatalog
 import com.maisha.game.data.JobPool
+import com.maisha.game.data.EconomyScaler
 import com.maisha.game.data.model.Business
 import com.maisha.game.data.model.BusinessIndustry
 import com.maisha.game.data.model.Character
 import com.maisha.game.data.model.EducationState
 import com.maisha.game.data.model.Job
+import com.maisha.game.data.model.PoliticalOffice
 import com.maisha.game.data.model.SchoolStage
+import com.maisha.game.data.model.TaxPolicyType
 import com.maisha.game.domain.BusinessEngine
+import com.maisha.game.domain.PoliticsEngine
 import com.maisha.game.ui.components.ConfirmActionDialog
 import com.maisha.game.ui.components.ConfirmSeverity
 import com.maisha.game.ui.components.ConfirmableActionHost
@@ -72,6 +78,7 @@ import com.maisha.game.ui.theme.CoralNegative
 import com.maisha.game.ui.theme.GoldAccent
 import com.maisha.game.ui.theme.MaishaRadius
 import com.maisha.game.ui.theme.MaishaSpacing
+import com.maisha.game.ui.theme.NavyDeep
 import com.maisha.game.ui.theme.SuccessGreen
 import com.maisha.game.ui.theme.TealPrimary
 import com.maisha.game.util.formatMoney
@@ -92,6 +99,8 @@ fun CareerScreen(
     onStartBusiness: (String, BusinessIndustry, Int) -> Unit,
     onSellBusiness: (String) -> Unit,
     investmentTiers: List<Int>,
+    onLaunchCampaign: (PoliticalOffice, Int) -> Unit,
+    onPassTaxPolicy: (TaxPolicyType) -> Unit,
     onCareerMessageDismissed: () -> Unit,
     modifier: Modifier = Modifier
 ) {
@@ -99,6 +108,9 @@ fun CareerScreen(
     val retireConfirm = rememberConfirmableAction<Unit>()
     val startBusinessConfirm = rememberConfirmableAction<Unit>()
     val sellBusinessConfirm = rememberConfirmableAction<Business>()
+    val campaignConfirm = rememberConfirmableAction<PoliticalOffice>()
+    val taxPolicyConfirm = rememberConfirmableAction<TaxPolicyType>()
+    var selectedOffice by remember { mutableStateOf(PoliticalOffice.MAYOR) }
 
     val tiers = investmentTiers.ifEmpty {
         listOf(
@@ -181,6 +193,50 @@ fun CareerScreen(
         )
     }
 
+    val campaignInvestment = EconomyScaler.scaleAmount(
+        when (selectedOffice) {
+            PoliticalOffice.MAYOR -> 50_000
+            PoliticalOffice.GOVERNOR -> 200_000
+            PoliticalOffice.PRESIDENT -> 500_000
+        },
+        character.countryCode
+    )
+
+    ConfirmableActionHost(
+        state = campaignConfirm,
+        onConfirmed = { office -> onLaunchCampaign(office, campaignInvestment) }
+    ) { office, onConfirm, onDismiss ->
+        ConfirmActionDialog(
+            title = stringResource(R.string.dialog_launch_campaign_title),
+            description = stringResource(
+                R.string.dialog_launch_campaign_body,
+                officeLabel(office),
+                formatMoney(campaignInvestment, character.countryCode)
+            ),
+            confirmLabel = stringResource(R.string.btn_launch_campaign),
+            severity = ConfirmSeverity.NEUTRAL,
+            onConfirm = onConfirm,
+            onDismiss = onDismiss
+        )
+    }
+
+    ConfirmableActionHost(
+        state = taxPolicyConfirm,
+        onConfirmed = { policy -> onPassTaxPolicy(policy) }
+    ) { policy, onConfirm, onDismiss ->
+        ConfirmActionDialog(
+            title = stringResource(R.string.dialog_tax_policy_title),
+            description = when (policy) {
+                TaxPolicyType.TAX_CUTS -> stringResource(R.string.dialog_tax_cuts_body)
+                TaxPolicyType.WEALTH_TAX -> stringResource(R.string.dialog_wealth_tax_body)
+            },
+            confirmLabel = stringResource(R.string.btn_pass_policy),
+            severity = ConfirmSeverity.WARNING,
+            onConfirm = onConfirm,
+            onDismiss = onDismiss
+        )
+    }
+
     LaunchedEffect(uiState.careerMessage) {
         uiState.careerMessage?.let { message ->
             snackbarHostState.showSnackbar(message)
@@ -190,6 +246,9 @@ fun CareerScreen(
 
     val currentJob = character.career.currentJob
     val isRetired = character.career.isRetired
+    val isMilitaryCareer = currentJob?.isMilitary == true
+    val showDeploymentBanner = character.career.pendingDeployment || character.career.isDeployed
+    val militaryAccent = Color(0xFF556B2F) // olive drab
     val eligibleIds = eligibleJobs.map { it.id }.toSet()
     val canStartBusiness = character.alive &&
         character.age >= BusinessEngine.MIN_BUSINESS_AGE &&
@@ -206,8 +265,29 @@ fun CareerScreen(
         Text(
             text = stringResource(R.string.screen_career),
             style = MaterialTheme.typography.headlineSmall,
-            fontWeight = FontWeight.Bold
+            fontWeight = FontWeight.Bold,
+            color = if (isMilitaryCareer) militaryAccent else MaterialTheme.colorScheme.onSurface
         )
+
+        if (showDeploymentBanner) {
+            Spacer(modifier = Modifier.height(8.dp))
+            Card(
+                modifier = Modifier.fillMaxWidth(),
+                shape = MaishaRadius.cardShape,
+                colors = CardDefaults.cardColors(containerColor = militaryAccent)
+            ) {
+                Text(
+                    text = stringResource(R.string.banner_active_deployment),
+                    style = MaterialTheme.typography.labelLarge,
+                    fontWeight = FontWeight.Bold,
+                    color = Color.White,
+                    textAlign = TextAlign.Center,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 12.dp, vertical = 10.dp)
+                )
+            }
+        }
 
         Spacer(modifier = Modifier.height(10.dp))
 
@@ -219,6 +299,17 @@ fun CareerScreen(
         EducationSectionCard(
             education = character.education,
             onDropOut = { dropOutConfirm.request(Unit) }
+        )
+
+        Spacer(modifier = Modifier.height(12.dp))
+
+        PoliticsSection(
+            character = character,
+            selectedOffice = selectedOffice,
+            onOfficeSelected = { selectedOffice = it },
+            campaignInvestment = campaignInvestment,
+            onLaunchCampaign = { campaignConfirm.request(selectedOffice) },
+            onPassTaxPolicy = { taxPolicyConfirm.request(it) }
         )
 
         Spacer(modifier = Modifier.height(12.dp))
@@ -663,13 +754,17 @@ private fun CurrentJobCard(
 ) {
     val job = character.career.currentJob ?: return
     val resources = LocalContext.current.resources
+    val militaryAccent = Color(0xFF556B2F)
+    val cardColor = if (job.isMilitary) {
+        militaryAccent.copy(alpha = 0.22f)
+    } else {
+        TealPrimary.copy(alpha = 0.15f)
+    }
 
     Card(
         modifier = Modifier.fillMaxWidth(),
         shape = MaishaRadius.cardShape,
-        colors = CardDefaults.cardColors(
-            containerColor = TealPrimary.copy(alpha = 0.15f)
-        )
+        colors = CardDefaults.cardColors(containerColor = cardColor)
     ) {
         Column(modifier = Modifier.padding(14.dp)) {
             Row(
@@ -838,6 +933,155 @@ private fun JobListingCard(
             }
         }
     }
+}
+
+@Composable
+private fun PoliticsSection(
+    character: Character,
+    selectedOffice: PoliticalOffice,
+    onOfficeSelected: (PoliticalOffice) -> Unit,
+    campaignInvestment: Int,
+    onLaunchCampaign: () -> Unit,
+    onPassTaxPolicy: (TaxPolicyType) -> Unit
+) {
+    val office = character.politics.currentOffice
+    Text(
+        text = stringResource(R.string.section_politics),
+        style = MaterialTheme.typography.titleSmall,
+        fontWeight = FontWeight.SemiBold,
+        color = TealPrimary
+    )
+    Spacer(modifier = Modifier.height(MaishaSpacing.sm))
+
+    if (office != null) {
+        Card(
+            modifier = Modifier.fillMaxWidth(),
+            shape = MaishaRadius.cardShape,
+            colors = CardDefaults.cardColors(
+                containerColor = MaterialTheme.colorScheme.surfaceVariant
+            )
+        ) {
+            Column(
+                modifier = Modifier.padding(14.dp),
+                verticalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                Text(
+                    text = stringResource(
+                        R.string.format_current_office,
+                        officeLabel(office)
+                    ),
+                    style = MaterialTheme.typography.titleSmall,
+                    fontWeight = FontWeight.SemiBold
+                )
+                StatBar(
+                    type = StatType.PERFORMANCE,
+                    value = character.politics.approvalRating,
+                    maxValue = 100,
+                    label = stringResource(R.string.label_approval_rating),
+                    showIcon = false
+                )
+                character.politics.activeTaxPolicy?.let { policy ->
+                    Text(
+                        text = stringResource(
+                            R.string.format_active_tax_policy,
+                            taxPolicyLabel(policy)
+                        ),
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+                if (office == PoliticalOffice.GOVERNOR || office == PoliticalOffice.PRESIDENT) {
+                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                        OutlinedButton(
+                            onClick = { onPassTaxPolicy(TaxPolicyType.TAX_CUTS) },
+                            modifier = Modifier.weight(1f),
+                            shape = MaishaRadius.buttonShape
+                        ) {
+                            Text(
+                                stringResource(R.string.btn_tax_cuts),
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis
+                            )
+                        }
+                        OutlinedButton(
+                            onClick = { onPassTaxPolicy(TaxPolicyType.WEALTH_TAX) },
+                            modifier = Modifier.weight(1f),
+                            shape = MaishaRadius.buttonShape
+                        ) {
+                            Text(
+                                stringResource(R.string.btn_wealth_tax),
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis
+                            )
+                        }
+                    }
+                }
+            }
+        }
+    } else if (
+        character.alive &&
+        character.age >= PoliticsEngine.MIN_OFFICE_AGE &&
+        !character.criminalRecord.hasRecord &&
+        !character.criminalRecord.currentlyIncarcerated
+    ) {
+        Text(
+            text = stringResource(R.string.section_run_for_office),
+            style = MaterialTheme.typography.bodyMedium,
+            fontWeight = FontWeight.Medium
+        )
+        Spacer(modifier = Modifier.height(6.dp))
+        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            PoliticalOffice.entries.forEach { option ->
+                FilterChip(
+                    selected = selectedOffice == option,
+                    onClick = { onOfficeSelected(option) },
+                    label = {
+                        Text(
+                            officeLabel(option),
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis
+                        )
+                    }
+                )
+            }
+        }
+        Spacer(modifier = Modifier.height(8.dp))
+        Button(
+            onClick = onLaunchCampaign,
+            modifier = Modifier.fillMaxWidth(),
+            shape = MaishaRadius.buttonShape,
+            colors = ButtonDefaults.buttonColors(containerColor = GoldAccent, contentColor = NavyDeep)
+        ) {
+            Text(
+                stringResource(
+                    R.string.btn_run_for_office_cost,
+                    officeLabel(selectedOffice),
+                    formatMoney(campaignInvestment, character.countryCode)
+                ),
+                maxLines = 2,
+                overflow = TextOverflow.Ellipsis
+            )
+        }
+    } else {
+        Text(
+            text = stringResource(R.string.politics_locked_hint),
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant
+        )
+    }
+}
+
+@Composable
+private fun officeLabel(office: PoliticalOffice): String = when (office) {
+    PoliticalOffice.MAYOR -> stringResource(R.string.office_mayor)
+    PoliticalOffice.GOVERNOR -> stringResource(R.string.office_governor)
+    PoliticalOffice.PRESIDENT -> stringResource(R.string.office_president)
+}
+
+@Composable
+private fun taxPolicyLabel(policy: TaxPolicyType): String = when (policy) {
+    TaxPolicyType.TAX_CUTS -> stringResource(R.string.policy_tax_cuts)
+    TaxPolicyType.WEALTH_TAX -> stringResource(R.string.policy_wealth_tax)
 }
 
 @Composable

@@ -98,7 +98,8 @@ class MainActivity : ComponentActivity() {
             appReady = true
         }
 
-        lifecycleScope.launch(Dispatchers.IO) {
+        // AdMob load APIs must run on the main thread (#008).
+        lifecycleScope.launch {
             adManager.preloadInterstitial(applicationContext)
             adManager.preloadRewarded(applicationContext)
         }

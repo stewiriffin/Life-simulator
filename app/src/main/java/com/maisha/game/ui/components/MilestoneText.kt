@@ -21,6 +21,7 @@ fun milestoneDescription(milestone: RelationshipMilestone): String {
         MilestoneKind.TRAVELED_TOGETHER -> stringResource(R.string.milestone_traveled, name)
         MilestoneKind.SET_UP_ON_DATE -> stringResource(R.string.milestone_set_up_date, name)
         MilestoneKind.LEGACY_CONTINUED -> stringResource(R.string.milestone_legacy_continued, name)
+        MilestoneKind.GRUDGE -> stringResource(R.string.milestone_grudge, name)
         null -> milestone.description.ifBlank {
             stringResource(R.string.milestone_generic, milestone.ageAtEvent)
         }

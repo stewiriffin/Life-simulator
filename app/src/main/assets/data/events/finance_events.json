@@ -575,6 +575,296 @@
           "resultText": "You keep the brand rare — and local."
         }
       ]
+    },
+    {
+      "id": "landlord_tenant_trashed_place",
+      "minAge": 20,
+      "maxAge": 70,
+      "text": "Your tenant moved out overnight. The rental is trashed — holes in walls, ruined floors.",
+      "weight": 4,
+      "tags": ["finance", "requires_rental"],
+      "choices": [
+        {
+          "label": "Pay for full repairs",
+          "statEffects": { "money": -18000, "happiness": -2 },
+          "conditionEffect": 15,
+          "targetAssetType": "HOUSE",
+          "resultText": "Contractors restore the place. You are out of pocket but rentable again."
+        },
+        {
+          "label": "Ignore the damage",
+          "statEffects": { "happiness": -6 },
+          "conditionEffect": -35,
+          "targetAssetType": "HOUSE",
+          "resultText": "The unit sits vacant and decaying. Word spreads among tenants."
+        }
+      ]
+    },
+    {
+      "id": "landlord_ac_repair_request",
+      "minAge": 20,
+      "maxAge": 70,
+      "text": "Your tenant texts at midnight: the AC died in a heatwave. They want it fixed today.",
+      "weight": 4,
+      "tags": ["finance", "requires_rental"],
+      "choices": [
+        {
+          "label": "Send a technician immediately",
+          "statEffects": { "money": -8000, "happiness": 1 },
+          "conditionEffect": 5,
+          "targetAssetType": "HOUSE",
+          "resultText": "The unit cools down. Your tenant sends a thank-you emoji."
+        },
+        {
+          "label": "Tell them to wait",
+          "statEffects": { "happiness": -3 },
+          "conditionEffect": -10,
+          "targetAssetType": "HOUSE",
+          "resultText": "They threaten to leave. Reviews of your property tank."
+        }
+      ]
+    },
+    {
+      "id": "landlord_squatters",
+      "minAge": 22,
+      "maxAge": 70,
+      "text": "Neighbours report squatters in your rental after the lease ended. They refuse to leave.",
+      "weight": 3,
+      "tags": ["finance", "requires_rental"],
+      "choices": [
+        {
+          "label": "Hire a lawyer and evict",
+          "statEffects": { "money": -20000, "happiness": -4 },
+          "resultText": "The process is slow and expensive, but the property is yours again."
+        },
+        {
+          "label": "Confront them yourself",
+          "statEffects": { "happiness": -8, "health": -2 },
+          "conditionEffect": -20,
+          "targetAssetType": "HOUSE",
+          "resultText": "A fight breaks out. Police are called. The unit takes more damage."
+        }
+      ]
+    },
+    {
+      "id": "landlord_late_rent",
+      "minAge": 20,
+      "maxAge": 70,
+      "text": "Rent is two months late. Your tenant promises payment 'next week' — again.",
+      "weight": 4,
+      "tags": ["finance", "requires_rental"],
+      "choices": [
+        {
+          "label": "Offer a payment plan",
+          "statEffects": { "money": 5000, "happiness": 1 },
+          "resultText": "You recover part of the arrears and keep a tenant."
+        },
+        {
+          "label": "Start eviction proceedings",
+          "statEffects": { "money": -12000, "happiness": -3 },
+          "resultText": "Legal fees mount. The unit will be empty soon."
+        }
+      ]
+    },
+    {
+      "id": "landlord_noise_complaint",
+      "minAge": 20,
+      "maxAge": 70,
+      "text": "Downstairs neighbours file a noise complaint about your tenant's parties.",
+      "weight": 3,
+      "tags": ["finance", "requires_rental"],
+      "choices": [
+        {
+          "label": "Mediate and set house rules",
+          "statEffects": { "happiness": 2, "smarts": 1 },
+          "resultText": "Quiet hours are agreed. Everyone calms down."
+        },
+        {
+          "label": "Ignore it",
+          "statEffects": { "happiness": -2 },
+          "conditionEffect": -5,
+          "targetAssetType": "HOUSE",
+          "resultText": "The building association fines you. Relations sour."
+        }
+      ]
+    },
+    {
+      "id": "landlord_pipe_burst",
+      "minAge": 20,
+      "maxAge": 70,
+      "text": "A pipe bursts in your rental. Water soaks the ceiling of the unit below.",
+      "weight": 3,
+      "tags": ["finance", "requires_rental"],
+      "choices": [
+        {
+          "label": "Emergency plumber and hotel for tenant",
+          "statEffects": { "money": -22000, "happiness": -1 },
+          "conditionEffect": 10,
+          "targetAssetType": "HOUSE",
+          "resultText": "Costly, but you avoid a lawsuit and keep the lease."
+        },
+        {
+          "label": "Patch it cheaply",
+          "statEffects": { "money": -4000, "happiness": -5 },
+          "conditionEffect": -30,
+          "targetAssetType": "HOUSE",
+          "resultText": "The patch fails. Your tenant moves out and the damage spreads."
+        }
+      ]
+    },
+    {
+      "id": "landlord_good_tenant_gift",
+      "minAge": 20,
+      "maxAge": 70,
+      "text": "A long-term tenant offers to renew early and gifts you homemade food.",
+      "weight": 3,
+      "tags": ["finance", "requires_rental"],
+      "choices": [
+        {
+          "label": "Offer a small rent discount",
+          "statEffects": { "money": -3000, "happiness": 5 },
+          "conditionEffect": 5,
+          "targetAssetType": "HOUSE",
+          "resultText": "Loyalty pays both ways. They stay for years."
+        },
+        {
+          "label": "Keep rent as-is",
+          "statEffects": { "happiness": 3 },
+          "resultText": "They renew anyway. You pocket the full rate."
+        }
+      ]
+    },
+    {
+      "id": "invest_insider_trading_tip",
+      "minAge": 22,
+      "maxAge": 65,
+      "text": "A contact offers an illegal insider tip that could double your portfolio overnight.",
+      "weight": 4,
+      "tags": ["finance", "requires_portfolio", "negative"],
+      "choices": [
+        {
+          "label": "Act on the tip",
+          "statEffects": { "happiness": 4 },
+          "portfolioReturnPercent": 100,
+          "triggersCrime": "FRAUD",
+          "resultText": "Huge gains — if you get away with it."
+        },
+        {
+          "label": "Report it and stay clean",
+          "statEffects": { "karma": 6, "happiness": 2 },
+          "resultText": "You sleep well. The market can wait."
+        }
+      ]
+    },
+    {
+      "id": "invest_market_panic",
+      "minAge": 20,
+      "maxAge": 70,
+      "text": "Markets plunge. Your portfolio flashes red across every screen.",
+      "weight": 4,
+      "tags": ["finance", "requires_portfolio", "negative"],
+      "choices": [
+        {
+          "label": "Hold and ride it out",
+          "statEffects": { "happiness": -4 },
+          "portfolioReturnPercent": -25,
+          "resultText": "You take the hit. Time may heal the chart."
+        },
+        {
+          "label": "Panic sell everything",
+          "statEffects": { "happiness": -6 },
+          "portfolioReturnPercent": -40,
+          "resultText": "You lock in losses at the bottom."
+        }
+      ]
+    },
+    {
+      "id": "invest_tech_bubble_pops",
+      "minAge": 22,
+      "maxAge": 60,
+      "text": "A tech bubble bursts. Growth stocks you hold are in free fall.",
+      "weight": 3,
+      "tags": ["finance", "requires_portfolio", "negative"],
+      "choices": [
+        {
+          "label": "Rebalance into safer holdings",
+          "statEffects": { "happiness": -2, "smarts": 1 },
+          "portfolioReturnPercent": -15,
+          "resultText": "A controlled retreat. Damage is limited."
+        },
+        {
+          "label": "Double down on the dip",
+          "statEffects": { "happiness": -5 },
+          "portfolioReturnPercent": -35,
+          "resultText": "The dip kept dipping. Painful lesson."
+        }
+      ]
+    },
+    {
+      "id": "invest_bull_run_rally",
+      "minAge": 20,
+      "maxAge": 70,
+      "text": "A surprise bull run lifts the entire market. Your portfolio is soaring.",
+      "weight": 3,
+      "tags": ["finance", "requires_portfolio", "positive"],
+      "choices": [
+        {
+          "label": "Let it ride",
+          "statEffects": { "happiness": 6 },
+          "portfolioReturnPercent": 30,
+          "resultText": "Gains compound. You feel invincible — for now."
+        },
+        {
+          "label": "Take some profits",
+          "statEffects": { "happiness": 4, "smarts": 1 },
+          "portfolioReturnPercent": 15,
+          "resultText": "You bank a win without getting greedy."
+        }
+      ]
+    },
+    {
+      "id": "invest_dividend_windfall",
+      "minAge": 25,
+      "maxAge": 70,
+      "text": "A company in your portfolio announces a special dividend.",
+      "weight": 3,
+      "tags": ["finance", "requires_portfolio", "positive"],
+      "choices": [
+        {
+          "label": "Reinvest the dividend",
+          "statEffects": { "happiness": 3 },
+          "portfolioReturnPercent": 12,
+          "resultText": "Compounding does the quiet work."
+        },
+        {
+          "label": "Celebrate with a night out",
+          "statEffects": { "money": 3000, "happiness": 5 },
+          "portfolioReturnPercent": 5,
+          "resultText": "A little cash out, a little still growing."
+        }
+      ]
+    },
+    {
+      "id": "invest_pump_and_dump_scheme",
+      "minAge": 22,
+      "maxAge": 55,
+      "text": "An online group invites you into a coordinated pump-and-dump. Easy money — illegal money.",
+      "weight": 3,
+      "tags": ["finance", "requires_portfolio", "negative"],
+      "choices": [
+        {
+          "label": "Join the scheme",
+          "statEffects": { "happiness": 2, "karma": -8 },
+          "portfolioReturnPercent": 80,
+          "triggersCrime": "FRAUD",
+          "resultText": "Charts spike. Regulators may be watching."
+        },
+        {
+          "label": "Block the group and walk away",
+          "statEffects": { "karma": 5, "happiness": 1 },
+          "resultText": "You keep your license and your integrity."
+        }
+      ]
     }
   ]
 }

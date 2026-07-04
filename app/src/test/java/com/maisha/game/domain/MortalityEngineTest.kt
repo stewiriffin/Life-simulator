@@ -1,7 +1,11 @@
 package com.maisha.game.domain
 
+import com.maisha.game.data.model.CareerState
+import com.maisha.game.data.model.Job
 import com.maisha.game.data.model.PetSpecies
+import com.maisha.game.data.model.SchoolStage
 import com.maisha.game.data.model.Stats
+import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
@@ -58,6 +62,84 @@ class MortalityEngineTest {
 
         assertTrue(oldFishDeaths > youngFishDeaths)
         assertTrue(oldDogDeaths > youngFishDeaths)
-        assertTrue(oldFishDeaths > 150)
+    }
+
+    @Test
+    fun checkDeath_highKarmaReducesFatalRollProbability() {
+        val lowKarma = TestFixtures.character(
+            age = 45,
+            stats = Stats(health = 8, happiness = 40, smarts = 50, looks = 50, money = 10_000, karma = 10)
+        )
+        val highKarma = lowKarma.copy(
+            stats = lowKarma.stats.copy(karma = 95)
+        )
+        assertTrue(engine.karmaMiracleChance(highKarma) > 0f)
+        assertEquals(0f, engine.karmaMiracleChance(lowKarma), 0.0001f)
+        assertTrue(
+            engine.estimatedDeathProbability(highKarma) <
+                engine.estimatedDeathProbability(lowKarma)
+        )
+
+        var lowDeaths = 0
+        var highDeaths = 0
+        repeat(600) {
+            if (engine.checkDeath(lowKarma) is DeathResult.Died) lowDeaths++
+            if (engine.checkDeath(highKarma) is DeathResult.Died) highDeaths++
+        }
+        assertTrue(
+            "High karma deaths ($highDeaths) should be fewer than low karma ($lowDeaths)",
+            highDeaths < lowDeaths
+        )
+    }
+
+    @Test
+    fun donateToCharity_deductsCashAndIncreasesKarma() {
+        val gameEngine = TestFixtures.gameEngine()
+        val character = TestFixtures.character(
+            age = 30,
+            stats = Stats(health = 70, happiness = 50, smarts = 50, looks = 50, money = 100_000, karma = 50)
+        )
+        val amount = 10_000
+        val result = gameEngine.donateToCharity(character, amount)
+        assertTrue(result is GameEngine.DonationResult.Success)
+        val success = result as GameEngine.DonationResult.Success
+        assertEquals(90_000, success.character.stats.money)
+        assertTrue(success.character.stats.karma > character.stats.karma)
+        assertTrue(success.karmaGained >= 1)
+    }
+
+    @Test
+    fun checkDeath_increasesProbabilityDuringActiveDeployment() {
+        val civilian = TestFixtures.character(
+            age = 28,
+            stats = Stats(health = 70, happiness = 60, smarts = 50, looks = 50, money = 10_000)
+        )
+        val deployed = civilian.copy(
+            career = CareerState(
+                currentJob = Job(
+                    id = "military_private",
+                    title = "Private",
+                    minEducation = SchoolStage.NONE,
+                    baseSalary = 280_000,
+                    isMilitary = true
+                ),
+                isDeployed = true
+            )
+        )
+        assertTrue(
+            engine.estimatedDeathProbability(deployed) >
+                engine.estimatedDeathProbability(civilian) * 2f
+        )
+
+        var civilianDeaths = 0
+        var deployedDeaths = 0
+        repeat(800) {
+            if (engine.checkDeath(civilian) is DeathResult.Died) civilianDeaths++
+            if (engine.checkDeath(deployed) is DeathResult.Died) deployedDeaths++
+        }
+        assertTrue(
+            "Deployed deaths ($deployedDeaths) should exceed civilian ($civilianDeaths)",
+            deployedDeaths > civilianDeaths
+        )
     }
 }

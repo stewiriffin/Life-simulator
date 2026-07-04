@@ -1,6 +1,8 @@
 // app/src/main/java/com/maisha/game/domain/EducationEngine.kt
 package com.maisha.game.domain
 
+import com.maisha.game.data.CountryCatalog
+import com.maisha.game.data.EconomyScaler
 import com.maisha.game.data.model.Character
 import com.maisha.game.data.model.EducationState
 import com.maisha.game.data.model.EventChoice
@@ -9,15 +11,27 @@ import com.maisha.game.data.model.ExamType
 import com.maisha.game.data.model.LifeEvent
 import com.maisha.game.data.model.SchoolStage
 import com.maisha.game.data.model.StudyEffort
+import com.maisha.game.data.model.VisaType
 import com.maisha.game.util.clampGpa
 import com.maisha.game.util.clampStat
+import com.maisha.game.util.formatMoney
 import javax.inject.Inject
 import javax.inject.Singleton
 import kotlin.math.roundToInt
 import kotlin.random.Random
 
+sealed class DrivingTestResult {
+    data class Passed(val character: Character) : DrivingTestResult()
+    data class Failed(val character: Character) : DrivingTestResult()
+    data object TooYoung : DrivingTestResult()
+    data object AlreadyLicensed : DrivingTestResult()
+    data object InsufficientFunds : DrivingTestResult()
+}
+
 @Singleton
-class EducationEngine @Inject constructor() {
+class EducationEngine @Inject constructor(
+    private val relocationEngine: RelocationEngine
+) {
 
     /**
      * Auto-enrolls at primary (age 6) or secondary (age 14 after KCPE pass). Skips if [EducationState.expelled].
@@ -173,18 +187,92 @@ class EducationEngine @Inject constructor() {
         return updatedCharacter to ExamResult(passed = passed, grade = grade, score = score)
     }
 
-    /** Enrolls in university with [course] if [isEligibleForUniversity]; otherwise returns character unchanged. */
-    fun applyToUniversity(character: Character, course: String): Character {
+    /**
+     * Driving test for adults (18+). Fee is economy-scaled; pass chance is driven mainly by smarts.
+     */
+    fun takeDrivingTest(character: Character): DrivingTestResult {
+        if (character.hasDrivingLicense) return DrivingTestResult.AlreadyLicensed
+        if (character.age < MIN_DRIVING_AGE) return DrivingTestResult.TooYoung
+        val fee = drivingTestFee(character.countryCode)
+        if (character.stats.money < fee) return DrivingTestResult.InsufficientFunds
+
+        val afterFee = character.copy(
+            stats = character.stats.copy(money = character.stats.money - fee)
+        )
+        val passChance = (0.25f + character.stats.smarts / 100f * 0.65f).coerceIn(0.20f, 0.95f)
+        return if (Random.nextFloat() < passChance) {
+            DrivingTestResult.Passed(
+                afterFee.copy(
+                    hasDrivingLicense = true,
+                    eventLog = EventLogCap.prepend(
+                        afterFee.eventLog,
+                        "You passed the driving test (${formatMoney(fee, character.countryCode)} fee)."
+                    )
+                )
+            )
+        } else {
+            DrivingTestResult.Failed(
+                afterFee.copy(
+                    eventLog = EventLogCap.prepend(
+                        afterFee.eventLog,
+                        "You failed the driving test. The ${formatMoney(fee, character.countryCode)} fee is gone."
+                    )
+                )
+            )
+        }
+    }
+
+    fun drivingTestFee(countryCode: String): Int =
+        EconomyScaler.scaleAmount(DRIVING_TEST_FEE_KENYA, countryCode)
+
+    fun drivingTestPassChance(character: Character): Float =
+        (0.25f + character.stats.smarts / 100f * 0.65f).coerceIn(0.20f, 0.95f)
+
+    /**
+     * Enrolls in university with [course] if [isEligibleForUniversity].
+     * When [universityCountryCode] differs from residence and the character is not a citizen there,
+     * relocates with a [VisaType.STUDENT] visa and charges international tuition.
+     */
+    fun applyToUniversity(
+        character: Character,
+        course: String,
+        universityCountryCode: String = character.countryCode
+    ): Character {
         if (!isEligibleForUniversity(character)) return character
         if (character.education.droppedOutFrom == SchoolStage.UNIVERSITY) return character
-        return character.copy(
-            education = character.education.copy(
+
+        val studyAbroad = universityCountryCode != character.countryCode &&
+            !character.holdsCitizenship(universityCountryCode)
+
+        var enrolled = character
+        if (studyAbroad) {
+            val destination = CountryCatalog.getCountry(universityCountryCode)
+            enrolled = relocationEngine.relocate(enrolled, destination, VisaType.STUDENT)
+            val tuition = internationalTuitionCost(universityCountryCode)
+            enrolled = enrolled.copy(
+                stats = enrolled.stats.copy(
+                    money = enrolled.stats.money - tuition
+                ),
+                eventLog = listOf(
+                    "You enrolled as an international student in ${destination.displayName}. " +
+                        "Tuition and visa fees hit hard."
+                ) + enrolled.eventLog
+            )
+        }
+
+        return enrolled.copy(
+            education = enrolled.education.copy(
                 stage = SchoolStage.UNIVERSITY,
                 currentGrade = 1,
                 courseOfStudy = course,
-                schoolName = universityNameFor(character.countryCode)
+                schoolName = universityNameFor(universityCountryCode)
             )
         )
+    }
+
+    fun internationalTuitionCost(universityCountryCode: String): Int {
+        val base = EconomyScaler.scaleAmount(DOMESTIC_TUITION_KENYA, universityCountryCode)
+        return (base * INTERNATIONAL_STUDENT_MULTIPLIER).roundToInt()
     }
 
     /** True when KCSE letter grade maps to at least [UNIVERSITY_MIN_POINTS]. */
@@ -422,6 +510,8 @@ class EducationEngine @Inject constructor() {
         const val KCPE_RESULT_EVENT_ID = "kcpe_results_system"
         const val KCSE_RESULT_EVENT_ID = "kcse_results_system"
         const val EXAM_SYSTEM_TAG = "exam_system"
+        const val MIN_DRIVING_AGE = 18
+        const val DRIVING_TEST_FEE_KENYA = 12_000
 
         private const val PRIMARY_ENROLL_AGE = 6
         private const val SECONDARY_ENROLL_AGE = 14
@@ -433,6 +523,9 @@ class EducationEngine @Inject constructor() {
         private const val KCPE_PASS_SCORE = 50f
         private const val KCSE_PASS_SCORE = 45f
         private const val UNIVERSITY_MIN_POINTS = 7 // C+ equivalent
+        private const val DOMESTIC_TUITION_KENYA = 80_000
+        /** International students pay this multiplier on local tuition. */
+        const val INTERNATIONAL_STUDENT_MULTIPLIER = 3.5
 
         private val PRIMARY_SCHOOLS_KE = listOf(
             "Mwiki Primary",

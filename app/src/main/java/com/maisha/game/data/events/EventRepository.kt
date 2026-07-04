@@ -15,9 +15,13 @@ import com.maisha.game.domain.FinanceEngine
 import com.maisha.game.domain.RelationshipEngine
 import com.maisha.game.domain.RelocationEngine
 import com.maisha.game.domain.BusinessEngine
+import com.maisha.game.domain.PoliticsEngine
 import com.maisha.game.domain.SkillEngine
 import com.maisha.game.domain.SocialMediaEngine
+import com.maisha.game.domain.hasBestFriend
 import com.maisha.game.domain.hasChild
+import com.maisha.game.domain.hasEnemy
+import com.maisha.game.domain.hasFriend
 import com.maisha.game.domain.hasMixedHeritageChild
 import com.maisha.game.domain.hasMixedHeritageContext
 import com.maisha.game.domain.hasPet
@@ -122,12 +126,16 @@ class EventRepository private constructor(
                 EducationEngine.EXAM_SYSTEM_TAG !in event.tags &&
                 CareerEngine.CAREER_SYSTEM_TAG !in event.tags &&
                 RelocationEngine.RELOCATION_SYSTEM_TAG !in event.tags &&
+                PoliticsEngine.POLITICS_SYSTEM_TAG !in event.tags &&
                 passesFinanceGate(event, character) &&
                 passesRelationshipGate(event, character) &&
                 passesPetGate(event, character) &&
                 passesSocialMediaGate(event, character) &&
                 passesSkillGate(event, character) &&
                 passesBusinessGate(event, character) &&
+                passesOfficeGate(event, character) &&
+                passesMilitaryGate(event, character) &&
+                passesVehicleGate(event, character) &&
                 passesCountryGate(event, character) &&
                 passesRelocationGate(event, character) &&
                 passesExpatGate(event, character) &&
@@ -166,14 +174,17 @@ class EventRepository private constructor(
     private fun passesRelocationGate(event: LifeEvent, character: Character?): Boolean {
         if (RelocationEngine.REQUIRES_RELOCATION_TAG !in event.tags) return true
         if (character == null) return false
-        return character.relocationCount > 0 ||
-            character.birthCountryCode != character.countryCode
+        return character.relocationCount > 0 || character.isLivingAbroad()
     }
 
     private fun passesExpatGate(event: LifeEvent, character: Character?): Boolean {
-        if (RelocationEngine.REQUIRES_EXPAT_TAG !in event.tags) return true
+        if (RelocationEngine.REQUIRES_EXPAT_TAG !in event.tags &&
+            RelocationEngine.REQUIRES_NON_CITIZEN_TAG !in event.tags
+        ) {
+            return true
+        }
         if (character == null) return false
-        return character.birthCountryCode != character.countryCode
+        return character.isLivingAbroad()
     }
 
     private fun passesCountryGate(event: LifeEvent, character: Character?): Boolean {
@@ -192,7 +203,10 @@ class EventRepository private constructor(
             RelationshipEngine.REQUIRES_CHILD_TODDLER_TAG,
             RelationshipEngine.REQUIRES_CHILD_PRIMARY_TAG,
             RelationshipEngine.REQUIRES_CHILD_TEEN_TAG,
-            RelationshipEngine.REQUIRES_SINGLE_TAG
+            RelationshipEngine.REQUIRES_SINGLE_TAG,
+            RelationshipEngine.REQUIRES_FRIEND_TAG,
+            RelationshipEngine.REQUIRES_BEST_FRIEND_TAG,
+            RelationshipEngine.REQUIRES_ENEMY_TAG
         )
         val hasRequirements = event.tags.any { it in requirementTags }
         if (RelationshipEngine.RELATIONSHIP_TAG !in event.tags && !hasRequirements) return true
@@ -244,6 +258,15 @@ class EventRepository private constructor(
         if (RelationshipEngine.REQUIRES_SINGLE_TAG in event.tags && character.hasSpouse()) {
             return false
         }
+        if (RelationshipEngine.REQUIRES_FRIEND_TAG in event.tags && !character.hasFriend()) {
+            return false
+        }
+        if (RelationshipEngine.REQUIRES_BEST_FRIEND_TAG in event.tags && !character.hasBestFriend()) {
+            return false
+        }
+        if (RelationshipEngine.REQUIRES_ENEMY_TAG in event.tags && !character.hasEnemy()) {
+            return false
+        }
         return true
     }
 
@@ -275,9 +298,41 @@ class EventRepository private constructor(
         return character.businesses.isNotEmpty()
     }
 
-    private fun passesFinanceGate(event: LifeEvent, character: Character?): Boolean {
-        if (FinanceEngine.FINANCE_TAG !in event.tags) return true
+    private fun passesOfficeGate(event: LifeEvent, character: Character?): Boolean {
+        if (PoliticsEngine.REQUIRES_OFFICE_TAG !in event.tags) return true
         if (character == null) return false
+        return character.politics.currentOffice != null
+    }
+
+    private fun passesMilitaryGate(event: LifeEvent, character: Character?): Boolean {
+        if (CareerEngine.REQUIRES_MILITARY_TAG !in event.tags) return true
+        if (character == null) return false
+        return character.career.currentJob?.isMilitary == true
+    }
+
+    private fun passesVehicleGate(event: LifeEvent, character: Character?): Boolean {
+        if (CareerEngine.REQUIRES_VEHICLE_TAG !in event.tags) return true
+        if (character == null) return false
+        return character.assets.any {
+            it.type == com.maisha.game.data.model.AssetType.CAR ||
+                it.type == com.maisha.game.data.model.AssetType.MOTORBIKE
+        }
+    }
+
+    private fun passesFinanceGate(event: LifeEvent, character: Character?): Boolean {
+        if (FinanceEngine.FINANCE_TAG !in event.tags &&
+            FinanceEngine.REQUIRES_RENTAL_TAG !in event.tags &&
+            FinanceEngine.REQUIRES_PORTFOLIO_TAG !in event.tags
+        ) {
+            return true
+        }
+        if (character == null) return false
+        if (FinanceEngine.REQUIRES_RENTAL_TAG in event.tags) {
+            return financeEngine.ownsRentedProperty(character)
+        }
+        if (FinanceEngine.REQUIRES_PORTFOLIO_TAG in event.tags) {
+            return financeEngine.hasPortfolio(character)
+        }
         return financeEngine.meetsFinanceEventThreshold(character)
     }
 
@@ -291,16 +346,38 @@ class EventRepository private constructor(
         }
     }
 
-    fun pickRandomEvent(eligible: List<LifeEvent>): LifeEvent? {
+    fun pickRandomEvent(
+        eligible: List<LifeEvent>,
+        character: Character? = null
+    ): LifeEvent? {
         if (eligible.isEmpty()) return null
-        val totalWeight = eligible.sumOf { it.weight }
+        val weights = eligible.map { effectiveWeight(it, character) }
+        val totalWeight = weights.sum()
         if (totalWeight <= 0) return eligible.random()
         var roll = Random.nextInt(totalWeight)
-        for (event in eligible) {
-            roll -= event.weight
+        eligible.forEachIndexed { index, event ->
+            roll -= weights[index]
             if (roll < 0) return event
         }
         return eligible.last()
+    }
+
+    /**
+     * Karma biases event selection: high karma favors [POSITIVE_TAG], low karma favors [NEGATIVE_TAG].
+     */
+    fun effectiveWeight(event: LifeEvent, character: Character?): Int {
+        val base = event.weight.coerceAtLeast(1)
+        val karma = character?.stats?.karma ?: 50
+        val positive = POSITIVE_TAG in event.tags
+        val negative = NEGATIVE_TAG in event.tags
+        val multiplier = when {
+            karma > HIGH_KARMA_THRESHOLD && positive -> 1.5f
+            karma > HIGH_KARMA_THRESHOLD && negative -> 0.65f
+            karma < LOW_KARMA_THRESHOLD && negative -> 1.5f
+            karma < LOW_KARMA_THRESHOLD && positive -> 0.65f
+            else -> 1f
+        }
+        return (base * multiplier).toInt().coerceAtLeast(1)
     }
 
     companion object {
@@ -312,6 +389,10 @@ class EventRepository private constructor(
         const val ONE_TIME_TAG = "one_time"
         const val STUDY_EFFORT_TAG = "study_effort"
         const val WORK_EFFORT_TAG = "work_effort"
+        const val POSITIVE_TAG = "positive"
+        const val NEGATIVE_TAG = "negative"
+        const val HIGH_KARMA_THRESHOLD = 80
+        const val LOW_KARMA_THRESHOLD = 20
         private const val CHILD_SCHOOL_MIN_AGE = 5
         private const val CHILD_SCHOOL_MAX_AGE = 7
         private const val HOLIDAY_COOLDOWN_YEARS = 3

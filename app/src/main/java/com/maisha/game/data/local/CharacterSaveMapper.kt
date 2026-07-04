@@ -17,6 +17,8 @@ import com.maisha.game.data.model.Business
 import com.maisha.game.data.model.SkillProgress
 import com.maisha.game.data.model.SocialMediaState
 import com.maisha.game.data.model.Stats
+import com.maisha.game.data.model.PoliticalState
+import com.maisha.game.data.model.VisaType
 import com.maisha.game.util.SerializationUtils
 
 sealed class SavedGameLoadResult {
@@ -129,6 +131,29 @@ internal object CharacterSaveMapper {
                 default = emptyList<Business>(),
                 slotId = slotId
             )
+            val politics = SerializationUtils.safeDeserialize(
+                entity.politicsJson,
+                fieldName = "politics",
+                default = PoliticalState(),
+                slotId = slotId
+            )
+            val will = entity.willJson?.let { json ->
+                SerializationUtils.safeDeserialize(
+                    json,
+                    fieldName = "will",
+                    default = emptyMap<String, Int>(),
+                    slotId = slotId
+                ).takeIf { it.isNotEmpty() }
+            }
+            val citizenships = SerializationUtils.safeDeserialize(
+                entity.citizenshipsJson,
+                fieldName = "citizenships",
+                default = emptyList<String>(),
+                slotId = slotId
+            ).ifEmpty { listOf(entity.birthCountryCode) }
+            val currentVisa = entity.currentVisa?.let { visaName ->
+                runCatching { VisaType.valueOf(visaName) }.getOrNull()
+            }
             SavedGameLoadResult.Success(
                 SavedGame(
                     character = Character(
@@ -140,13 +165,21 @@ internal object CharacterSaveMapper {
                             happiness = entity.happiness,
                             smarts = entity.smarts,
                             looks = entity.looks,
-                            money = entity.money
+                            money = entity.money,
+                            karma = entity.karma.coerceIn(0, 100)
                         ),
                         birthYear = entity.birthYear,
                         alive = entity.alive,
                         countryCode = entity.countryCode,
                         birthCountryCode = entity.birthCountryCode,
                         secondaryCountryCode = entity.secondaryCountryCode,
+                        citizenships = citizenships,
+                        currentVisa = currentVisa,
+                        visaYearsRemaining = entity.visaYearsRemaining.coerceAtLeast(0),
+                        hasDrivingLicense = entity.hasDrivingLicense,
+                        will = will,
+                        investmentPortfolioValue = entity.investmentPortfolioValue.coerceAtLeast(0),
+                        lastPortfolioReturnPercent = entity.lastPortfolioReturnPercent,
                         relocationCount = entity.relocationCount,
                         yearsInCurrentCountry = entity.yearsInCurrentCountry,
                         lastRelocationAge = entity.lastRelocationAge,
@@ -166,7 +199,8 @@ internal object CharacterSaveMapper {
                         lifestyle = lifestyle,
                         socialMedia = socialMedia,
                         skills = skills,
-                        businesses = businesses
+                        businesses = businesses,
+                        politics = politics
                     ),
                     triggeredEventIds = triggeredIds.toSet()
                 )

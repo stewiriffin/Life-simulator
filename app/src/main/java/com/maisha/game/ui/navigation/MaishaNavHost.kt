@@ -260,10 +260,18 @@ fun MaishaNavHost(
                 onStartBusiness = viewModel::onStartBusiness,
                 onSellBusiness = viewModel::onSellBusiness,
                 businessInvestmentTiers = viewModel.businessInvestmentTiers(),
+                onLaunchCampaign = viewModel::onLaunchCampaign,
+                onPassTaxPolicy = viewModel::onPassTaxPolicy,
                 onCareerMessageDismissed = viewModel::onCareerMessageDismissed,
                 onPurchaseAsset = viewModel::onPurchaseAsset,
                 onSellAsset = viewModel::onSellAsset,
                 onRepairAsset = viewModel::onRepairAsset,
+                onRentOutProperty = viewModel::onRentOutProperty,
+                onEvictTenant = viewModel::onEvictTenant,
+                onSaveWill = viewModel::onSaveWill,
+                willBeneficiaries = viewModel.willBeneficiaries(),
+                onInvestFunds = viewModel::onInvestFunds,
+                onWithdrawFunds = viewModel::onWithdrawFunds,
                 onAssetsMessageDismissed = viewModel::onAssetsMessageDismissed,
                 onAttemptCrime = viewModel::onAttemptCrime,
                 onGoToTrial = viewModel::onGoToTrial,
@@ -281,6 +289,12 @@ fun MaishaNavHost(
                 onMonetizeSocialAccount = viewModel::onMonetizeSocialAccount,
                 onPracticeSkill = viewModel::onPracticeSkill,
                 onTakeMasterclass = viewModel::onTakeMasterclass,
+                onRenewVisa = viewModel::onRenewVisa,
+                onApplyForCitizenship = viewModel::onApplyForCitizenship,
+                onTakeDrivingTest = viewModel::onTakeDrivingTest,
+                onVolunteer = viewModel::onVolunteer,
+                onDonateToCharity = viewModel::onDonateToCharity,
+                donationTiers = viewModel.donationTiers(),
                 onActionMessageDismissed = viewModel::onActionMessageDismissed,
                 onViewCharacterStats = {
                     navController.navigate(Routes.characterStats(slotId))
@@ -291,7 +305,8 @@ fun MaishaNavHost(
                 onStatDeltaFinished = viewModel::onStatDeltaFinished,
                 onFeedbackHandled = viewModel::onFeedbackHandled,
                 onDismissFamilyDatingTip = viewModel::onDismissFamilyDatingTip,
-                onDismissFamilyDetailTip = viewModel::onDismissFamilyDetailTip
+                onDismissFamilyDetailTip = viewModel::onDismissFamilyDetailTip,
+                onThrowParty = viewModel::onThrowParty
             )
 
             NotificationPermissionEffect(

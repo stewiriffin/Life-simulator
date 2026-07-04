@@ -1,11 +1,28 @@
 package com.maisha.game.data
 
+import com.maisha.game.data.model.LifeEvent
+import com.maisha.game.data.model.LifeEventList
+import kotlinx.serialization.json.Json
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Test
+import java.io.File
 
 class CountryCatalogContentTest {
+
+    private val json = Json { ignoreUnknownKeys = true }
+
+    private val eventAssetPaths = listOf(
+        "data/events/starter_events.json",
+        "data/events/education_events.json",
+        "data/events/career_events.json",
+        "data/events/finance_events.json",
+        "data/events/relationship_events.json",
+        "data/events/general_events.json",
+        "data/events/holiday_events.json",
+        "data/events/crime_events.json"
+    )
 
     @Test
     fun `Kenya job pool includes matatu conductor`() {
@@ -42,10 +59,41 @@ class CountryCatalogContentTest {
     }
 
     @Test
-    fun `Canada asset catalog is universal naming`() {
+    fun `Canada asset catalog includes downtown condo`() {
         val assets = AssetCatalog.getAssetsForCountry("CA")
-        assertFalse(AssetCatalog.hasCountryFlavorAssets("CA"))
-        assertTrue(assets.any { it.name == "Studio Apartment" })
+        assertTrue(AssetCatalog.hasCountryFlavorAssets("CA"))
+        assertTrue(assets.any { it.name == "Downtown Condo" })
+        assertTrue(assets.any { it.name == "Suburban Bungalow" })
+    }
+
+    @Test
+    fun `Japan US and UK exclusive housing listings are country-gated`() {
+        assertTrue(AssetCatalog.getAssetsForCountry("JP").any { it.name == "Tokyo Micro-Apartment" })
+        assertTrue(AssetCatalog.getAssetsForCountry("US").any { it.name == "Suburban American Home" })
+        assertTrue(AssetCatalog.getAssetsForCountry("GB").any { it.name == "London Flat" })
+        assertFalse(AssetCatalog.getAssetsForCountry("KE").any { it.name == "Tokyo Micro-Apartment" })
+        assertFalse(AssetCatalog.getAssetsForCountry("FR").any { it.name == "London Flat" })
+    }
+
+    @Test
+    fun `every roster country has at least 3 restrictedToCountry events`() {
+        val events = loadAllEvents()
+        CountryCatalog.all().forEach { country ->
+            val count = events.count { it.restrictedToCountry == country.code }
+            assertTrue(
+                "${country.code} has only $count restricted events (need >= 3)",
+                count >= 3
+            )
+        }
+    }
+
+    private fun loadAllEvents(): List<LifeEvent> =
+        eventAssetPaths.flatMap { path -> loadEventsFromAsset(path) }
+
+    private fun loadEventsFromAsset(relativePath: String): List<LifeEvent> {
+        val file = File("src/main/assets/$relativePath")
+        assertTrue("Missing asset $relativePath at ${file.absolutePath}", file.exists())
+        return json.decodeFromString<LifeEventList>(file.readText()).events
     }
 
     @Test

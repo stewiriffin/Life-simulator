@@ -6,6 +6,7 @@ import com.maisha.game.data.model.Character
 import com.maisha.game.data.model.Gender
 import com.maisha.game.data.model.HealthCondition
 import com.maisha.game.data.model.CriminalRecord
+import com.maisha.game.data.model.MilestoneKind
 import com.maisha.game.data.model.Person
 import com.maisha.game.data.model.RelationType
 import com.maisha.game.data.model.Stats
@@ -208,5 +209,64 @@ class LegacyEngineTest {
         assertTrue(
             legacy.eventLog.any { it.contains("heirloom", ignoreCase = true) }
         )
+    }
+
+    @Test
+    fun createLegacyCharacter_distributesEstateAccordingToCustomWill() {
+        val heir = TestFixtures.child("heir", age = 22, relationship = 70)
+        val sibling = TestFixtures.child("sibling", age = 20, relationship = 65)
+        val spouse = Person(
+            id = "spouse",
+            name = "Spouse",
+            relation = RelationType.SPOUSE,
+            gender = Gender.FEMALE,
+            age = 50,
+            isMarried = true
+        )
+        val deceased = Character(
+            name = "Parent",
+            age = 60,
+            gender = Gender.MALE,
+            stats = Stats(money = 200_000),
+            birthYear = 1965,
+            alive = false,
+            family = listOf(heir, sibling, spouse),
+            will = mapOf(
+                "heir" to 70,
+                "sibling" to 20,
+                "spouse" to 10
+            )
+        )
+
+        val legacy = engine.createLegacyCharacter(deceased, heir)
+        assertEquals(140_000, legacy.stats.money)
+        assertTrue(legacy.eventLog.any { it.contains("will", ignoreCase = true) })
+    }
+
+    @Test
+    fun createLegacyCharacter_appliesGrudgeToChildExcludedFromWill() {
+        val heir = TestFixtures.child("heir", age = 22, relationship = 70)
+        val excluded = TestFixtures.child("excluded", age = 20, relationship = 80)
+        val deceased = Character(
+            name = "Parent",
+            age = 60,
+            gender = Gender.MALE,
+            stats = Stats(money = 100_000),
+            birthYear = 1965,
+            alive = false,
+            family = listOf(heir, excluded),
+            will = mapOf(
+                "heir" to 100,
+                "excluded" to 0
+            )
+        )
+
+        val legacy = engine.createLegacyCharacter(deceased, heir)
+        assertEquals(100_000, legacy.stats.money)
+        val sibling = legacy.family.first { it.id == "excluded" }
+        assertEquals(RelationType.SIBLING, sibling.relation)
+        assertEquals(80 - LegacyEngine.GRUDGE_RELATIONSHIP_PENALTY, sibling.relationshipLevel)
+        assertTrue(sibling.milestones.any { it.kind == MilestoneKind.GRUDGE.name })
+        assertTrue(legacy.eventLog.any { it.contains("grudge", ignoreCase = true) })
     }
 }

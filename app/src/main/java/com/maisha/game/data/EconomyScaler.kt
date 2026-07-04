@@ -1,10 +1,14 @@
-// app/src/main/java/com/maisha/game/data/EconomyScaler.kt (new)
+// app/src/main/java/com/maisha/game/data/EconomyScaler.kt
 package com.maisha.game.data
+
+import com.maisha.game.data.model.TaxPolicyType
 
 /**
  * Simplified local-currency scaling — not real exchange rates or economic modeling.
  * Base amounts are authored in Kenya-scale units; each country gets a rough multiplier
  * so salaries and prices feel plausible in that country's displayed currency.
+ *
+ * Political [TaxPolicyType] levers adjust business revenue and one-time wealth hits.
  */
 object EconomyScaler {
 
@@ -40,6 +44,19 @@ object EconomyScaler {
             else -> 1.0
         }
         return scaleAmount((baseKenyaAmount * ageMultiplier).toInt().coerceAtLeast(1), countryCode)
+    }
+
+    /** Multiplier applied to business revenue while a tax policy is active. */
+    fun policyBusinessRevenueMultiplier(policy: TaxPolicyType?): Float = when (policy) {
+        TaxPolicyType.TAX_CUTS -> 1.12f
+        TaxPolicyType.WEALTH_TAX -> 0.90f
+        null -> 1.0f
+    }
+
+    /** Fraction of liquid cash seized when enacting a wealth tax (one-time). */
+    fun policyWealthTaxCashFraction(policy: TaxPolicyType?): Float = when (policy) {
+        TaxPolicyType.WEALTH_TAX -> 0.05f
+        else -> 0f
     }
 }
 

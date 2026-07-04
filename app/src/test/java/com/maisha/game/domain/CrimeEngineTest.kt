@@ -14,7 +14,7 @@ import org.junit.Test
 class CrimeEngineTest {
 
     private val engine = CrimeEngine()
-    private val careerEngine = CareerEngine(HealthEngine())
+    private val careerEngine = CareerEngine(HealthEngine(), RelocationEngine())
 
     @Test
     fun crimeTypes_produceDifferentSentenceLengthsWhenCaught() {

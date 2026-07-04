@@ -24,13 +24,14 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import java.util.Calendar
+import java.util.Locale
 import javax.inject.Inject
 import kotlin.random.Random
 
 data class CharacterCreationUiState(
     val name: String = "",
     val selectedGender: Gender = Gender.MALE,
-    val selectedCountryCode: String = "KE",
+    val selectedCountryCode: String = CountryCatalog.all().first().code,
     val countrySearchQuery: String = "",
     val avatarConfig: AvatarConfig = AvatarConfig.random(),
     val nameError: String? = null,
@@ -53,7 +54,9 @@ class CharacterCreationViewModel @Inject constructor(
         ?.takeIf { it in 0 until MAX_SLOTS }
         ?: 0
 
-    private val _uiState = MutableStateFlow(CharacterCreationUiState())
+    private val _uiState = MutableStateFlow(
+        CharacterCreationUiState(selectedCountryCode = resolveDefaultCountryCode())
+    )
     val uiState: StateFlow<CharacterCreationUiState> = _uiState.asStateFlow()
 
     init {
@@ -65,6 +68,17 @@ class CharacterCreationViewModel @Inject constructor(
                 }
             }
         }
+    }
+
+    /**
+     * Prefer the device locale country when it is in the 15-country roster;
+     * otherwise pick a random roster country so Kenya is not always the default.
+     */
+    private fun resolveDefaultCountryCode(): String {
+        val rosterCodes = CountryCatalog.all().map { it.code }
+        val deviceCountry = Locale.getDefault().country.uppercase(Locale.US)
+        if (deviceCountry in rosterCodes) return deviceCountry
+        return rosterCodes.random()
     }
 
     fun filteredCountries() = CountryCatalog.search(_uiState.value.countrySearchQuery)
@@ -142,6 +156,7 @@ class CharacterCreationViewModel @Inject constructor(
                 alive = true,
                 countryCode = state.selectedCountryCode,
                 birthCountryCode = state.selectedCountryCode,
+                citizenships = listOf(state.selectedCountryCode),
                 avatarConfig = state.avatarConfig,
                 eventLog = emptyList(),
                 family = familyGenerator.generateFamily(

@@ -143,11 +143,19 @@ class CharacterRepository @Inject constructor(
             smarts = stats.smarts,
             looks = stats.looks,
             money = stats.money,
+            karma = stats.karma,
             birthYear = birthYear,
             alive = alive,
             countryCode = countryCode,
             birthCountryCode = birthCountryCode,
             secondaryCountryCode = secondaryCountryCode,
+            citizenshipsJson = json.encodeToString(passportsHeld()),
+            currentVisa = currentVisa?.name,
+            visaYearsRemaining = visaYearsRemaining,
+            hasDrivingLicense = hasDrivingLicense,
+            willJson = will?.let { json.encodeToString(it) },
+            investmentPortfolioValue = investmentPortfolioValue,
+            lastPortfolioReturnPercent = lastPortfolioReturnPercent,
             relocationCount = relocationCount,
             yearsInCurrentCountry = yearsInCurrentCountry,
             lastRelocationAge = lastRelocationAge,
@@ -168,7 +176,8 @@ class CharacterRepository @Inject constructor(
             lifestyleJson = json.encodeToString(lifestyle),
             socialMediaJson = json.encodeToString(socialMedia),
             skillsJson = json.encodeToString(skills),
-            businessesJson = json.encodeToString(businesses)
+            businessesJson = json.encodeToString(businesses),
+            politicsJson = json.encodeToString(politics)
         )
     }
 }

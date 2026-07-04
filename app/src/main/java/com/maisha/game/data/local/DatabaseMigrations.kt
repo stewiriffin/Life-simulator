@@ -224,6 +224,69 @@ internal object DatabaseMigrations {
         }
     }
 
+    private val MIGRATION_19_20 = object : Migration(19, 20) {
+        override fun migrate(db: SupportSQLiteDatabase) {
+            db.execSQL(
+                "ALTER TABLE character_save ADD COLUMN citizenshipsJson TEXT NOT NULL DEFAULT '[]'"
+            )
+            db.execSQL(
+                "ALTER TABLE character_save ADD COLUMN currentVisa TEXT"
+            )
+            db.execSQL(
+                "ALTER TABLE character_save ADD COLUMN visaYearsRemaining INTEGER NOT NULL DEFAULT 0"
+            )
+            // Seed passports from birth country for existing lives.
+            db.execSQL(
+                """
+                UPDATE character_save
+                SET citizenshipsJson = '["' || birthCountryCode || '"]'
+                WHERE citizenshipsJson = '[]' OR citizenshipsJson = ''
+                """.trimIndent()
+            )
+        }
+    }
+
+    private val MIGRATION_20_21 = object : Migration(20, 21) {
+        override fun migrate(db: SupportSQLiteDatabase) {
+            db.execSQL(
+                "ALTER TABLE character_save ADD COLUMN politicsJson TEXT NOT NULL DEFAULT '{}'"
+            )
+        }
+    }
+
+    private val MIGRATION_21_22 = object : Migration(21, 22) {
+        override fun migrate(db: SupportSQLiteDatabase) {
+            db.execSQL(
+                "ALTER TABLE character_save ADD COLUMN hasDrivingLicense INTEGER NOT NULL DEFAULT 0"
+            )
+        }
+    }
+
+    private val MIGRATION_22_23 = object : Migration(22, 23) {
+        override fun migrate(db: SupportSQLiteDatabase) {
+            db.execSQL(
+                "ALTER TABLE character_save ADD COLUMN karma INTEGER NOT NULL DEFAULT 50"
+            )
+        }
+    }
+
+    private val MIGRATION_23_24 = object : Migration(23, 24) {
+        override fun migrate(db: SupportSQLiteDatabase) {
+            db.execSQL("ALTER TABLE character_save ADD COLUMN willJson TEXT")
+        }
+    }
+
+    private val MIGRATION_24_25 = object : Migration(24, 25) {
+        override fun migrate(db: SupportSQLiteDatabase) {
+            db.execSQL(
+                "ALTER TABLE character_save ADD COLUMN investmentPortfolioValue INTEGER NOT NULL DEFAULT 0"
+            )
+            db.execSQL(
+                "ALTER TABLE character_save ADD COLUMN lastPortfolioReturnPercent INTEGER NOT NULL DEFAULT 0"
+            )
+        }
+    }
+
     val ALL: Array<Migration> = arrayOf(
         MIGRATION_1_2,
         MIGRATION_2_3,
@@ -242,6 +305,12 @@ internal object DatabaseMigrations {
         MIGRATION_15_16,
         MIGRATION_16_17,
         MIGRATION_17_18,
-        MIGRATION_18_19
+        MIGRATION_18_19,
+        MIGRATION_19_20,
+        MIGRATION_20_21,
+        MIGRATION_21_22,
+        MIGRATION_22_23,
+        MIGRATION_23_24,
+        MIGRATION_24_25
     )
 }

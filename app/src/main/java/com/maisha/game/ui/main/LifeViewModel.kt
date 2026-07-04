@@ -546,6 +546,146 @@ class LifeViewModel @Inject constructor(
         }
     }
 
+    fun willBeneficiaries(): List<com.maisha.game.data.model.Person> {
+        val character = _uiState.value.character ?: return emptyList()
+        return gameEngine.willBeneficiaries(character)
+    }
+
+    fun onInvestFunds(amount: Int) {
+        val character = _uiState.value.character ?: return
+        if (!character.alive) return
+        viewModelScope.launch {
+            when (val result = gameEngine.investFunds(character, amount)) {
+                is FinanceEngine.InvestmentResult.Success -> {
+                    persist(result.character)
+                    processMidLifeAchievements(result.character)
+                    _uiState.update {
+                        it.copy(
+                            character = result.character,
+                            assetsMessage = context.getString(R.string.msg_invest_success),
+                            netWorth = financeEngine.calculateNetWorth(result.character)
+                        )
+                    }
+                }
+                is FinanceEngine.InvestmentResult.InsufficientFunds -> {
+                    _uiState.update {
+                        it.copy(assetsMessage = context.getString(R.string.msg_invest_cannot_afford))
+                    }
+                }
+                is FinanceEngine.InvestmentResult.InvalidAmount -> {
+                    _uiState.update {
+                        it.copy(assetsMessage = context.getString(R.string.msg_invest_cannot_afford))
+                    }
+                }
+            }
+        }
+    }
+
+    fun onWithdrawFunds(amount: Int) {
+        val character = _uiState.value.character ?: return
+        if (!character.alive) return
+        viewModelScope.launch {
+            when (val result = gameEngine.withdrawFunds(character, amount)) {
+                is FinanceEngine.InvestmentResult.Success -> {
+                    persist(result.character)
+                    _uiState.update {
+                        it.copy(
+                            character = result.character,
+                            assetsMessage = context.getString(R.string.msg_withdraw_success),
+                            netWorth = financeEngine.calculateNetWorth(result.character)
+                        )
+                    }
+                }
+                is FinanceEngine.InvestmentResult.InsufficientFunds -> {
+                    _uiState.update {
+                        it.copy(assetsMessage = context.getString(R.string.msg_withdraw_insufficient))
+                    }
+                }
+                is FinanceEngine.InvestmentResult.InvalidAmount -> {
+                    _uiState.update {
+                        it.copy(assetsMessage = context.getString(R.string.msg_withdraw_insufficient))
+                    }
+                }
+            }
+        }
+    }
+
+    fun onSaveWill(will: Map<String, Int>?) {
+        val character = _uiState.value.character ?: return
+        if (!character.alive) return
+        viewModelScope.launch {
+            val updated = runCatching { gameEngine.updateWill(character, will) }.getOrElse {
+                _uiState.update {
+                    it.copy(assetsMessage = context.getString(R.string.msg_will_invalid))
+                }
+                return@launch
+            }
+            persist(updated)
+            _uiState.update {
+                it.copy(
+                    character = updated,
+                    assetsMessage = context.getString(
+                        if (will == null) R.string.msg_will_cleared else R.string.msg_will_saved
+                    )
+                )
+            }
+        }
+    }
+
+    fun onRentOutProperty(assetId: String) {
+        val character = _uiState.value.character ?: return
+        if (!character.alive) return
+        viewModelScope.launch {
+            when (val result = gameEngine.rentOutProperty(character, assetId)) {
+                is FinanceEngine.RentalResult.Success -> {
+                    persist(result.character)
+                    processMidLifeAchievements(result.character)
+                    _uiState.update {
+                        it.copy(
+                            character = result.character,
+                            assetsMessage = context.getString(R.string.msg_property_rented),
+                            netWorth = financeEngine.calculateNetWorth(result.character)
+                        )
+                    }
+                }
+                else -> {
+                    _uiState.update {
+                        it.copy(assetsMessage = context.getString(R.string.msg_rent_out_failed))
+                    }
+                }
+            }
+        }
+    }
+
+    fun onEvictTenant(assetId: String) {
+        val character = _uiState.value.character ?: return
+        if (!character.alive) return
+        viewModelScope.launch {
+            when (val result = gameEngine.evictTenant(character, assetId)) {
+                is FinanceEngine.RentalResult.Success -> {
+                    persist(result.character)
+                    _uiState.update {
+                        it.copy(
+                            character = result.character,
+                            assetsMessage = context.getString(R.string.msg_tenant_evicted),
+                            netWorth = financeEngine.calculateNetWorth(result.character)
+                        )
+                    }
+                }
+                is FinanceEngine.RentalResult.InsufficientFunds -> {
+                    _uiState.update {
+                        it.copy(assetsMessage = context.getString(R.string.msg_evict_cannot_afford))
+                    }
+                }
+                else -> {
+                    _uiState.update {
+                        it.copy(assetsMessage = context.getString(R.string.msg_evict_failed))
+                    }
+                }
+            }
+        }
+    }
+
     fun onRepairAsset(assetId: String) {
         val character = _uiState.value.character ?: return
         if (!character.alive) return
@@ -1155,6 +1295,144 @@ class LifeViewModel @Inject constructor(
         }
     }
 
+    fun onLaunchCampaign(office: com.maisha.game.data.model.PoliticalOffice, investment: Int) {
+        val character = _uiState.value.character ?: return
+        viewModelScope.launch {
+            when (val result = gameEngine.launchCampaign(character, office, investment)) {
+                is com.maisha.game.domain.CampaignResult.Won -> {
+                    persist(result.character)
+                    processMidLifeAchievements(result.character)
+                    _uiState.update {
+                        it.copy(
+                            character = result.character,
+                            careerMessage = context.getString(R.string.msg_campaign_won),
+                            netWorth = financeEngine.calculateNetWorth(result.character)
+                        )
+                    }
+                }
+                is com.maisha.game.domain.CampaignResult.Lost -> {
+                    persist(result.character)
+                    _uiState.update {
+                        it.copy(
+                            character = result.character,
+                            careerMessage = context.getString(R.string.msg_campaign_lost),
+                            netWorth = financeEngine.calculateNetWorth(result.character)
+                        )
+                    }
+                }
+                is com.maisha.game.domain.CampaignResult.Failed -> {
+                    val message = when (result.reason) {
+                        com.maisha.game.domain.CampaignFailure.INSUFFICIENT_FUNDS ->
+                            context.getString(R.string.msg_campaign_cannot_afford)
+                        com.maisha.game.domain.CampaignFailure.ALREADY_IN_OFFICE ->
+                            context.getString(R.string.msg_campaign_already_in_office)
+                        com.maisha.game.domain.CampaignFailure.ALREADY_CAMPAIGNED ->
+                            context.getString(R.string.msg_campaign_already_this_year)
+                        else -> context.getString(R.string.msg_campaign_ineligible)
+                    }
+                    _uiState.update { it.copy(careerMessage = message) }
+                }
+            }
+        }
+    }
+
+    fun onPassTaxPolicy(type: com.maisha.game.data.model.TaxPolicyType) {
+        val character = _uiState.value.character ?: return
+        viewModelScope.launch {
+            when (val result = gameEngine.passTaxPolicy(character, type)) {
+                is FinanceEngine.TaxPolicyResult.Success -> {
+                    persist(result.character)
+                    processMidLifeAchievements(result.character)
+                    _uiState.update {
+                        it.copy(
+                            character = result.character,
+                            careerMessage = context.getString(R.string.msg_tax_policy_passed),
+                            netWorth = financeEngine.calculateNetWorth(result.character)
+                        )
+                    }
+                }
+                is FinanceEngine.TaxPolicyResult.AlreadyActive -> {
+                    _uiState.update {
+                        it.copy(careerMessage = context.getString(R.string.msg_tax_policy_already_active))
+                    }
+                }
+                is FinanceEngine.TaxPolicyResult.Ineligible -> {
+                    _uiState.update {
+                        it.copy(careerMessage = context.getString(R.string.msg_tax_policy_ineligible))
+                    }
+                }
+            }
+        }
+    }
+
+    fun onRenewVisa() {
+        val character = _uiState.value.character ?: return
+        viewModelScope.launch {
+            when (val result = gameEngine.renewVisa(character)) {
+                is com.maisha.game.domain.VisaRenewalResult.Success -> {
+                    persist(result.character)
+                    processMidLifeAchievements(result.character)
+                    _uiState.update {
+                        it.copy(
+                            character = result.character,
+                            actionMessage = context.getString(R.string.msg_visa_renewed),
+                            netWorth = financeEngine.calculateNetWorth(result.character)
+                        )
+                    }
+                }
+                is com.maisha.game.domain.VisaRenewalResult.CannotAfford -> {
+                    _uiState.update {
+                        it.copy(actionMessage = context.getString(R.string.msg_visa_cannot_afford))
+                    }
+                }
+                else -> {
+                    _uiState.update {
+                        it.copy(actionMessage = context.getString(R.string.msg_visa_ineligible))
+                    }
+                }
+            }
+        }
+    }
+
+    fun onApplyForCitizenship() {
+        val character = _uiState.value.character ?: return
+        viewModelScope.launch {
+            when (val result = gameEngine.applyForCitizenship(character)) {
+                is com.maisha.game.domain.CitizenshipApplicationResult.Success -> {
+                    persist(result.character)
+                    processMidLifeAchievements(result.character)
+                    _uiState.update {
+                        it.copy(
+                            character = result.character,
+                            actionMessage = context.getString(R.string.msg_citizenship_granted),
+                            netWorth = financeEngine.calculateNetWorth(result.character)
+                        )
+                    }
+                }
+                is com.maisha.game.domain.CitizenshipApplicationResult.FailedTest -> {
+                    persist(result.character)
+                    _uiState.update {
+                        it.copy(
+                            character = result.character,
+                            actionMessage = context.getString(R.string.msg_citizenship_failed_test),
+                            netWorth = financeEngine.calculateNetWorth(result.character)
+                        )
+                    }
+                }
+                is com.maisha.game.domain.CitizenshipApplicationResult.CannotAfford -> {
+                    _uiState.update {
+                        it.copy(actionMessage = context.getString(R.string.msg_citizenship_cannot_afford))
+                    }
+                }
+                is com.maisha.game.domain.CitizenshipApplicationResult.NotEligible -> {
+                    _uiState.update {
+                        it.copy(actionMessage = context.getString(R.string.msg_citizenship_ineligible))
+                    }
+                }
+            }
+        }
+    }
+
     fun onAchievementDialogDismissed() {
         _uiState.update { state ->
             val remaining = state.pendingAchievementQueue.drop(1)
@@ -1376,6 +1654,159 @@ class LifeViewModel @Inject constructor(
 
     fun onDismissFamilyDetailTip() {
         dismissTip(OnboardingTips.FAMILY_DETAIL)
+    }
+
+    fun donationTiers(): List<Int> {
+        val character = _uiState.value.character ?: return emptyList()
+        return gameEngine.donationTiers(character.countryCode)
+    }
+
+    fun onVolunteer() {
+        val character = _uiState.value.character ?: return
+        if (!character.alive) return
+        viewModelScope.launch {
+            when (val result = gameEngine.volunteer(character)) {
+                is GameEngine.VolunteerResult.Success -> {
+                    persist(result.character)
+                    processMidLifeAchievements(result.character)
+                    _uiState.update {
+                        it.copy(
+                            character = result.character,
+                            actionMessage = context.getString(R.string.msg_volunteer_success),
+                            netWorth = financeEngine.calculateNetWorth(result.character)
+                        )
+                    }
+                }
+                is GameEngine.VolunteerResult.Ineligible -> {
+                    _uiState.update {
+                        it.copy(actionMessage = context.getString(R.string.msg_philanthropy_ineligible))
+                    }
+                }
+            }
+        }
+    }
+
+    fun onDonateToCharity(amount: Int) {
+        val character = _uiState.value.character ?: return
+        if (!character.alive) return
+        viewModelScope.launch {
+            when (val result = gameEngine.donateToCharity(character, amount)) {
+                is GameEngine.DonationResult.Success -> {
+                    persist(result.character)
+                    processMidLifeAchievements(result.character)
+                    _uiState.update {
+                        it.copy(
+                            character = result.character,
+                            actionMessage = context.getString(
+                                R.string.msg_donate_success,
+                                formatMoney(amount, result.character.countryCode)
+                            ),
+                            netWorth = financeEngine.calculateNetWorth(result.character)
+                        )
+                    }
+                }
+                is GameEngine.DonationResult.InsufficientFunds -> {
+                    _uiState.update {
+                        it.copy(actionMessage = context.getString(R.string.msg_donate_cannot_afford))
+                    }
+                }
+                is GameEngine.DonationResult.InvalidAmount -> {
+                    _uiState.update {
+                        it.copy(actionMessage = context.getString(R.string.msg_donate_cannot_afford))
+                    }
+                }
+            }
+        }
+    }
+
+    fun onTakeDrivingTest() {
+        val character = _uiState.value.character ?: return
+        if (!character.alive) return
+        viewModelScope.launch {
+            when (val result = gameEngine.takeDrivingTest(character)) {
+                is com.maisha.game.domain.DrivingTestResult.Passed -> {
+                    persist(result.character)
+                    processMidLifeAchievements(result.character)
+                    _uiState.update {
+                        it.copy(
+                            character = result.character,
+                            actionMessage = context.getString(R.string.msg_driving_test_passed),
+                            eligibleJobs = careerEngine.getEligibleJobs(result.character),
+                            netWorth = financeEngine.calculateNetWorth(result.character)
+                        )
+                    }
+                }
+                is com.maisha.game.domain.DrivingTestResult.Failed -> {
+                    persist(result.character)
+                    _uiState.update {
+                        it.copy(
+                            character = result.character,
+                            actionMessage = context.getString(R.string.msg_driving_test_failed),
+                            netWorth = financeEngine.calculateNetWorth(result.character)
+                        )
+                    }
+                }
+                is com.maisha.game.domain.DrivingTestResult.InsufficientFunds -> {
+                    _uiState.update {
+                        it.copy(actionMessage = context.getString(R.string.msg_driving_test_cannot_afford))
+                    }
+                }
+                is com.maisha.game.domain.DrivingTestResult.TooYoung -> {
+                    _uiState.update {
+                        it.copy(actionMessage = context.getString(R.string.msg_driving_test_too_young))
+                    }
+                }
+                is com.maisha.game.domain.DrivingTestResult.AlreadyLicensed -> {
+                    _uiState.update {
+                        it.copy(actionMessage = context.getString(R.string.msg_driving_test_already_licensed))
+                    }
+                }
+            }
+        }
+    }
+
+    fun onThrowParty(budget: Int) {
+        val character = _uiState.value.character ?: return
+        if (!character.alive) return
+        viewModelScope.launch {
+            when (val result = gameEngine.throwParty(character, budget)) {
+                is com.maisha.game.domain.PartyResult.Success -> {
+                    persist(result.character)
+                    processMidLifeAchievements(result.character)
+                    _uiState.update {
+                        it.copy(
+                            character = result.character,
+                            familyInteractionMessage = context.getString(
+                                R.string.msg_party_success,
+                                result.boost
+                            ),
+                            netWorth = financeEngine.calculateNetWorth(result.character)
+                        )
+                    }
+                }
+                is com.maisha.game.domain.PartyResult.InsufficientFunds -> {
+                    _uiState.update {
+                        it.copy(
+                            familyInteractionMessage = context.getString(R.string.msg_party_cannot_afford)
+                        )
+                    }
+                }
+                is com.maisha.game.domain.PartyResult.NoGuests -> {
+                    _uiState.update {
+                        it.copy(
+                            familyInteractionMessage = context.getString(R.string.msg_party_no_guests)
+                        )
+                    }
+                }
+                is com.maisha.game.domain.PartyResult.InvalidBudget -> {
+                    _uiState.update {
+                        it.copy(
+                            familyInteractionMessage = context.getString(R.string.msg_party_no_guests)
+                        )
+                    }
+                }
+            }
+        }
     }
 
     private fun flashExpression(character: Character, flash: Expression) {

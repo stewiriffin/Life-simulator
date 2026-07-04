@@ -330,6 +330,104 @@
         { "label": "Walk them in and stay a minute", "statEffects": { "happiness": 4 }, "childRelationshipEffect": 8, "resultText": "A brave wave goodbye. You both made it." },
         { "label": "A quick hug and go", "statEffects": { "happiness": -2 }, "childRelationshipEffect": -2, "resultText": "Efficient — and a little heartbreaking." }
       ]
+    },
+    {
+      "id": "friend_best_friend_wedding",
+      "minAge": 20,
+      "maxAge": 55,
+      "text": "Your best friend is getting married and asks you to stand with them at the ceremony.",
+      "weight": 4,
+      "tags": ["relationship", "requires_best_friend"],
+      "choices": [
+        { "label": "Say yes and plan a toast", "statEffects": { "money": -8000, "happiness": 10 }, "resultText": "You cry during the vows. They call you family." },
+        { "label": "Attend as a guest only", "statEffects": { "happiness": 4 }, "resultText": "Still a beautiful day — a little more distant." }
+      ]
+    },
+    {
+      "id": "friend_asks_to_crash",
+      "minAge": 18,
+      "maxAge": 45,
+      "text": "A friend texts at midnight: they need to crash on your couch for a few weeks.",
+      "weight": 4,
+      "tags": ["relationship", "requires_friend"],
+      "choices": [
+        { "label": "Open your door", "statEffects": { "happiness": 3, "money": -2000 }, "resultText": "Crowded, messy, and somehow warmer." },
+        { "label": "Offer money for a hostel instead", "statEffects": { "money": -5000, "happiness": 1 }, "resultText": "They understand. Mostly." },
+        { "label": "Say no", "statEffects": { "happiness": -4 }, "resultText": "The silence afterward stings." }
+      ]
+    },
+    {
+      "id": "enemy_spreads_rumor",
+      "minAge": 14,
+      "maxAge": 50,
+      "text": "An enemy is spreading a rumor about you. People are whispering.",
+      "weight": 4,
+      "tags": ["relationship", "requires_enemy"],
+      "choices": [
+        { "label": "Confront them publicly", "statEffects": { "happiness": -3, "smarts": 1 }, "resultText": "It gets messy — but the rumor dies." },
+        { "label": "Ignore it and rise above", "statEffects": { "happiness": 2, "smarts": 2 }, "resultText": "Time clears your name better than shouting." }
+      ]
+    },
+    {
+      "id": "friend_group_trip",
+      "minAge": 16,
+      "maxAge": 40,
+      "text": "Your friends plan a weekend trip and want you in.",
+      "weight": 3,
+      "tags": ["relationship", "requires_friend"],
+      "choices": [
+        { "label": "Go all in", "statEffects": { "money": -12000, "happiness": 9 }, "resultText": "Stories for years. Photos you will never delete." },
+        { "label": "Skip this one", "statEffects": { "happiness": -2 }, "resultText": "FOMO hits when the group chat explodes." }
+      ]
+    },
+    {
+      "id": "enemy_public_showdown",
+      "minAge": 16,
+      "maxAge": 45,
+      "text": "You run into your enemy at a public event. The air goes cold.",
+      "weight": 3,
+      "tags": ["relationship", "requires_enemy"],
+      "choices": [
+        { "label": "Offer a truce", "statEffects": { "happiness": 2, "smarts": 1 }, "resultText": "They hesitate. Maybe the war is tiring them too." },
+        { "label": "Trade barbs", "statEffects": { "happiness": -5 }, "resultText": "Everyone watches. Nobody wins." }
+      ]
+    },
+    {
+      "id": "friend_needs_bailout",
+      "minAge": 20,
+      "maxAge": 55,
+      "text": "A friend is in a financial bind and asks for a serious loan.",
+      "weight": 3,
+      "tags": ["relationship", "requires_friend"],
+      "choices": [
+        { "label": "Lend what you can", "statEffects": { "money": -15000, "happiness": 4 }, "resultText": "They promise to pay you back. You hope they mean it." },
+        { "label": "Help them budget instead", "statEffects": { "happiness": 1, "smarts": 2 }, "resultText": "Not what they wanted — but maybe what they needed." },
+        { "label": "Refuse", "statEffects": { "happiness": -3 }, "resultText": "Friendship cools. Your savings stay intact." }
+      ]
+    },
+    {
+      "id": "best_friend_secret",
+      "minAge": 14,
+      "maxAge": 50,
+      "text": "Your best friend confides a heavy secret and asks you to keep it.",
+      "weight": 3,
+      "tags": ["relationship", "requires_best_friend"],
+      "choices": [
+        { "label": "Swear silence", "statEffects": { "happiness": 3 }, "resultText": "Trust deepens. The secret sits heavy — and safe." },
+        { "label": "Urge them to get help", "statEffects": { "happiness": 1, "smarts": 2 }, "resultText": "They are hurt, then grateful." }
+      ]
+    },
+    {
+      "id": "friend_moves_away",
+      "minAge": 12,
+      "maxAge": 40,
+      "text": "A close friend is moving to another city. The farewell party is this weekend.",
+      "weight": 3,
+      "tags": ["relationship", "requires_friend"],
+      "choices": [
+        { "label": "Throw them a send-off", "statEffects": { "money": -6000, "happiness": 5 }, "resultText": "Hugs, tears, and a promise to visit." },
+        { "label": "A quiet goodbye", "statEffects": { "happiness": 2 }, "resultText": "Short and sincere. You both know it matters." }
+      ]
     }
   ]
 }

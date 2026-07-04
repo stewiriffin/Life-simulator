@@ -9,7 +9,7 @@ enum class IntegrationLevel {
     FULLY_INTEGRATED
 }
 
-fun Character.isExpat(): Boolean = birthCountryCode != countryCode
+fun Character.isExpat(): Boolean = isLivingAbroad()
 
 fun integrationLevelFor(yearsInCurrentCountry: Int): IntegrationLevel = when {
     yearsInCurrentCountry < 2 -> IntegrationLevel.RECENT_ARRIVAL

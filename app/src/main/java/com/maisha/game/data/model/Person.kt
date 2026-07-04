@@ -11,7 +11,9 @@ enum class RelationType {
     SIBLING,
     SPOUSE,
     CHILD,
-    FRIEND
+    FRIEND,
+    BEST_FRIEND,
+    ENEMY
 }
 
 /**

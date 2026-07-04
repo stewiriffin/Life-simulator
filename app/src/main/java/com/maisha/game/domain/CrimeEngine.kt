@@ -355,8 +355,13 @@ class CrimeEngine @Inject constructor() {
             CrimeType.SHOPLIFT -> 0.18f + smartsFactor * 0.50f
             CrimeType.FRAUD -> 0.12f + smartsFactor * 0.55f
         }
+        val karmaPenalty = when {
+            character.stats.karma < LOW_KARMA_THRESHOLD -> LOW_KARMA_CATCH_PENALTY
+            character.stats.karma < MID_KARMA_THRESHOLD -> MID_KARMA_CATCH_PENALTY
+            else -> 0f
+        }
         val repeatRisk = REPEAT_ATTEMPT_RISK_BASE.pow(priorAttemptsThisYear)
-        return (base / repeatRisk).coerceIn(MIN_SUCCESS_CHANCE, MAX_SUCCESS_CHANCE)
+        return (base / repeatRisk - karmaPenalty).coerceIn(MIN_SUCCESS_CHANCE, MAX_SUCCESS_CHANCE)
     }
 
     private fun moneyReward(crimeType: CrimeType): Int = when (crimeType) {
@@ -386,6 +391,10 @@ class CrimeEngine @Inject constructor() {
         private const val REPEAT_ATTEMPT_RISK_BASE = 1.4f
         private const val MIN_SUCCESS_CHANCE = 0.08f
         private const val MAX_SUCCESS_CHANCE = 0.80f
+        private const val LOW_KARMA_THRESHOLD = 20
+        private const val MID_KARMA_THRESHOLD = 40
+        private const val LOW_KARMA_CATCH_PENALTY = 0.15f
+        private const val MID_KARMA_CATCH_PENALTY = 0.08f
         private const val AVERAGE_LAWYER_NET_WORTH_RATE = 0.08
         private const val EXPENSIVE_LAWYER_NET_WORTH_RATE = 0.20
         private const val AVERAGE_LAWYER_MIN_FEE = 5_000

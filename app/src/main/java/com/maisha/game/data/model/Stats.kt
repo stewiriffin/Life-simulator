@@ -7,8 +7,9 @@ import kotlinx.serialization.Serializable
 /**
  * Core numeric attributes for the player or an NPC.
  *
- * Health/happiness/smarts/looks are clamped 0–100 via [coerceCapped] and [applyEffects].
+ * Health/happiness/smarts/looks/[karma] are clamped 0–100 via [coerceCapped] and [applyEffects].
  * Money is floored at 0 (not capped at 100).
+ * [karma] is a hidden luck/morality stat (not shown on standard StatBars).
  */
 @Serializable
 data class Stats(
@@ -16,13 +17,16 @@ data class Stats(
     val happiness: Int = 50,
     val smarts: Int = 50,
     val looks: Int = 50,
-    val money: Int = 0
+    val money: Int = 0,
+    /** Hidden moral luck (0–100). Default neutral. */
+    val karma: Int = 50
 ) {
     fun coerceCapped(): Stats = copy(
         health = clampStat(health),
         happiness = clampStat(happiness),
         smarts = clampStat(smarts),
         looks = clampStat(looks),
+        karma = clampStat(karma),
         money = money.coerceAtLeast(0)
     )
 
@@ -35,6 +39,7 @@ data class Stats(
                 "smarts" -> updated.copy(smarts = updated.smarts + delta)
                 "looks" -> updated.copy(looks = updated.looks + delta)
                 "money" -> updated.copy(money = updated.money + delta)
+                "karma" -> updated.copy(karma = updated.karma + delta)
                 else -> updated
             }
         }

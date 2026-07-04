@@ -18,7 +18,11 @@ data class Job(
     val minFollowers: Int = 0,
     /** Optional skill that can substitute for [minEducation] when [minSkillLevel] is met. */
     val skillBypass: SkillType? = null,
-    val minSkillLevel: Int = 0
+    val minSkillLevel: Int = 0,
+    /** Military track: education gates are bypassed; enables deployments and combat risk. */
+    val isMilitary: Boolean = false,
+    /** Requires [Character.hasDrivingLicense] to apply. */
+    val requiresDrivingLicense: Boolean = false
 )
 
 /**
@@ -32,7 +36,11 @@ data class CareerState(
     val isRetired: Boolean = false,
     val pensionAmount: Int = 0,
     val sideHustleDoneThisYear: Boolean = false,
-    val workEffortThisYear: WorkEffort? = null
+    val workEffortThisYear: WorkEffort? = null,
+    /** True during a year the character is on active deployment (hazard pay + combat risk). */
+    val isDeployed: Boolean = false,
+    /** If true, the next [com.maisha.game.domain.CareerEngine.workYear] will be a deployment. */
+    val pendingDeployment: Boolean = false
 )
 
 @Serializable

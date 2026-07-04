@@ -5,6 +5,7 @@ import com.maisha.game.data.model.ExamType
 import com.maisha.game.data.model.RelationType
 import com.maisha.game.data.model.SchoolStage
 import com.maisha.game.data.model.Stats
+import com.maisha.game.data.model.VisaType
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
@@ -12,7 +13,7 @@ import org.junit.Test
 
 class EducationEngineTest {
 
-    private val engine = EducationEngine()
+    private val engine = EducationEngine(RelocationEngine())
 
     @Test
     fun enrollIfEligible_enrollsPrimaryAtAgeSix() {
@@ -256,8 +257,35 @@ class EducationEngineTest {
     }
 
     @Test
+    fun applyToUniversity_grantsStudentVisaForForeignAdmissions() {
+        val character = TestFixtures.character(
+            age = 18,
+            countryCode = "KE",
+            stats = Stats(health = 80, happiness = 70, smarts = 80, looks = 50, money = 500_000),
+            education = EducationState(
+                stage = SchoolStage.SECONDARY,
+                currentGrade = 4,
+                kcseGrade = "A",
+                kcpePassed = true
+            )
+        )
+        val enrolled = engine.applyToUniversity(
+            character,
+            course = "Computer Science",
+            universityCountryCode = "US"
+        )
+
+        assertEquals("US", enrolled.countryCode)
+        assertEquals(VisaType.STUDENT, enrolled.currentVisa)
+        assertTrue(enrolled.visaYearsRemaining > 0)
+        assertEquals(SchoolStage.UNIVERSITY, enrolled.education.stage)
+        assertEquals("Computer Science", enrolled.education.courseOfStudy)
+        assertTrue(enrolled.stats.money < character.stats.money)
+    }
+
+    @Test
     fun careerEngine_rejectsDropoutForDegreeRequiredJobs() {
-        val careerEngine = CareerEngine(HealthEngine())
+        val careerEngine = CareerEngine(HealthEngine(), RelocationEngine())
         val secondaryDropout = TestFixtures.character(
             age = 20,
             education = EducationState(

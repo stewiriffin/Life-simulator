@@ -1,4 +1,4 @@
-// app/src/main/java/com/maisha/game/domain/LegacyEngine.kt (modified — estate settlement before inheritance)
+// app/src/main/java/com/maisha/game/domain/LegacyEngine.kt
 package com.maisha.game.domain
 
 import com.maisha.game.data.model.AncestryEntry
@@ -7,9 +7,12 @@ import com.maisha.game.data.model.Character
 import com.maisha.game.data.model.CriminalRecord
 import com.maisha.game.data.model.EducationState
 import com.maisha.game.data.model.Gender
+import com.maisha.game.data.model.MilestoneKind
 import com.maisha.game.data.model.Person
 import com.maisha.game.data.model.RelationType
+import com.maisha.game.data.model.RelationshipMilestone
 import com.maisha.game.data.model.SchoolStage
+import com.maisha.game.util.clampRelationshipLevel
 import java.util.Calendar
 import javax.inject.Inject
 import javax.inject.Singleton
@@ -18,6 +21,12 @@ data class EstateSettlement(
     val distributableCash: Int,
     val totalDeductions: Int,
     val logLines: List<String>
+)
+
+data class WillValidationResult(
+    val isValid: Boolean,
+    val totalPercent: Int,
+    val errorMessage: String? = null
 )
 
 @Singleton
@@ -36,12 +45,42 @@ class LegacyEngine @Inject constructor(
             }
             .sortedByDescending { it.age }
 
+    /** Spouse and living children who may appear in a custom will. */
+    fun willBeneficiaries(character: Character): List<Person> =
+        character.family.filter { person ->
+            person.alive && (
+                person.relation == RelationType.SPOUSE ||
+                    person.relation == RelationType.CHILD
+                )
+        }
+
     /**
-     * Builds the next playable [Character] from a chosen heir: settles the estate, splits remaining
-     * cash among siblings, remaps family, appends deceased to [Character.ancestryHistory], and
-     * increments [Character.generationNumber].
-     *
-     * @param heir Must be a living [RelationType.CHILD] of [deceased].
+     * Validates a will map: percentages 0–100, total exactly 100, only known beneficiary ids.
+     */
+    fun validateWill(character: Character, will: Map<String, Int>): WillValidationResult {
+        val beneficiaries = willBeneficiaries(character).map { it.id }.toSet()
+        if (beneficiaries.isEmpty()) {
+            return WillValidationResult(false, 0, "No living spouse or children to inherit.")
+        }
+        if (will.keys.any { it !in beneficiaries }) {
+            return WillValidationResult(false, will.values.sum(), "Will includes unknown beneficiaries.")
+        }
+        if (will.values.any { it < 0 || it > 100 }) {
+            return WillValidationResult(false, will.values.sum(), "Shares must be between 0 and 100.")
+        }
+        val total = will.values.sum()
+        if (total != 100) {
+            return WillValidationResult(false, total, "Shares must total exactly 100%.")
+        }
+        return WillValidationResult(true, total)
+    }
+
+    fun isValidWill(character: Character, will: Map<String, Int>): Boolean =
+        validateWill(character, will).isValid
+
+    /**
+     * Builds the next playable [Character] from a chosen heir: settles the estate, applies will or
+     * even split, remaps family (with [MilestoneKind.GRUDGE] for excluded children), and increments generation.
      */
     fun createLegacyCharacter(deceased: Character, heir: Person): Character {
         require(heir.relation == RelationType.CHILD && heir.alive) {
@@ -49,21 +88,20 @@ class LegacyEngine @Inject constructor(
         }
 
         val settlement = calculateEstateSettlement(deceased)
-        val inheritedMoney = calculateMoneyInheritance(deceased, settlement.distributableCash)
+        val inheritedMoney = calculateMoneyInheritance(deceased, settlement.distributableCash, heir)
         val heirlooms = deceased.assets.filter { it.isHeirloom }
         val survivingParent = mapSurvivingParent(deceased.gender, deceased.family)
+        val customWill = deceased.will?.takeIf { isValidWill(deceased, it) }
         val siblings = deceased.family
             .filter { person ->
                 person.relation == RelationType.CHILD && person.alive && person.id != heir.id
             }
             .map { sibling ->
-                sibling.copy(
-                    relation = RelationType.SIBLING,
-                    relationshipLevel = sibling.relationshipLevel
-                )
+                mapSiblingAfterInheritance(sibling, deceased, customWill)
             }
         val friends = deceased.family.filter { person ->
-            person.relation == RelationType.FRIEND && person.alive
+            (person.relation == RelationType.FRIEND || person.relation == RelationType.BEST_FRIEND) &&
+                person.alive
         }
 
         val newFamily = buildList {
@@ -79,8 +117,20 @@ class LegacyEngine @Inject constructor(
         val settlementLog = settlement.logLines.map { line ->
             "Estate settlement: $line"
         }
+        val willLog = if (customWill != null) {
+            listOf("The estate was distributed according to the last will and testament.")
+        } else {
+            emptyList()
+        }
+        val grudgeLog = siblings
+            .filter { sibling -> sibling.milestones.any { it.kind == MilestoneKind.GRUDGE.name } }
+            .map { sibling ->
+                "${sibling.name} was left out of the will and holds a grudge."
+            }
         val legacyLog = buildList {
             addAll(settlementLog)
+            addAll(willLog)
+            addAll(grudgeLog)
             if (heirlooms.isNotEmpty()) {
                 add("Family heirlooms passed down: ${heirlooms.joinToString { it.name }}.")
             }
@@ -96,6 +146,7 @@ class LegacyEngine @Inject constructor(
             alive = true,
             countryCode = heir.countryCode,
             birthCountryCode = heir.countryCode,
+            citizenships = listOf(heir.countryCode),
             avatarConfig = heir.avatarConfig,
             generationNumber = deceased.generationNumber + 1,
             ancestryHistory = carriedHistory,
@@ -105,7 +156,8 @@ class LegacyEngine @Inject constructor(
             assets = heirlooms,
             criminalRecord = CriminalRecord(),
             activeConditions = emptyList(),
-            eventLog = legacyLog
+            eventLog = legacyLog,
+            will = null
         )
     }
 
@@ -117,7 +169,8 @@ class LegacyEngine @Inject constructor(
         val liquidatedAssetValue = deceased.assets
             .filter { !it.isHeirloom }
             .sumOf { it.currentValue }
-        val grossCash = deceased.stats.money.coerceAtLeast(0) + liquidatedAssetValue
+        val portfolioValue = deceased.investmentPortfolioValue.coerceAtLeast(0)
+        val grossCash = deceased.stats.money.coerceAtLeast(0) + liquidatedAssetValue + portfolioValue
         var deductions = 0
         val logLines = mutableListOf<String>()
 
@@ -192,12 +245,48 @@ class LegacyEngine @Inject constructor(
         )
     }
 
-    private fun calculateMoneyInheritance(deceased: Character, distributableCash: Int): Int {
+    /**
+     * Heir's cash share: custom will percentage when valid, otherwise even split among living children.
+     */
+    fun calculateMoneyInheritance(
+        deceased: Character,
+        distributableCash: Int,
+        heir: Person
+    ): Int {
+        val will = deceased.will?.takeIf { isValidWill(deceased, it) }
+        if (will != null) {
+            val percent = will[heir.id] ?: 0
+            return ((distributableCash.toLong() * percent) / 100L).toInt().coerceAtLeast(0)
+        }
         val livingChildren = deceased.family.count { person ->
             person.relation == RelationType.CHILD && person.alive
         }
         if (livingChildren <= 0) return 0
         return (distributableCash / livingChildren).coerceAtLeast(0)
+    }
+
+    private fun mapSiblingAfterInheritance(
+        sibling: Person,
+        deceased: Character,
+        customWill: Map<String, Int>?
+    ): Person {
+        val asSibling = sibling.copy(relation = RelationType.SIBLING)
+        if (customWill == null) return asSibling
+        val share = customWill[sibling.id] ?: 0
+        if (share > 0) return asSibling
+        val grudgeMilestone = RelationshipMilestone.fromKind(
+            age = sibling.age,
+            kind = MilestoneKind.GRUDGE,
+            subjectName = deceased.name
+        )
+        return asSibling.copy(
+            relationshipLevel = clampRelationshipLevel(
+                sibling.relationshipLevel - GRUDGE_RELATIONSHIP_PENALTY
+            ),
+            milestones = RelationshipMilestoneCap.trim(
+                sibling.milestones + grudgeMilestone
+            )
+        )
     }
 
     private fun educationForAge(age: Int): EducationState = when {
@@ -216,6 +305,7 @@ class LegacyEngine @Inject constructor(
 
     companion object {
         const val MIN_HEIR_AGE = 16
+        const val GRUDGE_RELATIONSHIP_PENALTY = 35
         private const val ESTATE_MEDICAL_BASE = 15_000
         private const val ESTATE_MEDICAL_PER_SEVERITY = 8_000
         private const val ESTATE_LEGAL_BASE = 20_000

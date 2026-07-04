@@ -15,7 +15,7 @@ import org.junit.Test
 
 class BalanceTuningTest {
 
-    private val careerEngine = CareerEngine(HealthEngine())
+    private val careerEngine = CareerEngine(HealthEngine(), RelocationEngine())
     private val financeEngine = FinanceEngine()
 
     @Test

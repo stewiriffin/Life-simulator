@@ -16,19 +16,18 @@ data class CatalogAsset(
 )
 
 /**
- * Asset shop catalog: universal tier with country-scaled pricing at purchase time,
- * plus verified local naming where it adds real texture.
+ * Asset shop catalog: universal tier with country-scaled pricing at purchase time
+ * ([EconomyScaler] applied at buy), plus local naming and exclusive listings.
  *
  * Flavor naming (verified terms):
  * - KE: bedsitter (East African studio rental), boda boda (motorcycle taxi)
- * - NG: self-contain (Lagos/Nigeria studio rental — Mixta Africa, Respicio legal guides)
- * - PH: bedspace (boarding-house rental — Respicio & Co. Philippines)
+ * - NG: self-contain (Lagos/Nigeria studio rental)
+ * - PH: bedspace (boarding-house rental)
  * - IN: PG room (paying-guest accommodation)
- * - GB: bedsit (British studio rental term)
- * - BR: kitnet (Brazilian studio apartment)
- * - JP: 1K apartment (one room + kitchen — standard Japanese listing term)
- *
- * US, CA, FR, DE, ZA, EG, MX, ID: universal housing/vehicle names only (verified P35).
+ * - GB: bedsit / London Flat
+ * - BR: kitnet
+ * - JP: 1K / Tokyo Micro-Apartment
+ * - US: Suburban American Home
  */
 object AssetCatalog {
 
@@ -233,12 +232,100 @@ object AssetCatalog {
         "IN" to mapOf("apartment_studio" to "PG Room"),
         "GB" to mapOf("apartment_studio" to "Bedsit"),
         "BR" to mapOf("apartment_studio" to "Kitnet"),
-        "JP" to mapOf("apartment_studio" to "1K Apartment")
+        "JP" to mapOf("apartment_studio" to "1K Apartment"),
+        "MX" to mapOf("apartment_studio" to "Estudio"),
+        "FR" to mapOf("apartment_studio" to "Studio Parisien"),
+        "DE" to mapOf("apartment_studio" to "Einzimmerwohnung"),
+        "CA" to mapOf("house_suburban" to "Suburban Bungalow"),
+        "EG" to mapOf("apartment_studio" to "Studio Flat — Cairo"),
+        "ID" to mapOf("apartment_studio" to "Kost Room"),
+        "ZA" to mapOf("apartment_studio" to "Bachelor Flat")
+    )
+
+    /** Exclusive listings only offered in that country (prices still EconomyScaler-scaled at purchase). */
+    private val countryExclusiveAssets: Map<String, List<CatalogAsset>> = mapOf(
+        "JP" to listOf(
+            CatalogAsset(
+                id = "jp_tokyo_micro",
+                type = AssetType.HOUSE,
+                name = "Tokyo Micro-Apartment",
+                purchasePrice = 2_200_000,
+                monthlyUpkeep = 6_000
+            )
+        ),
+        "GB" to listOf(
+            CatalogAsset(
+                id = "gb_london_flat",
+                type = AssetType.HOUSE,
+                name = "London Flat",
+                purchasePrice = 4_500_000,
+                monthlyUpkeep = 12_000
+            )
+        ),
+        "US" to listOf(
+            CatalogAsset(
+                id = "us_suburban_home",
+                type = AssetType.HOUSE,
+                name = "Suburban American Home",
+                purchasePrice = 7_500_000,
+                monthlyUpkeep = 14_000
+            )
+        ),
+        "FR" to listOf(
+            CatalogAsset(
+                id = "fr_haussmann_flat",
+                type = AssetType.HOUSE,
+                name = "Haussmann Flat",
+                purchasePrice = 5_000_000,
+                monthlyUpkeep = 11_000
+            )
+        ),
+        "DE" to listOf(
+            CatalogAsset(
+                id = "de_altbau_wohnung",
+                type = AssetType.HOUSE,
+                name = "Altbau Wohnung",
+                purchasePrice = 4_200_000,
+                monthlyUpkeep = 9_000
+            )
+        ),
+        "BR" to listOf(
+            CatalogAsset(
+                id = "br_cobertura",
+                type = AssetType.HOUSE,
+                name = "Cobertura Apartment",
+                purchasePrice = 8_000_000,
+                monthlyUpkeep = 15_000
+            )
+        ),
+        "MX" to listOf(
+            CatalogAsset(
+                id = "mx_casa_colonia",
+                type = AssetType.HOUSE,
+                name = "Casa de Colonia",
+                purchasePrice = 5_500_000,
+                monthlyUpkeep = 10_000
+            )
+        ),
+        "CA" to listOf(
+            CatalogAsset(
+                id = "ca_condo_tower",
+                type = AssetType.HOUSE,
+                name = "Downtown Condo",
+                purchasePrice = 6_000_000,
+                monthlyUpkeep = 11_000
+            )
+        )
     )
 
     /** Legacy flat list — all catalog entries for global lookup. */
     val items: List<CatalogAsset> by lazy {
-        (kenyaAssets + universalAssets + heirloomAssets).distinctBy { it.id }
+        (
+            kenyaAssets +
+                universalAssets +
+                heirloomAssets +
+                countryExclusiveAssets.values.flatten()
+            ).distinctBy { it.id }
     }
 
     fun getAssetsForCountry(countryCode: String): List<CatalogAsset> =
@@ -251,7 +338,8 @@ object AssetCatalog {
                 overrides[asset.id]?.let { localizedName -> asset.copy(name = localizedName) } ?: asset
             }
         }
-        return base.filter { it.isPurchasable }
+        val exclusive = countryExclusiveAssets[countryCode].orEmpty()
+        return (base + exclusive).filter { it.isPurchasable }
     }
 
     fun findHeirloomById(catalogId: String): CatalogAsset? =
@@ -260,7 +348,9 @@ object AssetCatalog {
     fun getHeirloomAssets(): List<CatalogAsset> = heirloomAssets
 
     fun hasCountryFlavorAssets(countryCode: String): Boolean =
-        countryCode == "KE" || countryCode in housingNameOverrides
+        countryCode == "KE" ||
+            countryCode in housingNameOverrides ||
+            countryCode in countryExclusiveAssets
 
     fun findById(catalogId: String): CatalogAsset? = items.find { it.id == catalogId }
 }

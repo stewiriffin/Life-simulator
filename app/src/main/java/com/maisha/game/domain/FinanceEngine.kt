@@ -9,7 +9,10 @@ import com.maisha.game.data.model.AssetType
 import com.maisha.game.data.model.Character
 import com.maisha.game.data.model.EconomicClimate
 import com.maisha.game.data.model.EconomicState
+import com.maisha.game.data.model.PoliticalOffice
 import com.maisha.game.data.model.RelationType
+import com.maisha.game.data.model.TaxPolicyType
+import com.maisha.game.util.formatMoney
 import java.util.UUID
 import com.maisha.game.util.clampCondition
 import com.maisha.game.util.clampStat
@@ -254,7 +257,7 @@ class FinanceEngine @Inject constructor() {
         return character.copy(assets = appreciated)
     }
 
-    /** Random yearly wear; may trigger critical failure when condition is below 40%. */
+    /** Random yearly wear; rented properties degrade faster. May trigger critical failure below 40%. */
     fun degradeAssets(character: Character): Character {
         if (character.assets.isEmpty()) return character
 
@@ -272,6 +275,123 @@ class FinanceEngine @Inject constructor() {
         }
         return character.copy(assets = degraded, eventLog = updatedLog)
     }
+
+    /** Houses that can be leased (non-heirloom real estate). */
+    fun isRentable(asset: Asset): Boolean =
+        asset.type == AssetType.HOUSE && !asset.isHeirloom
+
+    /** Yearly rent for a leased property (5–8% of current valuation). */
+    fun calculateYearlyRent(asset: Asset): Int {
+        if (!asset.isRentedOut || !isRentable(asset)) return 0
+        val rate = RENT_YIELD_MIN + Random.nextFloat() * (RENT_YIELD_MAX - RENT_YIELD_MIN)
+        return (asset.currentValue * rate).toInt().coerceAtLeast(1)
+    }
+
+    fun estimateYearlyRent(asset: Asset): Int {
+        if (!isRentable(asset)) return 0
+        val midRate = (RENT_YIELD_MIN + RENT_YIELD_MAX) / 2f
+        return (asset.currentValue * midRate).toInt().coerceAtLeast(1)
+    }
+
+    fun evictionFee(character: Character): Int =
+        EconomyScaler.scaleAmount(EVICTION_LEGAL_FEE_KENYA, character.countryCode)
+
+    /**
+     * Collects rent from all leased properties and drifts tenant happiness.
+     */
+    fun collectRent(character: Character): Character {
+        val rented = character.assets.filter { it.isRentedOut && isRentable(it) }
+        if (rented.isEmpty()) return character
+
+        var totalRent = 0
+        val updatedAssets = character.assets.map { asset ->
+            if (!asset.isRentedOut || !isRentable(asset)) {
+                asset
+            } else {
+                val rent = calculateYearlyRent(asset)
+                totalRent += rent
+                val happiness = (asset.tenantHappiness ?: STARTING_TENANT_HAPPINESS) +
+                    Random.nextInt(TENANT_HAPPINESS_DRIFT_MIN, TENANT_HAPPINESS_DRIFT_MAX + 1)
+                asset.copy(tenantHappiness = happiness.coerceIn(0, 100))
+            }
+        }
+        if (totalRent <= 0) return character.copy(assets = updatedAssets)
+
+        return character.copy(
+            stats = character.stats.copy(money = character.stats.money + totalRent),
+            assets = updatedAssets,
+            eventLog = EventLogCap.prepend(
+                character.eventLog,
+                "Collected ${formatMoney(totalRent, character.countryCode)} in rental income."
+            )
+        )
+    }
+
+    sealed class RentalResult {
+        data class Success(val character: Character) : RentalResult()
+        data object NotFound : RentalResult()
+        data object NotRentable : RentalResult()
+        data object AlreadyRented : RentalResult()
+        data object NotRented : RentalResult()
+        data object InsufficientFunds : RentalResult()
+    }
+
+    /** Lists a vacant house for rent with a new tenant. */
+    fun rentOutProperty(character: Character, assetId: String): RentalResult {
+        val index = character.assets.indexOfFirst { it.id == assetId }
+        if (index == -1) return RentalResult.NotFound
+        val asset = character.assets[index]
+        if (!isRentable(asset)) return RentalResult.NotRentable
+        if (asset.isRentedOut) return RentalResult.AlreadyRented
+
+        val rented = asset.copy(
+            isRentedOut = true,
+            tenantHappiness = STARTING_TENANT_HAPPINESS
+        )
+        val updatedAssets = character.assets.toMutableList().apply { this[index] = rented }
+        return RentalResult.Success(
+            character.copy(
+                assets = updatedAssets,
+                eventLog = EventLogCap.prepend(
+                    character.eventLog,
+                    "You rented out ${asset.name}. Tenants move in this week."
+                )
+            )
+        )
+    }
+
+    /**
+     * Ends a lease: legal fees, slight happiness hit, clears rental status.
+     */
+    fun evictTenant(character: Character, assetId: String): RentalResult {
+        val index = character.assets.indexOfFirst { it.id == assetId }
+        if (index == -1) return RentalResult.NotFound
+        val asset = character.assets[index]
+        if (!asset.isRentedOut) return RentalResult.NotRented
+
+        val fee = evictionFee(character)
+        if (character.stats.money < fee) return RentalResult.InsufficientFunds
+
+        val vacant = asset.copy(isRentedOut = false, tenantHappiness = null)
+        val updatedAssets = character.assets.toMutableList().apply { this[index] = vacant }
+        return RentalResult.Success(
+            character.copy(
+                stats = character.stats.copy(
+                    money = character.stats.money - fee,
+                    happiness = clampStat(character.stats.happiness - EVICTION_HAPPINESS_HIT)
+                ),
+                assets = updatedAssets,
+                eventLog = EventLogCap.prepend(
+                    character.eventLog,
+                    "You evicted the tenant from ${asset.name} for " +
+                        "${formatMoney(fee, character.countryCode)} in legal fees."
+                )
+            )
+        )
+    }
+
+    fun ownsRentedProperty(character: Character): Boolean =
+        character.assets.any { it.isRentedOut && isRentable(it) }
 
     /**
      * Pays to restore [assetId] to 100% condition. Cost scales with [Asset.purchasePrice] and wear.
@@ -315,12 +435,103 @@ class FinanceEngine @Inject constructor() {
         return EconomyScaler.scaleAmount(rawCost, countryCode)
     }
 
-    /** Cash plus sum of [Asset.currentValue]. Used by achievements and UI net-worth displays. */
+    /** Cash, assets, businesses, and investment portfolio. */
     fun calculateNetWorth(character: Character): Int {
         val assetValue = character.assets.sumOf { it.currentValue }
         val businessValue = character.businesses.sumOf { it.valuation }
-        return character.stats.money + assetValue + businessValue
+        return character.stats.money + assetValue + businessValue +
+            character.investmentPortfolioValue.coerceAtLeast(0)
     }
+
+    sealed class InvestmentResult {
+        data class Success(val character: Character) : InvestmentResult()
+        data object InsufficientFunds : InvestmentResult()
+        data object InvalidAmount : InvestmentResult()
+    }
+
+    /** Moves liquid cash into the investment portfolio. */
+    fun investFunds(character: Character, amount: Int): InvestmentResult {
+        if (amount <= 0) return InvestmentResult.InvalidAmount
+        if (character.stats.money < amount) return InvestmentResult.InsufficientFunds
+        return InvestmentResult.Success(
+            character.copy(
+                stats = character.stats.copy(money = character.stats.money - amount),
+                investmentPortfolioValue = character.investmentPortfolioValue + amount,
+                eventLog = EventLogCap.prepend(
+                    character.eventLog,
+                    "Invested ${formatMoney(amount, character.countryCode)} in the market."
+                )
+            )
+        )
+    }
+
+    /** Moves portfolio value back to liquid cash. */
+    fun withdrawFunds(character: Character, amount: Int): InvestmentResult {
+        if (amount <= 0) return InvestmentResult.InvalidAmount
+        if (character.investmentPortfolioValue < amount) return InvestmentResult.InsufficientFunds
+        return InvestmentResult.Success(
+            character.copy(
+                stats = character.stats.copy(money = character.stats.money + amount),
+                investmentPortfolioValue = character.investmentPortfolioValue - amount,
+                eventLog = EventLogCap.prepend(
+                    character.eventLog,
+                    "Withdrew ${formatMoney(amount, character.countryCode)} from investments."
+                )
+            )
+        )
+    }
+
+    /**
+     * Yearly portfolio tick: random return from [PORTFOLIO_RETURN_MIN_PERCENT] to
+     * [PORTFOLIO_RETURN_MAX_PERCENT] when portfolio value is positive.
+     */
+    fun applyPortfolioMarketTick(character: Character): Character {
+        if (character.investmentPortfolioValue <= 0) {
+            return character.copy(lastPortfolioReturnPercent = 0)
+        }
+        val returnPercent = Random.nextInt(
+            PORTFOLIO_RETURN_MIN_PERCENT,
+            PORTFOLIO_RETURN_MAX_PERCENT + 1
+        )
+        return applyPortfolioReturn(character, returnPercent, logMarketMove = true)
+    }
+
+    /**
+     * Applies an immediate portfolio return percentage (e.g. event-driven crash or rally).
+     */
+    fun applyPortfolioReturn(
+        character: Character,
+        returnPercent: Int,
+        logMarketMove: Boolean = true
+    ): Character {
+        if (character.investmentPortfolioValue <= 0) {
+            return character.copy(lastPortfolioReturnPercent = 0)
+        }
+        val before = character.investmentPortfolioValue
+        val after = ((before.toLong() * (100L + returnPercent)) / 100L)
+            .toInt()
+            .coerceAtLeast(0)
+        val sign = if (returnPercent >= 0) "+" else ""
+        val logLine = if (logMarketMove) {
+            "Portfolio returned $sign$returnPercent% " +
+                "(${formatMoney(before, character.countryCode)} → " +
+                "${formatMoney(after, character.countryCode)})."
+        } else {
+            null
+        }
+        return character.copy(
+            investmentPortfolioValue = after,
+            lastPortfolioReturnPercent = returnPercent,
+            eventLog = if (logLine != null) {
+                EventLogCap.prepend(character.eventLog, logLine)
+            } else {
+                character.eventLog
+            }
+        )
+    }
+
+    fun hasPortfolio(character: Character): Boolean =
+        character.investmentPortfolioValue > 0
 
     /** Pays annual pension to retired characters during the yearly finance tick. */
     fun applyPension(character: Character): Character {
@@ -365,8 +576,13 @@ class FinanceEngine @Inject constructor() {
 
         val asset = character.assets[index]
         val newCondition = clampCondition(asset.condition + conditionDelta)
+        val vacateTenant = asset.isRentedOut && conditionDelta <= TENANT_LEAVE_CONDITION_DELTA
         val updatedAsset = recalculateValue(
-            asset.copy(condition = newCondition),
+            asset.copy(
+                condition = newCondition,
+                isRentedOut = if (vacateTenant) false else asset.isRentedOut,
+                tenantHappiness = if (vacateTenant) null else asset.tenantHappiness
+            ),
             character.economicState.marketModifier
         )
         return character.copy(
@@ -380,7 +596,7 @@ class FinanceEngine @Inject constructor() {
         type: AssetType,
         condition: Int
     ): Character {
-        val index = character.assets.indexOfFirst { it.type == type }
+        val index = indexOfPreferredAsset(character, type)
         if (index == -1) return character
 
         val asset = character.assets[index]
@@ -393,15 +609,21 @@ class FinanceEngine @Inject constructor() {
         )
     }
 
-    /** Adjusts condition on the first asset of [type]; used by finance event choices. */
+    /** Adjusts condition on the first asset of [type]; prefers rented houses for landlord events. */
     fun applyConditionToAssetType(
         character: Character,
         type: AssetType,
         conditionDelta: Int
     ): Character {
-        val index = character.assets.indexOfFirst { it.type == type }
+        val index = indexOfPreferredAsset(character, type)
         if (index == -1) return character
         return applyConditionToAsset(character, character.assets[index].id, conditionDelta)
+    }
+
+    private fun indexOfPreferredAsset(character: Character, type: AssetType): Int {
+        val rented = character.assets.indexOfFirst { it.type == type && it.isRentedOut }
+        if (rented >= 0) return rented
+        return character.assets.indexOfFirst { it.type == type }
     }
 
     /** Adjusts condition on the first owned asset when event has no [EventChoice.targetAssetType]. */
@@ -477,8 +699,9 @@ class FinanceEngine @Inject constructor() {
     }
 
     private fun applyConditionDegradation(asset: Asset, marketModifier: Float): Asset {
-        val degradation = Random.nextInt(MIN_DEGRADATION, MAX_DEGRADATION + 1)
-        val newCondition = clampCondition(asset.condition - degradation)
+        val base = Random.nextInt(MIN_DEGRADATION, MAX_DEGRADATION + 1)
+        val rentalWear = if (asset.isRentedOut) RENTED_EXTRA_DEGRADATION else 0
+        val newCondition = clampCondition(asset.condition - base - rentalWear)
         return recalculateValue(asset.copy(condition = newCondition), marketModifier)
     }
 
@@ -505,8 +728,88 @@ class FinanceEngine @Inject constructor() {
         EconomicClimate.NEUTRAL -> ""
     }
 
+    sealed class TaxPolicyResult {
+        data class Success(val character: Character) : TaxPolicyResult()
+        data object Ineligible : TaxPolicyResult()
+        data object AlreadyActive : TaxPolicyResult()
+    }
+
+    /**
+     * Governors and presidents may enact tax policy.
+     * Tax cuts boost business revenue (via [EconomyScaler]) but lower approval.
+     * Wealth taxes raise approval but seize a slice of liquid cash.
+     */
+    fun passTaxPolicy(character: Character, type: TaxPolicyType): TaxPolicyResult {
+        val office = character.politics.currentOffice
+        if (office != PoliticalOffice.GOVERNOR && office != PoliticalOffice.PRESIDENT) {
+            return TaxPolicyResult.Ineligible
+        }
+        if (character.politics.activeTaxPolicy == type) {
+            return TaxPolicyResult.AlreadyActive
+        }
+
+        return when (type) {
+            TaxPolicyType.TAX_CUTS -> {
+                val approval = (character.politics.approvalRating - TAX_CUTS_APPROVAL_HIT)
+                    .coerceIn(0, 100)
+                TaxPolicyResult.Success(
+                    character.copy(
+                        politics = character.politics.copy(
+                            activeTaxPolicy = TaxPolicyType.TAX_CUTS,
+                            approvalRating = approval
+                        ),
+                        eventLog = EventLogCap.prepend(
+                            character.eventLog,
+                            "You passed tax cuts. Businesses cheer; the public is less impressed."
+                        )
+                    )
+                )
+            }
+            TaxPolicyType.WEALTH_TAX -> {
+                val fraction = EconomyScaler.policyWealthTaxCashFraction(TaxPolicyType.WEALTH_TAX)
+                val cashHit = (character.stats.money * fraction).toInt().coerceAtLeast(0)
+                val approval = (character.politics.approvalRating + WEALTH_TAX_APPROVAL_GAIN)
+                    .coerceIn(0, 100)
+                TaxPolicyResult.Success(
+                    character.copy(
+                        stats = character.stats.copy(
+                            money = (character.stats.money - cashHit).coerceAtLeast(0)
+                        ),
+                        politics = character.politics.copy(
+                            activeTaxPolicy = TaxPolicyType.WEALTH_TAX,
+                            approvalRating = approval
+                        ),
+                        eventLog = EventLogCap.prepend(
+                            character.eventLog,
+                            "You passed a wealth tax. Public approval rose; your accounts lost " +
+                                "${formatMoney(cashHit, character.countryCode)}."
+                        )
+                    )
+                )
+            }
+        }
+    }
+
     companion object {
+        private const val TAX_CUTS_APPROVAL_HIT = 8
+        private const val WEALTH_TAX_APPROVAL_GAIN = 10
         const val FINANCE_TAG = "finance"
+        const val REQUIRES_RENTAL_TAG = "requires_rental"
+        const val REQUIRES_PORTFOLIO_TAG = "requires_portfolio"
+        /** Severe crash floor for yearly portfolio tick. */
+        const val PORTFOLIO_RETURN_MIN_PERCENT = -30
+        /** Bull-run ceiling for yearly portfolio tick. */
+        const val PORTFOLIO_RETURN_MAX_PERCENT = 40
+        private const val RENT_YIELD_MIN = 0.05f
+        private const val RENT_YIELD_MAX = 0.08f
+        private const val RENTED_EXTRA_DEGRADATION = 3
+        private const val STARTING_TENANT_HAPPINESS = 72
+        private const val TENANT_HAPPINESS_DRIFT_MIN = -5
+        private const val TENANT_HAPPINESS_DRIFT_MAX = 4
+        private const val EVICTION_LEGAL_FEE_KENYA = 25_000
+        private const val EVICTION_HAPPINESS_HIT = 4
+        /** Severe neglect on a rental causes the tenant to leave. */
+        private const val TENANT_LEAVE_CONDITION_DELTA = -25
         private const val FINANCE_EVENT_MONEY_THRESHOLD = 50_000
         private const val DEBT_HAPPINESS_PENALTY = 5
         private const val MIN_DEGRADATION = 2

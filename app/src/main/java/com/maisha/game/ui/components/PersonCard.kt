@@ -1,6 +1,7 @@
 // app/src/main/java/com/maisha/game/ui/components/PersonCard.kt (modified — Prompt 27: MaishaRadius/spacing, a11y, 360dp ellipsis)
 package com.maisha.game.ui.components
 
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -11,8 +12,12 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Star
+import androidx.compose.material.icons.filled.Warning
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -32,10 +37,13 @@ import com.maisha.game.R
 import com.maisha.game.data.model.AvatarConfig
 import com.maisha.game.data.model.Expression
 import com.maisha.game.data.model.Person
+import com.maisha.game.data.model.RelationType
 import com.maisha.game.data.model.RelationshipTier
 import com.maisha.game.data.model.relationshipTierFor
 import com.maisha.game.ui.avatar.AvatarImage
 import com.maisha.game.ui.avatar.ExpressionResolver
+import com.maisha.game.ui.theme.CoralNegative
+import com.maisha.game.ui.theme.GoldAccent
 import com.maisha.game.ui.theme.MaishaRadius
 import com.maisha.game.ui.theme.MaishaSpacing
 import com.maisha.game.ui.theme.TealPrimary
@@ -63,6 +71,12 @@ fun PersonCard(
         ageLabel
     )
 
+    val socialBorder = when (person.relation) {
+        RelationType.BEST_FRIEND -> BorderStroke(2.dp, GoldAccent)
+        RelationType.ENEMY -> BorderStroke(2.dp, CoralNegative)
+        else -> null
+    }
+
     Card(
         modifier = modifier
             .fillMaxWidth()
@@ -73,8 +87,13 @@ fun PersonCard(
             .clickable(onClick = onClick),
         shape = MaishaRadius.cardShape,
         colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surfaceVariant
+            containerColor = when (person.relation) {
+                RelationType.BEST_FRIEND -> GoldAccent.copy(alpha = 0.12f)
+                RelationType.ENEMY -> CoralNegative.copy(alpha = 0.10f)
+                else -> MaterialTheme.colorScheme.surfaceVariant
+            }
         ),
+        border = socialBorder,
         elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
     ) {
         Row(
@@ -117,6 +136,21 @@ fun PersonCard(
                         overflow = TextOverflow.Ellipsis,
                         modifier = Modifier.weight(1f, fill = false)
                     )
+                    when (person.relation) {
+                        RelationType.BEST_FRIEND -> Icon(
+                            imageVector = Icons.Filled.Star,
+                            contentDescription = null,
+                            tint = GoldAccent,
+                            modifier = Modifier.size(16.dp)
+                        )
+                        RelationType.ENEMY -> Icon(
+                            imageVector = Icons.Filled.Warning,
+                            contentDescription = null,
+                            tint = CoralNegative,
+                            modifier = Modifier.size(16.dp)
+                        )
+                        else -> Unit
+                    }
                 }
                 Text(
                     text = relationLabel,

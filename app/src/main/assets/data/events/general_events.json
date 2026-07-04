@@ -1080,6 +1080,853 @@
         { "label": "Take the session", "statEffects": { "money": 25000, "happiness": 10 }, "resultText": "Your riffs made the final mix. Payment cleared." },
         { "label": "Decline and keep practicing", "statEffects": { "happiness": 1 }, "resultText": "You stayed independent, for now." }
       ]
+    },
+    {
+      "id": "us_student_loan_letter",
+      "minAge": 18,
+      "maxAge": 28,
+      "restrictedToCountry": "US",
+      "text": "A thick envelope arrives from your student loan servicer. The balance is larger than you expected.",
+      "weight": 4,
+      "tags": ["finance", "education"],
+      "choices": [
+        { "label": "Set up auto-pay", "statEffects": { "money": -8000, "smarts": 2 }, "resultText": "The payments hurt, but the interest stops climbing as fast." },
+        { "label": "Ignore it for now", "statEffects": { "happiness": -3, "money": -2000 }, "resultText": "Late fees pile on. You regret waiting." }
+      ]
+    },
+    {
+      "id": "us_prom_night",
+      "minAge": 16,
+      "maxAge": 18,
+      "restrictedToCountry": "US",
+      "text": "Prom is this weekend. Friends are renting a limo and debating corsages.",
+      "weight": 4,
+      "tags": ["school", "family"],
+      "choices": [
+        { "label": "Go all out", "statEffects": { "money": -6000, "happiness": 10, "looks": 2 }, "resultText": "The photos are perfect. You dance until midnight." },
+        { "label": "Skip and hang out at home", "statEffects": { "happiness": 2, "smarts": 1 }, "resultText": "Quiet night, no drama — and no dress code." }
+      ]
+    },
+    {
+      "id": "us_car_culture_cruise",
+      "minAge": 17,
+      "maxAge": 35,
+      "restrictedToCountry": "US",
+      "text": "A Friday night cruise rolls through town — classic cars, neon lights, and loud stereos.",
+      "weight": 3,
+      "tags": ["general"],
+      "choices": [
+        { "label": "Join the cruise", "statEffects": { "money": -3000, "happiness": 7 }, "resultText": "You wave at strangers and feel part of something big." },
+        { "label": "Watch from the sidewalk", "statEffects": { "happiness": 3 }, "resultText": "The engines roar past. You head home early." }
+      ]
+    },
+    {
+      "id": "ca_hockey_night",
+      "minAge": 10,
+      "maxAge": 50,
+      "restrictedToCountry": "CA",
+      "text": "It's Hockey Night in Canada. Friends text you to watch the game together.",
+      "weight": 4,
+      "tags": ["family", "general"],
+      "choices": [
+        { "label": "Host a watch party", "statEffects": { "money": -4000, "happiness": 8 }, "familyRelationshipEffect": 4, "resultText": "Cheers and groans fill the living room." },
+        { "label": "Catch the highlights later", "statEffects": { "happiness": 2 }, "resultText": "You scroll the recap and move on." }
+      ]
+    },
+    {
+      "id": "ca_winter_storm_commute",
+      "minAge": 16,
+      "maxAge": 55,
+      "restrictedToCountry": "CA",
+      "text": "A winter storm blankets the city. Transit is delayed and sidewalks are ice.",
+      "weight": 3,
+      "tags": ["general"],
+      "choices": [
+        { "label": "Bundle up and push through", "statEffects": { "health": -2, "happiness": -1, "smarts": 1 }, "resultText": "You arrive late, frozen, but proud." },
+        { "label": "Work from home if you can", "statEffects": { "happiness": 3, "health": 1 }, "resultText": "Hot cocoa and a laptop. Smart call." }
+      ]
+    },
+    {
+      "id": "ca_maple_festival",
+      "minAge": 8,
+      "maxAge": 40,
+      "restrictedToCountry": "CA",
+      "text": "A maple syrup festival opens nearby — pancakes, sugar shacks, and sticky fingers.",
+      "weight": 3,
+      "tags": ["family"],
+      "choices": [
+        { "label": "Go for the full stack", "statEffects": { "money": -2500, "happiness": 7, "health": -1 }, "resultText": "Sweet, sticky, unforgettable." },
+        { "label": "Skip the sugar rush", "statEffects": { "health": 1 }, "resultText": "You wave as others line up for pancakes." }
+      ]
+    },
+    {
+      "id": "jp_juku_cram_school",
+      "minAge": 12,
+      "maxAge": 18,
+      "restrictedToCountry": "JP",
+      "text": "Your parents enroll you in juku after school. The classroom lights stay on late.",
+      "weight": 4,
+      "tags": ["school", "education"],
+      "choices": [
+        { "label": "Study hard every night", "statEffects": { "smarts": 6, "happiness": -3, "health": -1 }, "resultText": "Your mock exam scores climb." },
+        { "label": "Do the minimum", "statEffects": { "smarts": 1, "happiness": 2 }, "resultText": "You keep your evenings freer — for now." }
+      ]
+    },
+    {
+      "id": "jp_golden_week",
+      "minAge": 18,
+      "maxAge": 50,
+      "restrictedToCountry": "JP",
+      "text": "Golden Week approaches. Trains are packed and hotel prices spike.",
+      "weight": 4,
+      "tags": ["general", "family"],
+      "choices": [
+        { "label": "Travel despite the crowds", "statEffects": { "money": -15000, "happiness": 9 }, "resultText": "Crowded, expensive, and somehow worth it." },
+        { "label": "Stay home and rest", "statEffects": { "happiness": 4, "health": 2 }, "resultText": "Quiet streets near home feel like a secret holiday." }
+      ]
+    },
+    {
+      "id": "jp_overtime_culture",
+      "minAge": 22,
+      "maxAge": 45,
+      "restrictedToCountry": "JP",
+      "text": "Your team stays late again. Nobody wants to be the first to leave.",
+      "weight": 4,
+      "tags": ["career"],
+      "choices": [
+        { "label": "Stay until the boss leaves", "statEffects": { "money": 5000, "happiness": -4, "health": -2 }, "resultText": "You earn quiet respect — and a headache." },
+        { "label": "Leave on time politely", "statEffects": { "happiness": 3, "health": 1 }, "resultText": "A few glances follow you out. You sleep better." }
+      ]
+    },
+    {
+      "id": "br_carnival_block",
+      "minAge": 14,
+      "maxAge": 45,
+      "restrictedToCountry": "BR",
+      "text": "A street carnival bloco snakes past your neighbourhood with drums and glitter.",
+      "weight": 4,
+      "tags": ["general", "family"],
+      "choices": [
+        { "label": "Join the parade", "statEffects": { "money": -3000, "happiness": 10, "health": -1 }, "resultText": "You dance until your feet ache." },
+        { "label": "Watch from the balcony", "statEffects": { "happiness": 4 }, "resultText": "Music rises up. You film a few clips." }
+      ]
+    },
+    {
+      "id": "br_street_food_night",
+      "minAge": 12,
+      "maxAge": 50,
+      "restrictedToCountry": "BR",
+      "text": "The smell of pastel and caldo de cana drifts from a street stall.",
+      "weight": 3,
+      "tags": ["general"],
+      "choices": [
+        { "label": "Order the full plate", "statEffects": { "money": -1500, "happiness": 6, "health": -1 }, "resultText": "Crispy, sweet, perfect." },
+        { "label": "Walk past hungry", "statEffects": { "health": 1 }, "resultText": "Your wallet thanks you. Your stomach does not." }
+      ]
+    },
+    {
+      "id": "br_football_rivalry",
+      "minAge": 10,
+      "maxAge": 55,
+      "restrictedToCountry": "BR",
+      "text": "Derby day. Half the city wears one jersey; the other half wears the rival's.",
+      "weight": 4,
+      "tags": ["family", "general"],
+      "choices": [
+        { "label": "Go to the match", "statEffects": { "money": -5000, "happiness": 9 }, "familyRelationshipEffect": 3, "resultText": "The roar of the crowd stays with you for days." },
+        { "label": "Watch at a bar", "statEffects": { "money": -2000, "happiness": 6 }, "resultText": "Cheers spill into the street." }
+      ]
+    },
+    {
+      "id": "mx_dia_de_muertos",
+      "minAge": 8,
+      "maxAge": 60,
+      "restrictedToCountry": "MX",
+      "text": "Día de Muertos arrives. Marigolds and ofrendas fill homes and plazas.",
+      "weight": 4,
+      "tags": ["family"],
+      "choices": [
+        { "label": "Help build the ofrenda", "statEffects": { "happiness": 7 }, "familyRelationshipEffect": 6, "resultText": "Stories of grandparents fill the evening." },
+        { "label": "Visit the cemetery with family", "statEffects": { "happiness": 5, "money": -1000 }, "familyRelationshipEffect": 5, "resultText": "Candles flicker among the graves." }
+      ]
+    },
+    {
+      "id": "mx_street_tacos",
+      "minAge": 10,
+      "maxAge": 50,
+      "restrictedToCountry": "MX",
+      "text": "A taquería on the corner is packed. Al pastor spins on the trompo.",
+      "weight": 3,
+      "tags": ["general"],
+      "choices": [
+        { "label": "Order a full orden", "statEffects": { "money": -1200, "happiness": 7, "health": -1 }, "resultText": "Salsa, lime, perfection." },
+        { "label": "Just one taco", "statEffects": { "money": -400, "happiness": 3 }, "resultText": "You leave wanting more." }
+      ]
+    },
+    {
+      "id": "mx_lucha_libre",
+      "minAge": 12,
+      "maxAge": 45,
+      "restrictedToCountry": "MX",
+      "text": "Friends invite you to a lucha libre night. Masks, drama, and flying kicks.",
+      "weight": 3,
+      "tags": ["general"],
+      "choices": [
+        { "label": "Cheer from the front row", "statEffects": { "money": -3500, "happiness": 9 }, "resultText": "You lose your voice yelling for the técnico." },
+        { "label": "Stay home", "statEffects": { "happiness": 1 }, "resultText": "You catch the highlights online later." }
+      ]
+    },
+    {
+      "id": "gb_pub_quiz",
+      "minAge": 18,
+      "maxAge": 50,
+      "restrictedToCountry": "GB",
+      "text": "Your local pub is hosting a quiz night. The prize is a round of drinks.",
+      "weight": 4,
+      "tags": ["general"],
+      "choices": [
+        { "label": "Join a team", "statEffects": { "money": -2000, "happiness": 7, "smarts": 2 }, "resultText": "You nail the music round. Nearly won." },
+        { "label": "Sit this one out", "statEffects": { "happiness": 1 }, "resultText": "You nurse a pint and listen in." }
+      ]
+    },
+    {
+      "id": "gb_tube_delay",
+      "minAge": 16,
+      "maxAge": 55,
+      "restrictedToCountry": "GB",
+      "text": "The Tube is delayed. A polite voice apologises for the inconvenience — again.",
+      "weight": 3,
+      "tags": ["general"],
+      "choices": [
+        { "label": "Wait it out", "statEffects": { "happiness": -2 }, "resultText": "You arrive late, damp, and resigned." },
+        { "label": "Walk part of the way", "statEffects": { "health": 2, "happiness": -1 }, "resultText": "Fresh air beats a packed carriage." }
+      ]
+    },
+    {
+      "id": "gb_a_level_stress",
+      "minAge": 16,
+      "maxAge": 18,
+      "restrictedToCountry": "GB",
+      "text": "A-Level exams loom. Revision notes cover every surface of your room.",
+      "weight": 4,
+      "tags": ["school", "education"],
+      "choices": [
+        { "label": "Lock in and revise", "statEffects": { "smarts": 6, "happiness": -3 }, "resultText": "Flashcards until midnight." },
+        { "label": "Take a mental health day", "statEffects": { "happiness": 4, "health": 2, "smarts": -1 }, "resultText": "You come back clearer tomorrow." }
+      ]
+    },
+    {
+      "id": "fr_bac_prep",
+      "minAge": 16,
+      "maxAge": 18,
+      "restrictedToCountry": "FR",
+      "text": "Le bac approaches. Philosophy essays and late-night revision fill your calendar.",
+      "weight": 4,
+      "tags": ["school", "education"],
+      "choices": [
+        { "label": "Cram with classmates", "statEffects": { "smarts": 5, "happiness": -2 }, "resultText": "Coffee and past papers until dawn." },
+        { "label": "Trust your notes", "statEffects": { "smarts": 2, "happiness": 2 }, "resultText": "You sleep. Results will tell." }
+      ]
+    },
+    {
+      "id": "fr_cafe_terrace",
+      "minAge": 18,
+      "maxAge": 50,
+      "restrictedToCountry": "FR",
+      "text": "A sunny terrace café calls your name. People-watching is a national sport.",
+      "weight": 3,
+      "tags": ["general"],
+      "choices": [
+        { "label": "Order a long coffee", "statEffects": { "money": -2000, "happiness": 6 }, "resultText": "An hour disappears in the best way." },
+        { "label": "Keep walking", "statEffects": { "health": 1 }, "resultText": "You save the euros for later." }
+      ]
+    },
+    {
+      "id": "fr_transit_strike",
+      "minAge": 18,
+      "maxAge": 55,
+      "restrictedToCountry": "FR",
+      "text": "A transit strike freezes the city. Platforms are packed and tempers short.",
+      "weight": 3,
+      "tags": ["general"],
+      "choices": [
+        { "label": "Bike or walk", "statEffects": { "health": 3, "happiness": -1 }, "resultText": "You arrive sweaty but on time." },
+        { "label": "Work remotely", "statEffects": { "happiness": 2 }, "resultText": "The city can wait." }
+      ]
+    },
+    {
+      "id": "de_abitur_exams",
+      "minAge": 17,
+      "maxAge": 19,
+      "restrictedToCountry": "DE",
+      "text": "Abitur exams are weeks away. Your timetable is a wall of colour-coded subjects.",
+      "weight": 4,
+      "tags": ["school", "education"],
+      "choices": [
+        { "label": "Study with a Lerngruppe", "statEffects": { "smarts": 6, "happiness": -2 }, "resultText": "Group notes save you on history." },
+        { "label": "Solo revision only", "statEffects": { "smarts": 3, "happiness": 1 }, "resultText": "Quiet focus, fewer distractions." }
+      ]
+    },
+    {
+      "id": "de_oktoberfest_visit",
+      "minAge": 18,
+      "maxAge": 45,
+      "restrictedToCountry": "DE",
+      "text": "Oktoberfest tents fill with music, pretzels, and raised Maß glasses.",
+      "weight": 3,
+      "tags": ["general"],
+      "choices": [
+        { "label": "Join the festivities", "statEffects": { "money": -8000, "happiness": 9, "health": -2 }, "resultText": "You learn a drinking song by accident." },
+        { "label": "Skip the crowds", "statEffects": { "happiness": 2 }, "resultText": "You enjoy a quiet evening instead." }
+      ]
+    },
+    {
+      "id": "de_autobahn_trip",
+      "minAge": 18,
+      "maxAge": 50,
+      "restrictedToCountry": "DE",
+      "text": "A clear stretch of Autobahn opens ahead. No speed limit — and no excuses.",
+      "weight": 3,
+      "tags": ["general"],
+      "choices": [
+        { "label": "Drive carefully but fast", "statEffects": { "happiness": 6, "health": -1 }, "resultText": "The landscape blurs. You feel alive." },
+        { "label": "Stick to the right lane", "statEffects": { "happiness": 2, "health": 1 }, "resultText": "Steady and safe. Others fly past." }
+      ]
+    },
+    {
+      "id": "ng_danfo_commute",
+      "minAge": 12,
+      "maxAge": 40,
+      "restrictedToCountry": "NG",
+      "text": "A danfo conductor shouts your stop. The bus is packed and the music is loud.",
+      "weight": 4,
+      "tags": ["general"],
+      "choices": [
+        { "label": "Squeeze in and ride", "statEffects": { "money": -500, "happiness": 2 }, "resultText": "You arrive dusty but on time." },
+        { "label": "Wait for a less full one", "statEffects": { "happiness": 1 }, "resultText": "Patience pays. Slightly." }
+      ]
+    },
+    {
+      "id": "ng_jollof_debate",
+      "minAge": 14,
+      "maxAge": 50,
+      "restrictedToCountry": "NG",
+      "text": "A family gathering erupts into the eternal jollof rice debate.",
+      "weight": 3,
+      "tags": ["family"],
+      "choices": [
+        { "label": "Defend your side loudly", "statEffects": { "happiness": 6 }, "familyRelationshipEffect": 2, "resultText": "Laughter wins. Nobody changes their mind." },
+        { "label": "Stay neutral and eat", "statEffects": { "happiness": 5, "health": -1 }, "resultText": "The rice is excellent either way." }
+      ]
+    },
+    {
+      "id": "za_minibus_taxi",
+      "minAge": 12,
+      "maxAge": 40,
+      "restrictedToCountry": "ZA",
+      "text": "You flag a minibus taxi. The guard shouts destinations as you climb in.",
+      "weight": 4,
+      "tags": ["general"],
+      "choices": [
+        { "label": "Ride along", "statEffects": { "money": -800, "happiness": 2 }, "resultText": "You master the hand signals by the end." },
+        { "label": "Take a longer walk", "statEffects": { "health": 2 }, "resultText": "Slower, quieter, cheaper." }
+      ]
+    },
+    {
+      "id": "za_heritage_day",
+      "minAge": 10,
+      "maxAge": 55,
+      "restrictedToCountry": "ZA",
+      "text": "Heritage Day — braai smoke and cultural dress fill the neighbourhood.",
+      "weight": 3,
+      "tags": ["family"],
+      "choices": [
+        { "label": "Wear traditional attire", "statEffects": { "happiness": 7 }, "familyRelationshipEffect": 5, "resultText": "Photos and pride all afternoon." },
+        { "label": "Focus on the food", "statEffects": { "money": -2000, "happiness": 6 }, "resultText": "The grill does the talking." }
+      ]
+    },
+    {
+      "id": "in_train_platform",
+      "minAge": 10,
+      "maxAge": 45,
+      "restrictedToCountry": "IN",
+      "text": "The railway platform is a river of people. Your train is announced in three languages.",
+      "weight": 3,
+      "tags": ["general"],
+      "choices": [
+        { "label": "Push toward the door", "statEffects": { "happiness": -1, "smarts": 1 }, "resultText": "You find a seat. Barely." },
+        { "label": "Wait for the next one", "statEffects": { "happiness": 1 }, "resultText": "Less chaos, more time." }
+      ]
+    },
+    {
+      "id": "in_cricket_match",
+      "minAge": 10,
+      "maxAge": 50,
+      "restrictedToCountry": "IN",
+      "text": "A big cricket match is on. The whole street seems to be watching.",
+      "weight": 4,
+      "tags": ["family", "general"],
+      "choices": [
+        { "label": "Watch with neighbours", "statEffects": { "happiness": 8 }, "familyRelationshipEffect": 3, "resultText": "Every boundary is a celebration." },
+        { "label": "Study instead", "statEffects": { "smarts": 3, "happiness": -2 }, "resultText": "You hear the cheers through the wall." }
+      ]
+    },
+    {
+      "id": "eg_ramadan_iftar",
+      "minAge": 10,
+      "maxAge": 60,
+      "restrictedToCountry": "EG",
+      "text": "Ramadan evenings fill the streets. Iftar tables appear as the call to prayer sounds.",
+      "weight": 4,
+      "tags": ["family"],
+      "choices": [
+        { "label": "Share iftar with family", "statEffects": { "happiness": 8 }, "familyRelationshipEffect": 6, "resultText": "Dates, soup, and warmth." },
+        { "label": "Volunteer at a community table", "statEffects": { "happiness": 7, "money": -1000 }, "resultText": "You serve strangers and feel full." }
+      ]
+    },
+    {
+      "id": "eg_nile_felucca",
+      "minAge": 12,
+      "maxAge": 50,
+      "restrictedToCountry": "EG",
+      "text": "A felucca captain offers a sunset sail on the Nile.",
+      "weight": 3,
+      "tags": ["general"],
+      "choices": [
+        { "label": "Take the ride", "statEffects": { "money": -4000, "happiness": 8 }, "resultText": "Cairo glows gold on the water." },
+        { "label": "Watch from the corniche", "statEffects": { "happiness": 3 }, "resultText": "Free, and still beautiful." }
+      ]
+    },
+    {
+      "id": "eg_thanaweya_stress",
+      "minAge": 16,
+      "maxAge": 18,
+      "restrictedToCountry": "EG",
+      "text": "Thanaweya Amma pressure mounts. Tutors and past papers fill every free hour.",
+      "weight": 4,
+      "tags": ["school", "education"],
+      "choices": [
+        { "label": "Double down on tutoring", "statEffects": { "money": -10000, "smarts": 6, "happiness": -3 }, "resultText": "Your scores improve. Sleep does not." },
+        { "label": "Balance study and rest", "statEffects": { "smarts": 3, "happiness": 2, "health": 1 }, "resultText": "Steady progress without burnout." }
+      ]
+    },
+    {
+      "id": "ph_jeepney_ride",
+      "minAge": 10,
+      "maxAge": 40,
+      "restrictedToCountry": "PH",
+      "text": "A colourful jeepney slows for passengers. Coins pass hand to hand toward the driver.",
+      "weight": 4,
+      "tags": ["general"],
+      "choices": [
+        { "label": "Hop on", "statEffects": { "money": -300, "happiness": 3 }, "resultText": "You master the coin pass." },
+        { "label": "Wait for a ride-hail", "statEffects": { "money": -1500, "happiness": 2 }, "resultText": "Air-conditioning wins today." }
+      ]
+    },
+    {
+      "id": "ph_barangay_fiesta",
+      "minAge": 8,
+      "maxAge": 50,
+      "restrictedToCountry": "PH",
+      "text": "Your barangay fiesta fills the street with lechon, games, and karaoke.",
+      "weight": 4,
+      "tags": ["family"],
+      "choices": [
+        { "label": "Join the festivities", "statEffects": { "money": -2000, "happiness": 9 }, "familyRelationshipEffect": 5, "resultText": "You sing off-key and nobody minds." },
+        { "label": "Help in the kitchen", "statEffects": { "happiness": 6 }, "familyRelationshipEffect": 6, "resultText": "Aunties put you to work — and feed you well." }
+      ]
+    },
+    {
+      "id": "ph_ofw_video_call",
+      "minAge": 10,
+      "maxAge": 45,
+      "restrictedToCountry": "PH",
+      "text": "A relative working abroad video-calls during a family meal.",
+      "weight": 3,
+      "tags": ["family"],
+      "choices": [
+        { "label": "Pass the phone around", "statEffects": { "happiness": 6 }, "familyRelationshipEffect": 7, "resultText": "Everyone gets a turn. Tears and jokes mix." },
+        { "label": "Keep it short", "statEffects": { "happiness": 2 }, "familyRelationshipEffect": 2, "resultText": "You wave and return to dinner." }
+      ]
+    },
+    {
+      "id": "id_mudik_travel",
+      "minAge": 12,
+      "maxAge": 50,
+      "restrictedToCountry": "ID",
+      "text": "Mudik season — millions head home for the holiday. Tickets are scarce.",
+      "weight": 4,
+      "tags": ["family"],
+      "choices": [
+        { "label": "Make the journey home", "statEffects": { "money": -12000, "happiness": 9 }, "familyRelationshipEffect": 8, "resultText": "Crowded, long, and full of love." },
+        { "label": "Stay in the city", "statEffects": { "happiness": 2, "money": 2000 }, "resultText": "Quiet streets. You miss home a little." }
+      ]
+    },
+    {
+      "id": "id_warung_meal",
+      "minAge": 10,
+      "maxAge": 50,
+      "restrictedToCountry": "ID",
+      "text": "A warung serves steaming nasi goreng for less than a fancy café.",
+      "weight": 3,
+      "tags": ["general"],
+      "choices": [
+        { "label": "Eat there", "statEffects": { "money": -800, "happiness": 6 }, "resultText": "Simple, spicy, perfect." },
+        { "label": "Cook at home", "statEffects": { "money": -300, "happiness": 2 }, "resultText": "Not quite the same, but fine." }
+      ]
+    },
+    {
+      "id": "id_batik_market",
+      "minAge": 14,
+      "maxAge": 45,
+      "restrictedToCountry": "ID",
+      "text": "A batik market displays patterns from across the islands.",
+      "weight": 3,
+      "tags": ["general"],
+      "choices": [
+        { "label": "Buy a piece", "statEffects": { "money": -5000, "happiness": 7, "looks": 1 }, "resultText": "You wear it proudly." },
+        { "label": "Browse only", "statEffects": { "happiness": 2, "smarts": 1 }, "resultText": "You learn the motifs without spending." }
+      ]
+    },
+    {
+      "id": "immigration_random_visa_check",
+      "minAge": 18,
+      "maxAge": 60,
+      "text": "Officers stop you for a random visa check on the street. Your papers are in your bag.",
+      "weight": 4,
+      "tags": ["general", "requires_non_citizen"],
+      "choices": [
+        { "label": "Present documents calmly", "statEffects": { "happiness": -2, "smarts": 1 }, "resultText": "They stamp nothing and wave you on." },
+        { "label": "Argue about your rights", "statEffects": { "happiness": -5 }, "resultText": "A longer interview follows. You are late for everything." }
+      ]
+    },
+    {
+      "id": "immigration_citizenship_test_prep",
+      "minAge": 22,
+      "maxAge": 55,
+      "text": "A community centre offers free citizenship-test prep. The practice quiz is harder than you expected.",
+      "weight": 3,
+      "tags": ["general", "requires_non_citizen", "education"],
+      "choices": [
+        { "label": "Study every night", "statEffects": { "smarts": 5, "happiness": -2 }, "resultText": "History dates and civic facts stick." },
+        { "label": "Skip and wing it later", "statEffects": { "happiness": 2 }, "resultText": "You hope the real test is easier." }
+      ]
+    },
+    {
+      "id": "immigration_homesickness_border",
+      "minAge": 18,
+      "maxAge": 50,
+      "text": "At the airport border queue, a family speaking your mother tongue makes your chest ache with homesickness.",
+      "weight": 4,
+      "tags": ["general", "requires_non_citizen", "family"],
+      "choices": [
+        { "label": "Call family back home", "statEffects": { "happiness": 4 }, "familyRelationshipEffect": 5, "resultText": "Their voices steady you through passport control." },
+        { "label": "Push the feeling down", "statEffects": { "happiness": -3, "smarts": 1 }, "resultText": "You focus on the stamp and the next chapter." }
+      ]
+    },
+    {
+      "id": "immigration_work_permit_delay",
+      "minAge": 22,
+      "maxAge": 45,
+      "text": "Your work-permit renewal is delayed. HR asks if you can wait another month without travel.",
+      "weight": 3,
+      "tags": ["career", "requires_non_citizen"],
+      "choices": [
+        { "label": "Pay for expedited processing", "statEffects": { "money": -12000, "happiness": 2 }, "resultText": "The stamp arrives just in time." },
+        { "label": "Wait it out", "statEffects": { "happiness": -4 }, "resultText": "Anxious weeks pass. You cancel a trip home." }
+      ]
+    },
+    {
+      "id": "immigration_language_class",
+      "minAge": 18,
+      "maxAge": 50,
+      "text": "A free evening language class for newcomers opens at the library.",
+      "weight": 3,
+      "tags": ["general", "requires_non_citizen"],
+      "choices": [
+        { "label": "Enroll and practice", "statEffects": { "smarts": 4, "happiness": 3 }, "resultText": "You order coffee without pointing at the menu." },
+        { "label": "Rely on English only", "statEffects": { "happiness": 1 }, "resultText": "You get by — mostly." }
+      ]
+    },
+    {
+      "id": "immigration_embassy_day",
+      "minAge": 20,
+      "maxAge": 55,
+      "text": "You spend a full day at your home-country embassy renewing documents. The queue snakes around the block.",
+      "weight": 3,
+      "tags": ["general", "requires_non_citizen"],
+      "choices": [
+        { "label": "Wait patiently", "statEffects": { "happiness": -2, "smarts": 1 }, "resultText": "You leave with stamps and a headache." },
+        { "label": "Pay a fixer fee", "statEffects": { "money": -8000, "happiness": 1 }, "resultText": "Faster line. Your wallet is lighter." }
+      ]
+    },
+    {
+      "id": "immigration_neighbour_welcome",
+      "minAge": 18,
+      "maxAge": 60,
+      "text": "A neighbour invites you to a potluck for people new to the country.",
+      "weight": 3,
+      "tags": ["general", "requires_non_citizen", "family"],
+      "choices": [
+        { "label": "Bring a dish from home", "statEffects": { "money": -2000, "happiness": 8 }, "resultText": "Everyone asks for the recipe. You feel less alone." },
+        { "label": "Stay in", "statEffects": { "happiness": 1 }, "resultText": "Quiet night. The invitation sits on the fridge." }
+      ]
+    },
+    {
+      "id": "vehicle_fender_bender",
+      "minAge": 18,
+      "maxAge": 70,
+      "text": "A minor fender bender at a junction. The other driver is already filming.",
+      "weight": 4,
+      "tags": ["general", "requires_vehicle"],
+      "choices": [
+        {
+          "label": "Exchange details and pay for repairs",
+          "statEffects": { "money": -15000, "happiness": -3 },
+          "conditionEffect": -12,
+          "targetAssetType": "CAR",
+          "resultText": "Insurance will not cover everything. Your vehicle takes a hit."
+        },
+        {
+          "label": "Drive off before they get your plate",
+          "statEffects": { "happiness": -6 },
+          "triggersCrime": "FRAUD",
+          "resultText": "You floor it. Sirens may follow."
+        }
+      ]
+    },
+    {
+      "id": "vehicle_pulled_over_speeding",
+      "minAge": 18,
+      "maxAge": 65,
+      "text": "Blue lights flash behind you. You were definitely over the limit.",
+      "weight": 4,
+      "tags": ["general", "requires_vehicle"],
+      "choices": [
+        {
+          "label": "Pull over and pay the fine",
+          "statEffects": { "money": -8000, "happiness": -2 },
+          "resultText": "A ticket and a lecture. Expensive lesson."
+        },
+        {
+          "label": "Try to outrun them",
+          "statEffects": { "happiness": -8, "health": -2 },
+          "triggersCrime": "FRAUD",
+          "resultText": "A chase is never worth it."
+        }
+      ]
+    },
+    {
+      "id": "vehicle_flat_tire_highway",
+      "minAge": 18,
+      "maxAge": 70,
+      "text": "A flat tire on the highway. Traffic blasts past as you stand on the shoulder.",
+      "weight": 3,
+      "tags": ["general", "requires_vehicle"],
+      "choices": [
+        {
+          "label": "Call roadside assistance",
+          "statEffects": { "money": -6000, "happiness": -1 },
+          "conditionEffect": -5,
+          "targetAssetType": "CAR",
+          "resultText": "Help arrives. Your wallet is lighter."
+        },
+        {
+          "label": "Change it yourself",
+          "statEffects": { "health": -3, "happiness": -2, "smarts": 1 },
+          "conditionEffect": -3,
+          "targetAssetType": "CAR",
+          "resultText": "Grease under your nails, but you are moving again."
+        }
+      ]
+    },
+    {
+      "id": "vehicle_parking_ticket_stack",
+      "minAge": 18,
+      "maxAge": 60,
+      "text": "You find a stack of parking tickets under your wiper. The city wants payment.",
+      "weight": 3,
+      "tags": ["general", "requires_vehicle"],
+      "choices": [
+        {
+          "label": "Pay them all",
+          "statEffects": { "money": -10000, "happiness": -2 },
+          "resultText": "Painful, but your record stays clean."
+        },
+        {
+          "label": "Ignore them",
+          "statEffects": { "happiness": -1 },
+          "resultText": "They will compound. Future-you will not thank you."
+        }
+      ]
+    },
+    {
+      "id": "vehicle_joyride_temptation",
+      "minAge": 18,
+      "maxAge": 35,
+      "text": "Friends dare you to race another car on an empty stretch of road.",
+      "weight": 3,
+      "tags": ["general", "requires_vehicle"],
+      "choices": [
+        {
+          "label": "Decline and drive home",
+          "statEffects": { "happiness": 1, "smarts": 2 },
+          "resultText": "You keep your license and your pride."
+        },
+        {
+          "label": "Accept the race",
+          "statEffects": { "happiness": 4, "health": -2 },
+          "conditionEffect": -8,
+          "targetAssetType": "CAR",
+          "triggersCrime": "FRAUD",
+          "resultText": "Adrenaline — and consequences."
+        }
+      ]
+    },
+    {
+      "id": "vehicle_motorbike_skid",
+      "minAge": 18,
+      "maxAge": 50,
+      "text": "Rain slicks the road. Your two-wheeler skids at a corner.",
+      "weight": 3,
+      "tags": ["general", "requires_vehicle"],
+      "choices": [
+        {
+          "label": "Brake carefully and walk it off",
+          "statEffects": { "health": -4, "happiness": -2 },
+          "conditionEffect": -10,
+          "targetAssetType": "MOTORBIKE",
+          "resultText": "Scrapes and a bent mirror. You are lucky."
+        },
+        {
+          "label": "Push through the skid",
+          "statEffects": { "health": -8, "happiness": -4 },
+          "conditionEffect": -18,
+          "targetAssetType": "MOTORBIKE",
+          "resultText": "You stay upright — barely. The bike needs work."
+        }
+      ]
+    },
+    {
+      "id": "vehicle_checkpoint",
+      "minAge": 18,
+      "maxAge": 60,
+      "text": "A police checkpoint stops traffic. Officers ask for papers and a breath test.",
+      "weight": 3,
+      "tags": ["general", "requires_vehicle"],
+      "choices": [
+        {
+          "label": "Comply fully",
+          "statEffects": { "happiness": -1 },
+          "resultText": "You are waved through after a few tense minutes."
+        },
+        {
+          "label": "U-turn and leave",
+          "statEffects": { "happiness": -5 },
+          "triggersCrime": "FRAUD",
+          "resultText": "Fleeing a checkpoint is a bad look."
+        }
+      ]
+    },
+    {
+      "id": "moral_found_lost_wallet",
+      "minAge": 12,
+      "maxAge": 70,
+      "text": "You find a wallet on the sidewalk, thick with cash and an ID card.",
+      "weight": 4,
+      "tags": ["general", "positive"],
+      "choices": [
+        {
+          "label": "Return it to the owner",
+          "statEffects": { "karma": 8, "happiness": 5 },
+          "resultText": "They almost cry with relief. You walk away lighter."
+        },
+        {
+          "label": "Keep the cash, ditch the wallet",
+          "statEffects": { "money": 5000, "karma": -10, "happiness": -2 },
+          "resultText": "Easy money. Your conscience is less easy."
+        }
+      ]
+    },
+    {
+      "id": "moral_witnessed_hit_and_run",
+      "minAge": 16,
+      "maxAge": 70,
+      "text": "You witness a hit-and-run. The driver speeds away. A bystander is hurt.",
+      "weight": 4,
+      "tags": ["general", "negative"],
+      "choices": [
+        {
+          "label": "Call for help and give a statement",
+          "statEffects": { "karma": 10, "happiness": -1, "smarts": 1 },
+          "resultText": "You stay until help arrives. The truth matters."
+        },
+        {
+          "label": "Look away and keep walking",
+          "statEffects": { "karma": -12, "happiness": -4 },
+          "resultText": "You pretend you saw nothing. Sleep comes hard."
+        }
+      ]
+    },
+    {
+      "id": "moral_overpaid_change",
+      "minAge": 10,
+      "maxAge": 70,
+      "text": "A cashier gives you far too much change. They have not noticed.",
+      "weight": 3,
+      "tags": ["general", "positive"],
+      "choices": [
+        {
+          "label": "Point out the mistake",
+          "statEffects": { "karma": 6, "happiness": 3 },
+          "resultText": "They thank you. Small honesty, big feeling."
+        },
+        {
+          "label": "Pocket it and leave",
+          "statEffects": { "money": 2000, "karma": -6 },
+          "resultText": "Free money. A quiet guilt follows you out."
+        }
+      ]
+    },
+    {
+      "id": "moral_beggar_at_door",
+      "minAge": 14,
+      "maxAge": 70,
+      "text": "Someone hungry asks for food at your door late at night.",
+      "weight": 3,
+      "tags": ["general", "positive"],
+      "choices": [
+        {
+          "label": "Share a meal",
+          "statEffects": { "money": -1500, "karma": 7, "happiness": 4 },
+          "resultText": "They eat slowly. You both feel human."
+        },
+        {
+          "label": "Close the door",
+          "statEffects": { "karma": -8, "happiness": -3 },
+          "resultText": "The knock stops. Silence is heavy."
+        }
+      ]
+    },
+    {
+      "id": "moral_office_credit",
+      "minAge": 22,
+      "maxAge": 60,
+      "text": "A colleague's idea is about to be credited to you by mistake in a meeting.",
+      "weight": 3,
+      "tags": ["general", "career", "negative"],
+      "choices": [
+        {
+          "label": "Correct the record",
+          "statEffects": { "karma": 9, "happiness": 2 },
+          "resultText": "You give credit where it is due. Respect follows."
+        },
+        {
+          "label": "Stay silent and take the praise",
+          "statEffects": { "karma": -9, "happiness": 3, "smarts": 1 },
+          "resultText": "Applause feels hollow. Your colleague knows."
+        }
+      ]
     }
   ]
 }

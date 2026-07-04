@@ -15,6 +15,7 @@ enum class AssetType {
  * Ownable property, vehicle, or generational heirloom.
  * [condition] affects [currentValue] via [com.maisha.game.domain.FinanceEngine.recalculateValue].
  * Heirlooms skip degradation and appreciate over time.
+ * Real estate may be [isRentedOut] for passive income and tenant events.
  */
 @Serializable
 data class Asset(
@@ -27,5 +28,9 @@ data class Asset(
     val monthlyUpkeep: Int,
     val isHeirloom: Boolean = false,
     /** [Character.generationNumber] when this heirloom entered the family. */
-    val generationAcquired: Int = 1
+    val generationAcquired: Int = 1,
+    /** True when this real-estate asset is leased to a tenant. */
+    val isRentedOut: Boolean = false,
+    /** Tenant satisfaction 0–100 when [isRentedOut]; null when vacant. */
+    val tenantHappiness: Int? = null
 )

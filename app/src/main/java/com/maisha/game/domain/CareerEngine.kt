@@ -1,8 +1,10 @@
 // app/src/main/java/com/maisha/game/domain/CareerEngine.kt
 package com.maisha.game.domain
 
+import com.maisha.game.data.CountryCatalog
 import com.maisha.game.data.EconomyScaler
 import com.maisha.game.data.JobPool
+import com.maisha.game.data.model.AssetType
 import com.maisha.game.data.model.CareerState
 import com.maisha.game.data.model.Character
 import com.maisha.game.data.model.EventChoice
@@ -10,6 +12,7 @@ import com.maisha.game.data.model.HustleType
 import com.maisha.game.data.model.Job
 import com.maisha.game.data.model.LifeEvent
 import com.maisha.game.data.model.SchoolStage
+import com.maisha.game.data.model.VisaType
 import com.maisha.game.data.model.WorkEffort
 import com.maisha.game.util.clampPerformanceScore
 import com.maisha.game.util.clampStat
@@ -42,7 +45,8 @@ enum class SideHustleFailure {
 
 @Singleton
 class CareerEngine @Inject constructor(
-    private val healthEngine: HealthEngine
+    private val healthEngine: HealthEngine,
+    private val relocationEngine: RelocationEngine
 ) {
 
     /** Minimum age and completed-or-enrolled secondary+ education; rejects expelled and incomplete dropouts. */
@@ -54,10 +58,17 @@ class CareerEngine @Inject constructor(
 
     /**
      * Per-job eligibility: education (or skill bypass), plus optional [Job.minFollowers] social gate.
-     * High skill in [Job.skillBypass] can substitute for formal [Job.minEducation].
+     * Military jobs ([Job.isMilitary]) bypass education and only require age.
+     * Degree-tier jobs ([offersWorkVisaSponsorship]) are eligible for international sponsorship applications.
      */
     fun isJobEligible(character: Character, job: Job): Boolean {
+        if (character.age < MIN_JOB_AGE) return false
+        if (character.criminalRecord.currentlyIncarcerated) return false
+        if (job.isMilitary) {
+            return character.age >= MIN_MILITARY_AGE && !character.education.expelled
+        }
         if (!isJobEligible(character)) return false
+        if (job.requiresDrivingLicense && !character.hasDrivingLicense) return false
         if (job.minFollowers > 0) {
             if (!character.socialMedia.hasAccount ||
                 character.socialMedia.followers < job.minFollowers
@@ -69,6 +80,10 @@ class CareerEngine @Inject constructor(
         return meetsSkillBypass(character, job)
     }
 
+    /** Degree-tier roles that can sponsor a [VisaType.WORK] visa from abroad. */
+    fun offersWorkVisaSponsorship(job: Job): Boolean =
+        job.minEducation == SchoolStage.GRADUATED || job.minEducation == SchoolStage.UNIVERSITY
+
     private fun meetsSkillBypass(character: Character, job: Job): Boolean {
         val skill = job.skillBypass ?: return false
         if (job.minSkillLevel <= 0) return false
@@ -76,18 +91,40 @@ class CareerEngine @Inject constructor(
         return level >= job.minSkillLevel
     }
 
-    /** Country-scoped job list filtered by education and followers; empty if already employed, retired, or ineligible. */
+    /**
+     * Local jobs plus sponsored degree-tier roles abroad (id suffix `@CC` for destination country).
+     * Empty if already employed, retired, or ineligible.
+     */
     fun getEligibleJobs(character: Character): List<Job> {
         if (character.career.isRetired) return emptyList()
-        if (!isJobEligible(character) || character.career.currentJob != null) return emptyList()
+        if (character.career.currentJob != null) return emptyList()
+        if (character.age < MIN_JOB_AGE) return emptyList()
 
-        return JobPool.getJobsForCountry(character.countryCode).filter { job ->
+        val local = JobPool.getJobsForCountry(character.countryCode).filter { job ->
             isJobEligible(character, job)
         }
+        val sponsoredAbroad = CountryCatalog.all()
+            .asSequence()
+            .filter { it.code != character.countryCode }
+            .flatMap { country ->
+                JobPool.getJobsForCountry(country.code)
+                    .asSequence()
+                    .filter { offersWorkVisaSponsorship(it) && isJobEligible(character, it) }
+                    .map { job ->
+                        job.copy(
+                            id = sponsoredJobId(job.id, country.code),
+                            title = "${job.title} (${country.displayName} — Work Visa)"
+                        )
+                    }
+            }
+            .distinctBy { it.id }
+            .toList()
+        return local + sponsoredAbroad
     }
 
     /**
      * Hire roll using smarts, GPA, and criminal-record penalty (reduced after clean years since last arrest).
+     * Sponsored foreign listings (`jobId@CC`) relocate with a [VisaType.WORK] visa on success.
      *
      * @return [CareerResult.Hired] with salary scaled to country, or [CareerResult.Rejected].
      */
@@ -99,9 +136,18 @@ class CareerEngine @Inject constructor(
             return character to CareerResult.Rejected
         }
 
-        val jobTemplate = JobPool.findById(jobId) ?: return character to CareerResult.Rejected
+        val (baseJobId, sponsorCountry) = parseSponsoredJobId(jobId)
+        val jobTemplate = JobPool.findById(baseJobId) ?: return character to CareerResult.Rejected
         if (!isJobEligible(character, jobTemplate)) {
             return character to CareerResult.Rejected
+        }
+        if (sponsorCountry != null) {
+            if (!offersWorkVisaSponsorship(jobTemplate)) {
+                return character to CareerResult.Rejected
+            }
+            if (sponsorCountry == character.countryCode) {
+                return character to CareerResult.Rejected
+            }
         }
 
         val successChance = calculateHireChance(character)
@@ -109,20 +155,56 @@ class CareerEngine @Inject constructor(
             return character to CareerResult.Rejected
         }
 
+        var hiredCharacter = character
+        val workCountry = sponsorCountry ?: character.countryCode
+        if (sponsorCountry != null) {
+            hiredCharacter = relocationEngine.relocate(
+                hiredCharacter,
+                CountryCatalog.getCountry(sponsorCountry),
+                VisaType.WORK
+            )
+        } else if (
+            hiredCharacter.isLivingAbroad() &&
+            offersWorkVisaSponsorship(jobTemplate) &&
+            hiredCharacter.currentVisa != VisaType.WORK
+        ) {
+            hiredCharacter = hiredCharacter.copy(
+                currentVisa = VisaType.WORK,
+                visaYearsRemaining = relocationEngine.defaultVisaYears(VisaType.WORK)
+            )
+        }
+
         val hiredJob = jobTemplate.copy(
-            baseSalary = EconomyScaler.scaleAmount(jobTemplate.baseSalary, character.countryCode),
-            performanceScore = 50
+            baseSalary = EconomyScaler.scaleAmount(jobTemplate.baseSalary, workCountry),
+            performanceScore = 50,
+            isMilitary = jobTemplate.isMilitary,
+            requiresDrivingLicense = jobTemplate.requiresDrivingLicense
         )
-        val updatedCareer = character.career.copy(
+        val pendingDeployment = hiredJob.isMilitary && Random.nextFloat() < DEPLOYMENT_CHANCE
+        val updatedCareer = hiredCharacter.career.copy(
             currentJob = hiredJob,
-            yearsAtCurrentJob = 0
+            yearsAtCurrentJob = 0,
+            isDeployed = false,
+            pendingDeployment = pendingDeployment
         )
-        return character.copy(career = updatedCareer) to CareerResult.Hired(hiredJob)
+        return hiredCharacter.copy(career = updatedCareer) to CareerResult.Hired(hiredJob)
+    }
+
+    fun sponsoredJobId(jobId: String, countryCode: String): String = "$jobId@$countryCode"
+
+    fun parseSponsoredJobId(jobId: String): Pair<String, String?> {
+        val separator = jobId.lastIndexOf('@')
+        if (separator <= 0 || separator == jobId.lastIndex) return jobId to null
+        val country = jobId.substring(separator + 1)
+        if (country.length != 2) return jobId to null
+        return jobId.substring(0, separator) to country
     }
 
     /**
      * Annual work simulation: pays [calculateAnnualSalary], adjusts performance/happiness/health by [effort],
      * increments [CareerState.yearsAtCurrentJob].
+     * Military jobs may deploy ([DEPLOYMENT_CHANCE]): double hazard pay and set [CareerState.isDeployed].
+     * [CareerState.pendingDeployment] schedules the next year's deployment for UI warning before Age Up.
      */
     fun workYear(character: Character, effort: WorkEffort): Character {
         val job = character.career.currentJob ?: return character
@@ -130,26 +212,70 @@ class CareerEngine @Inject constructor(
         val performanceDelta = EffortResolver.workYearPerformanceDelta(effort)
         val happinessDelta = EffortResolver.workYearHappinessDelta(effort)
 
+        val deployed = job.isMilitary && character.career.pendingDeployment
         val annualPay = calculateAnnualSalary(job)
+        val payThisYear = if (deployed) annualPay * HAZARD_PAY_MULTIPLIER else annualPay
         val newPerformance = clampPerformanceScore(job.performanceScore + performanceDelta)
         val updatedJob = job.copy(performanceScore = newPerformance)
+        val pendingNext = job.isMilitary && Random.nextFloat() < DEPLOYMENT_CHANCE
+        var happinessDeltaTotal = happinessDelta
+        val transitStress = needsPublicTransitCommute(character, job)
+        if (transitStress) {
+            happinessDeltaTotal -= PUBLIC_TRANSIT_STRESS
+        }
         val updatedStats = character.stats.copy(
-            money = character.stats.money + annualPay,
-            happiness = clampStat(character.stats.happiness + happinessDelta)
+            money = character.stats.money + payThisYear,
+            happiness = clampStat(character.stats.happiness + happinessDeltaTotal)
         )
 
-        return applyWorkStress(
+        var updated = applyWorkStress(
             character.copy(
                 stats = updatedStats,
                 career = character.career.copy(
                     currentJob = updatedJob,
                     yearsAtCurrentJob = character.career.yearsAtCurrentJob + 1,
-                    workEffortThisYear = effort
+                    workEffortThisYear = effort,
+                    isDeployed = deployed,
+                    pendingDeployment = pendingNext
                 )
             ),
             effort
         )
+        if (deployed) {
+            updated = updated.copy(
+                eventLog = EventLogCap.prepend(
+                    updated.eventLog,
+                    "Deployed on active duty. Hazard pay applied; combat risk is elevated."
+                )
+            )
+        }
+        if (transitStress) {
+            updated = updated.copy(
+                eventLog = EventLogCap.prepend(
+                    updated.eventLog,
+                    "Commuting without a vehicle wore you down (public transit stress)."
+                )
+            )
+        }
+        return updated
     }
+
+    /** High-tier roles without a personal vehicle incur yearly commute stress. */
+    fun needsPublicTransitCommute(character: Character, job: Job? = null): Boolean {
+        val activeJob = job ?: character.career.currentJob ?: return false
+        if (!isHighTierJob(activeJob)) return false
+        return !ownsVehicle(character)
+    }
+
+    fun isHighTierJob(job: Job): Boolean =
+        job.minEducation == SchoolStage.GRADUATED ||
+            job.minEducation == SchoolStage.UNIVERSITY ||
+            job.level >= HIGH_TIER_JOB_LEVEL
+
+    fun ownsVehicle(character: Character): Boolean =
+        character.assets.any {
+            it.type == AssetType.CAR || it.type == AssetType.MOTORBIKE
+        }
 
     /**
      * Earns extra cash from a side gig; applies happiness/health burnout.
@@ -268,7 +394,9 @@ class CareerEngine @Inject constructor(
             career = character.career.copy(
                 currentJob = null,
                 yearsAtCurrentJob = 0,
-                jobHistory = character.career.jobHistory + job.title
+                jobHistory = character.career.jobHistory + job.title,
+                isDeployed = false,
+                pendingDeployment = false
             )
         )
     }
@@ -421,7 +549,9 @@ class CareerEngine @Inject constructor(
             career = character.career.copy(
                 currentJob = null,
                 yearsAtCurrentJob = 0,
-                jobHistory = character.career.jobHistory + title
+                jobHistory = character.career.jobHistory + title,
+                isDeployed = false,
+                pendingDeployment = false
             ),
             stats = character.stats.copy(
                 happiness = clampStat(character.stats.happiness - DOWNSIZING_HAPPINESS_PENALTY)
@@ -442,7 +572,7 @@ class CareerEngine @Inject constructor(
 
     /** Whether the character is still in the culture-shock window after moving abroad. */
     fun isCultureShockActive(character: Character): Boolean =
-        character.birthCountryCode != character.countryCode &&
+        character.isLivingAbroad() &&
             character.yearsInCurrentCountry < CULTURE_SHOCK_YEARS
 
     /** Exposed for tests and UI hire previews. */
@@ -559,6 +689,13 @@ class CareerEngine @Inject constructor(
         private const val ONE_TIME_TAG = "one_time"
 
         private const val MIN_JOB_AGE = 18
+        const val MIN_MILITARY_AGE = 18
+        const val DEPLOYMENT_CHANCE = 0.20f
+        const val HAZARD_PAY_MULTIPLIER = 2
+        const val REQUIRES_MILITARY_TAG = "requires_military"
+        const val REQUIRES_VEHICLE_TAG = "requires_vehicle"
+        private const val PUBLIC_TRANSIT_STRESS = 4
+        private const val HIGH_TIER_JOB_LEVEL = 3
         private const val MIN_RETIREMENT_AGE = 60
         private const val PENSION_RATE_MIN = 0.40
         private const val PENSION_RATE_MAX = 0.60

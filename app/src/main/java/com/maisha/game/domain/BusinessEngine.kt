@@ -114,8 +114,12 @@ class BusinessEngine @Inject constructor(
         val updatedBusinesses = mutableListOf<Business>()
         var log = character.eventLog
 
+        val policyMultiplier = EconomyScaler.policyBusinessRevenueMultiplier(
+            character.politics.activeTaxPolicy
+        )
         for (business in character.businesses) {
-            val profit = calculateYearlyProfit(business, climate)
+            val profit = (calculateYearlyProfit(business, climate) * policyMultiplier)
+                .roundToInt()
             money += profit
 
             val valuationDrift = valuationMultiplier(climate, marketModifier)
@@ -124,7 +128,7 @@ class BusinessEngine @Inject constructor(
                 .coerceAtLeast(1_000)
             val revenueDrift = 0.92f + Random.nextFloat() * 0.2f +
                 if (profit >= 0) 0.05f else -0.08f
-            val newRevenue = (business.revenue * revenueDrift)
+            val newRevenue = (business.revenue * revenueDrift * policyMultiplier)
                 .roundToInt()
                 .coerceAtLeast(500)
             val employeeDelta = Random.nextInt(-2, 4)

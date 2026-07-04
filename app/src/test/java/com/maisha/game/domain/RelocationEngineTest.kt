@@ -7,6 +7,7 @@ import com.maisha.game.data.model.Gender
 import com.maisha.game.data.model.Job
 import com.maisha.game.data.model.SchoolStage
 import com.maisha.game.data.model.Stats
+import com.maisha.game.data.model.VisaType
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNull
@@ -114,8 +115,59 @@ class RelocationEngineTest {
     }
 
     @Test
+    fun relocate_requiresVisaIfNoCitizenshipHeld() {
+        val character = baseCharacter().copy(
+            countryCode = "KE",
+            birthCountryCode = "KE",
+            citizenships = listOf("KE")
+        )
+        val canada = CountryCatalog.getCountry("CA")
+        val relocated = engine.relocate(character, canada)
+
+        assertEquals("CA", relocated.countryCode)
+        assertEquals(VisaType.TOURIST, relocated.currentVisa)
+        assertTrue(relocated.visaYearsRemaining > 0)
+        assertFalse(relocated.holdsCitizenship("CA"))
+    }
+
+    @Test
+    fun relocate_noVisaWhenCitizenOfDestination() {
+        val character = baseCharacter().copy(
+            countryCode = "KE",
+            birthCountryCode = "KE",
+            citizenships = listOf("KE", "CA")
+        )
+        val canada = CountryCatalog.getCountry("CA")
+        val relocated = engine.relocate(character, canada)
+
+        assertEquals("CA", relocated.countryCode)
+        assertNull(relocated.currentVisa)
+        assertEquals(0, relocated.visaYearsRemaining)
+    }
+
+    @Test
+    fun tick_triggersDeportationWhenVisaExpires() {
+        val character = baseCharacter().copy(
+            age = 30,
+            countryCode = "CA",
+            birthCountryCode = "KE",
+            citizenships = listOf("KE"),
+            currentVisa = VisaType.TOURIST,
+            visaYearsRemaining = 1,
+            yearsInCurrentCountry = 2
+        )
+        val result = engine.tickImmigrationYear(character)
+
+        assertTrue(result.deported)
+        assertEquals("KE", result.character.countryCode)
+        assertNull(result.character.currentVisa)
+        assertEquals(0, result.character.visaYearsRemaining)
+        assertTrue(result.deportationMessage!!.contains("deported", ignoreCase = true))
+    }
+
+    @Test
     fun careerEngine_appliesCultureShockPenaltyToExpatJobSeekers() {
-        val careerEngine = CareerEngine(HealthEngine())
+        val careerEngine = CareerEngine(HealthEngine(), RelocationEngine())
         val base = TestFixtures.character(
             age = 28,
             countryCode = "KE",

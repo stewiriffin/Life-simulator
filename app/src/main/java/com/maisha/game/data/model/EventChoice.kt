@@ -40,5 +40,10 @@ data class EventChoice(
     /** Delta applied to each owned business valuation. */
     val businessValuationEffect: Int = 0,
     /** Delta applied to each owned business annual revenue. */
-    val businessRevenueEffect: Int = 0
+    val businessRevenueEffect: Int = 0,
+    /**
+     * Immediate portfolio return percentage (e.g. -50 crash, +100 double).
+     * Applied only when [Character.investmentPortfolioValue] > 0.
+     */
+    val portfolioReturnPercent: Int? = null
 )

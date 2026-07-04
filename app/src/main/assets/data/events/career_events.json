@@ -371,6 +371,175 @@
         { "label": "Pay the back taxes", "statEffects": { "money": -20000, "happiness": -5 }, "resultText": "Painful, but you are square with the law." },
         { "label": "Hire an accountant to negotiate", "statEffects": { "money": -12000, "happiness": -2, "smarts": 1 }, "resultText": "The bill shrank after a tense meeting." }
       ]
+    },
+    {
+      "id": "politics_bribery_allegation",
+      "minAge": 30,
+      "maxAge": 70,
+      "text": "A newspaper alleges you accepted a bribe from a contractor. Cameras wait outside your office.",
+      "weight": 4,
+      "tags": ["career", "politics", "requires_office"],
+      "choices": [
+        { "label": "Hold a press conference", "statEffects": { "happiness": -3, "smarts": 1 }, "resultText": "You deny everything. Polls wobble but hold." },
+        { "label": "Ignore the story", "statEffects": { "happiness": -6 }, "resultText": "Silence looks like guilt. Approval slides." }
+      ]
+    },
+    {
+      "id": "politics_public_debate",
+      "minAge": 30,
+      "maxAge": 70,
+      "text": "You are invited to a televised debate against a rising rival.",
+      "weight": 4,
+      "tags": ["career", "politics", "requires_office"],
+      "choices": [
+        { "label": "Prepare rigorously", "statEffects": { "smarts": 3, "happiness": -1 }, "resultText": "You land sharp lines. Clips go viral." },
+        { "label": "Wing it on charm", "statEffects": { "looks": 2, "happiness": 2 }, "resultText": "The crowd laughs — analysts are less kind." }
+      ]
+    },
+    {
+      "id": "politics_natural_disaster",
+      "minAge": 30,
+      "maxAge": 70,
+      "text": "A natural disaster hits your region. Citizens expect leadership and relief funds.",
+      "weight": 3,
+      "tags": ["career", "politics", "requires_office"],
+      "choices": [
+        { "label": "Visit the site and fund relief", "statEffects": { "money": -25000, "happiness": 4 }, "resultText": "Photos of you in the mud boost approval." },
+        { "label": "Delegate from the capital", "statEffects": { "happiness": -4 }, "resultText": "Critics call you out of touch." }
+      ]
+    },
+    {
+      "id": "politics_rally_night",
+      "minAge": 30,
+      "maxAge": 70,
+      "text": "Supporters pack a stadium for a late-night rally. The energy is electric.",
+      "weight": 3,
+      "tags": ["career", "politics", "requires_office"],
+      "choices": [
+        { "label": "Deliver a fiery speech", "statEffects": { "happiness": 6, "looks": 1 }, "resultText": "Chants of your name echo for hours." },
+        { "label": "Keep it short and policy-focused", "statEffects": { "smarts": 2, "happiness": 2 }, "resultText": "Less spectacle, more substance." }
+      ]
+    },
+    {
+      "id": "politics_opposition_probe",
+      "minAge": 30,
+      "maxAge": 70,
+      "text": "The opposition launches a formal probe into your campaign finances.",
+      "weight": 3,
+      "tags": ["career", "politics", "requires_office"],
+      "choices": [
+        { "label": "Open the books fully", "statEffects": { "money": -8000, "happiness": -2, "smarts": 1 }, "resultText": "Transparency costs time and lawyers — but clears your name." },
+        { "label": "Fight it in court", "statEffects": { "money": -15000, "happiness": -5 }, "resultText": "The case drags on. Headlines do not help." }
+      ]
+    },
+    {
+      "id": "politics_infrastructure_ribbon",
+      "minAge": 30,
+      "maxAge": 70,
+      "text": "A new road project is ready for a ribbon-cutting ceremony.",
+      "weight": 3,
+      "tags": ["career", "politics", "requires_office"],
+      "choices": [
+        { "label": "Attend and claim credit", "statEffects": { "happiness": 5, "looks": 1 }, "resultText": "Voters see progress with your face on it." },
+        { "label": "Let engineers take the spotlight", "statEffects": { "happiness": 2, "smarts": 1 }, "resultText": "Quiet competence — some notice, some do not." }
+      ]
+    },
+    {
+      "id": "politics_youth_town_hall",
+      "minAge": 30,
+      "maxAge": 70,
+      "text": "Students invite you to a town hall on jobs and education.",
+      "weight": 3,
+      "tags": ["career", "politics", "requires_office"],
+      "choices": [
+        { "label": "Promise bold reforms", "statEffects": { "happiness": 4 }, "resultText": "Applause now; delivery later is the hard part." },
+        { "label": "Be honest about limits", "statEffects": { "smarts": 2, "happiness": 1 }, "resultText": "Some boo. Others respect the candor." }
+      ]
+    },
+    {
+      "id": "military_ambush_on_patrol",
+      "minAge": 18,
+      "maxAge": 55,
+      "text": "Your patrol is ambushed. Gunfire erupts from the treeline.",
+      "weight": 4,
+      "tags": ["career", "requires_military"],
+      "choices": [
+        { "label": "Take cover and return fire", "statEffects": { "health": -8, "smarts": 2, "happiness": -4 }, "resultText": "You survive, shaken but intact." },
+        { "label": "Lead a flanking maneuver", "statEffects": { "health": -4, "smarts": 4, "happiness": -2 }, "resultText": "Quick thinking breaks the ambush." },
+        { "label": "Freeze", "statEffects": { "health": -15, "happiness": -8 }, "resultText": "A medic pulls you out. The scars will last." }
+      ]
+    },
+    {
+      "id": "military_base_inspection",
+      "minAge": 18,
+      "maxAge": 55,
+      "text": "A surprise base inspection is announced. Your unit scrambles to look sharp.",
+      "weight": 3,
+      "tags": ["career", "requires_military"],
+      "choices": [
+        { "label": "Drill the squad hard", "statEffects": { "happiness": -2, "smarts": 1 }, "performanceEffect": 8, "resultText": "The inspector nods. Your unit passes." },
+        { "label": "Cut corners", "statEffects": { "happiness": 1 }, "performanceEffect": -10, "resultText": "They notice. Extra duty follows." }
+      ]
+    },
+    {
+      "id": "military_honorable_discharge_offer",
+      "minAge": 22,
+      "maxAge": 50,
+      "text": "Command offers an honorable discharge with a modest severance package.",
+      "weight": 3,
+      "tags": ["career", "requires_military"],
+      "choices": [
+        { "label": "Accept and leave service", "statEffects": { "money": 40000, "happiness": 4, "health": 3 }, "resultText": "You hang up the uniform. Civilian life awaits." },
+        { "label": "Re-enlist", "statEffects": { "happiness": 2, "health": -1 }, "performanceEffect": 5, "resultText": "You stay in. The mission continues." }
+      ]
+    },
+    {
+      "id": "military_letter_from_home",
+      "minAge": 18,
+      "maxAge": 50,
+      "text": "Mail call brings a letter from home. The words hit harder than you expected.",
+      "weight": 3,
+      "tags": ["career", "requires_military", "family"],
+      "choices": [
+        { "label": "Write back immediately", "statEffects": { "happiness": 6 }, "familyRelationshipEffect": 5, "resultText": "Connection across the miles steadies you." },
+        { "label": "Keep it in your pocket", "statEffects": { "happiness": 2 }, "resultText": "You read it again at night." }
+      ]
+    },
+    {
+      "id": "military_medal_ceremony",
+      "minAge": 20,
+      "maxAge": 55,
+      "text": "Your unit is nominated for a commendation after a successful operation.",
+      "weight": 3,
+      "tags": ["career", "requires_military"],
+      "choices": [
+        { "label": "Accept the honor", "statEffects": { "happiness": 8, "looks": 1 }, "performanceEffect": 6, "resultText": "The medal weighs more than metal." },
+        { "label": "Credit the whole squad", "statEffects": { "happiness": 5 }, "performanceEffect": 4, "resultText": "Loyalty earns quiet respect." }
+      ]
+    },
+    {
+      "id": "military_night_watch",
+      "minAge": 18,
+      "maxAge": 50,
+      "text": "You draw night watch on a cold perimeter. Every sound could be nothing — or everything.",
+      "weight": 3,
+      "tags": ["career", "requires_military"],
+      "choices": [
+        { "label": "Stay razor-focused", "statEffects": { "health": -2, "smarts": 2 }, "resultText": "Dawn arrives without incident." },
+        { "label": "Fight the fatigue", "statEffects": { "health": -4, "happiness": -2 }, "resultText": "You nod off once. A sergeant notices." }
+      ]
+    },
+    {
+      "id": "military_training_accident",
+      "minAge": 18,
+      "maxAge": 45,
+      "text": "Live-fire training goes wrong. Shrapnel and chaos fill the range.",
+      "weight": 3,
+      "tags": ["career", "requires_military"],
+      "choices": [
+        { "label": "Pull a wounded comrade clear", "statEffects": { "health": -10, "happiness": 3 }, "resultText": "You save a life. Your shoulder will never be the same." },
+        { "label": "Follow evacuation protocol", "statEffects": { "health": -3, "smarts": 1 }, "resultText": "Discipline keeps casualties lower." }
+      ]
     }
   ]
 }

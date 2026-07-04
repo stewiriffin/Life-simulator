@@ -1,9 +1,11 @@
 package com.maisha.game.domain
 
+import com.maisha.game.data.JobPool
 import com.maisha.game.data.model.CareerState
 import com.maisha.game.data.model.CriminalRecord
 import com.maisha.game.data.model.EducationState
 import com.maisha.game.data.model.HustleType
+import com.maisha.game.data.model.Job
 import com.maisha.game.data.model.SchoolStage
 import com.maisha.game.data.model.Stats
 import com.maisha.game.data.model.WorkEffort
@@ -16,7 +18,7 @@ import org.junit.Test
 
 class CareerEngineTest {
 
-    private val engine = CareerEngine(HealthEngine())
+    private val engine = CareerEngine(HealthEngine(), RelocationEngine())
 
     @Test
     fun getEligibleJobs_filtersByEducationStage() {
@@ -282,5 +284,51 @@ class CareerEngineTest {
             SideHustleFailure.PREREQUISITES_NOT_MET,
             (result as SideHustleResult.Failed).reason
         )
+    }
+
+    @Test
+    fun isJobEligible_rejectsDrivingJobIfNoLicense() {
+        val noLicense = TestFixtures.character(
+            age = 22,
+            education = EducationState(stage = SchoolStage.SECONDARY),
+            stats = Stats(smarts = 60, money = 50_000)
+        ).copy(hasDrivingLicense = false)
+        val licensed = noLicense.copy(hasDrivingLicense = true)
+        assertFalse(engine.isJobEligible(noLicense, JobPool.findById("delivery_driver")!!))
+        assertFalse(engine.isJobEligible(noLicense, JobPool.findById("trucker")!!))
+        assertFalse(engine.isJobEligible(noLicense, JobPool.findById("driver")!!))
+        assertTrue(engine.isJobEligible(licensed, JobPool.findById("delivery_driver")!!))
+        assertTrue(engine.isJobEligible(licensed, JobPool.findById("trucker")!!))
+    }
+
+    @Test
+    fun workYear_appliesHazardPayMultiplierDuringDeployment() {
+        val militaryJob = Job(
+            id = "military_private",
+            title = "Private",
+            minEducation = SchoolStage.NONE,
+            baseSalary = 200_000,
+            isMilitary = true
+        )
+        val baseMoney = 10_000
+        val deployed = TestFixtures.character(
+            age = 22,
+            stats = Stats(health = 80, happiness = 70, smarts = 50, looks = 50, money = baseMoney),
+            career = CareerState(
+                currentJob = militaryJob,
+                pendingDeployment = true
+            )
+        )
+        val peacetime = deployed.copy(
+            career = deployed.career.copy(pendingDeployment = false)
+        )
+        val afterDeploy = engine.workYear(deployed, WorkEffort.NORMAL)
+        val afterPeace = engine.workYear(peacetime, WorkEffort.NORMAL)
+        val deployPay = afterDeploy.stats.money - baseMoney
+        val peacePay = afterPeace.stats.money - baseMoney
+        assertEquals(militaryJob.baseSalary * CareerEngine.HAZARD_PAY_MULTIPLIER, deployPay)
+        assertEquals(militaryJob.baseSalary, peacePay)
+        assertTrue(afterDeploy.career.isDeployed)
+        assertFalse(afterPeace.career.isDeployed)
     }
 }

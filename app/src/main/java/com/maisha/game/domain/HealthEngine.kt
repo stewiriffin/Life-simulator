@@ -145,11 +145,15 @@ class HealthEngine @Inject constructor() {
 
     /**
      * Yearly health loop: illness roll, untreated drain, lifestyle billing/benefits, chronic stress.
+     * Active military deployments may add combat injuries or PTSD.
      */
     fun processHealthProgression(character: Character): Character {
         var updated = character
         rollForIllness(updated)?.let { condition ->
             updated = addCondition(updated, condition)
+        }
+        if (updated.career.isDeployed) {
+            updated = applyDeploymentHazards(updated)
         }
         updated = applyUntreatedConditions(updated)
         updated = applyLifestyleCosts(updated)
@@ -157,6 +161,50 @@ class HealthEngine @Inject constructor() {
         updated = applyChronicStress(updated)
         return updated
     }
+
+    /**
+     * Combat-year injuries: physical trauma and PTSD rolls while [CareerState.isDeployed].
+     */
+    fun applyDeploymentHazards(character: Character): Character {
+        if (!character.career.isDeployed) return character
+        var updated = character
+        if (Random.nextFloat() < DEPLOYMENT_INJURY_CHANCE) {
+            val injury = HealthCondition(
+                id = UUID.randomUUID().toString(),
+                name = deploymentInjuryName(),
+                severity = if (Random.nextFloat() < 0.4f) 3 else 2
+            )
+            updated = addCondition(updated, injury)
+            updated = updated.copy(
+                stats = updated.stats.copy(
+                    health = clampStat(updated.stats.health - DEPLOYMENT_INJURY_HEALTH_HIT)
+                )
+            )
+        }
+        if (Random.nextFloat() < DEPLOYMENT_PTSD_CHANCE &&
+            updated.activeConditions.none { it.name.equals(PTSD_CONDITION_NAME, ignoreCase = true) }
+        ) {
+            val ptsd = HealthCondition(
+                id = UUID.randomUUID().toString(),
+                name = PTSD_CONDITION_NAME,
+                severity = 2
+            )
+            updated = addCondition(updated, ptsd)
+            updated = updated.copy(
+                stats = updated.stats.copy(
+                    happiness = clampStat(updated.stats.happiness - DEPLOYMENT_PTSD_HAPPINESS_HIT)
+                )
+            )
+        }
+        return updated
+    }
+
+    private fun deploymentInjuryName(): String = listOf(
+        "Combat injury",
+        "Shrapnel wounds",
+        "Blast trauma",
+        "Field injury"
+    ).random()
 
     /**
      * Work-effort stress from [CareerEngine.workYear] or [CareerEngine.applyWorkEffort].
@@ -374,6 +422,11 @@ class HealthEngine @Inject constructor() {
         const val HEALTH_TAG = "health"
         const val CRIME_TAG = "crime"
         const val POOR_EYESIGHT_CONDITION = "Poor Eyesight"
+        const val PTSD_CONDITION_NAME = "PTSD"
+        private const val DEPLOYMENT_INJURY_CHANCE = 0.28f
+        private const val DEPLOYMENT_PTSD_CHANCE = 0.18f
+        private const val DEPLOYMENT_INJURY_HEALTH_HIT = 12
+        private const val DEPLOYMENT_PTSD_HAPPINESS_HIT = 10
         private const val BASE_ILLNESS_CHANCE = 0.035f
 
         const val GYM_YEARLY_COST = 24_000
