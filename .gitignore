@@ -11,6 +11,7 @@ app/build
 *.apk
 *.ap_
 *.aab
-.ui-ref/
 
+# Local extracts / caches
+.ui-ref/
 .kotlin/
