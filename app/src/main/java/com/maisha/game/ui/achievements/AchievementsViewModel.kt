@@ -39,7 +39,7 @@ data class AchievementListItem(
 data class AchievementsUiState(
     val isLoading: Boolean = true,
     val items: List<AchievementListItem> = emptyList(),
-    val displayCountryCode: String = "KE",
+    val displayCountryCode: String = "XX",
     val bestNetWorth: Int = 0,
     val bestAge: Int = 0
 )
@@ -61,7 +61,7 @@ class AchievementsViewModel @Inject constructor(
             val displayCountryCode = slots
                 .firstOrNull { !it.isEmpty && !it.isCorrupted }
                 ?.countryCode
-                ?: "KE"
+                ?: "XX"
 
             var bestNetWorth = 0
             var bestAge = 0

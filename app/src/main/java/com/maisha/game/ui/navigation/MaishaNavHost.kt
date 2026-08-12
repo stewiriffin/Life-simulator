@@ -355,9 +355,9 @@ fun MaishaNavHost(
         composable(
             route = Routes.CHARACTER_STATS,
             arguments = listOf(slotIdArgument)
-        ) {
-            val slotId = it.arguments?.getInt("slotId") ?: 0
-            val parentEntry = remember(navController) {
+        ) { backStackEntry ->
+            val slotId = backStackEntry.arguments?.getInt("slotId") ?: 0
+            val parentEntry = remember(backStackEntry) {
                 navController.getBackStackEntry(Routes.life(slotId))
             }
             val viewModel: LifeViewModel = hiltViewModel(parentEntry)
@@ -378,9 +378,9 @@ fun MaishaNavHost(
         composable(
             route = Routes.ANCESTRY,
             arguments = listOf(slotIdArgument)
-        ) {
-            val slotId = it.arguments?.getInt("slotId") ?: 0
-            val parentEntry = remember(navController) {
+        ) { backStackEntry ->
+            val slotId = backStackEntry.arguments?.getInt("slotId") ?: 0
+            val parentEntry = remember(backStackEntry) {
                 navController.getBackStackEntry(Routes.life(slotId))
             }
             val viewModel: LifeViewModel = hiltViewModel(parentEntry)

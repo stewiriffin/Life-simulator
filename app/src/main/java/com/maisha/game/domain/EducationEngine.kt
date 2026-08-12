@@ -491,17 +491,43 @@ class EducationEngine @Inject constructor(
         else -> 1
     }
 
-    private fun randomPrimarySchool(countryCode: String): String =
-        if (countryCode == "KE") PRIMARY_SCHOOLS_KE.random() else PRIMARY_SCHOOLS_WORLD.random()
+    private fun randomPrimarySchool(countryCode: String): String = when (countryCode) {
+        "KE" -> PRIMARY_SCHOOLS_KE.random()
+        "NG" -> listOf("Surulere Primary", "Ikeja Primary", "Yaba Primary", "Garki Primary", "Bodija Primary").random()
+        "US", "CA" -> listOf("Lincoln Elementary", "Washington Elementary", "Maple Elementary", "Riverdale Primary", "Cedar Grove School").random()
+        "GB" -> listOf("St. Mary's Primary", "Greenwood Primary", "Hillcrest Primary", "Ashfield Primary", "Riverside Primary").random()
+        "IN" -> listOf("Delhi Public School", "Kendriya Vidyalaya", "St. Xavier's Primary", "Modern School", "City Montessori").random()
+        "JP" -> listOf("Sakura Elementary", "Midori Elementary", "Aoi Primary", "Hikari Elementary", "Umi Primary").random()
+        "BR" -> listOf("Escola Municipal Central", "Colégio São Paulo", "Escola Verde", "Escola do Sol", "Colégio Horizonte").random()
+        else -> PRIMARY_SCHOOLS_WORLD.random()
+    }
 
-    private fun randomSecondarySchool(countryCode: String): String =
-        if (countryCode == "KE") SECONDARY_SCHOOLS_KE.random() else SECONDARY_SCHOOLS_WORLD.random()
+    private fun randomSecondarySchool(countryCode: String): String = when (countryCode) {
+        "KE" -> SECONDARY_SCHOOLS_KE.random()
+        "NG" -> listOf("King's College Lagos", "Federal Government College", "Queen's College", "Government College Ibadan", "St. Gregory's College").random()
+        "US", "CA" -> listOf("Lincoln High School", "Westfield High", "Riverdale Academy", "Central High", "Northview Secondary").random()
+        "GB" -> listOf("King's Secondary", "Greenwood Academy", "Ashfield Comprehensive", "St. Helen's High", "Riverside College").random()
+        "IN" -> listOf("Delhi Public School Secondary", "St. Xavier's High", "Modern School Senior", "National Public School", "City Academy").random()
+        "JP" -> listOf("Sakura High School", "Tokyo Metropolitan High", "Midori Senior High", "Kaisei Academy", "Umi High").random()
+        "BR" -> listOf("Colégio Objetivo", "Escola Estadual Central", "Colégio Santa Maria", "Instituto Horizonte", "Colégio do Sol").random()
+        else -> SECONDARY_SCHOOLS_WORLD.random()
+    }
 
     private fun universityNameFor(countryCode: String): String = when (countryCode) {
         "KE" -> "University of Nairobi"
         "NG" -> "University of Lagos"
         "ZA" -> "University of Cape Town"
+        "EG" -> "Cairo University"
+        "US" -> "State University"
+        "CA" -> "University of Toronto"
+        "GB" -> "University of Manchester"
+        "FR" -> "Sorbonne University"
+        "DE" -> "Technical University of Munich"
         "IN" -> "Delhi University"
+        "JP" -> "University of Tokyo"
+        "PH" -> "University of the Philippines"
+        "ID" -> "University of Indonesia"
+        "BR" -> "University of São Paulo"
         "MX" -> "UNAM"
         else -> "the local university"
     }

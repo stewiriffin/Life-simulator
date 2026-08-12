@@ -156,7 +156,8 @@ fun PersonDetailSheet(
                     config = member.avatarConfig,
                     size = 64.dp,
                     age = member.age,
-                    expression = expression
+                    expression = expression,
+                    seed = member.id
                 )
                 Column(modifier = Modifier.weight(1f)) {
                     Row(

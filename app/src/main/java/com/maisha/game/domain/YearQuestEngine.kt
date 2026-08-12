@@ -1,0 +1,192 @@
+package com.maisha.game.domain
+
+import com.maisha.game.data.model.Character
+import com.maisha.game.data.model.SchoolStage
+import javax.inject.Inject
+import javax.inject.Singleton
+import kotlin.random.Random
+
+enum class YearQuestKind {
+    RAISE_HAPPINESS,
+    RAISE_HEALTH,
+    EARN_MONEY,
+    STUDY_SMARTS,
+    BOND_FAMILY,
+    STAY_OUT_OF_TROUBLE,
+    GROW_FOLLOWERS
+}
+
+data class YearQuest(
+    val kind: YearQuestKind,
+    /** Absolute target delta or threshold depending on [kind]. */
+    val target: Int,
+    val titleResHint: String,
+    val rewardKarma: Int = 3
+)
+
+data class YearQuestProgress(
+    val quest: YearQuest,
+    val current: Int,
+    val completed: Boolean
+) {
+    val fraction: Float
+        get() = if (quest.target <= 0) 1f else (current.toFloat() / quest.target).coerceIn(0f, 1f)
+}
+
+/**
+ * Soft in-life goals that refresh each year. Pure Kotlin — no Android APIs.
+ * Snapshot [before] at year start; evaluate against [after] at year end.
+ */
+@Singleton
+class YearQuestEngine @Inject constructor() {
+
+    fun generate(character: Character, random: Random = Random.Default): List<YearQuest> {
+        if (!character.alive || character.age < MIN_QUEST_AGE) return emptyList()
+        val pool = mutableListOf<YearQuest>()
+
+        if (character.stats.happiness < 90) {
+            pool += YearQuest(
+                kind = YearQuestKind.RAISE_HAPPINESS,
+                target = 8,
+                titleResHint = "year_quest_raise_happiness",
+                rewardKarma = 3
+            )
+        }
+        if (character.stats.health < 90) {
+            pool += YearQuest(
+                kind = YearQuestKind.RAISE_HEALTH,
+                target = 6,
+                titleResHint = "year_quest_raise_health",
+                rewardKarma = 3
+            )
+        }
+        if (character.age >= 16) {
+            pool += YearQuest(
+                kind = YearQuestKind.EARN_MONEY,
+                target = moneyTarget(character),
+                titleResHint = "year_quest_earn_money",
+                rewardKarma = 2
+            )
+        }
+        if (character.education.stage == SchoolStage.PRIMARY ||
+            character.education.stage == SchoolStage.SECONDARY ||
+            character.education.stage == SchoolStage.UNIVERSITY
+        ) {
+            pool += YearQuest(
+                kind = YearQuestKind.STUDY_SMARTS,
+                target = 5,
+                titleResHint = "year_quest_study_smarts",
+                rewardKarma = 3
+            )
+        }
+        if (character.family.any { it.alive }) {
+            pool += YearQuest(
+                kind = YearQuestKind.BOND_FAMILY,
+                target = 8,
+                titleResHint = "year_quest_bond_family",
+                rewardKarma = 4
+            )
+        }
+        if (character.age >= 14) {
+            pool += YearQuest(
+                kind = YearQuestKind.STAY_OUT_OF_TROUBLE,
+                target = 1,
+                titleResHint = "year_quest_stay_clean",
+                rewardKarma = 4
+            )
+        }
+        if (character.socialMedia.hasAccount) {
+            pool += YearQuest(
+                kind = YearQuestKind.GROW_FOLLOWERS,
+                target = 500,
+                titleResHint = "year_quest_grow_followers",
+                rewardKarma = 2
+            )
+        }
+
+        if (pool.isEmpty()) return emptyList()
+        return pool.shuffled(random).take(QUESTS_PER_YEAR)
+    }
+
+    fun evaluate(
+        quests: List<YearQuest>,
+        before: Character,
+        after: Character
+    ): List<YearQuestProgress> = quests.map { quest ->
+        val current = progressToward(quest, before, after)
+        YearQuestProgress(
+            quest = quest,
+            current = current,
+            completed = current >= quest.target
+        )
+    }
+
+    fun applyRewards(character: Character, completed: List<YearQuestProgress>): Character {
+        if (completed.isEmpty()) return character
+        val karmaGain = completed.sumOf { it.quest.rewardKarma }
+        val labels = completed.joinToString(", ") { humanLabel(it.quest.kind) }
+        return character.copy(
+            stats = character.stats.copy(
+                karma = (character.stats.karma + karmaGain).coerceIn(0, 100)
+            ),
+            eventLog = EventLogCap.prepend(
+                character.eventLog,
+                "Year quest complete: $labels. Karma +$karmaGain."
+            )
+        )
+    }
+
+    private fun humanLabel(kind: YearQuestKind): String = when (kind) {
+        YearQuestKind.RAISE_HAPPINESS -> "raise happiness"
+        YearQuestKind.RAISE_HEALTH -> "raise health"
+        YearQuestKind.EARN_MONEY -> "earn money"
+        YearQuestKind.STUDY_SMARTS -> "study hard"
+        YearQuestKind.BOND_FAMILY -> "bond with family"
+        YearQuestKind.STAY_OUT_OF_TROUBLE -> "stay out of trouble"
+        YearQuestKind.GROW_FOLLOWERS -> "grow followers"
+    }
+
+    private fun progressToward(quest: YearQuest, before: Character, after: Character): Int =
+        when (quest.kind) {
+            YearQuestKind.RAISE_HAPPINESS ->
+                (after.stats.happiness - before.stats.happiness).coerceAtLeast(0)
+            YearQuestKind.RAISE_HEALTH ->
+                (after.stats.health - before.stats.health).coerceAtLeast(0)
+            YearQuestKind.EARN_MONEY ->
+                (after.stats.money - before.stats.money).coerceAtLeast(0)
+            YearQuestKind.STUDY_SMARTS ->
+                (after.stats.smarts - before.stats.smarts).coerceAtLeast(0)
+            YearQuestKind.BOND_FAMILY -> {
+                val beforeAvg = avgBond(before)
+                val afterAvg = avgBond(after)
+                ((afterAvg - beforeAvg) * 10f).toInt().coerceAtLeast(0)
+            }
+            YearQuestKind.STAY_OUT_OF_TROUBLE -> {
+                val arrested = after.criminalRecord.timesArrested > before.criminalRecord.timesArrested
+                val incarcerated = after.criminalRecord.currentlyIncarcerated
+                if (arrested || incarcerated) 0 else 1
+            }
+            YearQuestKind.GROW_FOLLOWERS ->
+                (after.socialMedia.followers - before.socialMedia.followers).coerceAtLeast(0)
+        }
+
+    private fun avgBond(character: Character): Float {
+        val people = character.family.filter { it.alive }
+        if (people.isEmpty()) return 0f
+        return people.map { it.relationshipLevel }.average().toFloat()
+    }
+
+    private fun moneyTarget(character: Character): Int {
+        val salary = character.career.currentJob?.baseSalary ?: 0
+        val baseline = when {
+            salary > 0 -> (salary * 0.35f).toInt()
+            else -> 25_000
+        }
+        return baseline.coerceIn(10_000, 500_000)
+    }
+
+    companion object {
+        const val MIN_QUEST_AGE = 10
+        const val QUESTS_PER_YEAR = 2
+    }
+}

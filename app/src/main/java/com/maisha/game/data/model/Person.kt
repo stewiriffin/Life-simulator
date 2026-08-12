@@ -38,7 +38,7 @@ data class Person(
     val isMarried: Boolean = false,
     val avatarConfig: AvatarConfig = AvatarConfig.DEFAULT,
     val complimentsThisYear: Int = 0,
-    val countryCode: String = "KE",
+    val countryCode: String = "XX",
     val secondaryCountryCode: String? = null,
     val milestones: List<RelationshipMilestone> = emptyList(),
     val interactedThisYear: Boolean = false

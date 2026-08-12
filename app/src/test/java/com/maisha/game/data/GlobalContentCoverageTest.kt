@@ -56,8 +56,20 @@ class GlobalContentCoverageTest {
             assertTrue(flavor.primaryExamName.isNotBlank())
             assertTrue(flavor.secondaryExamName.isNotBlank())
             assertTrue(flavor.commonTransportMode.isNotBlank())
+            assertTrue(flavor.privateHospitalName.isNotBlank())
+            assertTrue(flavor.secondaryGradeLabel.isNotBlank())
             assertTrue(flavor.notableHolidays.size >= 2)
         }
+    }
+
+    @Test
+    fun `unknown country code does not resolve as Kenya`() {
+        assertEquals("XX", CountryCatalog.getCountry("ZZ").code)
+        assertNotEquals("KE", CountryCatalog.getCountry("ZZ").code)
+        assertEquals(
+            NamePool.getNamePool("US").maleFirstNames.first(),
+            NamePool.getNamePool("ZZ").maleFirstNames.first()
+        )
     }
 
     @Test

@@ -147,7 +147,8 @@ fun EventDialogStyled(
                             config = displayConfig,
                             size = 64.dp,
                             age = displayAge,
-                            expression = displayExpression
+                            expression = displayExpression,
+                            seed = npc?.id ?: character.name
                         )
                         Spacer(modifier = Modifier.height(12.dp))
                         Text(

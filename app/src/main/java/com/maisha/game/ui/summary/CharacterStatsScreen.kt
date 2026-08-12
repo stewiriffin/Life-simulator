@@ -278,7 +278,8 @@ private fun CurrentLifeHeader(character: Character) {
         com.maisha.game.ui.components.PersonAvatar(
             avatarConfig = character.avatarConfig,
             size = 64,
-            age = character.age
+            age = character.age,
+            seed = character.name
         )
         Spacer(modifier = Modifier.height(10.dp))
         Row(
@@ -484,6 +485,7 @@ private fun StatsSectionCard(stats: Stats, netWorth: Int, countryCode: String) {
             StatBar(type = StatType.HAPPINESS, value = stats.happiness)
             StatBar(type = StatType.SMARTS, value = stats.smarts)
             StatBar(type = StatType.LOOKS, value = stats.looks)
+            StatBar(type = StatType.KARMA, value = stats.karma)
             MoneyStatRow(amount = stats.money, countryCode = countryCode)
             Row(
                 modifier = Modifier.fillMaxWidth(),
@@ -514,7 +516,11 @@ private fun OverviewSectionCard(character: Character, netWorth: Int) {
     SectionCard(title = stringResource(R.string.section_life_overview)) {
         RecapRow(
             label = stringResource(R.string.label_education),
-            value = EducationFormatter.formatStatus(character.education, resources)
+            value = EducationFormatter.formatStatus(
+                character.education,
+                resources,
+                character.countryCode
+            )
         )
         if (character.education.gpa > 0f &&
             character.education.stage != SchoolStage.NONE &&

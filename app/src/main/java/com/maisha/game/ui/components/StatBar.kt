@@ -41,6 +41,7 @@ import com.maisha.game.ui.theme.CoralNegative
 import com.maisha.game.ui.theme.StatCondition
 import com.maisha.game.ui.theme.StatHappiness
 import com.maisha.game.ui.theme.StatHealth
+import com.maisha.game.ui.theme.StatKarma
 import com.maisha.game.ui.theme.StatLooks
 import com.maisha.game.ui.theme.StatMoney
 import com.maisha.game.ui.theme.StatPerformance
@@ -61,7 +62,8 @@ enum class StatType {
     CONDITION,
     PERFORMANCE,
     FOLLOWERS,
-    SKILL
+    SKILL,
+    KARMA
 }
 
 fun StatType.color(): Color = when (this) {
@@ -76,6 +78,7 @@ fun StatType.color(): Color = when (this) {
     StatType.PERFORMANCE -> StatPerformance
     StatType.FOLLOWERS -> StatLooks
     StatType.SKILL -> StatSmarts
+    StatType.KARMA -> StatKarma
 }
 
 fun StatType.icon(): ImageVector = AppIcons.forStat(this)
@@ -93,6 +96,7 @@ private fun StatType.defaultLabel(): String = when (this) {
     StatType.PERFORMANCE -> stringResource(R.string.stat_performance)
     StatType.FOLLOWERS -> stringResource(R.string.stat_followers)
     StatType.SKILL -> stringResource(R.string.stat_skill)
+    StatType.KARMA -> stringResource(R.string.stat_karma)
 }
 
 @Composable
@@ -234,7 +238,8 @@ private val CRITICAL_STAT_TYPES = setOf(
     StatType.LOOKS,
     StatType.CONDITION,
     StatType.PERFORMANCE,
-    StatType.RELATIONSHIP
+    StatType.RELATIONSHIP,
+    StatType.KARMA
 )
 
 private const val CRITICAL_THRESHOLD = 30
@@ -244,7 +249,7 @@ fun MoneyStatRow(
     amount: Int,
     modifier: Modifier = Modifier,
     label: String? = null,
-    countryCode: String = "KE"
+    countryCode: String = "XX"
 ) {
     StatBar(
         type = StatType.MONEY,

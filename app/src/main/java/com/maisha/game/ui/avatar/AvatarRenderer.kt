@@ -11,13 +11,20 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.Immutable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.ColorFilter
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.clearAndSetSemantics
@@ -25,6 +32,10 @@ import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
+import coil.compose.AsyncImagePainter
+import coil.compose.SubcomposeAsyncImage
+import coil.compose.SubcomposeAsyncImageContent
+import coil.request.ImageRequest
 import com.maisha.game.R
 import com.maisha.game.data.model.AgeStage
 import com.maisha.game.data.model.AvatarConfig
@@ -119,6 +130,12 @@ fun buildAvatarLayerStack(
     return AvatarLayerStack(behindExpression = behind, inFrontOfExpression = front)
 }
 
+/**
+ * Primary face renderer. Uses **DiceBear Lorelei** over the network when possible,
+ * and falls back to the local layered vector stack offline / on error.
+ *
+ * @param seed Stable identity (prefer [com.maisha.game.data.model.Person.id] or character name).
+ */
 @Composable
 fun AvatarImage(
     config: AvatarConfig,
@@ -127,7 +144,9 @@ fun AvatarImage(
     age: Int = 18,
     expression: Expression = Expression.NEUTRAL,
     forPlayerCharacter: Boolean = false,
-    hideFromAccessibility: Boolean = false
+    hideFromAccessibility: Boolean = false,
+    seed: String? = null,
+    useDiceBear: Boolean = true
 ) {
     val expressionLabel = expressionAccessibilityLabel(expression)
     val accessibilityDescription = when {
@@ -157,11 +176,18 @@ fun AvatarImage(
         return
     }
 
-    val stage = ageStageFor(age)
-    val safeConfig = remember(config) { AvatarAssetMapper.sanitize(config) }
-    val stack = remember(safeConfig, stage) {
-        buildAvatarLayerStack(safeConfig, stage)
+    val density = LocalDensity.current
+    val sizePx = with(density) { size.roundToPx().coerceIn(64, 256) }
+    val url = remember(config, age, expression, seed, sizePx) {
+        DiceBearAvatarUrl.build(
+            config = config,
+            age = age,
+            expression = expression,
+            seed = seed,
+            sizePx = sizePx
+        )
     }
+    var forceLocal by remember(url) { mutableStateOf(false) }
 
     Box(
         modifier = modifier
@@ -169,12 +195,54 @@ fun AvatarImage(
             .size(size),
         contentAlignment = Alignment.Center
     ) {
-        // 1–2. Back hair, outfit, neck, head, cheeks
+        if (useDiceBear && !forceLocal) {
+            val context = LocalContext.current
+            SubcomposeAsyncImage(
+                model = ImageRequest.Builder(context)
+                    .data(url)
+                    .crossfade(true)
+                    .size(sizePx)
+                    .listener(
+                        onError = { _, _ -> forceLocal = true }
+                    )
+                    .build(),
+                contentDescription = null,
+                modifier = Modifier
+                    .fillMaxSize()
+                    .clip(CircleShape),
+                contentScale = ContentScale.Crop
+            ) {
+                when (painter.state) {
+                    is AsyncImagePainter.State.Success -> {
+                        SubcomposeAsyncImageContent()
+                    }
+                    else -> {
+                        LayeredAvatarContent(config = config, age = age, expression = expression)
+                    }
+                }
+            }
+        } else {
+            LayeredAvatarContent(config = config, age = age, expression = expression)
+        }
+    }
+}
+
+@Composable
+private fun LayeredAvatarContent(
+    config: AvatarConfig,
+    age: Int,
+    expression: Expression
+) {
+    val stage = ageStageFor(age)
+    val safeConfig = remember(config) { AvatarAssetMapper.sanitize(config) }
+    val stack = remember(safeConfig, stage) {
+        buildAvatarLayerStack(safeConfig, stage)
+    }
+
+    Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
         stack.behindExpression.forEach { layer ->
             AvatarLayerImage(layer = layer)
         }
-
-        // 3. Expression with smooth flash transitions (~200ms)
         Crossfade(
             targetState = expression,
             animationSpec = tween(durationMillis = EXPRESSION_CROSSFADE_MS),
@@ -184,8 +252,6 @@ fun AvatarImage(
                 layer = AvatarLayer(AvatarAssetMapper.getExpressionOverlay(face))
             )
         }
-
-        // 4–5. Front hair, features, accessories
         stack.inFrontOfExpression.forEach { layer ->
             AvatarLayerImage(layer = layer)
         }
@@ -237,39 +303,15 @@ private fun AvatarLayerPreviewGrid() {
                     config = AvatarConfig(skinTone = 2, hairStyle = 1, hairColor = 0, outfitColor = 0),
                     size = 72.dp,
                     age = 1,
-                    expression = Expression.NEUTRAL
+                    expression = Expression.NEUTRAL,
+                    useDiceBear = false
                 )
                 AvatarImage(
                     config = AvatarConfig(skinTone = 4, hairStyle = 4, hairColor = 1, outfitColor = 2),
                     size = 72.dp,
                     age = 70,
-                    expression = Expression.NEUTRAL
-                )
-            }
-            Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                AvatarImage(
-                    config = AvatarConfig(
-                        skinTone = 1,
-                        hairStyle = 2,
-                        hairColor = 3,
-                        outfitColor = 1,
-                        accessoryId = 0
-                    ),
-                    size = 72.dp,
-                    age = 28,
-                    expression = Expression.HAPPY
-                )
-                AvatarImage(
-                    config = AvatarConfig(
-                        skinTone = 5,
-                        hairStyle = 7,
-                        hairColor = 0,
-                        outfitColor = 4,
-                        facialFeature = 2
-                    ),
-                    size = 72.dp,
-                    age = 16,
-                    expression = Expression.ANGRY
+                    expression = Expression.NEUTRAL,
+                    useDiceBear = false
                 )
             }
         }

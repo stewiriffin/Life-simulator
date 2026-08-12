@@ -398,6 +398,7 @@
     <string name="edu_primary_class">Class %1$d — %2$s</string>
     <string name="edu_secondary_school_fallback">Secondary School</string>
     <string name="edu_secondary_form">Form %1$d — %2$s</string>
+    <string name="edu_secondary_year">%1$s %2$d — %3$s</string>
     <string name="edu_general_studies">General Studies</string>
     <string name="edu_university_fallback">University</string>
     <string name="edu_university_year">Year %1$d — %2$s (%3$s)</string>
@@ -573,12 +574,13 @@
     <string name="msg_lifestyle_enabled">Subscription started.</string>
     <string name="msg_lifestyle_disabled">Subscription cancelled.</string>
     <string name="care_public_clinic">Public clinic</string>
-    <string name="care_nairobi_hospital">Nairobi Hospital</string>
+    <string name="care_nairobi_hospital">Private hospital</string>
+    <string name="care_private_hospital">%1$s</string>
     <string name="format_treatment_cost">Cost: %s</string>
     <string name="hint_public_clinic_success">Lower cost, moderate success</string>
     <string name="hint_private_hospital_success">Higher cost, better success</string>
     <string name="crime_pickpocket_title">Pickpocket</string>
-    <string name="crime_pickpocket_desc">Swipe a wallet in a crowded matatu or market.</string>
+    <string name="crime_pickpocket_desc">Swipe a wallet in a crowded %1$s or market.</string>
     <string name="crime_shoplift_title">Shoplift</string>
     <string name="crime_shoplift_desc">Take goods from a shop without paying.</string>
     <string name="crime_fraud_title">Fraud</string>
@@ -930,6 +932,36 @@
     <string name="dialog_legacy_confirm_body">%1$s will take over in slot %2$d, inheriting family ties and a share of wealth. Achievements stay with your account.</string>
     <string name="format_generation_number">Generation %1$d</string>
     <string name="label_sponsored">Sponsored</string>
+
+    <!-- Gamification: year quests, dynasty, celebrations, karma -->
+    <string name="section_year_quests">This year\'s quests</string>
+    <string name="year_quest_raise_happiness">Lift your spirits (+%1$d happiness)</string>
+    <string name="year_quest_raise_health">Get healthier (+%1$d health)</string>
+    <string name="year_quest_earn_money">Grow your wallet (+%1$s)</string>
+    <string name="year_quest_study_smarts">Sharpen your mind (+%1$d smarts)</string>
+    <string name="year_quest_bond_family">Strengthen family bonds</string>
+    <string name="year_quest_stay_clean">Stay out of trouble</string>
+    <string name="year_quest_grow_followers">Grow your audience (+%1$d followers)</string>
+    <string name="year_quest_progress">%1$d / %2$d</string>
+    <string name="year_quest_complete_badge">Done</string>
+    <string name="msg_year_quests_complete">Year quests complete! Karma +%1$d</string>
+    <string name="stat_karma">Karma</string>
+    <string name="section_dynasty_score">Dynasty score</string>
+    <string name="format_dynasty_score">%1$d prestige</string>
+    <string name="dynasty_title_seedling">Seedling lineage</string>
+    <string name="dynasty_title_rooted">Rooted family</string>
+    <string name="dynasty_title_rising">Rising house</string>
+    <string name="dynasty_title_powerhouse">Powerhouse dynasty</string>
+    <string name="dynasty_title_legend">Legendary bloodline</string>
+    <string name="celebration_marriage">Just married!</string>
+    <string name="celebration_child_born">A new life begins!</string>
+    <string name="celebration_achievement">Achievement unlocked!</string>
+    <string name="celebration_graduation">You graduated!</string>
+    <string name="celebration_promotion">Promoted!</string>
+    <string name="celebration_year_quest">Quest complete!</string>
+    <string name="celebration_age_18">Welcome to adulthood!</string>
+    <string name="celebration_age_50">Golden half-century!</string>
+    <string name="celebration_age_100">A full century!</string>
 
     <!-- Format strings -->
     <string name="format_age">Age %d</string>

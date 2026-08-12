@@ -4,7 +4,7 @@
       "id": "primary_first_day",
       "minAge": 6,
       "maxAge": 7,
-      "text": "Your first day of primary school. You clutch a new exercise book while Mama adjusts your uniform outside the school gate.",
+      "text": "Your first day of primary school. You clutch a new exercise book while a parent adjusts your uniform outside the school gate.",
       "weight": 10,
       "tags": ["one_time", "education", "milestone"],
       "choices": [
@@ -14,9 +14,9 @@
           "resultText": "You walked into class with your head held high."
         },
         {
-          "label": "Cry and hold Mama's hand",
+          "label": "Cry and hold a parent's hand",
           "statEffects": { "happiness": -2 },
-          "resultText": "Mama stayed a few minutes until you settled in."
+          "resultText": "They stayed a few minutes until you settled in."
         }
       ]
     },
@@ -81,7 +81,7 @@
         {
           "label": "Day scholar near home",
           "statEffects": { "happiness": 4, "money": 10 },
-          "resultText": "You commute daily by matatu. Mama packs lunch every morning."
+          "resultText": "You commute daily by {transportMode}. A parent packs lunch every morning."
         },
         {
           "label": "Boarding school upcountry",

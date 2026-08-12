@@ -25,6 +25,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import com.maisha.game.R
+import com.maisha.game.data.CountryCatalog
 import com.maisha.game.data.JobPool
 import com.maisha.game.data.PetCatalog
 import com.maisha.game.data.EconomyScaler
@@ -275,7 +276,7 @@ fun ActionsScreen(
                             )
                             ActionCard(
                                 icon = AppIcons.HealthHospital,
-                                title = stringResource(R.string.care_nairobi_hospital),
+                                title = CountryCatalog.flavorFor(character.countryCode).privateHospitalName,
                                 description = successHint(CareType.PRIVATE_HOSPITAL),
                                 metaLabel = treatmentCostLabel(
                                     condition.severity,
@@ -302,7 +303,10 @@ fun ActionsScreen(
                         ActionCard(
                             icon = AppIcons.CrimePickpocket,
                             title = stringResource(R.string.crime_pickpocket_title),
-                            description = stringResource(R.string.crime_pickpocket_desc),
+                            description = stringResource(
+                                R.string.crime_pickpocket_desc,
+                                CountryCatalog.flavorFor(character.countryCode).commonTransportMode
+                            ),
                             metaLabel = stringResource(R.string.risk_moderate),
                             onClick = { pendingAction.request(PendingAction.Crime(CrimeType.PICKPOCKET)) }
                         )
@@ -657,7 +661,8 @@ fun ActionsScreen(
             is PendingAction.Treatment -> {
                 val careName = when (action.careType) {
                     CareType.PUBLIC_CLINIC -> stringResource(R.string.care_public_clinic)
-                    CareType.PRIVATE_HOSPITAL -> stringResource(R.string.care_nairobi_hospital)
+                    CareType.PRIVATE_HOSPITAL ->
+                        CountryCatalog.flavorFor(character.countryCode).privateHospitalName
                 }
                 ConfirmActionDialog(
                     title = stringResource(R.string.dialog_seek_treatment_title),

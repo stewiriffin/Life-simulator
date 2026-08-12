@@ -18,7 +18,7 @@ data class ShareCardData(
     val birthYear: Int,
     val deathYear: Int,
     val ageAtDeath: Int,
-    val countryCode: String = "KE",
+    val countryCode: String = "XX",
     val deathCauseLabel: String,
     val topStatLabel: String,
     val topStatValue: Int,

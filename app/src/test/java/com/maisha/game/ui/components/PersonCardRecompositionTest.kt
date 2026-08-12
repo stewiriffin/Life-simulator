@@ -7,6 +7,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.SideEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
@@ -37,7 +38,7 @@ class PersonCardRecompositionTest {
         val recomposeCount = AtomicInteger(0)
 
         composeRule.setContent {
-            var unrelatedTick by mutableIntStateOf(0)
+            var unrelatedTick by remember { mutableIntStateOf(0) }
             MaishaTheme {
                 Column {
                     Button(

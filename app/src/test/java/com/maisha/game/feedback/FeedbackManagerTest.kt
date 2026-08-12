@@ -6,6 +6,7 @@ import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.runTest
+import org.junit.After
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Before
@@ -20,37 +21,46 @@ import org.robolectric.annotation.Config
 class FeedbackManagerTest {
 
     private lateinit var context: Context
+    private var manager: FeedbackManager? = null
 
     @Before
     fun setUp() {
         context = ApplicationProvider.getApplicationContext()
     }
 
+    @After
+    fun tearDown() {
+        manager?.release()
+        manager = null
+    }
+
     @Test
     fun playCue_doesNothingWhenSoundDisabled() = runTest {
         val soundFlow = MutableStateFlow(false)
-        val manager = FeedbackManager.forTest(context, soundFlow)
-        advanceUntilIdle()
+        manager = FeedbackManager.forTest(context, soundFlow).also { underTest ->
+            advanceUntilIdle()
 
-        manager.resetPlayTrackingForTest()
-        manager.playCue(context, FeedbackCue(sound = SoundEffect.BUTTON_TAP))
+            underTest.resetPlayTrackingForTest()
+            underTest.playCue(context, FeedbackCue(sound = SoundEffect.BUTTON_TAP))
 
-        assertTrue(manager.lastSoundPlayAttempted)
-        assertFalse(manager.lastSoundPlayExecuted)
+            assertTrue(underTest.lastSoundPlayAttempted)
+            assertFalse(underTest.lastSoundPlayExecuted)
+        }
     }
 
     @Test
     fun playCue_respectsSoundFlowToggle() = runTest {
         val soundFlow = MutableStateFlow(true)
-        val manager = FeedbackManager.forTest(context, soundFlow)
-        advanceUntilIdle()
+        manager = FeedbackManager.forTest(context, soundFlow).also { underTest ->
+            advanceUntilIdle()
 
-        soundFlow.value = false
-        advanceUntilIdle()
+            soundFlow.value = false
+            advanceUntilIdle()
 
-        manager.resetPlayTrackingForTest()
-        manager.playCue(context, FeedbackCue(sound = SoundEffect.BUTTON_TAP))
+            underTest.resetPlayTrackingForTest()
+            underTest.playCue(context, FeedbackCue(sound = SoundEffect.BUTTON_TAP))
 
-        assertFalse(manager.lastSoundPlayExecuted)
+            assertFalse(underTest.lastSoundPlayExecuted)
+        }
     }
 }

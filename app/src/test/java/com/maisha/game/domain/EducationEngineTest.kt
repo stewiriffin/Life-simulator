@@ -295,8 +295,13 @@ class EducationEngineTest {
                 kcseGrade = null
             )
         )
+        // Incomplete secondary dropouts fail the general education gate…
         assertFalse(careerEngine.isJobEligible(secondaryDropout))
-        assertTrue(careerEngine.getEligibleJobs(secondaryDropout).isEmpty())
+        val secondaryJobs = careerEngine.getEligibleJobs(secondaryDropout)
+        // …but military roles intentionally bypass education (age + not expelled only).
+        assertTrue(secondaryJobs.isNotEmpty())
+        assertTrue(secondaryJobs.all { it.isMilitary })
+        assertTrue(secondaryJobs.none { it.minEducation == SchoolStage.GRADUATED })
 
         val universityDropout = TestFixtures.character(
             age = 22,

@@ -328,6 +328,7 @@
       "id": "boda_engine_seized",
       "minAge": 18,
       "maxAge": 50,
+      "restrictedToCountry": "KE",
       "text": "Your boda's engine seizes mid-ride with a loud clunk. You push it to the nearest fundi in the blazing sun.",
       "weight": 5,
       "tags": ["finance"],

@@ -489,7 +489,8 @@ private fun DatingProspectsSheet(
                     PersonAvatar(
                         avatarConfig = prospect.avatarConfig,
                         age = prospect.age,
-                        expression = ExpressionResolver.resolvePersonExpression(prospect)
+                        expression = ExpressionResolver.resolvePersonExpression(prospect),
+                        seed = prospect.id
                     )
                     Spacer(modifier = Modifier.height(8.dp))
                     Row(

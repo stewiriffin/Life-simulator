@@ -7,6 +7,7 @@ import com.maisha.game.data.model.Job
 import com.maisha.game.data.model.LifestyleOption
 import com.maisha.game.data.model.LifestyleState
 import com.maisha.game.data.model.WorkEffort
+import com.maisha.game.data.CountryCatalog
 import java.util.UUID
 import com.maisha.game.util.clampStat
 import javax.inject.Inject
@@ -109,7 +110,11 @@ class HealthEngine @Inject constructor() {
             val updatedConditions = afterPayment.activeConditions.toMutableList().apply {
                 this[index] = treatedCondition
             }
-            val facility = if (usePrivateCare) "Nairobi Hospital" else "public clinic"
+            val facility = if (usePrivateCare) {
+                CountryCatalog.flavorFor(character.countryCode).privateHospitalName
+            } else {
+                "public clinic"
+            }
             DoctorResult.Treated(
                 afterPayment.copy(
                     activeConditions = updatedConditions,

@@ -526,7 +526,8 @@ private fun MemorialHeader(
             PersonAvatar(
                 avatarConfig = character.avatarConfig,
                 size = 88,
-                age = character.age
+                age = character.age,
+                seed = character.name
             )
             Spacer(modifier = Modifier.height(12.dp))
             Text(
@@ -835,20 +836,20 @@ private fun SummaryEventLogCard(entry: String, ageTag: Int) {
 @Composable
 private fun LifeSummaryScreenPreview() {
     val character = Character(
-        name = "Amina Otieno",
+        name = "Sofia Reyes",
         age = 75,
         gender = Gender.FEMALE,
         stats = Stats(health = 20, happiness = 70, smarts = 65, looks = 55, money = 400_000),
         birthYear = 1965,
         alive = false,
-        countryCode = "KE",
+        countryCode = "MX",
         avatarConfig = AvatarConfig.DEFAULT,
         generationNumber = 2,
         ancestryHistory = listOf(
             com.maisha.game.data.model.AncestryEntry(
                 generationNumber = 1,
-                characterName = "Juma Otieno",
-                countryCode = "KE",
+                characterName = "Diego Reyes",
+                countryCode = "MX",
                 ageAtDeath = 68,
                 cause = "Passed away peacefully in old age"
             )
@@ -874,14 +875,14 @@ private fun LifeSummaryScreenPreview() {
                     birthYear = 1965,
                     deathYear = 2040,
                     ageAtDeath = 75,
-                    countryCode = "KE",
+                    countryCode = "MX",
                     deathCauseLabel = "Passed away peacefully in old age",
                     topStatLabel = "Happiness",
                     topStatValue = 70,
-                    netWorthFormatted = "KES 2.4M",
+                    netWorthFormatted = "$ 2.4M",
                     careerHeadline = "Teacher · Level 4",
                     familySummary = "Married with 2 children",
-                    legacySentence = "Amina Otieno lived 75 years as a Teacher, built KES 2.4M, and raised 2 children.",
+                    legacySentence = "Sofia Reyes lived 75 years as a Teacher, built $ 2.4M, and raised 2 children.",
                     achievementBadges = listOf(
                         ShareAchievementBadge(
                             titleRes = R.string.app_name,

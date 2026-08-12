@@ -37,6 +37,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -58,8 +59,13 @@ import com.maisha.game.data.model.Gender
 import com.maisha.game.data.model.Person
 import com.maisha.game.data.model.SchoolStage
 import com.maisha.game.data.model.Stats
+import com.maisha.game.domain.EventLogClassifier
+import com.maisha.game.domain.EventLogTone
 import com.maisha.game.domain.GiftTier
 import com.maisha.game.domain.InteractionType
+import com.maisha.game.domain.YearQuest
+import com.maisha.game.domain.YearQuestKind
+import com.maisha.game.domain.YearQuestProgress
 import com.maisha.game.ui.components.AchievementUnlockedDialog
 import com.maisha.game.ui.components.AgeUpButton
 import com.maisha.game.ui.components.AppLoadingIndicator
@@ -79,11 +85,13 @@ import com.maisha.game.ui.celebration.CelebrationOverlay
 import com.maisha.game.ui.illustrations.EmptyStateIllustration
 import com.maisha.game.ui.navigation.NavAnimations
 import com.maisha.game.ui.theme.AppIcons
+import com.maisha.game.ui.theme.CoralNegative
 import com.maisha.game.ui.theme.GoldAccent
 import com.maisha.game.ui.theme.MaishaRadius
 import com.maisha.game.ui.theme.MaishaSpacing
 import com.maisha.game.ui.theme.NavyDeep
 import com.maisha.game.ui.theme.NavyElevated
+import com.maisha.game.ui.theme.SuccessGreen
 import com.maisha.game.ui.theme.TealPrimary
 import com.maisha.game.util.formatMoney
 
@@ -222,7 +230,7 @@ fun LifeScreen(
         uiState.currentAchievementDialog?.let { achievement ->
             AchievementUnlockedDialog(
                 achievement = achievement,
-                countryCode = uiState.character?.countryCode ?: "KE",
+                countryCode = uiState.character?.countryCode ?: "XX",
                 onDismiss = onAchievementDialogDismissed
             )
         }
@@ -429,6 +437,7 @@ private fun LifeTabContent(
                                 StatType.NET_WORTH -> stringResource(R.string.label_net_worth)
                                 StatType.FOLLOWERS -> stringResource(R.string.stat_followers)
                                 StatType.SKILL -> stringResource(R.string.stat_skill)
+                                StatType.KARMA -> stringResource(R.string.stat_karma)
                                 else -> ""
                             }
                         },
@@ -448,6 +457,25 @@ private fun LifeTabContent(
                     hasCriminalRecord = character.criminalRecord.hasRecord,
                     timesArrested = character.criminalRecord.timesArrested
                 )
+            }
+
+            if (uiState.yearQuests.isNotEmpty()) {
+                item {
+                    YearQuestsCard(
+                        quests = uiState.yearQuests,
+                        progress = uiState.yearQuestProgress,
+                        countryCode = character.countryCode
+                    )
+                }
+            }
+
+            if (uiState.dynastyScore > 0 || character.generationNumber > 1) {
+                item {
+                    DynastyScoreChip(
+                        score = uiState.dynastyScore,
+                        titleKey = uiState.dynastyTitleKey
+                    )
+                }
             }
 
             item {
@@ -515,7 +543,8 @@ private fun CharacterHeader(
             size = 52,
             age = character.age,
             expression = expression,
-            forPlayerCharacter = true
+            forPlayerCharacter = true,
+            seed = character.name
         )
 
         Column(modifier = Modifier.weight(1f)) {
@@ -610,6 +639,7 @@ private fun StatsCard(stats: Stats, netWorth: Int, countryCode: String) {
             StatBar(type = StatType.HAPPINESS, value = stats.happiness)
             StatBar(type = StatType.SMARTS, value = stats.smarts)
             StatBar(type = StatType.LOOKS, value = stats.looks)
+            StatBar(type = StatType.KARMA, value = stats.karma)
             MoneyStatRow(amount = stats.money, countryCode = countryCode)
             Row(
                 modifier = Modifier.fillMaxWidth(),
@@ -658,7 +688,7 @@ private fun StatusInfoCard(
             StatusInfoRow(
                 icon = { Icon(AppIcons.Education, contentDescription = null, tint = StatType.SMARTS.color()) },
                 label = stringResource(R.string.label_education),
-                value = EducationFormatter.formatStatus(education, resources)
+                value = EducationFormatter.formatStatus(education, resources, countryCode)
             )
             if (education.gpa > 0f && education.stage != SchoolStage.NONE &&
                 education.stage != SchoolStage.GRADUATED
@@ -717,12 +747,23 @@ private fun StatusInfoRow(
 
 @Composable
 private fun EventLogCard(entry: String, ageTag: Int) {
+    val tone = remember(entry) { EventLogClassifier.classify(entry) }
+    val accent = when (tone) {
+        EventLogTone.MILESTONE -> GoldAccent
+        EventLogTone.POSITIVE -> SuccessGreen
+        EventLogTone.NEGATIVE -> CoralNegative
+        EventLogTone.NEUTRAL -> TealPrimary
+    }
+    val container = when (tone) {
+        EventLogTone.MILESTONE -> GoldAccent.copy(alpha = 0.14f)
+        EventLogTone.POSITIVE -> SuccessGreen.copy(alpha = 0.10f)
+        EventLogTone.NEGATIVE -> CoralNegative.copy(alpha = 0.10f)
+        EventLogTone.NEUTRAL -> MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.7f)
+    }
     Card(
         modifier = Modifier.fillMaxWidth(),
         shape = MaishaRadius.cardShape,
-        colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.7f)
-        )
+        colors = CardDefaults.cardColors(containerColor = container)
     ) {
         Row(
             modifier = Modifier
@@ -733,13 +774,141 @@ private fun EventLogCard(entry: String, ageTag: Int) {
             Text(
                 text = stringResource(R.string.format_age, ageTag.coerceAtLeast(0)),
                 style = MaterialTheme.typography.labelSmall,
-                color = TealPrimary,
+                color = accent,
                 fontWeight = FontWeight.SemiBold
             )
             Text(
                 text = entry,
                 style = MaterialTheme.typography.bodySmall,
                 modifier = Modifier.weight(1f)
+            )
+        }
+    }
+}
+
+@Composable
+private fun YearQuestsCard(
+    quests: List<YearQuest>,
+    progress: List<YearQuestProgress>,
+    countryCode: String
+) {
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        shape = MaishaRadius.cardShape,
+        colors = CardDefaults.cardColors(
+            containerColor = NavyElevated.copy(alpha = 0.9f)
+        )
+    ) {
+        Column(
+            modifier = Modifier.padding(12.dp),
+            verticalArrangement = Arrangement.spacedBy(8.dp)
+        ) {
+            Text(
+                text = stringResource(R.string.section_year_quests),
+                style = MaterialTheme.typography.titleSmall,
+                fontWeight = FontWeight.SemiBold,
+                color = GoldAccent
+            )
+            quests.forEach { quest ->
+                val match = progress.firstOrNull { it.quest.kind == quest.kind }
+                val current = match?.current ?: 0
+                val done = match?.completed == true
+                Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween
+                    ) {
+                        Text(
+                            text = yearQuestTitle(quest, countryCode),
+                            style = MaterialTheme.typography.bodySmall,
+                            modifier = Modifier.weight(1f)
+                        )
+                        Text(
+                            text = if (done) {
+                                stringResource(R.string.year_quest_complete_badge)
+                            } else {
+                                stringResource(
+                                    R.string.year_quest_progress,
+                                    current.coerceAtMost(quest.target),
+                                    quest.target
+                                )
+                            },
+                            style = MaterialTheme.typography.labelSmall,
+                            color = if (done) SuccessGreen else TealPrimary,
+                            fontWeight = FontWeight.SemiBold
+                        )
+                    }
+                    StatBar(
+                        type = StatType.PERFORMANCE,
+                        value = current.coerceAtMost(quest.target),
+                        maxValue = quest.target.coerceAtLeast(1),
+                        label = "",
+                        showIcon = false
+                    )
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun yearQuestTitle(quest: YearQuest, countryCode: String): String = when (quest.kind) {
+    YearQuestKind.RAISE_HAPPINESS ->
+        stringResource(R.string.year_quest_raise_happiness, quest.target)
+    YearQuestKind.RAISE_HEALTH ->
+        stringResource(R.string.year_quest_raise_health, quest.target)
+    YearQuestKind.EARN_MONEY ->
+        stringResource(R.string.year_quest_earn_money, formatMoney(quest.target, countryCode))
+    YearQuestKind.STUDY_SMARTS ->
+        stringResource(R.string.year_quest_study_smarts, quest.target)
+    YearQuestKind.BOND_FAMILY ->
+        stringResource(R.string.year_quest_bond_family)
+    YearQuestKind.STAY_OUT_OF_TROUBLE ->
+        stringResource(R.string.year_quest_stay_clean)
+    YearQuestKind.GROW_FOLLOWERS ->
+        stringResource(R.string.year_quest_grow_followers, quest.target)
+}
+
+@Composable
+private fun DynastyScoreChip(score: Int, titleKey: String) {
+    val titleRes = when (titleKey) {
+        "dynasty_title_legend" -> R.string.dynasty_title_legend
+        "dynasty_title_powerhouse" -> R.string.dynasty_title_powerhouse
+        "dynasty_title_rising" -> R.string.dynasty_title_rising
+        "dynasty_title_rooted" -> R.string.dynasty_title_rooted
+        else -> R.string.dynasty_title_seedling
+    }
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        shape = MaishaRadius.cardShape,
+        colors = CardDefaults.cardColors(
+            containerColor = GoldAccent.copy(alpha = 0.12f)
+        )
+    ) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 12.dp, vertical = 10.dp),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Column {
+                Text(
+                    text = stringResource(R.string.section_dynasty_score),
+                    style = MaterialTheme.typography.labelMedium,
+                    color = GoldAccent,
+                    fontWeight = FontWeight.SemiBold
+                )
+                Text(
+                    text = stringResource(titleRes),
+                    style = MaterialTheme.typography.bodySmall
+                )
+            }
+            Text(
+                text = stringResource(R.string.format_dynasty_score, score),
+                style = MaterialTheme.typography.titleSmall,
+                fontWeight = FontWeight.Bold,
+                color = GoldAccent
             )
         }
     }

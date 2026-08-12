@@ -17,11 +17,14 @@ import dagger.hilt.android.qualifiers.ApplicationContext
 import java.util.concurrent.ConcurrentHashMap
 import javax.inject.Inject
 import javax.inject.Singleton
+import kotlinx.coroutines.CoroutineDispatcher
+import kotlinx.coroutines.CoroutineExceptionHandler
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.launch
 
@@ -29,7 +32,9 @@ import kotlinx.coroutines.launch
 class FeedbackManager private constructor(
     private val appContext: Context,
     soundEnabledFlow: Flow<Boolean>,
-    hapticsEnabledFlow: Flow<Boolean>
+    hapticsEnabledFlow: Flow<Boolean>,
+    preloadSounds: Boolean,
+    collectorDispatcher: CoroutineDispatcher
 ) {
     @Inject
     constructor(
@@ -38,16 +43,24 @@ class FeedbackManager private constructor(
     ) : this(
         appContext,
         settingsRepository.soundEnabled,
-        settingsRepository.hapticsEnabled
+        settingsRepository.hapticsEnabled,
+        preloadSounds = true,
+        collectorDispatcher = Dispatchers.Main.immediate
     )
 
-    private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Main.immediate)
+    private val exceptionHandler = CoroutineExceptionHandler { _, error ->
+        Log.w(TAG, "FeedbackManager background work failed", error)
+    }
+
+    private val scope = CoroutineScope(
+        SupervisorJob() + collectorDispatcher + exceptionHandler
+    )
 
     @Volatile
-    private var soundEnabled: Boolean = true
+    private var soundEnabled: Boolean = initialEnabled(soundEnabledFlow, default = true)
 
     @Volatile
-    private var hapticsEnabled: Boolean = true
+    private var hapticsEnabled: Boolean = initialEnabled(hapticsEnabledFlow, default = true)
 
     private var soundPool: SoundPool? = null
     private val loadedSoundIds = ConcurrentHashMap<SoundEffect, Int>()
@@ -68,8 +81,10 @@ class FeedbackManager private constructor(
         scope.launch {
             hapticsEnabledFlow.collect { hapticsEnabled = it }
         }
-        scope.launch(Dispatchers.IO) {
-            preloadSoundsInternal()
+        if (preloadSounds) {
+            scope.launch(Dispatchers.IO) {
+                preloadSoundsInternal()
+            }
         }
     }
 
@@ -224,11 +239,23 @@ class FeedbackManager private constructor(
     companion object {
         private const val TAG = "FeedbackManager"
 
+        private fun initialEnabled(flow: Flow<Boolean>, default: Boolean): Boolean =
+            (flow as? StateFlow<Boolean>)?.value ?: default
+
         @VisibleForTesting
         internal fun forTest(
             context: Context,
             soundEnabledFlow: Flow<Boolean>,
             hapticsEnabledFlow: Flow<Boolean> = flowOf(true)
-        ): FeedbackManager = FeedbackManager(context, soundEnabledFlow, hapticsEnabledFlow)
+        ): FeedbackManager = FeedbackManager(
+            context,
+            soundEnabledFlow,
+            hapticsEnabledFlow,
+            // Skip SoundPool under Robolectric — async load callbacks leak uncaught
+            // exceptions into subsequent coroutine tests.
+            preloadSounds = false,
+            // Unconfined so StateFlow toggles apply before assertions in runTest.
+            collectorDispatcher = Dispatchers.Unconfined
+        )
     }
 }

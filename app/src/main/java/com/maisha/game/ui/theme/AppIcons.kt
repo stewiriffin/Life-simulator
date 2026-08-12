@@ -454,6 +454,7 @@ object AppIcons {
         StatType.PERFORMANCE -> Performance
         StatType.FOLLOWERS -> Looks
         StatType.SKILL -> Smarts
+        StatType.KARMA -> Longevity
     }
 
     fun forAchievementCategory(category: AchievementCategory): ImageVector = when (category) {

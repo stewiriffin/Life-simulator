@@ -6,6 +6,8 @@ enum class CelebrationType {
     CHILD_BORN,
     ACHIEVEMENT,
     GRADUATION,
+    PROMOTION,
+    YEAR_QUEST,
     AGE_MILESTONE_18,
     AGE_MILESTONE_50,
     AGE_MILESTONE_100

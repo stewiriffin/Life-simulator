@@ -45,7 +45,10 @@ object CountryCatalog {
             notableHolidays = listOf(
                 HolidayFlavor("Jamhuri Day", "December republic celebrations fill streets with music and flags."),
                 HolidayFlavor("Madaraka Day", "June self-rule commemorations bring communities together.")
-            )
+            ),
+            privateHospitalName = "Nairobi Hospital",
+            secondaryGradeLabel = "Form",
+            guardianHonorific = "Mama"
         ),
         CountryFlavor(
             countryCode = "NG",
@@ -57,7 +60,10 @@ object CountryCatalog {
             notableHolidays = listOf(
                 HolidayFlavor("Independence Day", "October first parades and green-white celebrations nationwide."),
                 HolidayFlavor("Democracy Day", "June twelfth commemorations honour Nigeria's return to democratic rule.")
-            )
+            ),
+            privateHospitalName = "Lagoon Hospitals",
+            secondaryGradeLabel = "Form",
+            guardianHonorific = "Mama"
         ),
         CountryFlavor(
             countryCode = "ZA",
@@ -69,7 +75,10 @@ object CountryCatalog {
             notableHolidays = listOf(
                 HolidayFlavor("Heritage Day", "September braais and cultural dress honour the nation's diversity."),
                 HolidayFlavor("Freedom Day", "April twenty-seventh marks South Africa's first democratic elections in 1994.")
-            )
+            ),
+            privateHospitalName = "Netcare Hospital",
+            secondaryGradeLabel = "Form",
+            guardianHonorific = "Mom"
         ),
         CountryFlavor(
             countryCode = "EG",
@@ -81,7 +90,10 @@ object CountryCatalog {
             notableHolidays = listOf(
                 HolidayFlavor("Revolution Day", "July commemorations mark the 1952 republic with public ceremonies."),
                 HolidayFlavor("Sinai Liberation Day", "April twenty-fifth parades recall the 1982 return of the Sinai Peninsula.")
-            )
+            ),
+            privateHospitalName = "Cleopatra Hospital",
+            secondaryGradeLabel = "Year",
+            guardianHonorific = "Mama"
         ),
         CountryFlavor(
             countryCode = "US",
@@ -93,7 +105,10 @@ object CountryCatalog {
             notableHolidays = listOf(
                 HolidayFlavor("Thanksgiving", "November gatherings centre on gratitude, turkey, and family tables."),
                 HolidayFlavor("Independence Day", "July fourth fireworks and barbecues mark the nation's founding.")
-            )
+            ),
+            privateHospitalName = "City Medical Center",
+            secondaryGradeLabel = "Grade",
+            guardianHonorific = "Mom"
         ),
         CountryFlavor(
             countryCode = "CA",
@@ -105,7 +120,10 @@ object CountryCatalog {
             notableHolidays = listOf(
                 HolidayFlavor("Canada Day", "July first fireworks and maple flags mark confederation."),
                 HolidayFlavor("Thanksgiving", "October long-weekend feasts gather families before winter sets in.")
-            )
+            ),
+            privateHospitalName = "Private Clinic",
+            secondaryGradeLabel = "Grade",
+            guardianHonorific = "Mom"
         ),
         CountryFlavor(
             countryCode = "GB",
@@ -117,7 +135,10 @@ object CountryCatalog {
             notableHolidays = listOf(
                 HolidayFlavor("Guy Fawkes Night", "November bonfires and fireworks light up neighbourhoods."),
                 HolidayFlavor("Remembrance Day", "November eleventh silences honour those who served in wartime.")
-            )
+            ),
+            privateHospitalName = "Private Hospital",
+            secondaryGradeLabel = "Year",
+            guardianHonorific = "Mum"
         ),
         CountryFlavor(
             countryCode = "FR",
@@ -129,7 +150,10 @@ object CountryCatalog {
             notableHolidays = listOf(
                 HolidayFlavor("Bastille Day", "July fourteenth parades and fireworks celebrate the republic."),
                 HolidayFlavor("Labour Day", "May first marches and spring outings mark workers' solidarity.")
-            )
+            ),
+            privateHospitalName = "Clinique Privée",
+            secondaryGradeLabel = "Year",
+            guardianHonorific = "Maman"
         ),
         CountryFlavor(
             countryCode = "DE",
@@ -141,7 +165,10 @@ object CountryCatalog {
             notableHolidays = listOf(
                 HolidayFlavor("Unity Day", "October third marks German reunification with civic events."),
                 HolidayFlavor("Labour Day", "May first rallies and street festivals celebrate workers across Germany.")
-            )
+            ),
+            privateHospitalName = "Privatklinik",
+            secondaryGradeLabel = "Year",
+            guardianHonorific = "Mama"
         ),
         CountryFlavor(
             countryCode = "IN",
@@ -153,7 +180,10 @@ object CountryCatalog {
             notableHolidays = listOf(
                 HolidayFlavor("Diwali", "Festival of lights — diyas, sweets, and family visits fill the week."),
                 HolidayFlavor("Holi", "Spring colour festivals splash streets with powder and laughter.")
-            )
+            ),
+            privateHospitalName = "Apollo Hospital",
+            secondaryGradeLabel = "Class",
+            guardianHonorific = "Mum"
         ),
         CountryFlavor(
             countryCode = "JP",
@@ -165,7 +195,10 @@ object CountryCatalog {
             notableHolidays = listOf(
                 HolidayFlavor("Obon", "Mid-August dances and lanterns honour ancestors and homecomings."),
                 HolidayFlavor("New Year's Day", "January shrine visits and family meals open the year with hope.")
-            )
+            ),
+            privateHospitalName = "University Hospital",
+            secondaryGradeLabel = "Year",
+            guardianHonorific = "Okaa-san"
         ),
         CountryFlavor(
             countryCode = "PH",
@@ -177,7 +210,10 @@ object CountryCatalog {
             notableHolidays = listOf(
                 HolidayFlavor("Independence Day", "June twelfth flag ceremonies and street parades nationwide."),
                 HolidayFlavor("Rizal Day", "December thirtieth honours national hero José Rizal with wreath-laying.")
-            )
+            ),
+            privateHospitalName = "St. Luke's Medical Center",
+            secondaryGradeLabel = "Grade",
+            guardianHonorific = "Nanay"
         ),
         CountryFlavor(
             countryCode = "ID",
@@ -189,7 +225,10 @@ object CountryCatalog {
             notableHolidays = listOf(
                 HolidayFlavor("Independence Day", "August seventeenth competitions and flag-raising at schools."),
                 HolidayFlavor("Kartini Day", "April twenty-first celebrates women's emancipation with school ceremonies.")
-            )
+            ),
+            privateHospitalName = "Siloam Hospital",
+            secondaryGradeLabel = "Year",
+            guardianHonorific = "Ibu"
         ),
         CountryFlavor(
             countryCode = "BR",
@@ -201,7 +240,10 @@ object CountryCatalog {
             notableHolidays = listOf(
                 HolidayFlavor("Carnival", "Pre-Lent samba, costumes, and street parties sweep the cities."),
                 HolidayFlavor("Independence Day", "September seventh parades and green-yellow flags mark nationhood.")
-            )
+            ),
+            privateHospitalName = "Hospital Particular",
+            secondaryGradeLabel = "Year",
+            guardianHonorific = "Mãe"
         ),
         CountryFlavor(
             countryCode = "MX",
@@ -213,7 +255,10 @@ object CountryCatalog {
             notableHolidays = listOf(
                 HolidayFlavor("Independence Day", "September sixteenth el grito re-enactments and plaza festivities."),
                 HolidayFlavor("Día de los Muertos", "November altars of marigolds and pan de muerto welcome returning souls.")
-            )
+            ),
+            privateHospitalName = "Hospital Privado",
+            secondaryGradeLabel = "Year",
+            guardianHonorific = "Mamá"
         )
     ).associateBy { it.countryCode }
 
@@ -224,14 +269,20 @@ object CountryCatalog {
         commonTransportMode = "public transport",
         popularMoneyAppOrBank = "mobile banking",
         greetingPhrase = "Hello",
-        notableHolidays = emptyList()
+        notableHolidays = emptyList(),
+        privateHospitalName = "Private Hospital",
+        secondaryGradeLabel = "Year",
+        guardianHonorific = "Mom"
     )
+
+    private val unknownCountry = Country("XX", "International", "USD", "$")
 
     private val byCode: Map<String, Country> = countries.associateBy { it.code }
 
     fun all(): List<Country> = countries
 
-    fun getCountry(code: String): Country = byCode[code] ?: byCode.getValue("KE")
+    /** Unknown codes resolve to a neutral international sentinel — not Kenya. */
+    fun getCountry(code: String): Country = byCode[code] ?: unknownCountry
 
     fun flavorFor(countryCode: String): CountryFlavor =
         flavors[countryCode] ?: genericFlavor

@@ -290,20 +290,20 @@ object NamePool {
     )
 
     fun getNamePool(countryCode: String): CountryNamePool =
-        pools[countryCode] ?: kenyaPool
+        pools[countryCode] ?: pools.getValue("US")
 
-    fun randomSurname(countryCode: String = "KE"): String =
+    fun randomSurname(countryCode: String = "US"): String =
         getNamePool(countryCode).randomSurname()
 
-    fun randomMaleFirstName(countryCode: String = "KE"): String =
+    fun randomMaleFirstName(countryCode: String = "US"): String =
         getNamePool(countryCode).randomMaleFirstName()
 
-    fun randomFemaleFirstName(countryCode: String = "KE"): String =
+    fun randomFemaleFirstName(countryCode: String = "US"): String =
         getNamePool(countryCode).randomFemaleFirstName()
 
-    fun randomFullName(gender: Gender, countryCode: String = "KE"): String =
+    fun randomFullName(gender: Gender, countryCode: String = "US"): String =
         getNamePool(countryCode).randomFullName(gender)
 
-    fun randomSiblingName(countryCode: String = "KE"): String =
+    fun randomSiblingName(countryCode: String = "US"): String =
         getNamePool(countryCode).randomSiblingName()
 }

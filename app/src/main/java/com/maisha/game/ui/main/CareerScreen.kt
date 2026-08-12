@@ -298,6 +298,7 @@ fun CareerScreen(
 
         EducationSectionCard(
             education = character.education,
+            countryCode = character.countryCode,
             onDropOut = { dropOutConfirm.request(Unit) }
         )
 
@@ -696,6 +697,7 @@ private fun RetiredStateCard(
 @Composable
 private fun EducationSectionCard(
     education: EducationState,
+    countryCode: String,
     onDropOut: () -> Unit
 ) {
     val resources = LocalContext.current.resources
@@ -717,7 +719,7 @@ private fun EducationSectionCard(
             )
             Spacer(modifier = Modifier.height(6.dp))
             Text(
-                text = EducationFormatter.formatStatus(education, resources),
+                text = EducationFormatter.formatStatus(education, resources, countryCode),
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurface
             )

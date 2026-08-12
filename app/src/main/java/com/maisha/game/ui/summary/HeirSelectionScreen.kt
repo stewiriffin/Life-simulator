@@ -123,7 +123,8 @@ private fun HeirOptionCard(
             PersonAvatar(
                 avatarConfig = heir.avatarConfig,
                 size = 44,
-                age = heir.age
+                age = heir.age,
+                seed = heir.id
             )
             Column(modifier = Modifier.weight(1f)) {
                 Text(

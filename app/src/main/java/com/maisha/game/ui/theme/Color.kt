@@ -30,3 +30,4 @@ val StatPerformance = Color(0xFF7E57C2)
 // Accent tints for cards / highlights
 val AccentPink = Color(0xFFE91E8C)
 val SuccessGreen = Color(0xFF66BB6A)
+val StatKarma = Color(0xFF26A69A)

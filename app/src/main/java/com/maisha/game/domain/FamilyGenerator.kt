@@ -12,7 +12,7 @@ import kotlin.random.Random
 @Singleton
 class FamilyGenerator @Inject constructor() {
 
-    fun generateFamily(characterAge: Int = 0, countryCode: String = "KE"): List<Person> {
+    fun generateFamily(characterAge: Int = 0, countryCode: String = "XX"): List<Person> {
         val family = mutableListOf<Person>()
         val pool = NamePool.getNamePool(countryCode)
         val surname = pool.randomSurname()

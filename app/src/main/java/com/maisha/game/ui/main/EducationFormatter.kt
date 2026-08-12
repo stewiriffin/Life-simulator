@@ -8,7 +8,11 @@ import com.maisha.game.data.model.SchoolStage
 
 object EducationFormatter {
 
-    fun formatStatus(education: EducationState, res: Resources): String {
+    fun formatStatus(
+        education: EducationState,
+        res: Resources,
+        countryCode: String = "XX"
+    ): String {
         if (education.expelled) return res.getString(R.string.edu_expelled)
         when (education.droppedOutFrom) {
             SchoolStage.SECONDARY -> return res.getString(R.string.edu_dropped_out_secondary)
@@ -23,7 +27,13 @@ object EducationFormatter {
             }
             SchoolStage.SECONDARY -> {
                 val school = education.schoolName ?: res.getString(R.string.edu_secondary_school_fallback)
-                res.getString(R.string.edu_secondary_form, education.currentGrade, school)
+                val gradeLabel = com.maisha.game.data.CountryCatalog.flavorFor(countryCode).secondaryGradeLabel
+                res.getString(
+                    R.string.edu_secondary_year,
+                    gradeLabel,
+                    education.currentGrade,
+                    school
+                )
             }
             SchoolStage.UNIVERSITY -> {
                 val course = education.courseOfStudy ?: res.getString(R.string.edu_general_studies)

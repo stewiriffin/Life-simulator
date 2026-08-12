@@ -108,7 +108,8 @@ fun PersonCard(
                 size = 44,
                 age = person.age,
                 expression = expression,
-                hideFromAccessibility = true
+                hideFromAccessibility = true,
+                seed = person.id
             )
 
             Column(
@@ -196,7 +197,8 @@ fun PersonAvatar(
     age: Int = 18,
     expression: Expression = Expression.NEUTRAL,
     forPlayerCharacter: Boolean = false,
-    hideFromAccessibility: Boolean = false
+    hideFromAccessibility: Boolean = false,
+    seed: String? = null
 ) {
     AvatarImage(
         config = avatarConfig,
@@ -205,7 +207,8 @@ fun PersonAvatar(
         age = age,
         expression = expression,
         forPlayerCharacter = forPlayerCharacter,
-        hideFromAccessibility = hideFromAccessibility
+        hideFromAccessibility = hideFromAccessibility,
+        seed = seed
     )
 }
 

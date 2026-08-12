@@ -37,7 +37,11 @@ import com.maisha.game.domain.CareerEngine
 import com.maisha.game.domain.CareerResult
 import com.maisha.game.domain.CrimeResult
 import com.maisha.game.domain.DoctorResult
+import com.maisha.game.domain.DynastyScore
 import com.maisha.game.domain.EventLogCap
+import com.maisha.game.domain.YearQuest
+import com.maisha.game.domain.YearQuestEngine
+import com.maisha.game.domain.YearQuestProgress
 import com.maisha.game.domain.FinanceEngine
 import com.maisha.game.domain.GameEngine
 import com.maisha.game.domain.GiftTier
@@ -107,7 +111,11 @@ data class LifeUiState(
     val seenTipIds: Set<String> = emptySet(),
     val tipsLoaded: Boolean = false,
     val requestNotificationPermission: Boolean = false,
-    val headerExpression: Expression = Expression.NEUTRAL
+    val headerExpression: Expression = Expression.NEUTRAL,
+    val yearQuests: List<YearQuest> = emptyList(),
+    val yearQuestProgress: List<YearQuestProgress> = emptyList(),
+    val dynastyScore: Int = 0,
+    val dynastyTitleKey: String = "dynasty_title_seedling"
 )
 
 @HiltViewModel
@@ -121,6 +129,7 @@ class LifeViewModel @Inject constructor(
     private val achievementEngine: AchievementEngine,
     private val careerEngine: CareerEngine,
     private val financeEngine: FinanceEngine,
+    private val yearQuestEngine: YearQuestEngine,
     private val adFrequencyController: AdFrequencyController,
     private val notificationScheduler: NotificationScheduler
 ) : ViewModel() {
@@ -156,8 +165,10 @@ class LifeViewModel @Inject constructor(
                             eligibleJobs = careerEngine.getEligibleJobs(character),
                             netWorth = financeEngine.calculateNetWorth(character),
                             navigateToLifeSummary = !character.alive,
-                            headerExpression = ExpressionResolver.resolveExpression(character, null)
-                        )
+                            headerExpression = ExpressionResolver.resolveExpression(character, null),
+                            yearQuests = yearQuestEngine.generate(character),
+                            yearQuestProgress = emptyList()
+                        ).withDynasty(character, financeEngine.calculateNetWorth(character))
                     }
                     if (character.alive) {
                         introResult?.let { applyAgeUpResult(character, it, persistAge = false) }
@@ -186,25 +197,45 @@ class LifeViewModel @Inject constructor(
             val statsBefore = character.stats
             val netWorthBefore = financeEngine.calculateNetWorth(character)
             val ageBefore = character.age
+            val jobLevelBefore = character.career.currentJob?.level ?: 0
+            val activeQuests = _uiState.value.yearQuests
             val progress = achievementRepository.getProgressSnapshot()
             val outcome = gameEngine.ageUp(character, triggeredEventIds, progress, slotId)
+            val questProgress = yearQuestEngine.evaluate(activeQuests, character, outcome.character)
+            val completedQuests = questProgress.filter { it.completed }
+            val rewardedCharacter = yearQuestEngine.applyRewards(outcome.character, completedQuests)
             if (outcome.newlyUnlockedAchievements.isNotEmpty()) {
                 achievementRepository.unlockAchievements(outcome.newlyUnlockedAchievements)
                 enqueueAchievementDialogs(outcome.newlyUnlockedAchievements)
             }
-            applyAgeUpResult(outcome.character, outcome.result, persistAge = true)
-            val statDeltas = buildStatDeltas(statsBefore, outcome.character.stats) +
+            applyAgeUpResult(rewardedCharacter, outcome.result, persistAge = true)
+            val statDeltas = buildStatDeltas(statsBefore, rewardedCharacter.stats) +
                 buildNetWorthDelta(
                     before = netWorthBefore,
-                    after = financeEngine.calculateNetWorth(outcome.character),
-                    countryCode = outcome.character.countryCode
+                    after = financeEngine.calculateNetWorth(rewardedCharacter),
+                    countryCode = rewardedCharacter.countryCode
                 )
             if (educationBefore != SchoolStage.GRADUATED &&
-                outcome.character.education.stage == SchoolStage.GRADUATED
+                rewardedCharacter.education.stage == SchoolStage.GRADUATED
             ) {
                 enqueueCelebration(CelebrationType.GRADUATION)
             }
-            when (outcome.character.age) {
+            val jobLevelAfter = rewardedCharacter.career.currentJob?.level ?: 0
+            if (jobLevelAfter > jobLevelBefore) {
+                enqueueCelebration(CelebrationType.PROMOTION)
+            }
+            if (completedQuests.isNotEmpty()) {
+                enqueueCelebration(CelebrationType.YEAR_QUEST)
+                _uiState.update {
+                    it.copy(
+                        actionMessage = context.getString(
+                            R.string.msg_year_quests_complete,
+                            completedQuests.sumOf { q -> q.quest.rewardKarma }
+                        )
+                    )
+                }
+            }
+            when (rewardedCharacter.age) {
                 18 -> if (ageBefore < 18) enqueueCelebration(CelebrationType.AGE_MILESTONE_18)
                 50 -> if (ageBefore < 50) enqueueCelebration(CelebrationType.AGE_MILESTONE_50)
                 100 -> if (ageBefore < 100) enqueueCelebration(CelebrationType.AGE_MILESTONE_100)
@@ -214,8 +245,8 @@ class LifeViewModel @Inject constructor(
             }
             val ageUpOutcome = outcomeFromAgeUpResult(outcome.result)
             flashExpression(
-                character = outcome.character,
-                flash = ExpressionResolver.resolveExpression(outcome.character, ageUpOutcome)
+                character = rewardedCharacter,
+                flash = ExpressionResolver.resolveExpression(rewardedCharacter, ageUpOutcome)
             )
             outcome.relationshipDecayNotices.firstOrNull()?.let { notice ->
                 _uiState.update {
@@ -230,10 +261,17 @@ class LifeViewModel @Inject constructor(
             enqueueAgeUpOutcomeFeedback(
                 beforeMoney = moneyBefore,
                 hadJob = hadJob,
-                character = outcome.character,
+                character = rewardedCharacter,
                 result = outcome.result
             )
-            val earnedInterstitialSlot = outcome.character.alive &&
+            val nextQuests = yearQuestEngine.generate(rewardedCharacter)
+            _uiState.update { state ->
+                state.copy(
+                    yearQuests = nextQuests,
+                    yearQuestProgress = questProgress
+                ).withDynasty(rewardedCharacter, financeEngine.calculateNetWorth(rewardedCharacter))
+            }
+            val earnedInterstitialSlot = rewardedCharacter.alive &&
                 adFrequencyController.recordAgeUpAndShouldShowInterstitial()
             _uiState.update { state ->
                 val blockAd = hasCelebratoryOverlay(state)
@@ -1855,4 +1893,12 @@ class LifeViewModel @Inject constructor(
     companion object {
         private const val EXPRESSION_FLASH_MS = 1_500L
     }
+}
+
+private fun LifeUiState.withDynasty(character: Character, netWorth: Int): LifeUiState {
+    val breakdown = DynastyScore.calculate(character, netWorth)
+    return copy(
+        dynastyScore = breakdown.total,
+        dynastyTitleKey = breakdown.titleKey
+    )
 }

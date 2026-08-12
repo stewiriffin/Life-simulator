@@ -279,7 +279,7 @@ private fun OccupiedSlotCard(
         else -> stringResource(R.string.career_unemployed)
     }
     val netWorthLabel = slot.netWorth?.let { worth ->
-        formatMoney(worth, countryCode ?: "KE")
+        formatMoney(worth, countryCode ?: "XX")
     }
 
     Card(
@@ -303,7 +303,8 @@ private fun OccupiedSlotCard(
                     config = slot.avatarConfig ?: AvatarConfig.DEFAULT,
                     size = 64.dp,
                     age = slot.age ?: 18,
-                    forPlayerCharacter = true
+                    forPlayerCharacter = true,
+                    seed = slot.name ?: "slot-${slot.slotId}"
                 )
 
                 Column(modifier = Modifier.weight(1f)) {

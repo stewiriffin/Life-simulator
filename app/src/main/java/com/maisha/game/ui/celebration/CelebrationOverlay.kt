@@ -1,4 +1,4 @@
-// app/src/main/java/com/maisha/game/ui/celebration/CelebrationOverlay.kt (new)
+// app/src/main/java/com/maisha/game/ui/celebration/CelebrationOverlay.kt
 package com.maisha.game.ui.celebration
 
 import androidx.compose.foundation.Canvas
@@ -6,7 +6,9 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -14,13 +16,26 @@ import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.Shadow
 import androidx.compose.ui.graphics.drawscope.rotate
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import com.maisha.game.R
+import com.maisha.game.ui.theme.AccentPink
+import com.maisha.game.ui.theme.GoldAccent
+import com.maisha.game.ui.theme.StatHappiness
+import com.maisha.game.ui.theme.StatHealth
+import com.maisha.game.ui.theme.StatSmarts
+import com.maisha.game.ui.theme.SuccessGreen
+import com.maisha.game.ui.theme.TealLight
 import kotlinx.coroutines.delay
 import kotlin.math.abs
 import kotlin.math.cos
@@ -29,8 +44,7 @@ import kotlin.random.Random
 
 /**
  * Lightweight confetti — 18 particles, ~1.8s drift, tap-to-dismiss.
- * Reduced from 28 after Prompt 43 profiling budget (itel A665L): single Canvas pass,
- * no physics library, particles removed after lifetime.
+ * Palette and banner copy vary by [CelebrationType] for clearer game juice.
  */
 private const val PARTICLE_COUNT = 18
 private const val ANIMATION_MS = 1_800L
@@ -57,13 +71,11 @@ fun CelebrationOverlay(
     modifier: Modifier = Modifier
 ) {
     val density = LocalDensity.current
-    val primary = MaterialTheme.colorScheme.primary
-    val accent = MaterialTheme.colorScheme.secondary
-    val error = MaterialTheme.colorScheme.error
     var progress by remember(type) { mutableFloatStateOf(0f) }
     var dismissed by remember(type) { mutableStateOf(false) }
-    val particles = remember(type, primary, accent, error) {
-        val palette = listOf(primary, accent, error)
+    val palette = remember(type) { paletteFor(type) }
+    val banner = stringResource(bannerRes(type))
+    val particles = remember(type, palette) {
         List(PARTICLE_COUNT) {
             val angle = Random.nextFloat() * (Math.PI * 2).toFloat()
             val speed = Random.nextFloat() * 6f + 1.2f
@@ -109,7 +121,8 @@ fun CelebrationOverlay(
             ) {
                 dismissed = true
                 onDismiss()
-            }
+            },
+        contentAlignment = Alignment.Center
     ) {
         Canvas(modifier = Modifier.fillMaxSize()) {
             val w = size.width
@@ -142,5 +155,43 @@ fun CelebrationOverlay(
                 }
             }
         }
+        Text(
+            text = banner,
+            style = MaterialTheme.typography.headlineSmall.copy(
+                fontWeight = FontWeight.Bold,
+                shadow = Shadow(
+                    color = Color.Black.copy(alpha = 0.45f),
+                    offset = Offset(0f, 2f),
+                    blurRadius = 8f
+                )
+            ),
+            color = palette.first(),
+            textAlign = TextAlign.Center,
+            modifier = Modifier.padding(horizontal = 24.dp)
+        )
     }
+}
+
+private fun paletteFor(type: CelebrationType): List<Color> = when (type) {
+    CelebrationType.MARRIAGE -> listOf(AccentPink, GoldAccent, Color(0xFFFFF0F5))
+    CelebrationType.CHILD_BORN -> listOf(AccentPink, TealLight, StatHappiness)
+    CelebrationType.ACHIEVEMENT -> listOf(GoldAccent, TealLight, StatSmarts)
+    CelebrationType.GRADUATION -> listOf(StatSmarts, GoldAccent, TealLight)
+    CelebrationType.PROMOTION -> listOf(GoldAccent, SuccessGreen, StatSmarts)
+    CelebrationType.YEAR_QUEST -> listOf(TealLight, GoldAccent, SuccessGreen)
+    CelebrationType.AGE_MILESTONE_18 -> listOf(TealLight, StatHappiness, GoldAccent)
+    CelebrationType.AGE_MILESTONE_50 -> listOf(GoldAccent, StatHealth, TealLight)
+    CelebrationType.AGE_MILESTONE_100 -> listOf(GoldAccent, AccentPink, StatSmarts)
+}
+
+private fun bannerRes(type: CelebrationType): Int = when (type) {
+    CelebrationType.MARRIAGE -> R.string.celebration_marriage
+    CelebrationType.CHILD_BORN -> R.string.celebration_child_born
+    CelebrationType.ACHIEVEMENT -> R.string.celebration_achievement
+    CelebrationType.GRADUATION -> R.string.celebration_graduation
+    CelebrationType.PROMOTION -> R.string.celebration_promotion
+    CelebrationType.YEAR_QUEST -> R.string.celebration_year_quest
+    CelebrationType.AGE_MILESTONE_18 -> R.string.celebration_age_18
+    CelebrationType.AGE_MILESTONE_50 -> R.string.celebration_age_50
+    CelebrationType.AGE_MILESTONE_100 -> R.string.celebration_age_100
 }

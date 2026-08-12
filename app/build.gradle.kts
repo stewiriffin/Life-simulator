@@ -53,6 +53,12 @@ android {
         unitTests.isReturnDefaultValues = true
         unitTests.isIncludeAndroidResources = true
     }
+
+    lint {
+        // Locales are intentionally partial; English resources are the fallback.
+        // Keep this visible as a warning so missing copy stays trackable.
+        warning += "MissingTranslation"
+    }
 }
 
 dependencies {
@@ -88,6 +94,7 @@ dependencies {
     implementation(libs.androidx.work.runtime.ktx)
     implementation(libs.androidx.hilt.work)
     ksp(libs.androidx.hilt.compiler)
+    implementation(libs.coil.compose)
 
     testImplementation("junit:junit:4.13.2")
     testImplementation("org.robolectric:robolectric:${libs.versions.robolectric.get()}")

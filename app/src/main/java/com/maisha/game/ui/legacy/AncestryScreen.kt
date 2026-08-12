@@ -44,6 +44,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.maisha.game.R
 import com.maisha.game.domain.AncestryHistoryCap
+import com.maisha.game.domain.DynastyScore
 import com.maisha.game.data.CountryCatalog
 import com.maisha.game.data.model.AncestryEntry
 import com.maisha.game.data.model.Character
@@ -125,6 +126,8 @@ fun AncestryScreen(
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                     Spacer(modifier = Modifier.height(8.dp))
+                    DynastyScoreHeader(character = character)
+                    Spacer(modifier = Modifier.height(8.dp))
                 }
 
                 if (historyTruncated) {
@@ -151,6 +154,56 @@ fun AncestryScreen(
                     Spacer(modifier = Modifier.height(16.dp))
                 }
             }
+        }
+    }
+}
+
+@Composable
+private fun DynastyScoreHeader(character: Character) {
+    val netWorth = character.stats.money +
+        character.assets.sumOf { it.currentValue } +
+        character.businesses.sumOf { it.valuation } +
+        character.investmentPortfolioValue.coerceAtLeast(0)
+    val breakdown = DynastyScore.calculate(character, netWorth)
+    val titleRes = when (breakdown.titleKey) {
+        "dynasty_title_legend" -> R.string.dynasty_title_legend
+        "dynasty_title_powerhouse" -> R.string.dynasty_title_powerhouse
+        "dynasty_title_rising" -> R.string.dynasty_title_rising
+        "dynasty_title_rooted" -> R.string.dynasty_title_rooted
+        else -> R.string.dynasty_title_seedling
+    }
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(14.dp),
+        colors = CardDefaults.cardColors(
+            containerColor = GoldAccent.copy(alpha = 0.12f)
+        )
+    ) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 12.dp, vertical = 10.dp),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Column(modifier = Modifier.weight(1f)) {
+                Text(
+                    text = stringResource(R.string.section_dynasty_score),
+                    style = MaterialTheme.typography.labelMedium,
+                    color = GoldAccent,
+                    fontWeight = FontWeight.SemiBold
+                )
+                Text(
+                    text = stringResource(titleRes),
+                    style = MaterialTheme.typography.bodySmall
+                )
+            }
+            Text(
+                text = stringResource(R.string.format_dynasty_score, breakdown.total),
+                style = MaterialTheme.typography.titleSmall,
+                fontWeight = FontWeight.Bold,
+                color = GoldAccent
+            )
         }
     }
 }

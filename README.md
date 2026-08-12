@@ -2,7 +2,7 @@
 
 **Maisha** (Swahili for *life*) is a single-player life-simulation game for Android. Players create a character, age year-by-year through school, career, relationships, crime, health, and finance, and either die naturally or continue their family line across generations. The app targets mid-range Android phones (360dp width, API 26+) with a Compose-first UI and offline-first local saves.
 
-The project began as a **Kenya-focused** prototype (KCPE/KCSE exams, KSh currency, Nairobi health references) and was expanded in later development passes to a **global roster of 15 countries** (KE, NG, ZA, IN, US, GB, JP, MX, PH, EG, BR, CA, AU, ID, TH). Kenya-specific content remains where historically authored (`restrictedToCountry: "KE"` events); universal events use `{placeholder}` flavor resolution so the same JSON works worldwide.
+The project is a **worldwide life simulator** across a roster of **15 countries** (KE, NG, ZA, EG, US, CA, GB, FR, DE, IN, JP, PH, ID, BR, MX). It began as a Kenya-focused prototype; Kenya-specific events remain behind `restrictedToCountry: "KE"` while universal content uses `{placeholder}` flavor (transport, exams, money apps) and per-country hospitals, school names, and grade labels so non-Kenya lives feel local.
 
 ---
 

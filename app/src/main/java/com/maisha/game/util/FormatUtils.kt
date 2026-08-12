@@ -14,7 +14,7 @@ private fun numberFormatFor(countryCode: String): NumberFormat {
     }
 }
 
-fun formatMoney(amount: Int, countryCode: String = "KE"): String {
+fun formatMoney(amount: Int, countryCode: String = "XX"): String {
     val country = CountryCatalog.getCountry(countryCode)
     val formatted = numberFormatFor(countryCode).format(amount)
     return "${country.currencySymbol} $formatted"

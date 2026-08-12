@@ -421,7 +421,7 @@ private fun AchievementsWealthTabPreview() {
             uiState = AchievementsUiState(
                 isLoading = false,
                 items = wealthItems,
-                displayCountryCode = "KE",
+                displayCountryCode = "US",
                 bestNetWorth = 500_000,
                 bestAge = 40
             ),

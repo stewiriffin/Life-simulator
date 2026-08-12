@@ -108,7 +108,8 @@ fun ShareCardComposable(
                 AvatarImage(
                     config = data.avatarConfig,
                     size = 120.dp,
-                    age = data.ageAtDeath
+                    age = data.ageAtDeath,
+                    seed = data.characterName
                 )
                 Spacer(modifier = Modifier.height(18.dp))
                 Row(
@@ -388,19 +389,19 @@ private fun ShareCardPreview() {
     MaishaTheme {
         ShareCardComposable(
             data = ShareCardData(
-                characterName = "Amina Otieno",
+                characterName = "Maya Chen",
                 avatarConfig = AvatarConfig.DEFAULT,
                 birthYear = 1965,
                 deathYear = 2040,
                 ageAtDeath = 75,
-                countryCode = "KE",
+                countryCode = "US",
                 deathCauseLabel = "Passed away peacefully in old age",
                 topStatLabel = "Happiness",
                 topStatValue = 88,
-                netWorthFormatted = "KES 2.4M",
+                netWorthFormatted = "$ 2.4M",
                 careerHeadline = "Teacher · Level 4",
                 familySummary = "Married with 2 children",
-                legacySentence = "Amina Otieno lived 75 years as a Teacher, built KES 2.4M, and raised 2 children.",
+                legacySentence = "Maya Chen lived 75 years as a Teacher, built $ 2.4M, and raised 2 children.",
                 achievementBadges = listOf(
                     ShareAchievementBadge(
                         titleRes = R.string.app_name,

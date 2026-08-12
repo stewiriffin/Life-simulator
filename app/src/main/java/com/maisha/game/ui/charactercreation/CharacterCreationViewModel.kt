@@ -31,7 +31,7 @@ import kotlin.random.Random
 data class CharacterCreationUiState(
     val name: String = "",
     val selectedGender: Gender = Gender.MALE,
-    val selectedCountryCode: String = CountryCatalog.all().first().code,
+    val selectedCountryCode: String = "US",
     val countrySearchQuery: String = "",
     val avatarConfig: AvatarConfig = AvatarConfig.random(),
     val nameError: String? = null,

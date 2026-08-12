@@ -45,19 +45,19 @@
     "id": "first_steps",
     "minAge": 1,
     "maxAge": 2,
-    "text": "At home in the yard, you wobble on unsteady legs while the dog barks. Your parent cheers you on.",
+    "text": "At home, you wobble on unsteady legs while the family dog barks. Your parent cheers you on.",
     "weight": 8,
     "tags": ["one_time", "milestone"],
     "choices": [
       {
-        "label": "Run to Mama",
+        "label": "Run to your parent",
         "statEffects": { "happiness": 5, "health": 2 },
-        "resultText": "You stumbled into Mama's arms. The whole family clapped."
+        "resultText": "You stumbled into their arms. The whole family clapped."
       },
       {
-        "label": "Chase the chickens",
+        "label": "Chase the dog",
         "statEffects": { "happiness": 3, "health": 3 },
-        "resultText": "The chickens fled. You laughed until you fell over."
+        "resultText": "The dog darted away. You laughed until you fell over."
       }
     ]
   },
@@ -95,9 +95,9 @@
         "resultText": "You marched into class like a big kid. The teacher was impressed."
       },
       {
-        "label": "Cry and hold Mama's leg",
+        "label": "Cry and hold a parent's leg",
         "statEffects": { "happiness": -2 },
-        "resultText": "Mama stayed a few extra minutes. You settled in eventually."
+        "resultText": "Your parent stayed a few extra minutes. You settled in eventually."
       },
       {
         "label": "Make friends immediately",
@@ -178,7 +178,7 @@
       {
         "label": "Fight for the remote",
         "statEffects": { "happiness": -3, "health": -1 },
-        "resultText": "Mama separated you both. Nobody won the argument."
+        "resultText": "A parent separated you both. Nobody won the argument."
       },
       {
         "label": "Negotiate a time share",
@@ -186,9 +186,9 @@
         "resultText": "You worked out a schedule. Surprisingly mature."
       },
       {
-        "label": "Tell Mama",
+        "label": "Tell a parent",
         "statEffects": { "happiness": 1 },
-        "resultText": "Mama ruled in your favour. Your sibling stuck out their tongue."
+        "resultText": "Your parent ruled in your favour. Your sibling stuck out their tongue."
       }
     ]
   },
@@ -196,7 +196,7 @@
     "id": "minor_illness",
     "minAge": 3,
     "maxAge": 15,
-    "text": "You wake up with a fever and a sore throat. Mama takes you to the local clinic.",
+    "text": "You wake up with a fever and a sore throat. A parent takes you to the local clinic.",
     "weight": 5,
     "tags": [],
     "choices": [
@@ -264,7 +264,7 @@
       {
         "label": "Use it responsibly",
         "statEffects": { "smarts": 2, "happiness": 3 },
-        "resultText": "You called Mama after practice and did homework on it. Sensible."
+        "resultText": "You called home after practice and did homework on it. Sensible."
       },
       {
         "label": "Stay up late on social media",
@@ -294,7 +294,7 @@
       {
         "label": "Worry about fees",
         "statEffects": { "happiness": -3, "smarts": 2 },
-        "resultText": "Baba reassured you they'd find a way. You started thinking seriously about the future."
+        "resultText": "Your parent reassured you they'd find a way. You started thinking seriously about the future."
       }
     ]
   },
@@ -302,14 +302,14 @@
     "id": "playing_football",
     "minAge": 8,
     "maxAge": 14,
-    "text": "After school, you join a dusty football game in the neighbourhood field.",
+    "text": "After school, you join a pickup football game at the neighbourhood field.",
     "weight": 4,
     "tags": [],
     "choices": [
       {
         "label": "Play striker",
         "statEffects": { "health": 4, "happiness": 5, "looks": 2 },
-        "resultText": "You scored a goal between two stones serving as goalposts. Hero of the day."
+        "resultText": "You scored. For a moment you were the hero of the day."
       },
       {
         "label": "Sit and watch",

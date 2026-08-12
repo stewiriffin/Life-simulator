@@ -16,7 +16,7 @@ object CareerFormatter {
         return res.getString(R.string.career_job_level, job.title, job.level)
     }
 
-    fun formatSalary(job: Job, res: Resources, countryCode: String = "KE"): String {
+    fun formatSalary(job: Job, res: Resources, countryCode: String = "XX"): String {
         val levelMultiplier = 1.0 + (job.level - 1) * 0.15
         val annual = (job.baseSalary * levelMultiplier).toInt()
         return res.getString(R.string.format_salary_per_year, formatMoney(annual, countryCode))
