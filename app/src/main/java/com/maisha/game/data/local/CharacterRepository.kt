@@ -156,6 +156,8 @@ class CharacterRepository @Inject constructor(
             willJson = will?.let { json.encodeToString(it) },
             investmentPortfolioValue = investmentPortfolioValue,
             lastPortfolioReturnPercent = lastPortfolioReturnPercent,
+            savingsBalance = savingsBalance,
+            lastSavingsInterestPercent = lastSavingsInterestPercent,
             relocationCount = relocationCount,
             yearsInCurrentCountry = yearsInCurrentCountry,
             lastRelocationAge = lastRelocationAge,

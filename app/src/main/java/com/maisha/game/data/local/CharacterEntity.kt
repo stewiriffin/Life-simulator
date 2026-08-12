@@ -28,6 +28,8 @@ data class CharacterEntity(
     val willJson: String? = null,
     val investmentPortfolioValue: Int = 0,
     val lastPortfolioReturnPercent: Int = 0,
+    val savingsBalance: Int = 0,
+    val lastSavingsInterestPercent: Int = 0,
     val relocationCount: Int = 0,
     val yearsInCurrentCountry: Int = 0,
     val lastRelocationAge: Int? = null,

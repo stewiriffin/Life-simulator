@@ -214,7 +214,14 @@ class CareerEngine @Inject constructor(
 
         val deployed = job.isMilitary && character.career.pendingDeployment
         val annualPay = calculateAnnualSalary(job)
-        val payThisYear = if (deployed) annualPay * HAZARD_PAY_MULTIPLIER else annualPay
+        val effortGross = (annualPay * effortPayMultiplier(effort)).toInt().coerceAtLeast(0)
+        val payThisYear = if (deployed) {
+            (effortGross * HAZARD_PAY_MULTIPLIER).toInt()
+        } else {
+            effortGross
+        }
+        val tax = FinanceEngine.calculateIncomeTax(payThisYear, character.countryCode)
+        val netPay = (payThisYear - tax).coerceAtLeast(0)
         val newPerformance = clampPerformanceScore(job.performanceScore + performanceDelta)
         val updatedJob = job.copy(performanceScore = newPerformance)
         val pendingNext = job.isMilitary && Random.nextFloat() < DEPLOYMENT_CHANCE
@@ -224,7 +231,7 @@ class CareerEngine @Inject constructor(
             happinessDeltaTotal -= PUBLIC_TRANSIT_STRESS
         }
         val updatedStats = character.stats.copy(
-            money = character.stats.money + payThisYear,
+            money = character.stats.money + netPay,
             happiness = clampStat(character.stats.happiness + happinessDeltaTotal)
         )
 
@@ -235,12 +242,21 @@ class CareerEngine @Inject constructor(
                     currentJob = updatedJob,
                     yearsAtCurrentJob = character.career.yearsAtCurrentJob + 1,
                     workEffortThisYear = effort,
+                    plannedWorkEffort = effort,
                     isDeployed = deployed,
                     pendingDeployment = pendingNext
                 )
             ),
             effort
         )
+        val payLog = buildString {
+            append("Paycheque: ${formatMoney(netPay, character.countryCode)} net")
+            if (tax > 0) append(" after ${formatMoney(tax, character.countryCode)} tax")
+            append(" (${effort.name.lowercase()} effort")
+            if (deployed) append(", hazard pay")
+            append(").")
+        }
+        updated = updated.copy(eventLog = EventLogCap.prepend(updated.eventLog, payLog))
         if (deployed) {
             updated = updated.copy(
                 eventLog = EventLogCap.prepend(
@@ -258,6 +274,24 @@ class CareerEngine @Inject constructor(
             )
         }
         return updated
+    }
+
+    fun setPlannedWorkEffort(character: Character, effort: WorkEffort): Character {
+        if (character.career.currentJob == null || character.career.isRetired) return character
+        if (character.career.plannedWorkEffort == effort) return character
+        return character.copy(
+            career = character.career.copy(plannedWorkEffort = effort),
+            eventLog = EventLogCap.prepend(
+                character.eventLog,
+                "You plan to ${effort.name.lowercase()} at work this year."
+            )
+        )
+    }
+
+    private fun effortPayMultiplier(effort: WorkEffort): Double = when (effort) {
+        WorkEffort.COAST -> COAST_PAY_MULTIPLIER
+        WorkEffort.NORMAL -> 1.0
+        WorkEffort.GRIND -> GRIND_PAY_MULTIPLIER
     }
 
     /** High-tier roles without a personal vehicle incur yearly commute stress. */
@@ -696,6 +730,8 @@ class CareerEngine @Inject constructor(
         const val REQUIRES_VEHICLE_TAG = "requires_vehicle"
         private const val PUBLIC_TRANSIT_STRESS = 4
         private const val HIGH_TIER_JOB_LEVEL = 3
+        private const val COAST_PAY_MULTIPLIER = 0.72
+        private const val GRIND_PAY_MULTIPLIER = 1.38
         private const val MIN_RETIREMENT_AGE = 60
         private const val PENSION_RATE_MIN = 0.40
         private const val PENSION_RATE_MAX = 0.60

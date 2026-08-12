@@ -101,6 +101,7 @@ fun CareerScreen(
     investmentTiers: List<Int>,
     onLaunchCampaign: (PoliticalOffice, Int) -> Unit,
     onPassTaxPolicy: (TaxPolicyType) -> Unit,
+    onSetWorkEffort: (com.maisha.game.data.model.WorkEffort) -> Unit,
     onCareerMessageDismissed: () -> Unit,
     modifier: Modifier = Modifier
 ) {
@@ -328,7 +329,8 @@ fun CareerScreen(
                     character = character,
                     canRetire = character.age >= MIN_RETIREMENT_AGE,
                     onQuitJob = onQuitJob,
-                    onRetire = { retireConfirm.request(Unit) }
+                    onRetire = { retireConfirm.request(Unit) },
+                    onSetWorkEffort = onSetWorkEffort
                 )
                 Spacer(modifier = Modifier.height(12.dp))
             }
@@ -752,7 +754,8 @@ private fun CurrentJobCard(
     character: Character,
     canRetire: Boolean,
     onQuitJob: () -> Unit,
-    onRetire: () -> Unit
+    onRetire: () -> Unit,
+    onSetWorkEffort: (com.maisha.game.data.model.WorkEffort) -> Unit
 ) {
     val job = character.career.currentJob ?: return
     val resources = LocalContext.current.resources
@@ -809,6 +812,46 @@ private fun CurrentJobCard(
                 style = MaterialTheme.typography.labelSmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
+
+            Spacer(modifier = Modifier.height(10.dp))
+
+            Text(
+                text = stringResource(R.string.label_work_effort),
+                style = MaterialTheme.typography.labelMedium,
+                fontWeight = FontWeight.SemiBold
+            )
+            Text(
+                text = stringResource(R.string.work_effort_desc),
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+            Spacer(modifier = Modifier.height(6.dp))
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(6.dp)
+            ) {
+                com.maisha.game.data.model.WorkEffort.entries.forEach { effort ->
+                    FilterChip(
+                        selected = character.career.plannedWorkEffort == effort,
+                        onClick = { onSetWorkEffort(effort) },
+                        enabled = character.alive,
+                        label = {
+                            Text(
+                                text = when (effort) {
+                                    com.maisha.game.data.model.WorkEffort.COAST ->
+                                        stringResource(R.string.work_effort_coast)
+                                    com.maisha.game.data.model.WorkEffort.NORMAL ->
+                                        stringResource(R.string.work_effort_normal)
+                                    com.maisha.game.data.model.WorkEffort.GRIND ->
+                                        stringResource(R.string.work_effort_grind)
+                                },
+                                maxLines = 1
+                            )
+                        },
+                        modifier = Modifier.weight(1f)
+                    )
+                }
+            }
 
             Spacer(modifier = Modifier.height(10.dp))
 

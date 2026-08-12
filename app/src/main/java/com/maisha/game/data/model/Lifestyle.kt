@@ -7,11 +7,15 @@ import kotlinx.serialization.Serializable
 data class LifestyleState(
     val hasGymMembership: Boolean = false,
     val isVegan: Boolean = false,
-    val hasTherapist: Boolean = false
+    val hasTherapist: Boolean = false,
+    /** Annual health cover: premium each year, lower treatment co-pay. */
+    val hasHealthInsurance: Boolean = false,
+    val livingStandard: LivingStandard = LivingStandard.MODEST
 )
 
 enum class LifestyleOption {
     GYM,
     DIET,
-    THERAPIST
+    THERAPIST,
+    HEALTH_INSURANCE
 }

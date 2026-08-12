@@ -37,6 +37,11 @@ data class CareerState(
     val pensionAmount: Int = 0,
     val sideHustleDoneThisYear: Boolean = false,
     val workEffortThisYear: WorkEffort? = null,
+    /**
+     * Effort chosen for the next Age Up paycheque (Coast / Normal / Grind).
+     * Cleared into [workEffortThisYear] when [com.maisha.game.domain.CareerEngine.workYear] runs.
+     */
+    val plannedWorkEffort: WorkEffort = WorkEffort.NORMAL,
     /** True during a year the character is on active deployment (hazard pay + combat risk). */
     val isDeployed: Boolean = false,
     /** If true, the next [com.maisha.game.domain.CareerEngine.workYear] will be a deployment. */

@@ -56,6 +56,10 @@ data class Character(
     val investmentPortfolioValue: Int = 0,
     /** Last yearly portfolio return percentage (for UI). */
     val lastPortfolioReturnPercent: Int = 0,
+    /** Safe bank-style savings (modest interest; not market risk). */
+    val savingsBalance: Int = 0,
+    /** Last yearly savings interest percentage (for UI). */
+    val lastSavingsInterestPercent: Int = 0,
     val lifestyle: LifestyleState = LifestyleState(),
     val socialMedia: SocialMediaState = SocialMediaState(),
     val skills: List<SkillProgress> = emptyList(),

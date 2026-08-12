@@ -84,13 +84,28 @@ import com.maisha.game.ui.feedback.FeedbackEffect
 import com.maisha.game.ui.celebration.CelebrationOverlay
 import com.maisha.game.ui.illustrations.EmptyStateIllustration
 import com.maisha.game.ui.navigation.NavAnimations
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.unit.sp
 import com.maisha.game.ui.theme.AppIcons
 import com.maisha.game.ui.theme.CoralNegative
+import com.maisha.game.ui.theme.CreamBg
 import com.maisha.game.ui.theme.GoldAccent
+import com.maisha.game.ui.theme.HairlineSoft
+import com.maisha.game.ui.theme.InkPrimary
+import com.maisha.game.ui.theme.InkTertiary
+import com.maisha.game.ui.theme.LifeGreen
 import com.maisha.game.ui.theme.MaishaRadius
 import com.maisha.game.ui.theme.MaishaSpacing
 import com.maisha.game.ui.theme.NavyDeep
 import com.maisha.game.ui.theme.NavyElevated
+import com.maisha.game.ui.theme.NavySurface
+import com.maisha.game.ui.theme.StatHealth
+import com.maisha.game.ui.theme.StatHappiness
+import com.maisha.game.ui.theme.StatLooks
+import com.maisha.game.ui.theme.StatSmarts
 import com.maisha.game.ui.theme.SuccessGreen
 import com.maisha.game.ui.theme.TealPrimary
 import com.maisha.game.util.formatMoney
@@ -121,6 +136,7 @@ fun LifeScreen(
     onPassTaxPolicy: (com.maisha.game.data.model.TaxPolicyType) -> Unit,
     onSellBusiness: (String) -> Unit,
     businessInvestmentTiers: List<Int>,
+    onSetWorkEffort: (com.maisha.game.data.model.WorkEffort) -> Unit,
     onCareerMessageDismissed: () -> Unit,
     onPurchaseAsset: (String) -> Unit,
     onSellAsset: (String) -> Unit,
@@ -131,6 +147,9 @@ fun LifeScreen(
     willBeneficiaries: List<com.maisha.game.data.model.Person>,
     onInvestFunds: (Int) -> Unit,
     onWithdrawFunds: (Int) -> Unit,
+    onDepositSavings: (Int) -> Unit,
+    onWithdrawSavings: (Int) -> Unit,
+    onSetLivingStandard: (com.maisha.game.data.model.LivingStandard) -> Unit,
     onAssetsMessageDismissed: () -> Unit,
     onAttemptCrime: (CrimeType) -> Unit,
     onGoToTrial: (com.maisha.game.data.model.LawyerTier) -> Unit,
@@ -342,6 +361,7 @@ fun LifeScreen(
                 investmentTiers = businessInvestmentTiers,
                 onLaunchCampaign = onLaunchCampaign,
                 onPassTaxPolicy = onPassTaxPolicy,
+                onSetWorkEffort = onSetWorkEffort,
                 onCareerMessageDismissed = onCareerMessageDismissed,
                 modifier = Modifier.padding(innerPadding)
             )
@@ -359,6 +379,9 @@ fun LifeScreen(
                 willBeneficiaries = willBeneficiaries,
                 onInvestFunds = onInvestFunds,
                 onWithdrawFunds = onWithdrawFunds,
+                onDepositSavings = onDepositSavings,
+                onWithdrawSavings = onWithdrawSavings,
+                onSetLivingStandard = onSetLivingStandard,
                 onAssetsMessageDismissed = onAssetsMessageDismissed,
                 modifier = Modifier.padding(innerPadding)
             )
@@ -405,120 +428,366 @@ private fun LifeTabContent(
     Column(
         modifier = modifier
             .fillMaxSize()
-            .padding(horizontal = MaishaSpacing.md)
+            .background(CreamBg)
     ) {
-        LazyColumn(
-            modifier = Modifier.weight(1f),
-            verticalArrangement = Arrangement.spacedBy(10.dp)
-        ) {
-            item {
-                Spacer(modifier = Modifier.height(4.dp))
-                CharacterHeader(
-                    character = character,
-                    expression = uiState.headerExpression,
-                    onViewCharacterStats = onViewCharacterStats,
-                    onOpenSettings = onOpenSettings
-                )
-            }
+        LifeHeroHeader(
+            character = character,
+            expression = uiState.headerExpression,
+            dynastyScore = uiState.dynastyScore,
+            dynastyTitleKey = uiState.dynastyTitleKey,
+            onViewCharacterStats = onViewCharacterStats,
+            onOpenSettings = onOpenSettings
+        )
 
-            item {
-                Box(modifier = Modifier.fillMaxWidth()) {
-                    StatsCard(stats = character.stats, netWorth = netWorth, countryCode = character.countryCode)
-                    FloatingStatChangeLayer(
-                        events = uiState.pendingStatDeltas,
-                        onEventFinished = onStatDeltaFinished,
-                        statLabel = { type ->
-                            when (type) {
-                                StatType.HEALTH -> stringResource(R.string.stat_health)
-                                StatType.HAPPINESS -> stringResource(R.string.stat_happiness)
-                                StatType.SMARTS -> stringResource(R.string.stat_smarts)
-                                StatType.LOOKS -> stringResource(R.string.stat_looks)
-                                StatType.MONEY -> stringResource(R.string.stat_money)
-                                StatType.NET_WORTH -> stringResource(R.string.label_net_worth)
-                                StatType.FOLLOWERS -> stringResource(R.string.stat_followers)
-                                StatType.SKILL -> stringResource(R.string.stat_skill)
-                                StatType.KARMA -> stringResource(R.string.stat_karma)
-                                else -> ""
-                            }
-                        },
-                        modifier = Modifier
-                            .align(Alignment.TopEnd)
-                            .padding(top = MaishaSpacing.sm, end = MaishaSpacing.sm)
+        Box(modifier = Modifier.weight(1f).fillMaxWidth()) {
+            LazyColumn(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(horizontal = 20.dp),
+                verticalArrangement = Arrangement.spacedBy(4.dp)
+            ) {
+                item { Spacer(modifier = Modifier.height(8.dp)) }
+
+                item {
+                    StatusInfoCard(
+                        education = character.education,
+                        career = character.career,
+                        netWorth = netWorth,
+                        countryCode = character.countryCode,
+                        hasCriminalRecord = character.criminalRecord.hasRecord,
+                        timesArrested = character.criminalRecord.timesArrested
                     )
                 }
-            }
 
-            item {
-                StatusInfoCard(
-                    education = character.education,
-                    career = character.career,
-                    netWorth = netWorth,
-                    countryCode = character.countryCode,
-                    hasCriminalRecord = character.criminalRecord.hasRecord,
-                    timesArrested = character.criminalRecord.timesArrested
-                )
-            }
-
-            if (uiState.yearQuests.isNotEmpty()) {
-                item {
-                    YearQuestsCard(
-                        quests = uiState.yearQuests,
-                        progress = uiState.yearQuestProgress,
-                        countryCode = character.countryCode
-                    )
+                if (uiState.yearQuests.isNotEmpty()) {
+                    item {
+                        Spacer(modifier = Modifier.height(8.dp))
+                        YearQuestsCard(
+                            quests = uiState.yearQuests,
+                            progress = uiState.yearQuestProgress,
+                            countryCode = character.countryCode
+                        )
+                    }
                 }
-            }
 
-            if (uiState.dynastyScore > 0 || character.generationNumber > 1) {
                 item {
-                    DynastyScoreChip(
-                        score = uiState.dynastyScore,
-                        titleKey = uiState.dynastyTitleKey
-                    )
-                }
-            }
-
-            item {
-                Text(
-                    text = stringResource(R.string.section_event_log),
-                    style = MaterialTheme.typography.titleSmall,
-                    fontWeight = FontWeight.SemiBold,
-                    modifier = Modifier.padding(top = 4.dp)
-                )
-            }
-
-            if (character.eventLog.filterNot { it.startsWith("::DEATH:") }.isEmpty()) {
-                item {
+                    Spacer(modifier = Modifier.height(12.dp))
                     Text(
-                        text = stringResource(R.string.empty_event_log_life),
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                        text = stringResource(R.string.section_event_log),
+                        style = MaterialTheme.typography.labelMedium,
+                        fontWeight = FontWeight.Bold,
+                        color = InkTertiary,
+                        letterSpacing = 0.8.sp
                     )
                 }
-            } else {
-                itemsIndexed(
-                    character.eventLog.filterNot { it.startsWith("::DEATH:") }
-                ) { index, entry ->
-                    EventLogCard(
-                        entry = entry,
-                        ageTag = character.age - index
-                    )
+
+                if (character.eventLog.filterNot { it.startsWith("::DEATH:") }.isEmpty()) {
+                    item {
+                        Text(
+                            text = stringResource(R.string.empty_event_log_life),
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            modifier = Modifier.padding(vertical = 8.dp)
+                        )
+                    }
+                } else {
+                    itemsIndexed(
+                        character.eventLog.filterNot { it.startsWith("::DEATH:") }
+                    ) { index, entry ->
+                        EventLogStrip(
+                            entry = entry,
+                            ageTag = character.age - index
+                        )
+                    }
                 }
+
+                item { Spacer(modifier = Modifier.height(8.dp)) }
             }
 
-            item { Spacer(modifier = Modifier.height(8.dp)) }
+            FloatingStatChangeLayer(
+                events = uiState.pendingStatDeltas,
+                onEventFinished = onStatDeltaFinished,
+                statLabel = { type ->
+                    when (type) {
+                        StatType.HEALTH -> stringResource(R.string.stat_health)
+                        StatType.HAPPINESS -> stringResource(R.string.stat_happiness)
+                        StatType.SMARTS -> stringResource(R.string.stat_smarts)
+                        StatType.LOOKS -> stringResource(R.string.stat_looks)
+                        StatType.MONEY -> stringResource(R.string.stat_money)
+                        StatType.NET_WORTH -> stringResource(R.string.label_net_worth)
+                        StatType.FOLLOWERS -> stringResource(R.string.stat_followers)
+                        StatType.SKILL -> stringResource(R.string.stat_skill)
+                        StatType.KARMA -> stringResource(R.string.stat_karma)
+                        else -> ""
+                    }
+                },
+                modifier = Modifier
+                    .align(Alignment.TopEnd)
+                    .padding(top = MaishaSpacing.sm, end = MaishaSpacing.sm)
+            )
         }
 
-        AgeUpButton(
-            onClick = onAgeUp,
-            enabled = character.alive &&
-                !uiState.isAgingUp &&
-                uiState.currentEvent == null &&
-                !character.criminalRecord.awaitingTrial,
-            isLoading = uiState.isAgingUp,
-            modifier = Modifier.padding(vertical = 10.dp)
-        )
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .background(CreamBg)
+                .padding(horizontal = 16.dp, vertical = 10.dp)
+        ) {
+            AgeUpButton(
+                onClick = onAgeUp,
+                enabled = character.alive &&
+                    !uiState.isAgingUp &&
+                    uiState.currentEvent == null &&
+                    !character.criminalRecord.awaitingTrial,
+                isLoading = uiState.isAgingUp
+            )
+        }
     }
+}
+
+@Composable
+private fun LifeHeroHeader(
+    character: Character,
+    expression: Expression,
+    dynastyScore: Int,
+    dynastyTitleKey: String,
+    onViewCharacterStats: () -> Unit,
+    onOpenSettings: () -> Unit
+) {
+    val countryName = com.maisha.game.data.CountryCatalog.getCountry(character.countryCode).displayName
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .background(
+                Brush.linearGradient(
+                    colors = listOf(NavyDeep, NavySurface, NavyElevated)
+                )
+            )
+            .padding(start = 20.dp, end = 20.dp, top = 16.dp, bottom = 22.dp)
+    ) {
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Row(
+                horizontalArrangement = Arrangement.spacedBy(6.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                IconButton(onClick = onViewCharacterStats, modifier = Modifier.size(36.dp)) {
+                    Icon(
+                        imageVector = Icons.Filled.AccountCircle,
+                        contentDescription = stringResource(R.string.content_desc_view_full_life),
+                        tint = GoldAccent,
+                        modifier = Modifier.size(24.dp)
+                    )
+                }
+                IconButton(onClick = onOpenSettings, modifier = Modifier.size(36.dp)) {
+                    Icon(
+                        imageVector = Icons.Default.Settings,
+                        contentDescription = stringResource(R.string.content_desc_settings),
+                        tint = Color.White.copy(alpha = 0.55f),
+                        modifier = Modifier.size(22.dp)
+                    )
+                }
+            }
+            Text(
+                text = stringResource(R.string.app_name).uppercase(),
+                style = MaterialTheme.typography.labelSmall,
+                fontWeight = FontWeight.Bold,
+                color = Color.White.copy(alpha = 0.35f),
+                letterSpacing = 1.5.sp
+            )
+        }
+
+        Spacer(modifier = Modifier.height(10.dp))
+
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(16.dp)
+        ) {
+            Box(
+                modifier = Modifier
+                    .size(72.dp)
+                    .clip(RoundedCornerShape(MaishaRadius.avatar))
+                    .background(Color.White.copy(alpha = 0.12f))
+            ) {
+                PersonAvatar(
+                    avatarConfig = character.avatarConfig,
+                    size = 72,
+                    age = character.age,
+                    expression = expression,
+                    forPlayerCharacter = true,
+                    seed = character.name
+                )
+            }
+
+            Column(modifier = Modifier.weight(1f)) {
+                Text(
+                    text = character.name,
+                    style = MaterialTheme.typography.headlineSmall,
+                    fontWeight = FontWeight.Bold,
+                    color = Color.White,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis
+                )
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(6.dp),
+                    modifier = Modifier.padding(top = 4.dp, bottom = 8.dp)
+                ) {
+                    CountryFlag(countryCode = character.countryCode, size = 14.dp)
+                    Text(
+                        text = countryName,
+                        style = MaterialTheme.typography.labelMedium,
+                        color = Color.White.copy(alpha = 0.5f),
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis
+                    )
+                }
+                Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                    HeroChip(
+                        text = stringResource(R.string.format_generation_short, character.generationNumber),
+                        bg = LifeGreen.copy(alpha = 0.25f),
+                        fg = SuccessGreen
+                    )
+                    if (dynastyScore > 0 || character.generationNumber > 1) {
+                        HeroChip(
+                            text = dynastyTitleLabel(dynastyTitleKey),
+                            bg = GoldAccent.copy(alpha = 0.2f),
+                            fg = GoldAccent
+                        )
+                    }
+                }
+            }
+
+            Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                Text(
+                    text = character.age.toString(),
+                    style = MaterialTheme.typography.displayMedium,
+                    fontWeight = FontWeight.Black,
+                    color = Color.White,
+                    lineHeight = 44.sp
+                )
+                Text(
+                    text = stringResource(R.string.label_years).uppercase(),
+                    style = MaterialTheme.typography.labelSmall,
+                    fontWeight = FontWeight.SemiBold,
+                    color = Color.White.copy(alpha = 0.35f),
+                    letterSpacing = 0.8.sp
+                )
+            }
+        }
+
+        Spacer(modifier = Modifier.height(20.dp))
+
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(14.dp)
+        ) {
+            HeroStatBar(
+                label = stringResource(R.string.stat_health),
+                value = character.stats.health,
+                color = StatHealth,
+                modifier = Modifier.weight(1f)
+            )
+            HeroStatBar(
+                label = stringResource(R.string.stat_happiness),
+                value = character.stats.happiness,
+                color = StatHappiness,
+                modifier = Modifier.weight(1f)
+            )
+            HeroStatBar(
+                label = stringResource(R.string.stat_smarts),
+                value = character.stats.smarts,
+                color = StatSmarts,
+                modifier = Modifier.weight(1f)
+            )
+            HeroStatBar(
+                label = stringResource(R.string.stat_looks),
+                value = character.stats.looks,
+                color = StatLooks,
+                modifier = Modifier.weight(1f)
+            )
+        }
+    }
+}
+
+@Composable
+private fun HeroChip(text: String, bg: Color, fg: Color) {
+    Text(
+        text = text,
+        style = MaterialTheme.typography.labelSmall,
+        fontWeight = FontWeight.Bold,
+        color = fg,
+        modifier = Modifier
+            .clip(RoundedCornerShape(99.dp))
+            .background(bg)
+            .padding(horizontal = 9.dp, vertical = 3.dp),
+        maxLines = 1,
+        overflow = TextOverflow.Ellipsis
+    )
+}
+
+@Composable
+private fun HeroStatBar(
+    label: String,
+    value: Int,
+    color: Color,
+    modifier: Modifier = Modifier
+) {
+    Column(modifier = modifier, verticalArrangement = Arrangement.spacedBy(5.dp)) {
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween
+        ) {
+            Text(
+                text = label.uppercase(),
+                style = MaterialTheme.typography.labelSmall,
+                fontWeight = FontWeight.SemiBold,
+                color = Color.White.copy(alpha = 0.5f),
+                fontSize = 9.sp,
+                letterSpacing = 0.6.sp,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis
+            )
+            Text(
+                text = value.toString(),
+                style = MaterialTheme.typography.labelMedium,
+                fontWeight = FontWeight.Bold,
+                color = Color.White
+            )
+        }
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(3.dp)
+                .clip(RoundedCornerShape(99.dp))
+                .background(Color.White.copy(alpha = 0.12f))
+        ) {
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth(value.coerceIn(0, 100) / 100f)
+                    .height(3.dp)
+                    .clip(RoundedCornerShape(99.dp))
+                    .background(color)
+            )
+        }
+    }
+}
+
+@Composable
+private fun dynastyTitleLabel(titleKey: String): String {
+    val resId = when (titleKey) {
+        "dynasty_title_seedling" -> R.string.dynasty_title_seedling
+        "dynasty_title_rooted" -> R.string.dynasty_title_rooted
+        "dynasty_title_rising" -> R.string.dynasty_title_rising
+        "dynasty_title_powerhouse" -> R.string.dynasty_title_powerhouse
+        "dynasty_title_legend" -> R.string.dynasty_title_legend
+        else -> R.string.dynasty_title_seedling
+    }
+    return stringResource(resId)
 }
 
 @Composable
@@ -746,41 +1015,55 @@ private fun StatusInfoRow(
 }
 
 @Composable
-private fun EventLogCard(entry: String, ageTag: Int) {
+private fun EventLogStrip(entry: String, ageTag: Int) {
     val tone = remember(entry) { EventLogClassifier.classify(entry) }
-    val accent = when (tone) {
+    val dot = when (tone) {
         EventLogTone.MILESTONE -> GoldAccent
         EventLogTone.POSITIVE -> SuccessGreen
         EventLogTone.NEGATIVE -> CoralNegative
-        EventLogTone.NEUTRAL -> TealPrimary
+        EventLogTone.NEUTRAL -> InkTertiary
     }
-    val container = when (tone) {
-        EventLogTone.MILESTONE -> GoldAccent.copy(alpha = 0.14f)
-        EventLogTone.POSITIVE -> SuccessGreen.copy(alpha = 0.10f)
-        EventLogTone.NEGATIVE -> CoralNegative.copy(alpha = 0.10f)
-        EventLogTone.NEUTRAL -> MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.7f)
-    }
-    Card(
-        modifier = Modifier.fillMaxWidth(),
-        shape = MaishaRadius.cardShape,
-        colors = CardDefaults.cardColors(containerColor = container)
-    ) {
+    Column(modifier = Modifier.fillMaxWidth().padding(vertical = 2.dp)) {
+        if (ageTag >= 0) {
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(12.dp),
+                modifier = Modifier.padding(top = 10.dp, bottom = 4.dp)
+            ) {
+                Text(
+                    text = stringResource(R.string.format_age, ageTag).uppercase(),
+                    style = MaterialTheme.typography.labelSmall,
+                    fontWeight = FontWeight.Bold,
+                    color = InkTertiary,
+                    letterSpacing = 0.8.sp
+                )
+                Box(
+                    modifier = Modifier
+                        .weight(1f)
+                        .height(1.dp)
+                        .background(HairlineSoft)
+                )
+            }
+        }
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(12.dp),
-            horizontalArrangement = Arrangement.spacedBy(8.dp)
+                .padding(vertical = 6.dp),
+            horizontalArrangement = Arrangement.spacedBy(11.dp)
         ) {
-            Text(
-                text = stringResource(R.string.format_age, ageTag.coerceAtLeast(0)),
-                style = MaterialTheme.typography.labelSmall,
-                color = accent,
-                fontWeight = FontWeight.SemiBold
+            Box(
+                modifier = Modifier
+                    .padding(top = 6.dp)
+                    .size(7.dp)
+                    .clip(RoundedCornerShape(99.dp))
+                    .background(dot)
             )
             Text(
                 text = entry,
-                style = MaterialTheme.typography.bodySmall,
-                modifier = Modifier.weight(1f)
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onBackground,
+                modifier = Modifier.weight(1f),
+                lineHeight = 22.sp
             )
         }
     }
@@ -796,7 +1079,7 @@ private fun YearQuestsCard(
         modifier = Modifier.fillMaxWidth(),
         shape = MaishaRadius.cardShape,
         colors = CardDefaults.cardColors(
-            containerColor = NavyElevated.copy(alpha = 0.9f)
+            containerColor = Color.White
         )
     ) {
         Column(
@@ -807,7 +1090,7 @@ private fun YearQuestsCard(
                 text = stringResource(R.string.section_year_quests),
                 style = MaterialTheme.typography.titleSmall,
                 fontWeight = FontWeight.SemiBold,
-                color = GoldAccent
+                color = InkPrimary
             )
             quests.forEach { quest ->
                 val match = progress.firstOrNull { it.quest.kind == quest.kind }

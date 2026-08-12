@@ -326,8 +326,17 @@ class CareerEngineTest {
         val afterPeace = engine.workYear(peacetime, WorkEffort.NORMAL)
         val deployPay = afterDeploy.stats.money - baseMoney
         val peacePay = afterPeace.stats.money - baseMoney
-        assertEquals(militaryJob.baseSalary * CareerEngine.HAZARD_PAY_MULTIPLIER, deployPay)
-        assertEquals(militaryJob.baseSalary, peacePay)
+        val peaceGross = militaryJob.baseSalary
+        val deployGross = militaryJob.baseSalary * CareerEngine.HAZARD_PAY_MULTIPLIER
+        assertEquals(
+            peaceGross - FinanceEngine.calculateIncomeTax(peaceGross, "KE"),
+            peacePay
+        )
+        assertEquals(
+            deployGross - FinanceEngine.calculateIncomeTax(deployGross, "KE"),
+            deployPay
+        )
+        assertTrue(deployPay > peacePay)
         assertTrue(afterDeploy.career.isDeployed)
         assertFalse(afterPeace.career.isDeployed)
     }

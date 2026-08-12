@@ -163,7 +163,8 @@ private fun DynastyScoreHeader(character: Character) {
     val netWorth = character.stats.money +
         character.assets.sumOf { it.currentValue } +
         character.businesses.sumOf { it.valuation } +
-        character.investmentPortfolioValue.coerceAtLeast(0)
+        character.investmentPortfolioValue.coerceAtLeast(0) +
+        character.savingsBalance.coerceAtLeast(0)
     val breakdown = DynastyScore.calculate(character, netWorth)
     val titleRes = when (breakdown.titleKey) {
         "dynasty_title_legend" -> R.string.dynasty_title_legend

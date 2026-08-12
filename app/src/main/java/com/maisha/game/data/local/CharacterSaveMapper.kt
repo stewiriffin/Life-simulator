@@ -180,6 +180,8 @@ internal object CharacterSaveMapper {
                         will = will,
                         investmentPortfolioValue = entity.investmentPortfolioValue.coerceAtLeast(0),
                         lastPortfolioReturnPercent = entity.lastPortfolioReturnPercent,
+                        savingsBalance = entity.savingsBalance.coerceAtLeast(0),
+                        lastSavingsInterestPercent = entity.lastSavingsInterestPercent,
                         relocationCount = entity.relocationCount,
                         yearsInCurrentCountry = entity.yearsInCurrentCountry,
                         lastRelocationAge = entity.lastRelocationAge,
@@ -227,7 +229,9 @@ internal object CharacterSaveMapper {
                     generationNumber = character.generationNumber,
                     netWorth = character.stats.money +
                         character.assets.sumOf { it.currentValue } +
-                        character.businesses.sumOf { it.valuation },
+                        character.businesses.sumOf { it.valuation } +
+                        character.investmentPortfolioValue.coerceAtLeast(0) +
+                        character.savingsBalance.coerceAtLeast(0),
                     jobTitle = character.career.currentJob?.title
                         ?: character.career.jobHistory.lastOrNull(),
                     isRetired = character.career.isRetired

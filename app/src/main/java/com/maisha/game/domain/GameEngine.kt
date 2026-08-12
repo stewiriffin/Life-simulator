@@ -619,6 +619,20 @@ class GameEngine @Inject constructor(
     fun withdrawFunds(character: Character, amount: Int): FinanceEngine.InvestmentResult =
         financeEngine.withdrawFunds(character, amount)
 
+    fun depositSavings(character: Character, amount: Int): FinanceEngine.InvestmentResult =
+        financeEngine.depositSavings(character, amount)
+
+    fun withdrawSavings(character: Character, amount: Int): FinanceEngine.InvestmentResult =
+        financeEngine.withdrawSavings(character, amount)
+
+    fun setLivingStandard(
+        character: Character,
+        standard: com.maisha.game.data.model.LivingStandard
+    ): Character = financeEngine.setLivingStandard(character, standard)
+
+    fun setPlannedWorkEffort(character: Character, effort: WorkEffort): Character =
+        careerEngine.setPlannedWorkEffort(character, effort)
+
     fun updateWill(character: Character, will: Map<String, Int>?): Character {
         if (will == null) {
             return character.copy(will = null)
@@ -810,12 +824,13 @@ class GameEngine @Inject constructor(
     private fun processCareerProgression(character: Character): Character {
         if (character.career.isRetired) return character
         if (character.career.currentJob == null) return character
-        return careerEngine.workYear(character, WorkEffort.NORMAL)
+        return careerEngine.workYear(character, character.career.plannedWorkEffort)
     }
 
     private fun processFinanceProgression(character: Character): Character {
         var updated = financeEngine.applyEconomicShift(character).character
         updated = financeEngine.applyPortfolioMarketTick(updated)
+        updated = financeEngine.applySavingsInterest(updated)
         updated = financeEngine.applyPension(updated)
         updated = financeEngine.applyPetUpkeep(updated)
         if (updated.assets.isNotEmpty()) {
@@ -823,6 +838,7 @@ class GameEngine @Inject constructor(
             updated = financeEngine.collectRent(updated)
             updated = financeEngine.degradeAssets(updated)
         }
+        updated = financeEngine.applyCostOfLiving(updated)
         return updated
     }
 

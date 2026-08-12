@@ -170,7 +170,9 @@ class LegacyEngine @Inject constructor(
             .filter { !it.isHeirloom }
             .sumOf { it.currentValue }
         val portfolioValue = deceased.investmentPortfolioValue.coerceAtLeast(0)
-        val grossCash = deceased.stats.money.coerceAtLeast(0) + liquidatedAssetValue + portfolioValue
+        val savingsValue = deceased.savingsBalance.coerceAtLeast(0)
+        val grossCash = deceased.stats.money.coerceAtLeast(0) +
+            liquidatedAssetValue + portfolioValue + savingsValue
         var deductions = 0
         val logLines = mutableListOf<String>()
 

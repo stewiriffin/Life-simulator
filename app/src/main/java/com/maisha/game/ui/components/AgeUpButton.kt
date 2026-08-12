@@ -1,4 +1,4 @@
-// app/src/main/java/com/maisha/game/ui/components/AgeUpButton.kt (modified — spring press animation)
+// app/src/main/java/com/maisha/game/ui/components/AgeUpButton.kt
 package com.maisha.game.ui.components
 
 import androidx.compose.animation.core.Spring
@@ -22,18 +22,24 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.scale
+import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.role
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import com.maisha.game.ui.theme.GoldAccent
+import com.maisha.game.R
+import com.maisha.game.ui.theme.LifeGreen
+import com.maisha.game.ui.theme.LifeGreenPressed
 import com.maisha.game.ui.theme.MaishaRadius
 import com.maisha.game.ui.theme.MaishaSpacing
-import com.maisha.game.ui.theme.NavyDeep
 
+/**
+ * Primary ritual CTA — green “Live Another Year” pill from the Figma Make UI reference.
+ */
 @Composable
 fun AgeUpButton(
     onClick: () -> Unit,
@@ -44,7 +50,7 @@ fun AgeUpButton(
     var pressed by remember { mutableStateOf(false) }
     val canPress = enabled && !isLoading
     val scale by animateFloatAsState(
-        targetValue = if (pressed && canPress) 0.92f else 1f,
+        targetValue = if (pressed && canPress) 0.96f else 1f,
         animationSpec = spring(
             dampingRatio = Spring.DampingRatioMediumBouncy,
             stiffness = Spring.StiffnessMedium
@@ -52,19 +58,31 @@ fun AgeUpButton(
         label = "ageUpScale"
     )
 
-    val containerColor = if (canPress) {
-        GoldAccent
-    } else {
-        MaterialTheme.colorScheme.surfaceVariant
+    val containerColor = when {
+        !canPress -> MaterialTheme.colorScheme.surfaceVariant
+        pressed -> LifeGreenPressed
+        else -> LifeGreen
     }
-    val contentColor = if (canPress) NavyDeep else MaterialTheme.colorScheme.onSurfaceVariant
+    val contentColor = if (canPress) Color.White else MaterialTheme.colorScheme.onSurfaceVariant
 
     Box(
         modifier = modifier
             .fillMaxWidth()
-            .height(MaishaSpacing.xl + MaishaSpacing.xl + 4.dp)
+            .height(MaishaSpacing.xl + MaishaSpacing.xl + 6.dp)
             .scale(scale)
-            .clip(MaishaRadius.buttonShape)
+            .then(
+                if (canPress && !pressed) {
+                    Modifier.shadow(
+                        elevation = 8.dp,
+                        shape = MaishaRadius.ageUpShape,
+                        spotColor = LifeGreen.copy(alpha = 0.45f),
+                        ambientColor = LifeGreen.copy(alpha = 0.25f)
+                    )
+                } else {
+                    Modifier
+                }
+            )
+            .clip(MaishaRadius.ageUpShape)
             .background(containerColor)
             .semantics { role = Role.Button }
             .pointerInput(canPress, onClick) {
@@ -86,12 +104,12 @@ fun AgeUpButton(
     ) {
         Text(
             text = when {
-                isLoading -> "Aging..."
-                else -> "+ Age Up"
+                isLoading -> stringResource(R.string.btn_aging)
+                else -> stringResource(R.string.btn_live_another_year)
             },
             style = MaterialTheme.typography.titleMedium,
-            fontWeight = FontWeight.Bold,
-            color = if (canPress) contentColor else Color.Unspecified
+            fontWeight = FontWeight.ExtraBold,
+            color = contentColor
         )
     }
 }

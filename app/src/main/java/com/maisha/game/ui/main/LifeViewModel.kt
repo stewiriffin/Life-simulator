@@ -634,16 +634,94 @@ class LifeViewModel @Inject constructor(
                         )
                     }
                 }
-                is FinanceEngine.InvestmentResult.InsufficientFunds -> {
-                    _uiState.update {
-                        it.copy(assetsMessage = context.getString(R.string.msg_withdraw_insufficient))
-                    }
-                }
+                is FinanceEngine.InvestmentResult.InsufficientFunds,
                 is FinanceEngine.InvestmentResult.InvalidAmount -> {
                     _uiState.update {
                         it.copy(assetsMessage = context.getString(R.string.msg_withdraw_insufficient))
                     }
                 }
+            }
+        }
+    }
+
+    fun onDepositSavings(amount: Int) {
+        val character = _uiState.value.character ?: return
+        if (!character.alive) return
+        viewModelScope.launch {
+            when (val result = gameEngine.depositSavings(character, amount)) {
+                is FinanceEngine.InvestmentResult.Success -> {
+                    persist(result.character)
+                    processMidLifeAchievements(result.character)
+                    _uiState.update {
+                        it.copy(
+                            character = result.character,
+                            assetsMessage = context.getString(R.string.msg_savings_deposit_success),
+                            netWorth = financeEngine.calculateNetWorth(result.character)
+                        )
+                    }
+                }
+                is FinanceEngine.InvestmentResult.InsufficientFunds,
+                is FinanceEngine.InvestmentResult.InvalidAmount -> {
+                    _uiState.update {
+                        it.copy(assetsMessage = context.getString(R.string.msg_savings_cannot_afford))
+                    }
+                }
+            }
+        }
+    }
+
+    fun onWithdrawSavings(amount: Int) {
+        val character = _uiState.value.character ?: return
+        if (!character.alive) return
+        viewModelScope.launch {
+            when (val result = gameEngine.withdrawSavings(character, amount)) {
+                is FinanceEngine.InvestmentResult.Success -> {
+                    persist(result.character)
+                    _uiState.update {
+                        it.copy(
+                            character = result.character,
+                            assetsMessage = context.getString(R.string.msg_savings_withdraw_success),
+                            netWorth = financeEngine.calculateNetWorth(result.character)
+                        )
+                    }
+                }
+                is FinanceEngine.InvestmentResult.InsufficientFunds,
+                is FinanceEngine.InvestmentResult.InvalidAmount -> {
+                    _uiState.update {
+                        it.copy(assetsMessage = context.getString(R.string.msg_savings_cannot_afford))
+                    }
+                }
+            }
+        }
+    }
+
+    fun onSetLivingStandard(standard: com.maisha.game.data.model.LivingStandard) {
+        val character = _uiState.value.character ?: return
+        if (!character.alive) return
+        viewModelScope.launch {
+            val updated = gameEngine.setLivingStandard(character, standard)
+            persist(updated)
+            _uiState.update {
+                it.copy(
+                    character = updated,
+                    assetsMessage = context.getString(R.string.msg_living_standard_updated),
+                    netWorth = financeEngine.calculateNetWorth(updated)
+                )
+            }
+        }
+    }
+
+    fun onSetWorkEffort(effort: com.maisha.game.data.model.WorkEffort) {
+        val character = _uiState.value.character ?: return
+        if (!character.alive) return
+        viewModelScope.launch {
+            val updated = gameEngine.setPlannedWorkEffort(character, effort)
+            persist(updated)
+            _uiState.update {
+                it.copy(
+                    character = updated,
+                    careerMessage = context.getString(R.string.msg_work_effort_set)
+                )
             }
         }
     }

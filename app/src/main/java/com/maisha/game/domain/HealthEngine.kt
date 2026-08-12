@@ -95,12 +95,16 @@ class HealthEngine @Inject constructor() {
         val condition = character.activeConditions[index]
         if (condition.treated) return DoctorResult.Failed(character)
 
-        val cost = treatmentCost(condition.severity, usePrivateCare)
+        val cost = treatmentCost(character, condition.severity, usePrivateCare)
         if (character.stats.money < cost) {
             return DoctorResult.Failed(character)
         }
 
-        val successChance = treatmentSuccessChance(condition.severity, usePrivateCare)
+        val successChance = treatmentSuccessChance(
+            condition.severity,
+            usePrivateCare,
+            character.lifestyle.hasHealthInsurance
+        )
         val afterPayment = character.copy(
             stats = character.stats.copy(money = character.stats.money - cost)
         )
@@ -247,11 +251,14 @@ class HealthEngine @Inject constructor() {
             LifestyleOption.GYM -> character.lifestyle.copy(hasGymMembership = enabled)
             LifestyleOption.DIET -> character.lifestyle.copy(isVegan = enabled)
             LifestyleOption.THERAPIST -> character.lifestyle.copy(hasTherapist = enabled)
+            LifestyleOption.HEALTH_INSURANCE -> character.lifestyle.copy(hasHealthInsurance = enabled)
         }
         val logLine = when (option) {
             LifestyleOption.GYM -> if (enabled) "Joined a gym membership." else "Cancelled gym membership."
             LifestyleOption.DIET -> if (enabled) "Started a premium diet plan." else "Stopped premium diet plan."
             LifestyleOption.THERAPIST -> if (enabled) "Started seeing a therapist." else "Stopped therapy sessions."
+            LifestyleOption.HEALTH_INSURANCE ->
+                if (enabled) "Bought health insurance." else "Cancelled health insurance."
         }
         return character.copy(
             lifestyle = lifestyle,
@@ -259,52 +266,73 @@ class HealthEngine @Inject constructor() {
         )
     }
 
-    fun yearlyLifestyleCost(lifestyle: LifestyleState): Int {
+    fun yearlyLifestyleCost(lifestyle: LifestyleState, countryCode: String): Int {
         var total = 0
-        if (lifestyle.hasGymMembership) total += GYM_YEARLY_COST
-        if (lifestyle.isVegan) total += DIET_YEARLY_COST
-        if (lifestyle.hasTherapist) total += THERAPIST_YEARLY_COST
+        if (lifestyle.hasGymMembership) total += scaledLifestyleCost(GYM_YEARLY_COST, countryCode)
+        if (lifestyle.isVegan) total += scaledLifestyleCost(DIET_YEARLY_COST, countryCode)
+        if (lifestyle.hasTherapist) total += scaledLifestyleCost(THERAPIST_YEARLY_COST, countryCode)
+        if (lifestyle.hasHealthInsurance) {
+            total += scaledLifestyleCost(HEALTH_INSURANCE_YEARLY_COST, countryCode)
+        }
         return total
     }
 
+    fun yearlyLifestyleCost(lifestyle: LifestyleState): Int =
+        yearlyLifestyleCost(lifestyle, "KE")
+
+    private fun scaledLifestyleCost(baseKenya: Int, countryCode: String): Int =
+        com.maisha.game.data.EconomyScaler.scaleAmount(baseKenya, countryCode)
+
     private fun applyLifestyleCosts(character: Character): Character {
         val lifestyle = character.lifestyle
-        if (!lifestyle.hasGymMembership && !lifestyle.isVegan && !lifestyle.hasTherapist) {
+        if (!lifestyle.hasGymMembership && !lifestyle.isVegan &&
+            !lifestyle.hasTherapist && !lifestyle.hasHealthInsurance
+        ) {
             return character
         }
 
-        var updated = character
         var remaining = character.stats.money
         var nextLifestyle = lifestyle
         val cancelled = mutableListOf<String>()
+        val country = character.countryCode
 
-        if (lifestyle.hasGymMembership) {
-            if (remaining >= GYM_YEARLY_COST) {
-                remaining -= GYM_YEARLY_COST
+        fun tryBill(enabled: Boolean, cost: Int, cancel: (LifestyleState) -> LifestyleState, label: String) {
+            if (!enabled) return
+            if (remaining >= cost) {
+                remaining -= cost
             } else {
-                nextLifestyle = nextLifestyle.copy(hasGymMembership = false)
-                cancelled += "gym membership"
-            }
-        }
-        if (nextLifestyle.isVegan) {
-            if (remaining >= DIET_YEARLY_COST) {
-                remaining -= DIET_YEARLY_COST
-            } else {
-                nextLifestyle = nextLifestyle.copy(isVegan = false)
-                cancelled += "premium diet"
-            }
-        }
-        if (nextLifestyle.hasTherapist) {
-            if (remaining >= THERAPIST_YEARLY_COST) {
-                remaining -= THERAPIST_YEARLY_COST
-            } else {
-                nextLifestyle = nextLifestyle.copy(hasTherapist = false)
-                cancelled += "therapy"
+                nextLifestyle = cancel(nextLifestyle)
+                cancelled += label
             }
         }
 
-        updated = updated.copy(
-            stats = updated.stats.copy(money = remaining.coerceAtLeast(0)),
+        tryBill(
+            lifestyle.hasGymMembership,
+            scaledLifestyleCost(GYM_YEARLY_COST, country),
+            { it.copy(hasGymMembership = false) },
+            "gym membership"
+        )
+        tryBill(
+            nextLifestyle.isVegan,
+            scaledLifestyleCost(DIET_YEARLY_COST, country),
+            { it.copy(isVegan = false) },
+            "premium diet"
+        )
+        tryBill(
+            nextLifestyle.hasTherapist,
+            scaledLifestyleCost(THERAPIST_YEARLY_COST, country),
+            { it.copy(hasTherapist = false) },
+            "therapy"
+        )
+        tryBill(
+            nextLifestyle.hasHealthInsurance,
+            scaledLifestyleCost(HEALTH_INSURANCE_YEARLY_COST, country),
+            { it.copy(hasHealthInsurance = false) },
+            "health insurance"
+        )
+
+        var updated = character.copy(
+            stats = character.stats.copy(money = remaining.coerceAtLeast(0)),
             lifestyle = nextLifestyle
         )
         if (cancelled.isNotEmpty()) {
@@ -394,22 +422,41 @@ class HealthEngine @Inject constructor() {
         else -> Random.nextInt(6, 12)
     }
 
-    private fun treatmentCost(severity: Int, privateCare: Boolean): Int {
+    private fun treatmentCost(
+        character: Character,
+        severity: Int,
+        privateCare: Boolean
+    ): Int {
         val base = when (severity) {
             1 -> if (privateCare) 8_000 else 2_000
             2 -> if (privateCare) 20_000 else 6_000
             else -> if (privateCare) 45_000 else 12_000
         }
-        return base
+        val scaled = com.maisha.game.data.EconomyScaler.scaleAmount(base, character.countryCode)
+        return if (character.lifestyle.hasHealthInsurance) {
+            (scaled * INSURANCE_COPAY_FRACTION).roundToInt().coerceAtLeast(1)
+        } else {
+            scaled
+        }
     }
 
-    private fun treatmentSuccessChance(severity: Int, privateCare: Boolean): Float {
+    fun estimateTreatmentCost(
+        character: Character,
+        severity: Int,
+        privateCare: Boolean
+    ): Int = treatmentCost(character, severity, privateCare)
+
+    private fun treatmentSuccessChance(
+        severity: Int,
+        privateCare: Boolean,
+        insured: Boolean
+    ): Float {
         val base = when (severity) {
             1 -> if (privateCare) 0.93f else 0.60f
             2 -> if (privateCare) 0.86f else 0.45f
             else -> if (privateCare) 0.78f else 0.32f
         }
-        return base
+        return if (insured) (base + 0.08f).coerceAtMost(0.98f) else base
     }
 
     private fun illnessName(severity: Int): String {
@@ -437,6 +484,8 @@ class HealthEngine @Inject constructor() {
         const val GYM_YEARLY_COST = 24_000
         const val DIET_YEARLY_COST = 42_000
         const val THERAPIST_YEARLY_COST = 60_000
+        const val HEALTH_INSURANCE_YEARLY_COST = 36_000
+        private const val INSURANCE_COPAY_FRACTION = 0.35
 
         private const val GYM_HEALTH_BONUS = 3
         private const val GYM_LOOKS_BONUS = 2

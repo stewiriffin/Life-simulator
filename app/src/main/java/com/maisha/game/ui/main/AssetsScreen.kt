@@ -30,6 +30,7 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.FilterChip
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
@@ -92,6 +93,9 @@ fun AssetsScreen(
     willBeneficiaries: List<Person>,
     onInvestFunds: (Int) -> Unit,
     onWithdrawFunds: (Int) -> Unit,
+    onDepositSavings: (Int) -> Unit,
+    onWithdrawSavings: (Int) -> Unit,
+    onSetLivingStandard: (com.maisha.game.data.model.LivingStandard) -> Unit,
     onAssetsMessageDismissed: () -> Unit,
     modifier: Modifier = Modifier
 ) {
@@ -101,10 +105,14 @@ fun AssetsScreen(
     val pendingEvict = rememberConfirmableAction<Asset>()
     val pendingInvest = rememberConfirmableAction<Int>()
     val pendingWithdraw = rememberConfirmableAction<Int>()
+    val pendingSavingsDeposit = rememberConfirmableAction<Int>()
+    val pendingSavingsWithdraw = rememberConfirmableAction<Int>()
     val financeEngine = remember { FinanceEngine() }
     var showWillEditor by remember { mutableStateOf(false) }
     var showInvestDialog by remember { mutableStateOf(false) }
     var showWithdrawDialog by remember { mutableStateOf(false) }
+    var showSavingsDepositDialog by remember { mutableStateOf(false) }
+    var showSavingsWithdrawDialog by remember { mutableStateOf(false) }
 
     LaunchedEffect(uiState.assetsMessage) {
         uiState.assetsMessage?.let { message ->
@@ -220,6 +228,40 @@ fun AssetsScreen(
         )
     }
 
+    ConfirmableActionHost(
+        state = pendingSavingsDeposit,
+        onConfirmed = { amount -> onDepositSavings(amount) }
+    ) { amount, onConfirm, onDismiss ->
+        ConfirmActionDialog(
+            title = stringResource(R.string.dialog_savings_deposit_title),
+            description = stringResource(
+                R.string.dialog_savings_deposit_body,
+                formatMoney(amount, character.countryCode)
+            ),
+            confirmLabel = stringResource(R.string.btn_deposit),
+            severity = ConfirmSeverity.NEUTRAL,
+            onConfirm = onConfirm,
+            onDismiss = onDismiss
+        )
+    }
+
+    ConfirmableActionHost(
+        state = pendingSavingsWithdraw,
+        onConfirmed = { amount -> onWithdrawSavings(amount) }
+    ) { amount, onConfirm, onDismiss ->
+        ConfirmActionDialog(
+            title = stringResource(R.string.dialog_savings_withdraw_title),
+            description = stringResource(
+                R.string.dialog_savings_withdraw_body,
+                formatMoney(amount, character.countryCode)
+            ),
+            confirmLabel = stringResource(R.string.btn_withdraw),
+            severity = ConfirmSeverity.NEUTRAL,
+            onConfirm = onConfirm,
+            onDismiss = onDismiss
+        )
+    }
+
     LazyColumn(
         modifier = modifier
             .fillMaxSize()
@@ -234,14 +276,35 @@ fun AssetsScreen(
             )
             Text(
                 text = stringResource(
-                    R.string.format_cash_net_worth,
+                    R.string.format_cash_savings_net_worth,
                     formatMoney(character.stats.money, character.countryCode),
+                    formatMoney(character.savingsBalance, character.countryCode),
                     formatMoney(netWorth, character.countryCode)
                 ),
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 maxLines = 2,
                 overflow = TextOverflow.Ellipsis
+            )
+        }
+
+        item {
+            LivingStandardCard(
+                character = character,
+                estimatedCost = financeEngine.estimateAnnualCostOfLiving(character),
+                onSelect = onSetLivingStandard
+            )
+        }
+
+        item {
+            SavingsAccountCard(
+                savingsBalance = character.savingsBalance,
+                lastInterestPercent = character.lastSavingsInterestPercent,
+                countryCode = character.countryCode,
+                canDeposit = character.stats.money > 0 && character.alive,
+                canWithdraw = character.savingsBalance > 0 && character.alive,
+                onDeposit = { showSavingsDepositDialog = true },
+                onWithdraw = { showSavingsWithdrawDialog = true }
             )
         }
 
@@ -364,6 +427,34 @@ fun AssetsScreen(
         )
     }
 
+    if (showSavingsDepositDialog) {
+        PortfolioTransferDialog(
+            title = stringResource(R.string.dialog_savings_deposit_title),
+            maxAmount = character.stats.money,
+            countryCode = character.countryCode,
+            confirmLabel = stringResource(R.string.btn_deposit),
+            onDismiss = { showSavingsDepositDialog = false },
+            onConfirm = { amount ->
+                showSavingsDepositDialog = false
+                pendingSavingsDeposit.request(amount)
+            }
+        )
+    }
+
+    if (showSavingsWithdrawDialog) {
+        PortfolioTransferDialog(
+            title = stringResource(R.string.dialog_savings_withdraw_title),
+            maxAmount = character.savingsBalance,
+            countryCode = character.countryCode,
+            confirmLabel = stringResource(R.string.btn_withdraw),
+            onDismiss = { showSavingsWithdrawDialog = false },
+            onConfirm = { amount ->
+                showSavingsWithdrawDialog = false
+                pendingSavingsWithdraw.request(amount)
+            }
+        )
+    }
+
     if (showWillEditor) {
         WillEditorDialog(
             beneficiaries = willBeneficiaries,
@@ -378,6 +469,144 @@ fun AssetsScreen(
                 showWillEditor = false
             }
         )
+    }
+}
+
+@Composable
+private fun LivingStandardCard(
+    character: Character,
+    estimatedCost: Int,
+    onSelect: (com.maisha.game.data.model.LivingStandard) -> Unit
+) {
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        shape = MaishaRadius.cardShape,
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.surfaceVariant
+        )
+    ) {
+        Column(
+            modifier = Modifier.padding(14.dp),
+            verticalArrangement = Arrangement.spacedBy(8.dp)
+        ) {
+            Text(
+                text = stringResource(R.string.section_living_standard),
+                style = MaterialTheme.typography.titleSmall,
+                fontWeight = FontWeight.SemiBold,
+                color = TealPrimary
+            )
+            Text(
+                text = stringResource(
+                    R.string.format_living_cost_estimate,
+                    formatMoney(estimatedCost, character.countryCode)
+                ),
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(6.dp)
+            ) {
+                com.maisha.game.data.model.LivingStandard.entries.forEach { standard ->
+                    val selected = character.lifestyle.livingStandard == standard
+                    FilterChip(
+                        selected = selected,
+                        onClick = { onSelect(standard) },
+                        enabled = character.alive,
+                        label = {
+                            Text(
+                                text = when (standard) {
+                                    com.maisha.game.data.model.LivingStandard.FRUGAL ->
+                                        stringResource(R.string.living_standard_frugal)
+                                    com.maisha.game.data.model.LivingStandard.MODEST ->
+                                        stringResource(R.string.living_standard_modest)
+                                    com.maisha.game.data.model.LivingStandard.COMFORTABLE ->
+                                        stringResource(R.string.living_standard_comfortable)
+                                    com.maisha.game.data.model.LivingStandard.LUXURY ->
+                                        stringResource(R.string.living_standard_luxury)
+                                },
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis
+                            )
+                        },
+                        modifier = Modifier.weight(1f)
+                    )
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun SavingsAccountCard(
+    savingsBalance: Int,
+    lastInterestPercent: Int,
+    countryCode: String,
+    canDeposit: Boolean,
+    canWithdraw: Boolean,
+    onDeposit: () -> Unit,
+    onWithdraw: () -> Unit
+) {
+    val interestLabel = when {
+        savingsBalance <= 0 -> stringResource(R.string.savings_no_interest_yet)
+        else -> stringResource(R.string.format_savings_interest, lastInterestPercent)
+    }
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        shape = MaishaRadius.cardShape,
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.surfaceVariant
+        )
+    ) {
+        Column(
+            modifier = Modifier.padding(14.dp),
+            verticalArrangement = Arrangement.spacedBy(8.dp)
+        ) {
+            Text(
+                text = stringResource(R.string.section_savings),
+                style = MaterialTheme.typography.titleSmall,
+                fontWeight = FontWeight.SemiBold,
+                color = TealPrimary
+            )
+            Text(
+                text = formatMoney(savingsBalance, countryCode),
+                style = MaterialTheme.typography.headlineSmall,
+                fontWeight = FontWeight.Bold,
+                color = GoldAccent
+            )
+            Text(
+                text = interestLabel,
+                style = MaterialTheme.typography.labelLarge,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+            Text(
+                text = stringResource(R.string.savings_desc),
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                Button(
+                    onClick = onDeposit,
+                    enabled = canDeposit,
+                    modifier = Modifier.weight(1f),
+                    shape = MaishaRadius.buttonShape,
+                    colors = ButtonDefaults.buttonColors(containerColor = TealPrimary)
+                ) {
+                    Text(stringResource(R.string.btn_deposit))
+                }
+                OutlinedButton(
+                    onClick = onWithdraw,
+                    enabled = canWithdraw,
+                    modifier = Modifier.weight(1f),
+                    shape = MaishaRadius.buttonShape
+                ) {
+                    Text(stringResource(R.string.btn_withdraw))
+                }
+            }
+        }
     }
 }
 

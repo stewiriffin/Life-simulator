@@ -81,7 +81,9 @@ class GameEngineTest {
 
         assertEquals(SchoolStage.PRIMARY, outcome.character.education.stage)
         assertEquals(3, outcome.character.education.currentGrade)
-        assertEquals(moneyBefore, outcome.character.stats.money)
+        // Career salary skipped while incarcerated; living costs may still debit cash.
+        assertTrue(outcome.character.stats.money <= moneyBefore)
+        assertEquals(2, outcome.character.career.yearsAtCurrentJob)
         assertTrue(outcome.character.criminalRecord.currentlyIncarcerated)
         assertEquals(1, outcome.character.criminalRecord.yearsRemaining)
     }

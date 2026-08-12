@@ -435,13 +435,176 @@ class FinanceEngine @Inject constructor() {
         return EconomyScaler.scaleAmount(rawCost, countryCode)
     }
 
-    /** Cash, assets, businesses, and investment portfolio. */
+    /** Cash, assets, businesses, savings, and investment portfolio. */
     fun calculateNetWorth(character: Character): Int {
         val assetValue = character.assets.sumOf { it.currentValue }
         val businessValue = character.businesses.sumOf { it.valuation }
         return character.stats.money + assetValue + businessValue +
-            character.investmentPortfolioValue.coerceAtLeast(0)
+            character.investmentPortfolioValue.coerceAtLeast(0) +
+            character.savingsBalance.coerceAtLeast(0)
     }
+
+    /** Moves liquid cash into safe savings (bank-style). */
+    fun depositSavings(character: Character, amount: Int): InvestmentResult {
+        if (amount <= 0) return InvestmentResult.InvalidAmount
+        if (character.stats.money < amount) return InvestmentResult.InsufficientFunds
+        return InvestmentResult.Success(
+            character.copy(
+                stats = character.stats.copy(money = character.stats.money - amount),
+                savingsBalance = character.savingsBalance + amount,
+                eventLog = EventLogCap.prepend(
+                    character.eventLog,
+                    "Deposited ${formatMoney(amount, character.countryCode)} into savings."
+                )
+            )
+        )
+    }
+
+    /** Moves savings back to liquid cash. */
+    fun withdrawSavings(character: Character, amount: Int): InvestmentResult {
+        if (amount <= 0) return InvestmentResult.InvalidAmount
+        if (character.savingsBalance < amount) return InvestmentResult.InsufficientFunds
+        return InvestmentResult.Success(
+            character.copy(
+                stats = character.stats.copy(money = character.stats.money + amount),
+                savingsBalance = character.savingsBalance - amount,
+                eventLog = EventLogCap.prepend(
+                    character.eventLog,
+                    "Withdrew ${formatMoney(amount, character.countryCode)} from savings."
+                )
+            )
+        )
+    }
+
+    /**
+     * Credits modest interest on [Character.savingsBalance] (climate-aware, far safer than the portfolio).
+     */
+    fun applySavingsInterest(character: Character): Character {
+        if (character.savingsBalance <= 0) {
+            return character.copy(lastSavingsInterestPercent = 0)
+        }
+        val ratePercent = when (character.economicState.climate) {
+            EconomicClimate.BOOM -> Random.nextInt(SAVINGS_INTEREST_BOOM_MIN, SAVINGS_INTEREST_BOOM_MAX + 1)
+            EconomicClimate.BUST -> Random.nextInt(SAVINGS_INTEREST_BUST_MIN, SAVINGS_INTEREST_BUST_MAX + 1)
+            EconomicClimate.NEUTRAL -> Random.nextInt(SAVINGS_INTEREST_MIN, SAVINGS_INTEREST_MAX + 1)
+        }
+        val interest = ((character.savingsBalance * ratePercent) / 100.0).toInt().coerceAtLeast(0)
+        if (interest <= 0) {
+            return character.copy(lastSavingsInterestPercent = ratePercent)
+        }
+        return character.copy(
+            savingsBalance = character.savingsBalance + interest,
+            lastSavingsInterestPercent = ratePercent,
+            eventLog = EventLogCap.prepend(
+                character.eventLog,
+                "Savings earned $ratePercent% interest " +
+                    "(${formatMoney(interest, character.countryCode)})."
+            )
+        )
+    }
+
+    fun setLivingStandard(
+        character: Character,
+        standard: com.maisha.game.data.model.LivingStandard
+    ): Character {
+        if (character.lifestyle.livingStandard == standard) return character
+        return character.copy(
+            lifestyle = character.lifestyle.copy(livingStandard = standard),
+            eventLog = EventLogCap.prepend(
+                character.eventLog,
+                "You set your living standard to ${standard.name.lowercase()}."
+            )
+        )
+    }
+
+    /**
+     * Kenya-baseline annual living costs scaled to country: age band, living standard,
+     * housing ownership, and dependent children.
+     */
+    fun estimateAnnualCostOfLiving(character: Character): Int {
+        val ageBase = when {
+            character.age < 6 -> 6_000
+            character.age < 13 -> 12_000
+            character.age < 18 -> 20_000
+            character.age < 25 -> 48_000
+            character.age < 65 -> 56_000
+            else -> 42_000
+        }
+        val standardMult = when (character.lifestyle.livingStandard) {
+            com.maisha.game.data.model.LivingStandard.FRUGAL -> 0.62
+            com.maisha.game.data.model.LivingStandard.MODEST -> 1.0
+            com.maisha.game.data.model.LivingStandard.COMFORTABLE -> 1.55
+            com.maisha.game.data.model.LivingStandard.LUXURY -> 2.35
+        }
+        val ownsHome = character.assets.any { it.type == AssetType.HOUSE }
+        val housingMult = when {
+            character.age < 18 -> 0.35
+            ownsHome -> 0.55
+            else -> 1.15
+        }
+        val dependentChildren = character.family.count {
+            it.relation == RelationType.CHILD && it.alive && it.age < 18
+        }
+        val dependentCost = dependentChildren * DEPENDENT_CHILD_COST_BASE
+        val raw = ((ageBase * standardMult * housingMult) + dependentCost).toInt()
+        return EconomyScaler.scaleAmount(raw.coerceAtLeast(1), character.countryCode)
+    }
+
+    /**
+     * Deducts yearly cost of living. Shortfall floors cash at 0 and hits happiness/health;
+     * luxury unpaid is especially painful. Frugal paid lifestyle drains a little joy.
+     */
+    fun applyCostOfLiving(character: Character): Character {
+        if (character.age < MIN_COST_OF_LIVING_AGE) return character
+        val cost = estimateAnnualCostOfLiving(character)
+        if (cost <= 0) return character
+
+        val paid = minOf(cost, character.stats.money)
+        val shortfall = cost - paid
+        var happinessDelta = 0
+        var healthDelta = 0
+        when (character.lifestyle.livingStandard) {
+            com.maisha.game.data.model.LivingStandard.FRUGAL ->
+                if (shortfall == 0) happinessDelta -= FRUGAL_HAPPINESS_DRAIN
+            com.maisha.game.data.model.LivingStandard.MODEST -> Unit
+            com.maisha.game.data.model.LivingStandard.COMFORTABLE ->
+                if (shortfall == 0) happinessDelta += 1
+            com.maisha.game.data.model.LivingStandard.LUXURY ->
+                if (shortfall == 0) happinessDelta += 3
+        }
+        if (shortfall > 0) {
+            happinessDelta -= COL_SHORTFALL_HAPPINESS
+            healthDelta -= COL_SHORTFALL_HEALTH
+            if (character.lifestyle.livingStandard ==
+                com.maisha.game.data.model.LivingStandard.LUXURY
+            ) {
+                happinessDelta -= LUXURY_SHORTFALL_EXTRA_HAPPINESS
+            }
+        }
+
+        var updated = character.copy(
+            stats = character.stats.copy(
+                money = (character.stats.money - paid).coerceAtLeast(0),
+                happiness = clampStat(character.stats.happiness + happinessDelta),
+                health = clampStat(character.stats.health + healthDelta)
+            )
+        )
+        val log = if (shortfall > 0) {
+            "Living costs ${formatMoney(cost, character.countryCode)} — " +
+                "short by ${formatMoney(shortfall, character.countryCode)}. Stress mounted."
+        } else {
+            "Paid ${formatMoney(cost, character.countryCode)} in living costs " +
+                "(${character.lifestyle.livingStandard.name.lowercase()})."
+        }
+        return updated.copy(eventLog = EventLogCap.prepend(updated.eventLog, log))
+    }
+
+    /**
+     * Progressive income tax on a Kenya-baseline gross pay amount (already country-scaled salary).
+     * Brackets are expressed in Kenya units then scaled so tax burden tracks local salaries.
+     */
+    fun calculateIncomeTax(grossPay: Int, countryCode: String): Int =
+        Companion.calculateIncomeTax(grossPay, countryCode)
 
     sealed class InvestmentResult {
         data class Success(val character: Character) : InvestmentResult()
@@ -833,5 +996,45 @@ class FinanceEngine @Inject constructor() {
         private const val MINOR_CHILD_MAX_AGE = 18
         private const val SOCIAL_MEDIA_BASE_PAYOUT_KENYA = 80_000
         private const val SOCIAL_MEDIA_PAYOUT_PER_100K_KENYA = 40_000
+        private const val SAVINGS_INTEREST_MIN = 3
+        private const val SAVINGS_INTEREST_MAX = 5
+        private const val SAVINGS_INTEREST_BOOM_MIN = 4
+        private const val SAVINGS_INTEREST_BOOM_MAX = 7
+        private const val SAVINGS_INTEREST_BUST_MIN = 1
+        private const val SAVINGS_INTEREST_BUST_MAX = 3
+        private const val DEPENDENT_CHILD_COST_BASE = 14_000
+        private const val MIN_COST_OF_LIVING_AGE = 6
+        private const val FRUGAL_HAPPINESS_DRAIN = 2
+        private const val COL_SHORTFALL_HAPPINESS = 6
+        private const val COL_SHORTFALL_HEALTH = 3
+        private const val LUXURY_SHORTFALL_EXTRA_HAPPINESS = 5
+        private const val TAX_BRACKET_1 = 50_000
+        private const val TAX_BRACKET_2 = 200_000
+        private const val TAX_BRACKET_3 = 500_000
+        private const val TAX_RATE_2 = 10
+        private const val TAX_RATE_3 = 20
+        private const val TAX_RATE_4 = 30
+
+        fun calculateIncomeTax(grossPay: Int, countryCode: String): Int {
+            if (grossPay <= 0) return 0
+            val b1 = EconomyScaler.scaleAmount(TAX_BRACKET_1, countryCode)
+            val b2 = EconomyScaler.scaleAmount(TAX_BRACKET_2, countryCode)
+            val b3 = EconomyScaler.scaleAmount(TAX_BRACKET_3, countryCode)
+            var remaining = grossPay
+            var tax = 0
+            val slice1 = minOf(remaining, b1)
+            remaining -= slice1
+            if (remaining <= 0) return 0
+            val slice2 = minOf(remaining, b2 - b1)
+            tax += (slice2 * TAX_RATE_2 / 100.0).toInt()
+            remaining -= slice2
+            if (remaining <= 0) return tax
+            val slice3 = minOf(remaining, b3 - b2)
+            tax += (slice3 * TAX_RATE_3 / 100.0).toInt()
+            remaining -= slice3
+            if (remaining <= 0) return tax
+            tax += (remaining * TAX_RATE_4 / 100.0).toInt()
+            return tax.coerceAtLeast(0)
+        }
     }
 }

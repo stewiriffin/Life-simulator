@@ -262,6 +262,7 @@ fun ActionsScreen(
                                 title = stringResource(R.string.care_public_clinic),
                                 description = successHint(CareType.PUBLIC_CLINIC),
                                 metaLabel = treatmentCostLabel(
+                                    character,
                                     condition.severity,
                                     CareType.PUBLIC_CLINIC
                                 ),
@@ -279,6 +280,7 @@ fun ActionsScreen(
                                 title = CountryCatalog.flavorFor(character.countryCode).privateHospitalName,
                                 description = successHint(CareType.PRIVATE_HOSPITAL),
                                 metaLabel = treatmentCostLabel(
+                                    character,
                                     condition.severity,
                                     CareType.PRIVATE_HOSPITAL
                                 ),
@@ -470,7 +472,10 @@ fun ActionsScreen(
                             activeTitleRes = R.string.lifestyle_gym_active,
                             inactiveTitleRes = R.string.lifestyle_gym_title,
                             descriptionRes = R.string.lifestyle_gym_desc,
-                            yearlyCost = HealthEngine.GYM_YEARLY_COST,
+                            yearlyCost = lifestyleYearlyCost(
+                                LifestyleOption.GYM,
+                                character.countryCode
+                            ),
                             icon = AppIcons.Health,
                             onToggle = { enable ->
                                 pendingAction.request(PendingAction.Lifestyle(LifestyleOption.GYM, enable))
@@ -599,7 +604,10 @@ fun ActionsScreen(
                             activeTitleRes = R.string.lifestyle_diet_active,
                             inactiveTitleRes = R.string.lifestyle_diet_title,
                             descriptionRes = R.string.lifestyle_diet_desc,
-                            yearlyCost = HealthEngine.DIET_YEARLY_COST,
+                            yearlyCost = lifestyleYearlyCost(
+                                LifestyleOption.DIET,
+                                character.countryCode
+                            ),
                             icon = AppIcons.Looks,
                             onToggle = { enable ->
                                 pendingAction.request(PendingAction.Lifestyle(LifestyleOption.DIET, enable))
@@ -613,10 +621,32 @@ fun ActionsScreen(
                             activeTitleRes = R.string.lifestyle_therapist_active,
                             inactiveTitleRes = R.string.lifestyle_therapist_title,
                             descriptionRes = R.string.lifestyle_therapist_desc,
-                            yearlyCost = HealthEngine.THERAPIST_YEARLY_COST,
+                            yearlyCost = lifestyleYearlyCost(
+                                LifestyleOption.THERAPIST,
+                                character.countryCode
+                            ),
                             icon = AppIcons.Happiness,
                             onToggle = { enable ->
                                 pendingAction.request(PendingAction.Lifestyle(LifestyleOption.THERAPIST, enable))
+                            }
+                        )
+                    }
+                    item {
+                        LifestyleActionCard(
+                            character = character,
+                            option = LifestyleOption.HEALTH_INSURANCE,
+                            activeTitleRes = R.string.lifestyle_insurance_active,
+                            inactiveTitleRes = R.string.lifestyle_insurance_title,
+                            descriptionRes = R.string.lifestyle_insurance_desc,
+                            yearlyCost = lifestyleYearlyCost(
+                                LifestyleOption.HEALTH_INSURANCE,
+                                character.countryCode
+                            ),
+                            icon = AppIcons.Health,
+                            onToggle = { enable ->
+                                pendingAction.request(
+                                    PendingAction.Lifestyle(LifestyleOption.HEALTH_INSURANCE, enable)
+                                )
                             }
                         )
                     }
@@ -670,7 +700,7 @@ fun ActionsScreen(
                         R.string.dialog_seek_treatment_desc,
                         action.condition.name,
                         careName,
-                        treatmentCostLabel(action.condition.severity, action.careType),
+                        treatmentCostLabel(character, action.condition.severity, action.careType),
                         successHint(action.careType)
                     ),
                     confirmLabel = stringResource(R.string.btn_visit_doctor),
@@ -829,7 +859,10 @@ fun ActionsScreen(
                             label,
                             stringResource(
                                 R.string.format_yearly_cost,
-                                formatMoney(lifestyleYearlyCost(action.option), character.countryCode)
+                                formatMoney(
+                                    lifestyleYearlyCost(action.option, character.countryCode),
+                                    character.countryCode
+                                )
                             )
                         ),
                         confirmLabel = stringResource(R.string.btn_subscribe),
@@ -987,6 +1020,7 @@ private fun LifestyleActionCard(
         LifestyleOption.GYM -> character.lifestyle.hasGymMembership
         LifestyleOption.DIET -> character.lifestyle.isVegan
         LifestyleOption.THERAPIST -> character.lifestyle.hasTherapist
+        LifestyleOption.HEALTH_INSURANCE -> character.lifestyle.hasHealthInsurance
     }
     ActionCard(
         icon = icon,
@@ -1011,12 +1045,19 @@ private fun lifestyleLabel(option: LifestyleOption, enabling: Boolean): String =
     LifestyleOption.THERAPIST -> stringResource(
         if (enabling) R.string.lifestyle_therapist_title else R.string.lifestyle_therapist_active
     )
+    LifestyleOption.HEALTH_INSURANCE -> stringResource(
+        if (enabling) R.string.lifestyle_insurance_title else R.string.lifestyle_insurance_active
+    )
 }
 
-private fun lifestyleYearlyCost(option: LifestyleOption): Int = when (option) {
-    LifestyleOption.GYM -> HealthEngine.GYM_YEARLY_COST
-    LifestyleOption.DIET -> HealthEngine.DIET_YEARLY_COST
-    LifestyleOption.THERAPIST -> HealthEngine.THERAPIST_YEARLY_COST
+private fun lifestyleYearlyCost(option: LifestyleOption, countryCode: String): Int {
+    val base = when (option) {
+        LifestyleOption.GYM -> HealthEngine.GYM_YEARLY_COST
+        LifestyleOption.DIET -> HealthEngine.DIET_YEARLY_COST
+        LifestyleOption.THERAPIST -> HealthEngine.THERAPIST_YEARLY_COST
+        LifestyleOption.HEALTH_INSURANCE -> HealthEngine.HEALTH_INSURANCE_YEARLY_COST
+    }
+    return com.maisha.game.data.EconomyScaler.scaleAmount(base, countryCode)
 }
 
 @Composable
@@ -1031,9 +1072,16 @@ private fun SectionHeader(title: String) {
 }
 
 @Composable
-private fun treatmentCostLabel(severity: Int, careType: CareType): String {
-    val amount = HealthUiHelpers.treatmentCost(severity, careType)
-    return stringResource(R.string.format_treatment_cost, formatMoney(amount))
+private fun treatmentCostLabel(
+    character: Character,
+    severity: Int,
+    careType: CareType
+): String {
+    val amount = HealthUiHelpers.treatmentCost(character, severity, careType)
+    return stringResource(
+        R.string.format_treatment_cost,
+        formatMoney(amount, character.countryCode)
+    )
 }
 
 @Composable

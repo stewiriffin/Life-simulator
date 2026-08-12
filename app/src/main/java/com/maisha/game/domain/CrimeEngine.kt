@@ -43,7 +43,7 @@ class CrimeEngine @Inject constructor() {
         val attemptsSoFar = record.crimeAttemptsThisYear
         val chance = successChance(character, crimeType, attemptsSoFar)
         val result = if (Random.nextFloat() < chance) {
-            val moneyGained = moneyReward(crimeType)
+            val moneyGained = moneyReward(crimeType, character.countryCode)
             val updated = character.copy(
                 stats = character.stats.copy(
                     money = character.stats.money + moneyGained
@@ -364,10 +364,13 @@ class CrimeEngine @Inject constructor() {
         return (base / repeatRisk - karmaPenalty).coerceIn(MIN_SUCCESS_CHANCE, MAX_SUCCESS_CHANCE)
     }
 
-    private fun moneyReward(crimeType: CrimeType): Int = when (crimeType) {
-        CrimeType.PICKPOCKET -> Random.nextInt(500, 2_501)
-        CrimeType.SHOPLIFT -> Random.nextInt(2_000, 8_001)
-        CrimeType.FRAUD -> Random.nextInt(15_000, 45_001)
+    private fun moneyReward(crimeType: CrimeType, countryCode: String): Int {
+        val base = when (crimeType) {
+            CrimeType.PICKPOCKET -> Random.nextInt(500, 2_501)
+            CrimeType.SHOPLIFT -> Random.nextInt(2_000, 8_001)
+            CrimeType.FRAUD -> Random.nextInt(15_000, 45_001)
+        }
+        return com.maisha.game.data.EconomyScaler.scaleAmount(base, countryCode)
     }
 
     /** Maximum sentence before lawyer mitigation (used at trial). */

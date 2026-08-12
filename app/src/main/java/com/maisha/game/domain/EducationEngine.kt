@@ -137,25 +137,57 @@ class EducationEngine @Inject constructor(
         )
     }
 
-    /** Increments university year or graduates when [UNIVERSITY_YEARS] completed. */
+    /** Increments university year or graduates when [UNIVERSITY_YEARS] completed. Bills domestic tuition. */
     fun advanceUniversityYear(character: Character): Character {
         val education = character.education
         if (education.expelled || education.droppedOutFrom == SchoolStage.UNIVERSITY) return character
         if (education.stage != SchoolStage.UNIVERSITY) return character
 
-        val nextGrade = education.currentGrade + 1
+        val tuition = domesticUniversityTuition(character)
+        var updated = character
+        if (tuition > 0) {
+            val paid = minOf(tuition, character.stats.money)
+            val shortfall = tuition - paid
+            updated = character.copy(
+                stats = character.stats.copy(
+                    money = (character.stats.money - paid).coerceAtLeast(0),
+                    happiness = if (shortfall > 0) {
+                        clampStat(character.stats.happiness - 4)
+                    } else {
+                        character.stats.happiness
+                    }
+                ),
+                eventLog = EventLogCap.prepend(
+                    character.eventLog,
+                    if (shortfall > 0) {
+                        "University fees ${formatMoney(tuition, character.countryCode)} — " +
+                            "short by ${formatMoney(shortfall, character.countryCode)}."
+                    } else {
+                        "Paid ${formatMoney(tuition, character.countryCode)} in university tuition."
+                    }
+                )
+            )
+        }
+
+        val nextGrade = updated.education.currentGrade + 1
         return if (nextGrade > UNIVERSITY_YEARS) {
-            character.copy(
-                education = education.copy(
+            updated.copy(
+                education = updated.education.copy(
                     stage = SchoolStage.GRADUATED,
                     currentGrade = UNIVERSITY_YEARS
                 )
             )
         } else {
-            character.copy(
-                education = education.copy(currentGrade = nextGrade)
+            updated.copy(
+                education = updated.education.copy(currentGrade = nextGrade)
             )
         }
+    }
+
+    private fun domesticUniversityTuition(character: Character): Int {
+        // International enrollments already paid a large upfront fee.
+        if (character.currentVisa == VisaType.STUDENT && character.isLivingAbroad()) return 0
+        return EconomyScaler.scaleAmount(DOMESTIC_UNIVERSITY_TUITION_KENYA, character.countryCode)
     }
 
     /**
@@ -546,6 +578,7 @@ class EducationEngine @Inject constructor(
         private const val PRIMARY_MAX_GRADE = 8
         private const val SECONDARY_MAX_GRADE = 4
         private const val UNIVERSITY_YEARS = 4
+        private const val DOMESTIC_UNIVERSITY_TUITION_KENYA = 45_000
         private const val KCPE_PASS_SCORE = 50f
         private const val KCSE_PASS_SCORE = 45f
         private const val UNIVERSITY_MIN_POINTS = 7 // C+ equivalent
