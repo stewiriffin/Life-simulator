@@ -182,6 +182,7 @@ private fun paletteFor(type: CelebrationType): List<Color> = when (type) {
     CelebrationType.YEAR_QUEST -> listOf(TealLight, GoldAccent, SuccessGreen)
     CelebrationType.AGE_MILESTONE_18 -> listOf(TealLight, StatHappiness, GoldAccent)
     CelebrationType.AGE_MILESTONE_50 -> listOf(GoldAccent, StatHealth, TealLight)
+    CelebrationType.AGE_MILESTONE_75 -> listOf(GoldAccent, SuccessGreen, TealLight)
     CelebrationType.AGE_MILESTONE_100 -> listOf(GoldAccent, AccentPink, StatSmarts)
     CelebrationType.LIFE_MILESTONE -> listOf(SuccessGreen, GoldAccent, TealLight)
     CelebrationType.BUCKET_LIST -> listOf(GoldAccent, TealLight, StatHappiness)
@@ -197,6 +198,7 @@ private fun bannerRes(type: CelebrationType): Int = when (type) {
     CelebrationType.YEAR_QUEST -> R.string.celebration_year_quest
     CelebrationType.AGE_MILESTONE_18 -> R.string.celebration_age_18
     CelebrationType.AGE_MILESTONE_50 -> R.string.celebration_age_50
+    CelebrationType.AGE_MILESTONE_75 -> R.string.celebration_age_75
     CelebrationType.AGE_MILESTONE_100 -> R.string.celebration_age_100
     CelebrationType.LIFE_MILESTONE -> R.string.celebration_life_milestone
     CelebrationType.BUCKET_LIST -> R.string.celebration_bucket_list

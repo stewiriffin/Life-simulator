@@ -3,10 +3,13 @@ package com.maisha.game.ui.main
 
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.togetherWith
-import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.WindowInsets
@@ -19,12 +22,10 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.AccountBalance
 import androidx.compose.material.icons.filled.AccountCircle
-import androidx.compose.material.icons.filled.School
 import androidx.compose.material.icons.filled.Settings
-import androidx.compose.material.icons.filled.Work
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Icon
@@ -33,29 +34,37 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.blur
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import com.maisha.game.R
+import com.maisha.game.data.model.BucketGoalKind
 import com.maisha.game.data.model.CareerState
 import com.maisha.game.data.model.Character
 import com.maisha.game.data.model.CrimeType
-import com.maisha.game.data.model.Expression
 import com.maisha.game.data.model.EducationState
 import com.maisha.game.data.model.EventChoice
+import com.maisha.game.data.model.Expression
 import com.maisha.game.data.model.Gender
+import com.maisha.game.data.model.LivingStandard
 import com.maisha.game.data.model.Person
 import com.maisha.game.data.model.SchoolStage
 import com.maisha.game.data.model.Stats
@@ -66,29 +75,24 @@ import com.maisha.game.domain.InteractionType
 import com.maisha.game.domain.YearQuest
 import com.maisha.game.domain.YearQuestKind
 import com.maisha.game.domain.YearQuestProgress
+import com.maisha.game.ui.celebration.CelebrationOverlay
 import com.maisha.game.ui.components.AchievementUnlockedDialog
 import com.maisha.game.ui.components.AgeUpButton
 import com.maisha.game.ui.components.AppLoadingIndicator
+import com.maisha.game.ui.components.CountryFlag
 import com.maisha.game.ui.components.EmptyStateCard
 import com.maisha.game.ui.components.FloatingStatChangeLayer
 import com.maisha.game.ui.components.MainTab
 import com.maisha.game.ui.components.MaishaBottomNav
 import com.maisha.game.ui.components.MoneyStatRow
-import com.maisha.game.ui.components.CountryFlag
 import com.maisha.game.ui.components.PersonAvatar
 import com.maisha.game.ui.components.RecordBadge
 import com.maisha.game.ui.components.StatBar
 import com.maisha.game.ui.components.StatType
 import com.maisha.game.ui.components.color
 import com.maisha.game.ui.feedback.FeedbackEffect
-import com.maisha.game.ui.celebration.CelebrationOverlay
 import com.maisha.game.ui.illustrations.EmptyStateIllustration
 import com.maisha.game.ui.navigation.NavAnimations
-import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Brush
-import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.unit.sp
 import com.maisha.game.ui.theme.AppIcons
 import com.maisha.game.ui.theme.CoralNegative
 import com.maisha.game.ui.theme.CreamBg
@@ -179,7 +183,10 @@ fun LifeScreen(
     onVolunteer: () -> Unit,
     onDonateToCharity: (Int) -> Unit,
     donationTiers: List<Int>,
+    onPerformLeisure: (com.maisha.game.domain.LeisureActivity) -> Unit,
     onActionMessageDismissed: () -> Unit,
+    onLifePulseMessageDismissed: () -> Unit,
+    onYearRecapDismissed: () -> Unit,
     onViewCharacterStats: () -> Unit,
     onOpenSettings: () -> Unit,
     onAchievementDialogDismissed: () -> Unit,
@@ -292,6 +299,13 @@ fun LifeScreen(
     val snackbarHostState = rememberFamilySnackbarHostState()
     val prisonBackground = if (incarcerated) NavyElevated else MaterialTheme.colorScheme.background
 
+    LaunchedEffect(uiState.lifePulseMessage) {
+        uiState.lifePulseMessage?.let { message ->
+            snackbarHostState.showSnackbar(message)
+            onLifePulseMessageDismissed()
+        }
+    }
+
     val eventActive = uiState.currentEvent != null
     Box(
         modifier = Modifier
@@ -330,6 +344,7 @@ fun LifeScreen(
                 onViewCharacterStats = onViewCharacterStats,
                 onOpenSettings = onOpenSettings,
                 onStatDeltaFinished = onStatDeltaFinished,
+                onYearRecapDismissed = onYearRecapDismissed,
                 modifier = Modifier.padding(innerPadding)
             )
             MainTab.FAMILY -> FamilyScreen(
@@ -417,6 +432,7 @@ fun LifeScreen(
                 onVolunteer = onVolunteer,
                 onDonateToCharity = onDonateToCharity,
                 donationTiers = donationTiers,
+                onPerformLeisure = onPerformLeisure,
                 onActionMessageDismissed = onActionMessageDismissed,
                 modifier = Modifier.padding(innerPadding)
             )
@@ -435,8 +451,21 @@ private fun LifeTabContent(
     onViewCharacterStats: () -> Unit,
     onOpenSettings: () -> Unit,
     onStatDeltaFinished: (Long) -> Unit,
+    onYearRecapDismissed: () -> Unit,
     modifier: Modifier = Modifier
 ) {
+    val journalEntries = remember(character.eventLog) {
+        character.eventLog.filterNot { it.startsWith("::DEATH:") }
+    }
+    var journalExpanded by rememberSaveable { mutableStateOf(false) }
+    val visibleJournal = if (journalExpanded || journalEntries.size <= JOURNAL_VISIBLE_CAP) {
+        journalEntries
+    } else {
+        journalEntries.take(JOURNAL_VISIBLE_CAP)
+    }
+    val hiddenJournalCount = (journalEntries.size - JOURNAL_VISIBLE_CAP).coerceAtLeast(0)
+    val spotlightBucket = character.bucketList.firstOrNull { !it.completed }
+
     Column(
         modifier = modifier
             .fillMaxSize()
@@ -463,6 +492,7 @@ private fun LifeTabContent(
 
                 item {
                     StatusInfoCard(
+                        character = character,
                         education = character.education,
                         career = character.career,
                         netWorth = netWorth,
@@ -470,6 +500,23 @@ private fun LifeTabContent(
                         hasCriminalRecord = character.criminalRecord.hasRecord,
                         timesArrested = character.criminalRecord.timesArrested
                     )
+                }
+
+                if (uiState.yearRecapLines.isNotEmpty()) {
+                    item {
+                        Spacer(modifier = Modifier.height(8.dp))
+                        YearRecapCard(
+                            lines = uiState.yearRecapLines,
+                            onDismiss = onYearRecapDismissed
+                        )
+                    }
+                }
+
+                if (spotlightBucket != null) {
+                    item {
+                        Spacer(modifier = Modifier.height(8.dp))
+                        BucketSpotlightRow(kind = spotlightBucket.kind)
+                    }
                 }
 
                 if (character.unlockedMilestoneIds.isNotEmpty()) {
@@ -501,7 +548,7 @@ private fun LifeTabContent(
                     )
                 }
 
-                if (character.eventLog.filterNot { it.startsWith("::DEATH:") }.isEmpty()) {
+                if (journalEntries.isEmpty()) {
                     item {
                         Text(
                             text = stringResource(R.string.empty_event_log_life),
@@ -511,13 +558,29 @@ private fun LifeTabContent(
                         )
                     }
                 } else {
-                    itemsIndexed(
-                        character.eventLog.filterNot { it.startsWith("::DEATH:") }
-                    ) { index, entry ->
+                    itemsIndexed(visibleJournal) { index, entry ->
                         EventLogStrip(
                             entry = entry,
                             ageTag = character.age - index
                         )
+                    }
+                    if (!journalExpanded && hiddenJournalCount > 0) {
+                        item {
+                            TextButton(onClick = { journalExpanded = true }) {
+                                Text(
+                                    text = stringResource(
+                                        R.string.btn_show_earlier_years,
+                                        hiddenJournalCount
+                                    )
+                                )
+                            }
+                        }
+                    } else if (journalExpanded && journalEntries.size > JOURNAL_VISIBLE_CAP) {
+                        item {
+                            TextButton(onClick = { journalExpanded = false }) {
+                                Text(text = stringResource(R.string.btn_collapse_earlier_years))
+                            }
+                        }
                     }
                 }
 
@@ -565,6 +628,9 @@ private fun LifeTabContent(
     }
 }
 
+private const val JOURNAL_VISIBLE_CAP = 12
+
+@OptIn(ExperimentalLayoutApi::class)
 @Composable
 private fun LifeHeroHeader(
     character: Character,
@@ -614,10 +680,10 @@ private fun LifeHeroHeader(
             }
             Text(
                 text = stringResource(R.string.app_name).uppercase(),
-                style = MaterialTheme.typography.labelSmall,
-                fontWeight = FontWeight.Bold,
-                color = Color.White.copy(alpha = 0.35f),
-                letterSpacing = 1.5.sp
+                style = MaterialTheme.typography.labelMedium,
+                fontWeight = FontWeight.Black,
+                color = Color.White.copy(alpha = 0.55f),
+                letterSpacing = 2.sp
             )
         }
 
@@ -653,6 +719,13 @@ private fun LifeHeroHeader(
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis
                 )
+                Text(
+                    text = formatMoney(character.stats.money, character.countryCode),
+                    style = MaterialTheme.typography.titleSmall,
+                    fontWeight = FontWeight.Bold,
+                    color = GoldAccent,
+                    modifier = Modifier.padding(top = 2.dp)
+                )
                 Row(
                     verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.spacedBy(6.dp),
@@ -667,7 +740,10 @@ private fun LifeHeroHeader(
                         overflow = TextOverflow.Ellipsis
                     )
                 }
-                Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                FlowRow(
+                    horizontalArrangement = Arrangement.spacedBy(6.dp),
+                    verticalArrangement = Arrangement.spacedBy(6.dp)
+                ) {
                     HeroChip(
                         text = stringResource(R.string.format_generation_short, character.generationNumber),
                         bg = LifeGreen.copy(alpha = 0.25f),
@@ -677,6 +753,11 @@ private fun LifeHeroHeader(
                         HeroChip(
                             text = dynastyTitleLabel(dynastyTitleKey),
                             bg = GoldAccent.copy(alpha = 0.2f),
+                            fg = GoldAccent
+                        )
+                        HeroChip(
+                            text = stringResource(R.string.format_dynasty_score_short, dynastyScore),
+                            bg = GoldAccent.copy(alpha = 0.28f),
                             fg = GoldAccent
                         )
                     }
@@ -694,6 +775,31 @@ private fun LifeHeroHeader(
                             text = fameTierShortLabel(character.socialMedia.fameTier),
                             bg = GoldAccent.copy(alpha = 0.22f),
                             fg = GoldAccent
+                        )
+                    }
+                    if (character.stats.karma != 50) {
+                        HeroChip(
+                            text = stringResource(R.string.format_karma_chip, character.stats.karma),
+                            bg = if (character.stats.karma > 50) {
+                                LifeGreen.copy(alpha = 0.3f)
+                            } else {
+                                CoralNegative.copy(alpha = 0.28f)
+                            },
+                            fg = Color.White
+                        )
+                    }
+                    if (character.isLivingAbroad()) {
+                        val visaText = when {
+                            character.currentVisa != null -> stringResource(
+                                R.string.format_visa_chip,
+                                character.visaYearsRemaining
+                            )
+                            else -> stringResource(R.string.chip_abroad_citizen_flavor)
+                        }
+                        HeroChip(
+                            text = visaText,
+                            bg = TealPrimary.copy(alpha = 0.3f),
+                            fg = Color.White
                         )
                     }
                 }
@@ -970,8 +1076,10 @@ private fun StatsCard(stats: Stats, netWorth: Int, countryCode: String) {
     }
 }
 
+@OptIn(ExperimentalLayoutApi::class)
 @Composable
 private fun StatusInfoCard(
+    character: Character,
     education: EducationState,
     career: CareerState,
     netWorth: Int,
@@ -991,6 +1099,17 @@ private fun StatusInfoCard(
             modifier = Modifier.padding(MaishaSpacing.md + 2.dp),
             verticalArrangement = Arrangement.spacedBy(MaishaSpacing.sm)
         ) {
+            StatusInfoRow(
+                icon = { Icon(AppIcons.Wealth, contentDescription = null, tint = GoldAccent) },
+                label = stringResource(R.string.label_cash),
+                value = formatMoney(character.stats.money, countryCode),
+                valueColor = GoldAccent
+            )
+            StatusInfoRow(
+                icon = { Icon(AppIcons.Wealth, contentDescription = null, tint = StatType.MONEY.color()) },
+                label = stringResource(R.string.label_net_worth),
+                value = formatMoney(netWorth, countryCode)
+            )
             StatusInfoRow(
                 icon = { Icon(AppIcons.Education, contentDescription = null, tint = StatType.SMARTS.color()) },
                 label = stringResource(R.string.label_education),
@@ -1014,20 +1133,61 @@ private fun StatusInfoCard(
             if (hasCriminalRecord) {
                 RecordBadge(timesArrested = timesArrested)
             }
-            StatusInfoRow(
-                icon = { Icon(AppIcons.Wealth, contentDescription = null, tint = StatType.MONEY.color()) },
-                label = stringResource(R.string.label_net_worth),
-                value = formatMoney(netWorth, countryCode)
+            Text(
+                text = stringResource(R.string.section_lifestyle_pulse),
+                style = MaterialTheme.typography.labelSmall,
+                color = InkTertiary,
+                fontWeight = FontWeight.Bold
             )
+            FlowRow(
+                horizontalArrangement = Arrangement.spacedBy(6.dp),
+                verticalArrangement = Arrangement.spacedBy(6.dp)
+            ) {
+                HeroChip(
+                    text = livingStandardLabel(character.lifestyle.livingStandard),
+                    bg = LifeGreen.copy(alpha = 0.12f),
+                    fg = LifeGreen
+                )
+                if (character.lifestyle.hasHealthInsurance) {
+                    HeroChip(
+                        text = stringResource(R.string.chip_lifestyle_insurance),
+                        bg = TealPrimary.copy(alpha = 0.12f),
+                        fg = TealPrimary
+                    )
+                }
+                if (character.lifestyle.hasGymMembership) {
+                    HeroChip(
+                        text = stringResource(R.string.chip_lifestyle_gym),
+                        bg = TealPrimary.copy(alpha = 0.12f),
+                        fg = TealPrimary
+                    )
+                }
+                if (character.lifestyle.hasTherapist) {
+                    HeroChip(
+                        text = stringResource(R.string.chip_lifestyle_therapist),
+                        bg = TealPrimary.copy(alpha = 0.12f),
+                        fg = TealPrimary
+                    )
+                }
+            }
         }
     }
+}
+
+@Composable
+private fun livingStandardLabel(standard: LivingStandard): String = when (standard) {
+    LivingStandard.FRUGAL -> stringResource(R.string.living_standard_frugal)
+    LivingStandard.MODEST -> stringResource(R.string.living_standard_modest)
+    LivingStandard.COMFORTABLE -> stringResource(R.string.living_standard_comfortable)
+    LivingStandard.LUXURY -> stringResource(R.string.living_standard_luxury)
 }
 
 @Composable
 private fun StatusInfoRow(
     icon: @Composable () -> Unit,
     label: String,
-    value: String
+    value: String,
+    valueColor: Color = Color.Unspecified
 ) {
     Row(
         modifier = Modifier.fillMaxWidth(),
@@ -1044,6 +1204,8 @@ private fun StatusInfoRow(
             Text(
                 text = value,
                 style = MaterialTheme.typography.bodySmall,
+                color = valueColor,
+                fontWeight = if (valueColor != Color.Unspecified) FontWeight.SemiBold else FontWeight.Normal,
                 maxLines = 2,
                 overflow = TextOverflow.Ellipsis
             )
@@ -1192,6 +1354,98 @@ private fun yearQuestTitle(quest: YearQuest, countryCode: String): String = when
 }
 
 @Composable
+private fun YearRecapCard(lines: List<String>, onDismiss: () -> Unit) {
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        shape = MaishaRadius.cardShape,
+        colors = CardDefaults.cardColors(containerColor = Color.White)
+    ) {
+        Column(
+            modifier = Modifier.padding(12.dp),
+            verticalArrangement = Arrangement.spacedBy(6.dp)
+        ) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(
+                    text = stringResource(R.string.section_year_recap),
+                    style = MaterialTheme.typography.titleSmall,
+                    fontWeight = FontWeight.SemiBold,
+                    color = InkPrimary
+                )
+                Text(
+                    text = stringResource(R.string.btn_dismiss_year_recap),
+                    style = MaterialTheme.typography.labelSmall,
+                    color = TealPrimary,
+                    fontWeight = FontWeight.SemiBold,
+                    modifier = Modifier
+                        .clip(RoundedCornerShape(99.dp))
+                        .clickable(onClick = onDismiss)
+                        .padding(horizontal = 8.dp, vertical = 4.dp)
+                )
+            }
+            lines.forEach { line ->
+                Text(
+                    text = "• $line",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = InkPrimary
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun BucketSpotlightRow(kind: BucketGoalKind) {
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        shape = MaishaRadius.cardShape,
+        colors = CardDefaults.cardColors(containerColor = Color.White)
+    ) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 12.dp, vertical = 10.dp),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Column(modifier = Modifier.weight(1f)) {
+                Text(
+                    text = stringResource(R.string.section_bucket_spotlight),
+                    style = MaterialTheme.typography.labelSmall,
+                    color = InkTertiary,
+                    fontWeight = FontWeight.Bold
+                )
+                Text(
+                    text = bucketSpotlightTitle(kind),
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = InkPrimary,
+                    fontWeight = FontWeight.SemiBold
+                )
+            }
+            HeroChip(
+                text = stringResource(R.string.bucket_spotlight_pending),
+                bg = GoldAccent.copy(alpha = 0.18f),
+                fg = GoldAccent
+            )
+        }
+    }
+}
+
+@Composable
+private fun bucketSpotlightTitle(kind: BucketGoalKind): String = when (kind) {
+    BucketGoalKind.OWN_HOME -> stringResource(R.string.bucket_own_home_title)
+    BucketGoalKind.REACH_FAME -> stringResource(R.string.bucket_reach_fame_title)
+    BucketGoalKind.START_BUSINESS -> stringResource(R.string.bucket_start_business_title)
+    BucketGoalKind.WIN_OFFICE -> stringResource(R.string.bucket_win_office_title)
+    BucketGoalKind.RAISE_CHILD -> stringResource(R.string.bucket_raise_child_title)
+    BucketGoalKind.HIT_WEALTH -> stringResource(R.string.bucket_hit_wealth_title)
+    BucketGoalKind.MASTER_SKILL -> stringResource(R.string.bucket_master_skill_title)
+}
+
+@Composable
 private fun RecentMilestonesRow(milestoneIds: List<String>) {
     val recent = milestoneIds.takeLast(4).reversed()
     Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
@@ -1209,14 +1463,15 @@ private fun RecentMilestonesRow(milestoneIds: List<String>) {
             ) {
                 Text(
                     text = "✓",
-                    color = LifeGreen,
+                    color = GoldAccent,
                     style = MaterialTheme.typography.labelLarge,
                     fontWeight = FontWeight.Bold
                 )
                 Text(
                     text = milestoneTitle(id),
                     style = MaterialTheme.typography.bodyMedium,
-                    color = InkPrimary
+                    color = InkPrimary,
+                    fontWeight = FontWeight.Medium
                 )
             }
         }
@@ -1251,47 +1506,3 @@ private fun fameTierShortLabel(tier: com.maisha.game.data.model.FameTier): Strin
     com.maisha.game.data.model.FameTier.UNKNOWN -> stringResource(R.string.fame_tier_unknown)
 }
 
-@Composable
-private fun DynastyScoreChip(score: Int, titleKey: String) {
-    val titleRes = when (titleKey) {
-        "dynasty_title_legend" -> R.string.dynasty_title_legend
-        "dynasty_title_powerhouse" -> R.string.dynasty_title_powerhouse
-        "dynasty_title_rising" -> R.string.dynasty_title_rising
-        "dynasty_title_rooted" -> R.string.dynasty_title_rooted
-        else -> R.string.dynasty_title_seedling
-    }
-    Card(
-        modifier = Modifier.fillMaxWidth(),
-        shape = MaishaRadius.cardShape,
-        colors = CardDefaults.cardColors(
-            containerColor = GoldAccent.copy(alpha = 0.12f)
-        )
-    ) {
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 12.dp, vertical = 10.dp),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Column {
-                Text(
-                    text = stringResource(R.string.section_dynasty_score),
-                    style = MaterialTheme.typography.labelMedium,
-                    color = GoldAccent,
-                    fontWeight = FontWeight.SemiBold
-                )
-                Text(
-                    text = stringResource(titleRes),
-                    style = MaterialTheme.typography.bodySmall
-                )
-            }
-            Text(
-                text = stringResource(R.string.format_dynasty_score, score),
-                style = MaterialTheme.typography.titleSmall,
-                fontWeight = FontWeight.Bold,
-                color = GoldAccent
-            )
-        }
-    }
-}

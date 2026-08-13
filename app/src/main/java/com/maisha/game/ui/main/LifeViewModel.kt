@@ -42,6 +42,9 @@ import com.maisha.game.domain.EventLogCap
 import com.maisha.game.domain.YearQuest
 import com.maisha.game.domain.YearQuestEngine
 import com.maisha.game.domain.YearQuestProgress
+import com.maisha.game.domain.YearRecapBuilder
+import com.maisha.game.domain.LeisureActivity
+import com.maisha.game.domain.LeisureResult
 import com.maisha.game.domain.FinanceEngine
 import com.maisha.game.domain.GameEngine
 import com.maisha.game.domain.GiftTier
@@ -123,7 +126,11 @@ data class LifeUiState(
     val yearQuests: List<YearQuest> = emptyList(),
     val yearQuestProgress: List<YearQuestProgress> = emptyList(),
     val dynastyScore: Int = 0,
-    val dynastyTitleKey: String = "dynasty_title_seedling"
+    val dynastyTitleKey: String = "dynasty_title_seedling",
+    /** Ephemeral Life-tab toast (quest progress, etc.). */
+    val lifePulseMessage: String? = null,
+    /** Localized bullets for the post–Age Up recap strip; not persisted. */
+    val yearRecapLines: List<String> = emptyList()
 )
 
 @HiltViewModel
@@ -147,6 +154,12 @@ class LifeViewModel @Inject constructor(
         ?: 0
 
     private var triggeredEventIds: Set<String> = emptySet()
+
+    /** Character stats at the start of the current quest year (in-memory only). */
+    private var yearStartSnapshot: Character? = null
+
+    /** Skip mid-year quest refresh while Age Up is rewriting quests + snapshot. */
+    private var suppressQuestRefresh: Boolean = false
 
     private val _uiState = MutableStateFlow(LifeUiState())
     val uiState: StateFlow<LifeUiState> = _uiState.asStateFlow()
@@ -173,8 +186,11 @@ class LifeViewModel @Inject constructor(
                     }
                     if (character.activeYearQuests.isEmpty() && loadedQuests.isNotEmpty()) {
                         character = character.copy(activeYearQuests = loadedQuests)
+                        suppressQuestRefresh = true
                         persist(character)
+                        suppressQuestRefresh = false
                     }
+                    yearStartSnapshot = character
                     _uiState.update {
                         it.copy(
                             character = character,
@@ -187,6 +203,7 @@ class LifeViewModel @Inject constructor(
                             yearQuestProgress = emptyList()
                         ).withDynasty(character, financeEngine.calculateNetWorth(character))
                     }
+                    refreshYearQuestProgress(character)
                     if (character.alive) {
                         introResult?.let { applyAgeUpResult(character, it, persistAge = false) }
                     }
@@ -208,6 +225,7 @@ class LifeViewModel @Inject constructor(
 
         viewModelScope.launch {
             _uiState.update { it.copy(isAgingUp = true) }
+            suppressQuestRefresh = true
             val moneyBefore = character.stats.money
             val hadJob = character.career.currentJob != null
             val educationBefore = character.education.stage
@@ -216,10 +234,11 @@ class LifeViewModel @Inject constructor(
             val ageBefore = character.age
             val jobLevelBefore = character.career.currentJob?.level ?: 0
             val activeQuests = character.activeYearQuests.ifEmpty { _uiState.value.yearQuests }
+            val snapshot = yearStartSnapshot ?: character
+            val questProgress = yearQuestEngine.evaluate(activeQuests, snapshot, character)
+            val completedQuests = questProgress.filter { it.completed }
             val progress = achievementRepository.getProgressSnapshot()
             val outcome = gameEngine.ageUp(character, triggeredEventIds, progress, slotId)
-            val questProgress = yearQuestEngine.evaluate(activeQuests, character, outcome.character)
-            val completedQuests = questProgress.filter { it.completed }
             var rewardedCharacter = yearQuestEngine.applyRewards(outcome.character, completedQuests)
             rewardedCharacter = yearQuestEngine.applyStreak(rewardedCharacter, activeQuests, questProgress)
             val nextQuests = yearQuestEngine.generate(rewardedCharacter)
@@ -229,6 +248,19 @@ class LifeViewModel @Inject constructor(
                 enqueueAchievementDialogs(outcome.newlyUnlockedAchievements)
             }
             applyAgeUpResult(rewardedCharacter, outcome.result, persistAge = true)
+            yearStartSnapshot = rewardedCharacter
+            val jobLevelAfter = rewardedCharacter.career.currentJob?.level ?: 0
+            val promoted = jobLevelAfter > jobLevelBefore
+            val recapLines = formatYearRecapLines(
+                YearRecapBuilder.build(
+                    before = character,
+                    after = outcome.character,
+                    promoted = promoted,
+                    questsCompleted = completedQuests.size,
+                    questStreak = rewardedCharacter.questYearStreak
+                ),
+                rewardedCharacter.countryCode
+            )
             val statDeltas = buildStatDeltas(statsBefore, rewardedCharacter.stats) +
                 buildNetWorthDelta(
                     before = netWorthBefore,
@@ -240,18 +272,19 @@ class LifeViewModel @Inject constructor(
             ) {
                 enqueueCelebration(CelebrationType.GRADUATION)
             }
-            val jobLevelAfter = rewardedCharacter.career.currentJob?.level ?: 0
-            if (jobLevelAfter > jobLevelBefore) {
+            if (promoted) {
                 enqueueCelebration(CelebrationType.PROMOTION)
             }
             if (completedQuests.isNotEmpty()) {
                 enqueueCelebration(CelebrationType.YEAR_QUEST)
+                val pulse = context.getString(
+                    R.string.msg_year_quests_complete,
+                    completedQuests.sumOf { q -> q.quest.rewardKarma }
+                )
                 _uiState.update {
                     it.copy(
-                        actionMessage = context.getString(
-                            R.string.msg_year_quests_complete,
-                            completedQuests.sumOf { q -> q.quest.rewardKarma }
-                        )
+                        lifePulseMessage = pulse,
+                        actionMessage = pulse
                     )
                 }
             }
@@ -267,6 +300,7 @@ class LifeViewModel @Inject constructor(
             when (rewardedCharacter.age) {
                 18 -> if (ageBefore < 18) enqueueCelebration(CelebrationType.AGE_MILESTONE_18)
                 50 -> if (ageBefore < 50) enqueueCelebration(CelebrationType.AGE_MILESTONE_50)
+                75 -> if (ageBefore < 75) enqueueCelebration(CelebrationType.AGE_MILESTONE_75)
                 100 -> if (ageBefore < 100) enqueueCelebration(CelebrationType.AGE_MILESTONE_100)
             }
             if (statDeltas.isNotEmpty()) {
@@ -296,9 +330,11 @@ class LifeViewModel @Inject constructor(
             _uiState.update { state ->
                 state.copy(
                     yearQuests = nextQuests,
-                    yearQuestProgress = questProgress
+                    yearQuestProgress = emptyList(),
+                    yearRecapLines = recapLines
                 ).withDynasty(rewardedCharacter, financeEngine.calculateNetWorth(rewardedCharacter))
             }
+            suppressQuestRefresh = false
             val earnedInterstitialSlot = rewardedCharacter.alive &&
                 adFrequencyController.recordAgeUpAndShouldShowInterstitial()
             _uiState.update { state ->
@@ -2028,6 +2064,95 @@ class LifeViewModel @Inject constructor(
 
     private suspend fun persist(character: Character) {
         characterRepository.saveGame(slotId, character, triggeredEventIds)
+        if (!suppressQuestRefresh) {
+            refreshYearQuestProgress(character)
+        }
+    }
+
+    /** Mid-year quest progress vs [yearStartSnapshot]; may set [LifeUiState.lifePulseMessage]. */
+    fun refreshYearQuestProgress(character: Character? = _uiState.value.character) {
+        val current = character ?: return
+        val quests = current.activeYearQuests.ifEmpty { _uiState.value.yearQuests }
+        if (quests.isEmpty()) {
+            _uiState.update {
+                it.copy(yearQuests = emptyList(), yearQuestProgress = emptyList())
+            }
+            return
+        }
+        val snapshot = yearStartSnapshot ?: current.also { yearStartSnapshot = it }
+        val previousDone = _uiState.value.yearQuestProgress
+            .filter { it.completed }
+            .map { it.quest.kind }
+            .toSet()
+        val progress = yearQuestEngine.evaluate(quests, snapshot, current)
+        val newlyDone = progress.filter { it.completed && it.quest.kind !in previousDone }
+        _uiState.update { state ->
+            state.copy(
+                yearQuests = quests,
+                yearQuestProgress = progress,
+                lifePulseMessage = when {
+                    newlyDone.isEmpty() || state.isAgingUp -> state.lifePulseMessage
+                    else -> context.getString(
+                        R.string.msg_year_quest_midyear_complete,
+                        newlyDone.size
+                    )
+                }
+            )
+        }
+    }
+
+    fun onLifePulseMessageDismissed() {
+        _uiState.update { it.copy(lifePulseMessage = null) }
+    }
+
+    fun onYearRecapDismissed() {
+        _uiState.update { it.copy(yearRecapLines = emptyList()) }
+    }
+
+    private fun formatYearRecapLines(
+        facts: List<YearRecapBuilder.Fact>,
+        countryCode: String
+    ): List<String> = facts.map { fact ->
+        when (fact.type) {
+            YearRecapBuilder.FactType.CASH_UP -> context.getString(
+                R.string.year_recap_cash_up,
+                formatMoney(fact.value, countryCode)
+            )
+            YearRecapBuilder.FactType.CASH_DOWN -> context.getString(
+                R.string.year_recap_cash_down,
+                formatMoney(fact.value, countryCode)
+            )
+            YearRecapBuilder.FactType.SAVINGS_INTEREST -> context.getString(
+                R.string.year_recap_savings_interest,
+                formatMoney(fact.value, countryCode)
+            )
+            YearRecapBuilder.FactType.PORTFOLIO_UP -> context.getString(
+                R.string.year_recap_portfolio_up,
+                formatMoney(fact.value, countryCode)
+            )
+            YearRecapBuilder.FactType.PORTFOLIO_DOWN -> context.getString(
+                R.string.year_recap_portfolio_down,
+                formatMoney(fact.value, countryCode)
+            )
+            YearRecapBuilder.FactType.VISA_TICK -> context.getString(
+                R.string.year_recap_visa_tick,
+                fact.value
+            )
+            YearRecapBuilder.FactType.CULTURE_SHOCK ->
+                context.getString(R.string.year_recap_culture_shock)
+            YearRecapBuilder.FactType.ILLNESS ->
+                context.getString(R.string.year_recap_illness)
+            YearRecapBuilder.FactType.PROMOTION ->
+                context.getString(R.string.year_recap_promotion)
+            YearRecapBuilder.FactType.QUEST_STREAK -> context.getString(
+                R.string.year_recap_quest_streak,
+                fact.value
+            )
+            YearRecapBuilder.FactType.QUESTS_DONE -> context.getString(
+                R.string.year_recap_quests_done,
+                fact.value
+            )
+        }
     }
 
     private fun crimeTypeLabel(crimeType: CrimeType): String = when (crimeType) {
@@ -2064,6 +2189,43 @@ class LifeViewModel @Inject constructor(
                 is GameEngine.VolunteerResult.Ineligible -> {
                     _uiState.update {
                         it.copy(actionMessage = context.getString(R.string.msg_philanthropy_ineligible))
+                    }
+                }
+            }
+        }
+    }
+
+    fun onPerformLeisure(activity: LeisureActivity) {
+        val character = _uiState.value.character ?: return
+        if (!character.alive) return
+        viewModelScope.launch {
+            when (val result = gameEngine.performLeisure(character, activity)) {
+                is LeisureResult.Success -> {
+                    persist(result.character)
+                    processMidLifeAchievements(result.character)
+                    val msgRes = when (result.activity) {
+                        LeisureActivity.NIGHT_OUT -> R.string.msg_leisure_night_out
+                        LeisureActivity.NATURE_DAY -> R.string.msg_leisure_nature_day
+                        LeisureActivity.CITY_SHOW -> R.string.msg_leisure_city_show
+                        LeisureActivity.SPA_DAY -> R.string.msg_leisure_spa_day
+                    }
+                    _uiState.update {
+                        it.copy(
+                            character = result.character,
+                            actionMessage = context.getString(msgRes),
+                            netWorth = financeEngine.calculateNetWorth(result.character),
+                            headerExpression = ExpressionResolver.resolveExpression(result.character, null)
+                        )
+                    }
+                }
+                LeisureResult.InsufficientFunds -> {
+                    _uiState.update {
+                        it.copy(actionMessage = context.getString(R.string.msg_leisure_cannot_afford))
+                    }
+                }
+                LeisureResult.Ineligible -> {
+                    _uiState.update {
+                        it.copy(actionMessage = context.getString(R.string.msg_leisure_ineligible))
                     }
                 }
             }

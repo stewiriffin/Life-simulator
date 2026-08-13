@@ -305,7 +305,10 @@ fun MaishaNavHost(
                 onVolunteer = viewModel::onVolunteer,
                 onDonateToCharity = viewModel::onDonateToCharity,
                 donationTiers = viewModel.donationTiers(),
+                onPerformLeisure = viewModel::onPerformLeisure,
                 onActionMessageDismissed = viewModel::onActionMessageDismissed,
+                onLifePulseMessageDismissed = viewModel::onLifePulseMessageDismissed,
+                onYearRecapDismissed = viewModel::onYearRecapDismissed,
                 onViewCharacterStats = {
                     navController.navigate(Routes.characterStats(slotId))
                 },

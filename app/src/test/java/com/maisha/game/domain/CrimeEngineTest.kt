@@ -129,11 +129,12 @@ class CrimeEngineTest {
             education = EducationState(stage = SchoolStage.GRADUATED, gpa = 3.0f),
             criminalRecord = CriminalRecord(hasRecord = true, timesArrested = 1, lastArrestAge = 20)
         )
-        val beforeThreshold = fresh.copy(age = 24)
-        val afterThreshold = fresh.copy(age = 26)
+        // Keep ages well below / above the 5-year clean-streak threshold to reduce RNG flake.
+        val beforeThreshold = fresh.copy(age = 22)
+        val afterThreshold = fresh.copy(age = 30)
         var hiresBefore = 0
         var hiresAfter = 0
-        repeat(400) {
+        repeat(1_200) {
             if (careerEngine.applyForJob(beforeThreshold, "teacher").second is CareerResult.Hired) hiresBefore++
             if (careerEngine.applyForJob(afterThreshold, "teacher").second is CareerResult.Hired) hiresAfter++
         }

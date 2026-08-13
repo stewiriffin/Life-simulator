@@ -10,6 +10,7 @@ enum class CelebrationType {
     YEAR_QUEST,
     AGE_MILESTONE_18,
     AGE_MILESTONE_50,
+    AGE_MILESTONE_75,
     AGE_MILESTONE_100,
     LIFE_MILESTONE,
     BUCKET_LIST,

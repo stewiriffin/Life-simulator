@@ -199,7 +199,8 @@ object TestFixtures {
             politicsEngine = PoliticsEngine(financeEngine),
             legacyEngine = LegacyEngine(MortalityEngine(), financeEngine),
             milestoneEngine = MilestoneEngine(),
-            bucketListEngine = BucketListEngine()
+            bucketListEngine = BucketListEngine(),
+            leisureEngine = LeisureEngine()
         )
     }
 }

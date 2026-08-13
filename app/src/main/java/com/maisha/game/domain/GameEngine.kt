@@ -79,7 +79,8 @@ class GameEngine @Inject constructor(
     private val politicsEngine: PoliticsEngine,
     private val legacyEngine: LegacyEngine,
     private val milestoneEngine: MilestoneEngine,
-    private val bucketListEngine: BucketListEngine
+    private val bucketListEngine: BucketListEngine,
+    private val leisureEngine: LeisureEngine
 ) {
 
     /**
@@ -350,6 +351,12 @@ class GameEngine @Inject constructor(
     fun donationTiers(countryCode: String): List<Int> = DONATION_TIERS_KENYA.map {
         EconomyScaler.scaleAmount(it, countryCode)
     }
+
+    fun leisureCost(activity: LeisureActivity, countryCode: String): Int =
+        leisureEngine.cost(activity, countryCode)
+
+    fun performLeisure(character: Character, activity: LeisureActivity): LeisureResult =
+        leisureEngine.perform(character, activity)
 
     /**
      * Applies a player [choice] from a [LifeEvent]: study/work effort, relationship deltas, crime, doctor,
