@@ -47,6 +47,46 @@ sealed class PartyResult {
     data object InvalidBudget : PartyResult()
 }
 
+sealed class StartDatingResult {
+    data class Success(val character: Character) : StartDatingResult()
+    data object InsufficientFunds : StartDatingResult()
+    data object Ineligible : StartDatingResult()
+}
+
+sealed class HaveChildResult {
+    data class Success(val character: Character) : HaveChildResult()
+    data object NeedSpouse : HaveChildResult()
+    data object InsufficientFunds : HaveChildResult()
+}
+
+sealed class BreakUpResult {
+    data class Success(val character: Character, val wasMarried: Boolean, val settlement: Int) : BreakUpResult()
+    data object NotPartner : BreakUpResult()
+}
+
+sealed class SeekFriendshipResult {
+    data class Success(val character: Character, val friendName: String) : SeekFriendshipResult()
+    data class NoLuck(val character: Character) : SeekFriendshipResult()
+    data object InsufficientFunds : SeekFriendshipResult()
+    data object AlreadySocialized : SeekFriendshipResult()
+    data object FriendsFull : SeekFriendshipResult()
+    data object Ineligible : SeekFriendshipResult()
+}
+
+sealed class PetCareResult {
+    data class Success(val character: Character, val message: String) : PetCareResult()
+    data object InsufficientFunds : PetCareResult()
+    data object AlreadyDone : PetCareResult()
+    data object NotFound : PetCareResult()
+    data object Ineligible : PetCareResult()
+}
+
+enum class PetCareAction {
+    PLAY,
+    FEED,
+    VET
+}
+
 data class PetYearTickResult(val character: Character)
 
 @Singleton
@@ -138,7 +178,9 @@ class RelationshipEngine @Inject constructor(
                 )
             } else {
                 survivors += aged.copy(
-                    relationshipLevel = driftPetBond(aged.relationshipLevel)
+                    relationshipLevel = driftPetBond(aged.relationshipLevel),
+                    playedThisYear = false,
+                    caredThisYear = false
                 )
             }
         }
@@ -367,9 +409,18 @@ class RelationshipEngine @Inject constructor(
         return character.copy(family = updatedFamily)
     }
 
-    /** Adds prospect as dating [RelationType.SPOUSE] (not yet married) with STARTED_DATING milestone. */
-    fun startDating(character: Character, prospect: Person): Character {
-        if (character.hasSpouse()) return character
+    /** Adds prospect as dating [RelationType.SPOUSE] (not yet married); charges a first-date fee. */
+    fun startDating(character: Character, prospect: Person): StartDatingResult {
+        if (!character.alive || character.hasSpouse() || character.age < 18) {
+            return StartDatingResult.Ineligible
+        }
+        if (character.criminalRecord.currentlyIncarcerated ||
+            character.criminalRecord.awaitingTrial
+        ) {
+            return StartDatingResult.Ineligible
+        }
+        val fee = firstDateCost(character)
+        if (character.stats.money < fee) return StartDatingResult.InsufficientFunds
         val partner = prospect.copy(
             relation = RelationType.SPOUSE,
             dateOfPartnership = character.age,
@@ -382,7 +433,168 @@ class RelationshipEngine @Inject constructor(
                 )
             )
         )
-        return character.copy(family = character.family + partner)
+        return StartDatingResult.Success(
+            character.copy(
+                stats = character.stats.copy(money = character.stats.money - fee),
+                family = character.family + partner,
+                eventLog = EventLogCap.prepend(
+                    character.eventLog,
+                    "Started dating ${partner.name} (first date ${formatMoney(fee, character.countryCode)})."
+                )
+            )
+        )
+    }
+
+    fun firstDateCost(character: Character): Int =
+        EconomyScaler.scaleAmount(FIRST_DATE_COST_KENYA, character.countryCode)
+
+    fun childHospitalCost(character: Character): Int =
+        EconomyScaler.scaleAmount(CHILD_HOSPITAL_COST_KENYA, character.countryCode)
+
+    fun divorceSettlementCost(character: Character): Int =
+        EconomyScaler.scaleAmount(DIVORCE_SETTLEMENT_KENYA, character.countryCode)
+
+    fun dateNightCost(character: Character): Int =
+        EconomyScaler.scaleRelationshipCost(DATE_NIGHT_COST_KENYA, character.countryCode, character.age)
+
+    fun seekFriendshipCost(character: Character): Int =
+        EconomyScaler.scaleAmount(SEEK_FRIEND_COST_KENYA, character.countryCode)
+
+    fun petFeedCost(character: Character): Int =
+        EconomyScaler.scaleAmount(PET_FEED_COST_KENYA, character.countryCode)
+
+    fun petVetCost(character: Character): Int =
+        EconomyScaler.scaleAmount(PET_VET_COST_KENYA, character.countryCode)
+
+    fun livingFriendCount(character: Character): Int =
+        character.family.count { it.alive && it.isPlatonicAlly() }
+
+    fun canSeekFriendship(character: Character): Boolean =
+        character.alive &&
+            character.age >= MIN_FRIEND_AGE &&
+            !character.criminalRecord.currentlyIncarcerated &&
+            !character.criminalRecord.awaitingTrial &&
+            !character.lifestyle.socializedThisYear &&
+            livingFriendCount(character) < MAX_FRIENDS
+
+    /**
+     * Paid attempt to meet a new friend this year. Higher success chance than age-up RNG.
+     */
+    fun seekFriendship(character: Character): SeekFriendshipResult {
+        if (!character.alive ||
+            character.age < MIN_FRIEND_AGE ||
+            character.criminalRecord.currentlyIncarcerated ||
+            character.criminalRecord.awaitingTrial
+        ) {
+            return SeekFriendshipResult.Ineligible
+        }
+        if (character.lifestyle.socializedThisYear) return SeekFriendshipResult.AlreadySocialized
+        if (livingFriendCount(character) >= MAX_FRIENDS) return SeekFriendshipResult.FriendsFull
+        val cost = seekFriendshipCost(character)
+        if (character.stats.money < cost) return SeekFriendshipResult.InsufficientFunds
+
+        var updated = character.copy(
+            stats = character.stats.copy(money = character.stats.money - cost),
+            lifestyle = character.lifestyle.copy(socializedThisYear = true)
+        )
+        if (Random.nextFloat() >= SEEK_FRIEND_SUCCESS_CHANCE) {
+            updated = updated.copy(
+                eventLog = EventLogCap.prepend(
+                    updated.eventLog,
+                    "Went out to meet people, but nobody clicked."
+                )
+            )
+            return SeekFriendshipResult.NoLuck(updated)
+        }
+        val friend = PersonGenerator.buildFriend(updated, MIN_FRIEND_AGE)
+        updated = updated.copy(
+            family = updated.family + friend,
+            stats = updated.stats.copy(
+                happiness = clampStat(updated.stats.happiness + 3)
+            ),
+            eventLog = EventLogCap.prepend(
+                updated.eventLog,
+                "You made a new friend: ${friend.name}."
+            )
+        )
+        return SeekFriendshipResult.Success(updated, friend.name)
+    }
+
+    fun careForPet(character: Character, petId: String, action: PetCareAction): PetCareResult {
+        if (!character.alive ||
+            character.criminalRecord.currentlyIncarcerated ||
+            character.criminalRecord.awaitingTrial
+        ) {
+            return PetCareResult.Ineligible
+        }
+        val index = character.pets.indexOfFirst { it.id == petId }
+        if (index < 0) return PetCareResult.NotFound
+        val pet = character.pets[index]
+        return when (action) {
+            PetCareAction.PLAY -> playWithPet(character, index, pet)
+            PetCareAction.FEED -> feedPet(character, index, pet)
+            PetCareAction.VET -> vetPet(character, index, pet)
+        }
+    }
+
+    private fun playWithPet(character: Character, index: Int, pet: Pet): PetCareResult {
+        if (pet.playedThisYear) return PetCareResult.AlreadyDone
+        val updatedPet = pet.copy(
+            relationshipLevel = clampRelationshipLevel(pet.relationshipLevel + 8),
+            playedThisYear = true
+        )
+        val pets = character.pets.toMutableList().also { it[index] = updatedPet }
+        val updated = character.copy(
+            pets = pets,
+            stats = character.stats.copy(
+                happiness = clampStat(character.stats.happiness + 4)
+            ),
+            eventLog = EventLogCap.prepend(
+                character.eventLog,
+                "Played with ${pet.name}."
+            )
+        )
+        return PetCareResult.Success(updated, "Played with ${pet.name}. Bond grew.")
+    }
+
+    private fun feedPet(character: Character, index: Int, pet: Pet): PetCareResult {
+        val cost = petFeedCost(character)
+        if (character.stats.money < cost) return PetCareResult.InsufficientFunds
+        val updatedPet = pet.copy(
+            relationshipLevel = clampRelationshipLevel(pet.relationshipLevel + 5),
+            health = clampStat(pet.health + 6)
+        )
+        val pets = character.pets.toMutableList().also { it[index] = updatedPet }
+        val updated = character.copy(
+            pets = pets,
+            stats = character.stats.copy(money = character.stats.money - cost),
+            eventLog = EventLogCap.prepend(
+                character.eventLog,
+                "Fed ${pet.name} (${formatMoney(cost, character.countryCode)})."
+            )
+        )
+        return PetCareResult.Success(updated, "Fed ${pet.name}.")
+    }
+
+    private fun vetPet(character: Character, index: Int, pet: Pet): PetCareResult {
+        if (pet.caredThisYear) return PetCareResult.AlreadyDone
+        val cost = petVetCost(character)
+        if (character.stats.money < cost) return PetCareResult.InsufficientFunds
+        val updatedPet = pet.copy(
+            health = clampStat(pet.health + 25),
+            relationshipLevel = clampRelationshipLevel(pet.relationshipLevel + 3),
+            caredThisYear = true
+        )
+        val pets = character.pets.toMutableList().also { it[index] = updatedPet }
+        val updated = character.copy(
+            pets = pets,
+            stats = character.stats.copy(money = character.stats.money - cost),
+            eventLog = EventLogCap.prepend(
+                character.eventLog,
+                "Took ${pet.name} to the vet (${formatMoney(cost, character.countryCode)})."
+            )
+        )
+        return PetCareResult.Success(updated, "Vet visit complete for ${pet.name}.")
     }
 
     /**
@@ -430,6 +642,8 @@ class RelationshipEngine @Inject constructor(
             InteractionType.HELP_WITH_HOMEWORK -> applyHelpWithHomework(character, memberIndex, member)
             InteractionType.PAY_ALLOWANCE -> applyPayAllowance(character, memberIndex, member)
             InteractionType.DISCIPLINE -> applyDiscipline(character, memberIndex, member)
+            InteractionType.DATE_NIGHT -> applyDateNight(character, memberIndex, member)
+            InteractionType.MAKE_PEACE -> applyMakePeace(character, memberIndex, member)
         }
     }
 
@@ -479,35 +693,51 @@ class RelationshipEngine @Inject constructor(
         }
     }
 
-    /** Removes spouse from family; larger happiness hit if [Person.isMarried]. */
-    fun breakUpOrDivorce(character: Character, personId: String): Character {
+    /** Removes spouse from family; married splits pay a scaled settlement (clamped to cash on hand). */
+    fun breakUpOrDivorce(character: Character, personId: String): BreakUpResult {
         val memberIndex = character.family.indexOfFirst { it.id == personId }
-        if (memberIndex == -1) return character
+        if (memberIndex == -1) return BreakUpResult.NotPartner
 
         val partner = character.family[memberIndex]
-        if (partner.relation != RelationType.SPOUSE) return character
+        if (partner.relation != RelationType.SPOUSE) return BreakUpResult.NotPartner
 
-        val happinessPenalty = if (partner.isMarried) DIVORCE_HAPPINESS_PENALTY else BREAKUP_HAPPINESS_PENALTY
-        val label = if (partner.isMarried) "Divorced" else "Broke up with"
-        return character.copy(
+        val wasMarried = partner.isMarried
+        val happinessPenalty = if (wasMarried) DIVORCE_HAPPINESS_PENALTY else BREAKUP_HAPPINESS_PENALTY
+        val settlement = if (wasMarried) {
+            divorceSettlementCost(character).coerceAtMost(character.stats.money)
+        } else {
+            0
+        }
+        val label = if (wasMarried) "Divorced" else "Broke up with"
+        val settlementNote = if (settlement > 0) {
+            " Settlement ${formatMoney(settlement, character.countryCode)}."
+        } else {
+            ""
+        }
+        val updated = character.copy(
             family = character.family.filterNot { it.id == personId },
             stats = character.stats.copy(
+                money = character.stats.money - settlement,
                 happiness = clampStat(character.stats.happiness - happinessPenalty)
             ),
             eventLog = EventLogCap.prepend(
                 character.eventLog,
-                "$label ${partner.name} at age ${character.age}."
+                "$label ${partner.name} at age ${character.age}.$settlementNote"
             )
         )
+        return BreakUpResult.Success(updated, wasMarried, settlement)
     }
 
     /**
-     * Adds a newborn child when married; may set [Person.secondaryCountryCode] for cross-country spouses.
+     * Adds a newborn child when married; charges a scaled hospital fee.
      */
-    fun haveChild(character: Character): Character {
+    fun haveChild(character: Character): HaveChildResult {
         val spouse = character.family.firstOrNull {
             it.relation == RelationType.SPOUSE && it.isMarried
-        } ?: return character
+        } ?: return HaveChildResult.NeedSpouse
+
+        val fee = childHospitalCost(character)
+        if (character.stats.money < fee) return HaveChildResult.InsufficientFunds
 
         val gender = if (Random.nextBoolean()) Gender.MALE else Gender.FEMALE
         val isCrossCountry = character.countryCode != spouse.countryCode
@@ -534,10 +764,17 @@ class RelationshipEngine @Inject constructor(
             countryCode = character.countryCode,
             secondaryCountryCode = if (isCrossCountry) spouse.countryCode else null
         )
-        return character.copy(
-            family = character.family + child,
-            stats = character.stats.copy(
-                happiness = clampStat(character.stats.happiness + 5)
+        return HaveChildResult.Success(
+            character.copy(
+                family = character.family + child,
+                stats = character.stats.copy(
+                    money = character.stats.money - fee,
+                    happiness = clampStat(character.stats.happiness + 5)
+                ),
+                eventLog = EventLogCap.prepend(
+                    character.eventLog,
+                    "Welcomed $childName into the family (${formatMoney(fee, character.countryCode)} hospital fees)."
+                )
             )
         )
     }
@@ -948,6 +1185,71 @@ class RelationshipEngine @Inject constructor(
         )
     }
 
+    private fun applyDateNight(
+        character: Character,
+        memberIndex: Int,
+        member: Person
+    ): FamilyInteractionResult {
+        if (member.relation != RelationType.SPOUSE) {
+            return FamilyInteractionResult(character, "Date night is for your partner.")
+        }
+        val cost = dateNightCost(character)
+        if (character.stats.money < cost) {
+            return FamilyInteractionResult(
+                character,
+                "You need ${formatMoney(cost, character.countryCode)} for a date night."
+            )
+        }
+        val updatedMember = member.copy(
+            relationshipLevel = clampRelationshipLevel(member.relationshipLevel + 12)
+        )
+        val updated = commitMemberUpdate(
+            character = character.copy(
+                stats = character.stats.copy(
+                    money = character.stats.money - cost,
+                    happiness = clampStat(character.stats.happiness + 6)
+                )
+            ),
+            memberIndex = memberIndex,
+            updatedMember = updatedMember,
+            interactionType = InteractionType.DATE_NIGHT,
+            milestoneKind = MilestoneKind.QUALITY_TIME,
+            subjectName = member.name,
+            recordFirstQualityTime = true
+        )
+        return FamilyInteractionResult(
+            updated,
+            "Date night with ${member.name} (${formatMoney(cost, character.countryCode)})."
+        )
+    }
+
+    private fun applyMakePeace(
+        character: Character,
+        memberIndex: Int,
+        member: Person
+    ): FamilyInteractionResult {
+        if (member.relation != RelationType.ENEMY) {
+            return FamilyInteractionResult(character, "There's no feud to settle here.")
+        }
+        val updatedMember = member.copy(
+            relationshipLevel = clampRelationshipLevel(member.relationshipLevel + 18)
+        )
+        val updated = commitMemberUpdate(
+            character = character.copy(
+                stats = character.stats.copy(
+                    happiness = clampStat(character.stats.happiness + 2)
+                )
+            ),
+            memberIndex = memberIndex,
+            updatedMember = updatedMember,
+            interactionType = InteractionType.MAKE_PEACE
+        )
+        return FamilyInteractionResult(
+            updated,
+            "You reached out to make peace with ${member.name}."
+        )
+    }
+
     private fun applyDiscipline(
         character: Character,
         memberIndex: Int,
@@ -1123,20 +1425,32 @@ class RelationshipEngine @Inject constructor(
         private const val MIN_DATING_AGE = 18
         private const val MIN_FRIEND_AGE = 6
         private const val MAX_FRIEND_AGE = 65
-        private const val MAX_FRIENDS = 4
+        const val MAX_FRIENDS = 4
         private const val SCHOOL_FRIEND_CHANCE = 0.10f
         private const val WORK_FRIEND_CHANCE = 0.07f
+        private const val SEEK_FRIEND_SUCCESS_CHANCE = 0.55f
         private const val BREAKUP_HAPPINESS_PENALTY = 10
         private const val DIVORCE_HAPPINESS_PENALTY = 20
         private const val ASK_MONEY_SUCCESS_CHANCE = 0.7f
         private const val DECAY_POINTS_PER_YEAR = 1
         private const val DECAY_POINTS_COHABITING = 1
 
+        const val FIRST_DATE_COST_KENYA = 2_000
+        const val CHILD_HOSPITAL_COST_KENYA = 25_000
+        const val DIVORCE_SETTLEMENT_KENYA = 40_000
+        const val DATE_NIGHT_COST_KENYA = 8_000
+        const val SEEK_FRIEND_COST_KENYA = 5_000
+        const val PET_FEED_COST_KENYA = 1_500
+        const val PET_VET_COST_KENYA = 8_000
+
         fun allowanceCost(character: Character): Int =
             EconomyScaler.scaleAmount(ALLOWANCE_BASE_COST_KENYA, character.countryCode)
 
         fun isMinorChild(person: Person): Boolean =
             person.relation == RelationType.CHILD && person.alive && person.age < MINOR_CHILD_MAX_AGE
+
+        fun partyBudgetNiceKenya(): Int =
+            (PARTY_BUDGET_MIN_KENYA + PARTY_BUDGET_MAX_KENYA) / 2
     }
 
     fun allowanceCost(character: Character): Int = Companion.allowanceCost(character)

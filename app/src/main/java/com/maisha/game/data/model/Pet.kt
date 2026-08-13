@@ -23,5 +23,9 @@ data class Pet(
     val species: PetSpecies,
     val age: Int = 0,
     val health: Int = 100,
-    val relationshipLevel: Int = 60
+    val relationshipLevel: Int = 60,
+    /** Meaningful play done this in-game year. */
+    val playedThisYear: Boolean = false,
+    /** Vet visit done this in-game year. */
+    val caredThisYear: Boolean = false
 )

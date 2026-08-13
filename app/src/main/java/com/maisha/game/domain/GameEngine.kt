@@ -113,6 +113,11 @@ class GameEngine @Inject constructor(
         )
         updatedCharacter = applyAvatarVisualEvolution(updatedCharacter, previousAge)
         updatedCharacter = socialMediaEngine.resetYearlyFlags(updatedCharacter)
+        if (updatedCharacter.lifestyle.socializedThisYear) {
+            updatedCharacter = updatedCharacter.copy(
+                lifestyle = updatedCharacter.lifestyle.copy(socializedThisYear = false)
+            )
+        }
         val immigrationTick = relocationEngine.tickImmigrationYear(updatedCharacter)
         updatedCharacter = immigrationTick.character
         var decayNotices = emptyList<com.maisha.game.data.model.RelationshipDecayNotice>()
@@ -392,7 +397,11 @@ class GameEngine @Inject constructor(
         }
 
         if (choice.triggersHaveChild) {
-            updatedCharacter = relationshipEngine.haveChild(updatedCharacter)
+            when (val birth = relationshipEngine.haveChild(updatedCharacter)) {
+                is HaveChildResult.Success -> updatedCharacter = birth.character
+                HaveChildResult.NeedSpouse,
+                HaveChildResult.InsufficientFunds -> Unit
+            }
         }
 
         if (choice.triggersCrime != null) {
@@ -723,7 +732,7 @@ class GameEngine @Inject constructor(
         relationshipEngine.findDatingProspects(character)
 
     /** Delegates to [RelationshipEngine.startDating]. */
-    fun startDating(character: Character, prospect: Person): Character =
+    fun startDating(character: Character, prospect: Person): StartDatingResult =
         relationshipEngine.startDating(character, prospect)
 
     /** Delegates to [RelationshipEngine.proposeMarriage]. */
@@ -731,12 +740,37 @@ class GameEngine @Inject constructor(
         relationshipEngine.proposeMarriage(character, personId)
 
     /** Delegates to [RelationshipEngine.breakUpOrDivorce]. */
-    fun breakUpOrDivorce(character: Character, personId: String): Character =
+    fun breakUpOrDivorce(character: Character, personId: String): BreakUpResult =
         relationshipEngine.breakUpOrDivorce(character, personId)
 
     /** Delegates to [RelationshipEngine.haveChild]. */
-    fun haveChild(character: Character): Character =
+    fun haveChild(character: Character): HaveChildResult =
         relationshipEngine.haveChild(character)
+
+    fun seekFriendship(character: Character): SeekFriendshipResult =
+        relationshipEngine.seekFriendship(character)
+
+    fun careForPet(character: Character, petId: String, action: PetCareAction): PetCareResult =
+        relationshipEngine.careForPet(character, petId, action)
+
+    fun firstDateCost(character: Character): Int = relationshipEngine.firstDateCost(character)
+
+    fun childHospitalCost(character: Character): Int = relationshipEngine.childHospitalCost(character)
+
+    fun divorceSettlementCost(character: Character): Int =
+        relationshipEngine.divorceSettlementCost(character)
+
+    fun dateNightCost(character: Character): Int = relationshipEngine.dateNightCost(character)
+
+    fun seekFriendshipCost(character: Character): Int =
+        relationshipEngine.seekFriendshipCost(character)
+
+    fun petFeedCost(character: Character): Int = relationshipEngine.petFeedCost(character)
+
+    fun petVetCost(character: Character): Int = relationshipEngine.petVetCost(character)
+
+    fun canSeekFriendship(character: Character): Boolean =
+        relationshipEngine.canSeekFriendship(character)
 
     /** Delegates to [RelationshipEngine.applyLegacyFamilyMilestones]. */
     fun applyLegacyFamilyMilestones(character: Character): Character =

@@ -13,8 +13,6 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
@@ -24,13 +22,17 @@ import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
 import androidx.compose.runtime.key
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
@@ -46,6 +48,7 @@ import com.maisha.game.data.model.PetSpecies
 import com.maisha.game.data.model.RelationType
 import com.maisha.game.domain.GiftTier
 import com.maisha.game.domain.InteractionType
+import com.maisha.game.domain.PetCareAction
 import com.maisha.game.domain.RelationshipEngine
 import com.maisha.game.domain.hasSpouse
 import com.maisha.game.domain.isMarried
@@ -59,6 +62,9 @@ import com.maisha.game.ui.components.countryDisplayName
 import com.maisha.game.ui.components.DismissibleTipCard
 import com.maisha.game.ui.components.EmptyStateCard
 import com.maisha.game.ui.components.PersonAvatar
+import com.maisha.game.ui.components.PetDetailSheet
+import com.maisha.game.ui.components.StatBar
+import com.maisha.game.ui.components.StatType
 import com.maisha.game.ui.components.rememberConfirmableAction
 import com.maisha.game.ui.illustrations.EmptyStateIllustration
 import com.maisha.game.ui.theme.AppIcons
@@ -66,7 +72,9 @@ import com.maisha.game.ui.components.PersonCard
 import com.maisha.game.ui.components.PersonDetailSheet
 import com.maisha.game.ui.components.PetCard
 import com.maisha.game.ui.theme.AccentPink
+import com.maisha.game.ui.theme.CreamMuted
 import com.maisha.game.ui.theme.GoldAccent
+import com.maisha.game.ui.theme.InkTertiary
 import com.maisha.game.ui.theme.MaishaSpacing
 import com.maisha.game.ui.theme.NavyDeep
 import com.maisha.game.util.formatMoney
@@ -84,9 +92,13 @@ fun FamilyScreen(
     snackbarHostState: SnackbarHostState,
     onMemberClick: (Person) -> Unit,
     onMemberDismiss: () -> Unit,
+    onPetClick: (Pet) -> Unit,
+    onPetDismiss: () -> Unit,
+    onPetCare: (String, PetCareAction) -> Unit,
     onInteraction: (String, InteractionType, GiftTier?) -> Unit,
     onMessageDismissed: () -> Unit,
     onFindDate: () -> Unit,
+    onSeekFriendship: () -> Unit,
     onDismissDatingProspects: () -> Unit,
     onStartDating: (Person) -> Unit,
     onPropose: (String) -> Unit,
@@ -99,14 +111,60 @@ fun FamilyScreen(
     modifier: Modifier = Modifier
 ) {
     val partyConfirm = rememberConfirmableAction<Int>()
-    val partyBudget = EconomyScaler.scaleAmount(
+    var showPartyTiers by remember { mutableStateOf(false) }
+    val partyModest = EconomyScaler.scaleAmount(
         RelationshipEngine.PARTY_BUDGET_MIN_KENYA,
         character.countryCode
     )
+    val partyNice = EconomyScaler.scaleAmount(
+        RelationshipEngine.partyBudgetNiceKenya(),
+        character.countryCode
+    )
+    val partyLavish = EconomyScaler.scaleAmount(
+        RelationshipEngine.PARTY_BUDGET_MAX_KENYA,
+        character.countryCode
+    )
+    val dateFee = EconomyScaler.scaleAmount(
+        RelationshipEngine.FIRST_DATE_COST_KENYA,
+        character.countryCode
+    )
+    val seekCost = EconomyScaler.scaleAmount(
+        RelationshipEngine.SEEK_FRIEND_COST_KENYA,
+        character.countryCode
+    )
+    val feedCost = EconomyScaler.scaleAmount(
+        RelationshipEngine.PET_FEED_COST_KENYA,
+        character.countryCode
+    )
+    val vetCost = EconomyScaler.scaleAmount(
+        RelationshipEngine.PET_VET_COST_KENYA,
+        character.countryCode
+    )
+    val childCost = EconomyScaler.scaleAmount(
+        RelationshipEngine.CHILD_HOSPITAL_COST_KENYA,
+        character.countryCode
+    )
+    val divorceCost = EconomyScaler.scaleAmount(
+        RelationshipEngine.DIVORCE_SETTLEMENT_KENYA,
+        character.countryCode
+    )
+    val dateNightCost = EconomyScaler.scaleRelationshipCost(
+        RelationshipEngine.DATE_NIGHT_COST_KENYA,
+        character.countryCode,
+        character.age
+    )
+    val friendCount = character.family.count { it.alive && it.isPlatonicAlly() }
     val canHostParty = character.alive &&
         character.family.any {
             it.alive && (it.isPlatonicAlly() || it.relation == RelationType.SIBLING)
         }
+    val canMeetPeople = character.alive &&
+        character.age >= 6 &&
+        !character.lifestyle.socializedThisYear &&
+        friendCount < RelationshipEngine.MAX_FRIENDS &&
+        !character.criminalRecord.currentlyIncarcerated &&
+        !character.criminalRecord.awaitingTrial
+
     LaunchedEffect(uiState.familyInteractionMessage) {
         uiState.familyInteractionMessage?.let { message ->
             snackbarHostState.showSnackbar(message)
@@ -142,17 +200,26 @@ fun FamilyScreen(
             it.relation != RelationType.BEST_FRIEND &&
             it.relation != RelationType.ENEMY
     }
-    val familyMembers = parents + siblings + partner + children
 
     ConfirmableActionHost(
         state = partyConfirm,
         onConfirmed = { budget -> onThrowParty(budget) }
     ) { budget, onConfirm, onDismiss ->
+        val estimatedBoost = run {
+            val minB = partyModest.coerceAtLeast(1)
+            val maxB = partyLavish.coerceAtLeast(minB + 1)
+            val t = ((budget - minB).toFloat() / (maxB - minB)).coerceIn(0f, 1f)
+            (RelationshipEngine.PARTY_BOOST_MIN +
+                (RelationshipEngine.PARTY_BOOST_MAX - RelationshipEngine.PARTY_BOOST_MIN) * t)
+                .toInt()
+                .coerceIn(RelationshipEngine.PARTY_BOOST_MIN, RelationshipEngine.PARTY_BOOST_MAX)
+        }
         ConfirmActionDialog(
             title = stringResource(R.string.dialog_throw_party_title),
             description = stringResource(
-                R.string.dialog_throw_party_body,
-                formatMoney(budget, character.countryCode)
+                R.string.dialog_throw_party_tier_body,
+                formatMoney(budget, character.countryCode),
+                estimatedBoost
             ),
             confirmLabel = stringResource(R.string.btn_host_party),
             severity = ConfirmSeverity.NEUTRAL,
@@ -162,209 +229,176 @@ fun FamilyScreen(
     }
 
     Box(modifier = modifier.fillMaxSize()) {
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .padding(horizontal = MaishaSpacing.md, vertical = MaishaSpacing.sm)
-    ) {
-        Text(
-            text = stringResource(R.string.screen_relationships),
-            style = MaterialTheme.typography.headlineSmall,
-            fontWeight = FontWeight.Bold
-        )
-        Text(
-            text = stringResource(R.string.format_family_member_count, character.family.size),
-            style = MaterialTheme.typography.bodySmall,
-            color = MaterialTheme.colorScheme.onSurfaceVariant
-        )
-
-        Spacer(modifier = Modifier.height(10.dp))
-
-        val showDatingTip = uiState.tipsLoaded &&
-            OnboardingTips.FAMILY_DATING !in uiState.seenTipIds &&
-            !character.hasSpouse()
-        if (showDatingTip) {
-            DismissibleTipCard(
-                text = stringResource(R.string.tip_family_dating),
-                onDismiss = onDismissFamilyDatingTip,
-                modifier = Modifier.padding(bottom = 10.dp)
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(horizontal = MaishaSpacing.md, vertical = MaishaSpacing.sm)
+        ) {
+            Text(
+                text = stringResource(R.string.screen_relationships),
+                style = MaterialTheme.typography.headlineSmall,
+                fontWeight = FontWeight.Bold
             )
-        }
 
-        val showDetailTip = uiState.tipsLoaded &&
-            OnboardingTips.FAMILY_DETAIL !in uiState.seenTipIds &&
-            character.family.isNotEmpty()
-        if (showDetailTip) {
-            DismissibleTipCard(
-                text = stringResource(R.string.tip_family_detail),
-                onDismiss = onDismissFamilyDetailTip,
-                modifier = Modifier.padding(bottom = 10.dp)
-            )
-        }
+            Spacer(modifier = Modifier.height(8.dp))
 
-        if (character.age >= 18 && !character.hasSpouse()) {
-            Button(
-                onClick = onFindDate,
-                modifier = Modifier.fillMaxWidth(),
-                shape = RoundedCornerShape(14.dp),
-                colors = ButtonDefaults.buttonColors(
-                    containerColor = AccentPink,
-                    contentColor = NavyDeep
-                )
-            ) {
-                Icon(
-                    imageVector = AppIcons.Family,
-                    contentDescription = null
-                )
-                Text(
-                    text = "  ${stringResource(R.string.btn_find_date)}",
-                    fontWeight = FontWeight.SemiBold
-                )
-            }
-            Spacer(modifier = Modifier.height(10.dp))
-        }
-
-        if (character.family.isEmpty() && character.pets.isEmpty()) {
-            EmptyStateCard(
-                illustration = EmptyStateIllustration.FAMILY,
-                title = stringResource(R.string.empty_family_title),
-                message = stringResource(R.string.empty_family),
-                actionLabel = if (character.age >= 18 && !character.hasSpouse()) {
-                    stringResource(R.string.btn_find_date)
-                } else {
-                    null
+            SocialSummaryStrip(
+                partnerStatus = when {
+                    character.isMarried() -> stringResource(R.string.social_status_married)
+                    character.hasSpouse() -> stringResource(R.string.social_status_dating)
+                    else -> stringResource(R.string.social_status_single)
                 },
-                onAction = if (character.age >= 18 && !character.hasSpouse()) onFindDate else null,
-                modifier = Modifier.padding(top = MaishaSpacing.sm)
+                friendCount = friendCount,
+                maxFriends = RelationshipEngine.MAX_FRIENDS,
+                petCount = character.pets.size
             )
-        } else {
-            LazyColumn(
-                modifier = Modifier.fillMaxSize(),
-                verticalArrangement = Arrangement.spacedBy(8.dp)
-            ) {
-                if (familyMembers.isNotEmpty()) {
-                    item(contentType = FamilyListContentType.SectionHeader) {
-                        FamilySectionHeader(stringResource(R.string.section_family))
-                    }
+
+            Spacer(modifier = Modifier.height(10.dp))
+
+            val showDatingTip = uiState.tipsLoaded &&
+                OnboardingTips.FAMILY_DATING !in uiState.seenTipIds &&
+                !character.hasSpouse()
+            if (showDatingTip) {
+                DismissibleTipCard(
+                    text = stringResource(R.string.tip_family_dating),
+                    onDismiss = onDismissFamilyDatingTip,
+                    modifier = Modifier.padding(bottom = 10.dp)
+                )
+            }
+
+            val showDetailTip = uiState.tipsLoaded &&
+                OnboardingTips.FAMILY_DETAIL !in uiState.seenTipIds &&
+                character.family.isNotEmpty()
+            if (showDetailTip) {
+                DismissibleTipCard(
+                    text = stringResource(R.string.tip_family_detail),
+                    onDismiss = onDismissFamilyDetailTip,
+                    modifier = Modifier.padding(bottom = 10.dp)
+                )
+            }
+
+            if (character.age >= 18 && !character.hasSpouse()) {
+                Button(
+                    onClick = onFindDate,
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(14.dp),
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = AccentPink,
+                        contentColor = NavyDeep
+                    )
+                ) {
+                    Icon(imageVector = AppIcons.Family, contentDescription = null)
+                    Text(
+                        text = "  ${stringResource(R.string.btn_find_date)}",
+                        fontWeight = FontWeight.SemiBold
+                    )
                 }
-                if (parents.isNotEmpty()) {
-                    item(contentType = FamilyListContentType.SectionHeader) {
-                        FamilySectionHeader(stringResource(R.string.section_parents))
-                    }
-                    items(
-                        parents,
-                        key = { it.id },
-                        contentType = { FamilyListContentType.PersonCard }
-                    ) { member ->
-                        FamilyPersonCard(
-                            member = member,
-                            playerCountryCode = character.countryCode,
-                            onClick = { onMemberClick(member) }
-                        )
-                    }
+                Spacer(modifier = Modifier.height(8.dp))
+            }
+
+            if (canMeetPeople) {
+                OutlinedButton(
+                    onClick = onSeekFriendship,
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(14.dp)
+                ) {
+                    Text(
+                        text = stringResource(
+                            R.string.btn_meet_people,
+                            formatMoney(seekCost, character.countryCode)
+                        ),
+                        fontWeight = FontWeight.SemiBold
+                    )
                 }
-                if (siblings.isNotEmpty()) {
-                    item(contentType = FamilyListContentType.SectionHeader) {
-                        FamilySectionHeader(stringResource(R.string.section_siblings))
+                Spacer(modifier = Modifier.height(10.dp))
+            }
+
+            if (character.family.isEmpty() && character.pets.isEmpty()) {
+                EmptyStateCard(
+                    illustration = EmptyStateIllustration.FAMILY,
+                    title = stringResource(R.string.empty_family_title),
+                    message = stringResource(R.string.empty_family),
+                    actionLabel = if (character.age >= 18 && !character.hasSpouse()) {
+                        stringResource(R.string.btn_find_date)
+                    } else {
+                        null
+                    },
+                    onAction = if (character.age >= 18 && !character.hasSpouse()) onFindDate else null,
+                    modifier = Modifier.padding(top = MaishaSpacing.sm)
+                )
+            } else {
+                LazyColumn(
+                    modifier = Modifier.fillMaxSize(),
+                    verticalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    if (parents.isNotEmpty()) {
+                        item(contentType = FamilyListContentType.SectionHeader) {
+                            FamilySectionHeader(stringResource(R.string.section_parents))
+                        }
+                        items(parents, key = { it.id }) { member ->
+                            FamilyPersonCard(member, character.countryCode) { onMemberClick(member) }
+                        }
                     }
-                    items(
-                        siblings,
-                        key = { it.id },
-                        contentType = { FamilyListContentType.PersonCard }
-                    ) { member ->
-                        FamilyPersonCard(
-                            member = member,
-                            playerCountryCode = character.countryCode,
-                            onClick = { onMemberClick(member) }
-                        )
+                    if (siblings.isNotEmpty()) {
+                        item(contentType = FamilyListContentType.SectionHeader) {
+                            FamilySectionHeader(stringResource(R.string.section_siblings))
+                        }
+                        items(siblings, key = { it.id }) { member ->
+                            FamilyPersonCard(member, character.countryCode) { onMemberClick(member) }
+                        }
                     }
-                }
-                if (partner.isNotEmpty()) {
-                    item(contentType = FamilyListContentType.SectionHeader) {
-                        FamilySectionHeader(stringResource(R.string.section_partner))
+                    if (partner.isNotEmpty()) {
+                        item(contentType = FamilyListContentType.SectionHeader) {
+                            FamilySectionHeader(stringResource(R.string.section_partner))
+                        }
+                        items(partner, key = { it.id }) { member ->
+                            FamilyPersonCard(member, character.countryCode) { onMemberClick(member) }
+                        }
                     }
-                    items(
-                        partner,
-                        key = { it.id },
-                        contentType = { FamilyListContentType.PersonCard }
-                    ) { member ->
-                        FamilyPersonCard(
-                            member = member,
-                            playerCountryCode = character.countryCode,
-                            onClick = { onMemberClick(member) }
-                        )
+                    if (children.isNotEmpty()) {
+                        item(contentType = FamilyListContentType.SectionHeader) {
+                            FamilySectionHeader(stringResource(R.string.section_children))
+                        }
+                        items(children, key = { it.id }) { member ->
+                            FamilyPersonCard(member, character.countryCode) { onMemberClick(member) }
+                        }
                     }
-                }
-                if (children.isNotEmpty()) {
-                    item(contentType = FamilyListContentType.SectionHeader) {
-                        FamilySectionHeader(stringResource(R.string.section_children))
+                    if (socialCircle.isNotEmpty()) {
+                        item(contentType = FamilyListContentType.SectionHeader) {
+                            FamilySectionHeader(stringResource(R.string.section_friends_rivals))
+                        }
+                        items(socialCircle, key = { it.id }) { member ->
+                            FamilyPersonCard(member, character.countryCode) { onMemberClick(member) }
+                        }
                     }
-                    items(
-                        children,
-                        key = { it.id },
-                        contentType = { FamilyListContentType.PersonCard }
-                    ) { member ->
-                        FamilyPersonCard(
-                            member = member,
-                            playerCountryCode = character.countryCode,
-                            onClick = { onMemberClick(member) }
-                        )
+                    if (others.isNotEmpty()) {
+                        item(contentType = FamilyListContentType.SectionHeader) {
+                            FamilySectionHeader(stringResource(R.string.section_other))
+                        }
+                        items(others, key = { it.id }) { member ->
+                            FamilyPersonCard(member, character.countryCode) { onMemberClick(member) }
+                        }
                     }
-                }
-                if (socialCircle.isNotEmpty()) {
-                    item(contentType = FamilyListContentType.SectionHeader) {
-                        FamilySectionHeader(stringResource(R.string.section_friends_rivals))
+                    if (character.pets.isNotEmpty()) {
+                        item(contentType = FamilyListContentType.SectionHeader) {
+                            FamilySectionHeader(stringResource(R.string.section_pets))
+                        }
+                        items(character.pets, key = { it.id }) { pet ->
+                            PetCard(
+                                pet = pet,
+                                speciesLabel = petSpeciesLabel(pet.species),
+                                onClick = { onPetClick(pet) }
+                            )
+                        }
                     }
-                    items(
-                        socialCircle,
-                        key = { it.id },
-                        contentType = { FamilyListContentType.PersonCard }
-                    ) { member ->
-                        FamilyPersonCard(
-                            member = member,
-                            playerCountryCode = character.countryCode,
-                            onClick = { onMemberClick(member) }
-                        )
-                    }
-                }
-                if (others.isNotEmpty()) {
-                    item(contentType = FamilyListContentType.SectionHeader) {
-                        FamilySectionHeader(stringResource(R.string.section_other))
-                    }
-                    items(
-                        others,
-                        key = { it.id },
-                        contentType = { FamilyListContentType.PersonCard }
-                    ) { member ->
-                        FamilyPersonCard(
-                            member = member,
-                            playerCountryCode = character.countryCode,
-                            onClick = { onMemberClick(member) }
-                        )
-                    }
-                }
-                if (character.pets.isNotEmpty()) {
-                    item(contentType = FamilyListContentType.SectionHeader) {
-                        FamilySectionHeader(stringResource(R.string.section_pets))
-                    }
-                    items(
-                        character.pets,
-                        key = { it.id },
-                        contentType = { FamilyListContentType.PersonCard }
-                    ) { pet ->
-                        PetCard(
-                            pet = pet,
-                            speciesLabel = petSpeciesLabel(pet.species)
-                        )
-                    }
+                    item { Spacer(modifier = Modifier.height(72.dp)) }
                 }
             }
         }
-    }
 
         if (canHostParty) {
             FloatingActionButton(
-                onClick = { partyConfirm.request(partyBudget) },
+                onClick = { showPartyTiers = true },
                 modifier = Modifier
                     .align(Alignment.BottomEnd)
                     .padding(MaishaSpacing.md),
@@ -379,8 +413,72 @@ fun FamilyScreen(
         }
     }
 
+    if (showPartyTiers) {
+        val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
+        ModalBottomSheet(
+            onDismissRequest = { showPartyTiers = false },
+            sheetState = sheetState
+        ) {
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(16.dp),
+                verticalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                Text(
+                    text = stringResource(R.string.sheet_party_tiers_title),
+                    style = MaterialTheme.typography.titleLarge,
+                    fontWeight = FontWeight.Bold
+                )
+                PartyTierButton(
+                    label = stringResource(R.string.party_tier_modest),
+                    costLabel = formatMoney(partyModest, character.countryCode),
+                    enabled = character.stats.money >= partyModest
+                ) {
+                    showPartyTiers = false
+                    partyConfirm.request(partyModest)
+                }
+                PartyTierButton(
+                    label = stringResource(R.string.party_tier_nice),
+                    costLabel = formatMoney(partyNice, character.countryCode),
+                    enabled = character.stats.money >= partyNice
+                ) {
+                    showPartyTiers = false
+                    partyConfirm.request(partyNice)
+                }
+                PartyTierButton(
+                    label = stringResource(R.string.party_tier_lavish),
+                    costLabel = formatMoney(partyLavish, character.countryCode),
+                    enabled = character.stats.money >= partyLavish
+                ) {
+                    showPartyTiers = false
+                    partyConfirm.request(partyLavish)
+                }
+                Spacer(modifier = Modifier.height(16.dp))
+            }
+        }
+    }
+
     if (uiState.showDatingProspects) {
         val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
+        val pendingDate = rememberConfirmableAction<Person>()
+        ConfirmableActionHost(
+            state = pendingDate,
+            onConfirmed = { prospect -> onStartDating(prospect) }
+        ) { prospect, onConfirm, onDismiss ->
+            ConfirmActionDialog(
+                title = stringResource(R.string.btn_start_dating),
+                description = stringResource(
+                    R.string.confirm_first_date_body,
+                    prospect.name,
+                    formatMoney(dateFee, character.countryCode)
+                ),
+                confirmLabel = stringResource(R.string.btn_start_dating),
+                severity = ConfirmSeverity.NEUTRAL,
+                onConfirm = onConfirm,
+                onDismiss = onDismiss
+            )
+        }
         ModalBottomSheet(
             onDismissRequest = onDismissDatingProspects,
             sheetState = sheetState
@@ -388,7 +486,8 @@ fun FamilyScreen(
             DatingProspectsSheet(
                 prospects = uiState.datingProspects,
                 playerCountryCode = character.countryCode,
-                onStartDating = onStartDating
+                dateFeeLabel = formatMoney(dateFee, character.countryCode),
+                onStartDating = { pendingDate.request(it) }
             )
         }
     }
@@ -407,12 +506,93 @@ fun FamilyScreen(
                 isIncarcerated = character.criminalRecord.currentlyIncarcerated,
                 isMarried = character.isMarried(),
                 relationLabel = relationLabel(member),
+                dateNightCost = dateNightCost,
+                childHospitalCost = childCost,
+                divorceSettlementCost = divorceCost,
                 onInteraction = { type, giftTier -> onInteraction(member.id, type, giftTier) },
                 onPropose = { onPropose(member.id) },
                 onBreakUp = { onBreakUp(member.id) },
                 onHaveChild = onHaveChild
             )
         }
+    }
+
+    uiState.selectedPet?.let { pet ->
+        val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
+        ModalBottomSheet(
+            onDismissRequest = onPetDismiss,
+            sheetState = sheetState
+        ) {
+            PetDetailSheet(
+                pet = pet,
+                speciesLabel = petSpeciesLabel(pet.species),
+                playerCountryCode = character.countryCode,
+                playerMoney = character.stats.money,
+                feedCost = feedCost,
+                vetCost = vetCost,
+                onCare = { action -> onPetCare(pet.id, action) }
+            )
+        }
+    }
+}
+
+@Composable
+private fun SocialSummaryStrip(
+    partnerStatus: String,
+    friendCount: Int,
+    maxFriends: Int,
+    petCount: Int
+) {
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(14.dp),
+        colors = CardDefaults.cardColors(containerColor = CreamMuted)
+    ) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 12.dp, vertical = 10.dp),
+            horizontalArrangement = Arrangement.SpaceBetween
+        ) {
+            SummaryChip(label = partnerStatus)
+            SummaryChip(
+                label = stringResource(R.string.format_friend_slots, friendCount, maxFriends)
+            )
+            SummaryChip(
+                label = stringResource(R.string.format_pet_count_short, petCount)
+            )
+        }
+    }
+}
+
+@Composable
+private fun SummaryChip(label: String) {
+    Text(
+        text = label,
+        style = MaterialTheme.typography.labelMedium,
+        fontWeight = FontWeight.SemiBold,
+        color = NavyDeep
+    )
+}
+
+@Composable
+private fun PartyTierButton(
+    label: String,
+    costLabel: String,
+    enabled: Boolean,
+    onClick: () -> Unit
+) {
+    Button(
+        onClick = onClick,
+        enabled = enabled,
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(12.dp),
+        colors = ButtonDefaults.buttonColors(
+            containerColor = GoldAccent.copy(alpha = 0.85f),
+            contentColor = NavyDeep
+        )
+    ) {
+        Text("$label · $costLabel", fontWeight = FontWeight.SemiBold)
     }
 }
 
@@ -444,10 +624,10 @@ private fun petSpeciesLabel(species: PetSpecies): String = when (species) {
 @Composable
 private fun FamilySectionHeader(title: String) {
     Text(
-        text = title,
-        style = MaterialTheme.typography.titleSmall,
-        fontWeight = FontWeight.SemiBold,
-        color = MaterialTheme.colorScheme.primary,
+        text = title.uppercase(),
+        style = MaterialTheme.typography.labelMedium,
+        fontWeight = FontWeight.Bold,
+        color = InkTertiary,
         modifier = Modifier.padding(vertical = 4.dp)
     )
 }
@@ -456,6 +636,7 @@ private fun FamilySectionHeader(title: String) {
 private fun DatingProspectsSheet(
     prospects: List<Person>,
     playerCountryCode: String,
+    dateFeeLabel: String,
     onStartDating: (Person) -> Unit
 ) {
     Column(
@@ -470,7 +651,7 @@ private fun DatingProspectsSheet(
             fontWeight = FontWeight.Bold
         )
         Text(
-            text = stringResource(R.string.sheet_dating_prospects_subtitle),
+            text = stringResource(R.string.sheet_dating_prospects_subtitle_fee, dateFeeLabel),
             style = MaterialTheme.typography.bodyMedium,
             color = MaterialTheme.colorScheme.onSurfaceVariant
         )
@@ -486,52 +667,73 @@ private fun DatingProspectsSheet(
                 )
             ) {
                 Column(modifier = Modifier.padding(12.dp)) {
-                    PersonAvatar(
-                        avatarConfig = prospect.avatarConfig,
-                        age = prospect.age,
-                        expression = ExpressionResolver.resolvePersonExpression(prospect),
-                        seed = prospect.id
-                    )
-                    Spacer(modifier = Modifier.height(8.dp))
                     Row(
-                        horizontalArrangement = Arrangement.spacedBy(6.dp),
+                        horizontalArrangement = Arrangement.spacedBy(12.dp),
                         verticalAlignment = Alignment.CenterVertically
                     ) {
-                        if (prospect.countryCode != playerCountryCode) {
-                            CountryFlag(countryCode = prospect.countryCode, size = 18.dp)
+                        PersonAvatar(
+                            avatarConfig = prospect.avatarConfig,
+                            age = prospect.age,
+                            expression = ExpressionResolver.resolvePersonExpression(prospect),
+                            seed = prospect.id
+                        )
+                        Column(modifier = Modifier.weight(1f)) {
+                            Row(
+                                horizontalArrangement = Arrangement.spacedBy(6.dp),
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                CountryFlag(countryCode = prospect.countryCode, size = 16.dp)
+                                Text(
+                                    text = prospect.name,
+                                    style = MaterialTheme.typography.titleSmall,
+                                    fontWeight = FontWeight.SemiBold
+                                )
+                            }
+                            Text(
+                                text = stringResource(
+                                    R.string.format_prospect_from_country,
+                                    countryDisplayName(prospect.countryCode)
+                                ),
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                            Text(
+                                text = stringResource(
+                                    R.string.format_prospect_chemistry,
+                                    stringResource(R.string.format_age, prospect.age),
+                                    prospect.relationshipLevel
+                                ),
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
                         }
-                        Text(
-                            text = prospect.name,
-                            style = MaterialTheme.typography.titleSmall,
-                            fontWeight = FontWeight.SemiBold
-                        )
                     }
-                    if (prospect.countryCode != playerCountryCode) {
-                        Text(
-                            text = stringResource(
-                                R.string.format_prospect_from_country,
-                                countryDisplayName(prospect.countryCode)
-                            ),
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
-                    }
-                    Text(
-                        text = stringResource(
-                            R.string.format_prospect_chemistry,
-                            stringResource(R.string.format_age, prospect.age),
-                            prospect.relationshipLevel
-                        ),
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    Spacer(modifier = Modifier.height(8.dp))
+                    StatBar(
+                        type = StatType.LOOKS,
+                        value = prospect.stats.looks,
+                        label = stringResource(R.string.stat_looks),
+                        showIcon = false
+                    )
+                    StatBar(
+                        type = StatType.SMARTS,
+                        value = prospect.stats.smarts,
+                        label = stringResource(R.string.stat_smarts),
+                        showIcon = false
                     )
                     Spacer(modifier = Modifier.height(8.dp))
                     Button(
                         onClick = { onStartDating(prospect) },
                         modifier = Modifier.fillMaxWidth(),
-                        shape = RoundedCornerShape(10.dp)
+                        shape = RoundedCornerShape(10.dp),
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = AccentPink,
+                            contentColor = NavyDeep
+                        )
                     ) {
-                        Text(stringResource(R.string.btn_start_dating))
+                        Text(
+                            stringResource(R.string.btn_start_dating_fee, dateFeeLabel)
+                        )
                     }
                 }
             }

@@ -46,7 +46,13 @@ import com.maisha.game.domain.FinanceEngine
 import com.maisha.game.domain.GameEngine
 import com.maisha.game.domain.GiftTier
 import com.maisha.game.domain.InteractionType
+import com.maisha.game.domain.BreakUpResult
+import com.maisha.game.domain.HaveChildResult
+import com.maisha.game.domain.PetCareAction
+import com.maisha.game.domain.PetCareResult
 import com.maisha.game.domain.ProposalResult
+import com.maisha.game.domain.SeekFriendshipResult
+import com.maisha.game.domain.StartDatingResult
 import com.maisha.game.domain.PurchaseResult
 import com.maisha.game.domain.RepairResult
 import com.maisha.game.domain.RetirementResult
@@ -90,6 +96,7 @@ data class LifeUiState(
     val isLoading: Boolean = true,
     val isAgingUp: Boolean = false,
     val selectedFamilyMember: Person? = null,
+    val selectedPet: com.maisha.game.data.model.Pet? = null,
     val familyInteractionMessage: String? = null,
     val careerMessage: String? = null,
     val assetsMessage: String? = null,
@@ -858,11 +865,119 @@ class LifeViewModel @Inject constructor(
     }
 
     fun onFamilyMemberSelected(person: Person) {
-        _uiState.update { it.copy(selectedFamilyMember = person, familyInteractionMessage = null) }
+        _uiState.update {
+            it.copy(
+                selectedFamilyMember = person,
+                selectedPet = null,
+                familyInteractionMessage = null
+            )
+        }
     }
 
     fun onFamilyMemberDismissed() {
         _uiState.update { it.copy(selectedFamilyMember = null) }
+    }
+
+    fun onPetSelected(pet: com.maisha.game.data.model.Pet) {
+        _uiState.update {
+            it.copy(
+                selectedPet = pet,
+                selectedFamilyMember = null,
+                familyInteractionMessage = null
+            )
+        }
+    }
+
+    fun onPetDismissed() {
+        _uiState.update { it.copy(selectedPet = null) }
+    }
+
+    fun onPetCare(petId: String, action: PetCareAction) {
+        val character = _uiState.value.character ?: return
+        if (!character.alive) return
+        viewModelScope.launch {
+            when (val result = gameEngine.careForPet(character, petId, action)) {
+                is PetCareResult.Success -> {
+                    persist(result.character)
+                    _uiState.update {
+                        it.copy(
+                            character = result.character,
+                            selectedPet = result.character.pets.find { p -> p.id == petId },
+                            familyInteractionMessage = result.message,
+                            netWorth = financeEngine.calculateNetWorth(result.character)
+                        )
+                    }
+                }
+                PetCareResult.InsufficientFunds -> {
+                    _uiState.update {
+                        it.copy(familyInteractionMessage = context.getString(R.string.msg_pet_cannot_afford))
+                    }
+                }
+                PetCareResult.AlreadyDone -> {
+                    _uiState.update {
+                        it.copy(familyInteractionMessage = context.getString(R.string.msg_pet_already_done))
+                    }
+                }
+                PetCareResult.NotFound, PetCareResult.Ineligible -> {
+                    _uiState.update {
+                        it.copy(familyInteractionMessage = context.getString(R.string.msg_pet_care_ineligible))
+                    }
+                }
+            }
+        }
+    }
+
+    fun onSeekFriendship() {
+        val character = _uiState.value.character ?: return
+        if (!character.alive) return
+        viewModelScope.launch {
+            when (val result = gameEngine.seekFriendship(character)) {
+                is SeekFriendshipResult.Success -> {
+                    persist(result.character)
+                    processMidLifeAchievements(result.character)
+                    _uiState.update {
+                        it.copy(
+                            character = result.character,
+                            relationshipMessage = context.getString(
+                                R.string.msg_new_friend,
+                                result.friendName
+                            ),
+                            netWorth = financeEngine.calculateNetWorth(result.character)
+                        )
+                    }
+                }
+                is SeekFriendshipResult.NoLuck -> {
+                    persist(result.character)
+                    _uiState.update {
+                        it.copy(
+                            character = result.character,
+                            relationshipMessage = context.getString(R.string.msg_meet_people_no_luck),
+                            netWorth = financeEngine.calculateNetWorth(result.character)
+                        )
+                    }
+                }
+                SeekFriendshipResult.InsufficientFunds -> {
+                    _uiState.update {
+                        it.copy(relationshipMessage = context.getString(R.string.msg_meet_people_cannot_afford))
+                    }
+                }
+                SeekFriendshipResult.AlreadySocialized -> {
+                    _uiState.update {
+                        it.copy(relationshipMessage = context.getString(R.string.msg_meet_people_done))
+                    }
+                }
+                SeekFriendshipResult.FriendsFull -> {
+                    _uiState.update {
+                        it.copy(relationshipMessage = context.getString(R.string.msg_meet_people_full))
+                    }
+                }
+                SeekFriendshipResult.Ineligible -> {
+                    _uiState.update {
+                        it.copy(relationshipMessage = context.getString(R.string.msg_meet_people_ineligible))
+                    }
+                }
+            }
+        }
     }
 
     fun onFamilyInteraction(personId: String, type: InteractionType, giftTier: GiftTier? = null) {
@@ -927,16 +1042,36 @@ class LifeViewModel @Inject constructor(
         if (!character.alive) return
 
         viewModelScope.launch {
-            val updatedCharacter = gameEngine.startDating(character, prospect)
-            persist(updatedCharacter)
-            _uiState.update {
-                it.copy(
-                    character = updatedCharacter,
-                    showDatingProspects = false,
-                    datingProspects = emptyList(),
-                    relationshipMessage = context.getString(R.string.msg_started_dating, prospect.name),
-                    netWorth = financeEngine.calculateNetWorth(updatedCharacter)
-                )
+            when (val result = gameEngine.startDating(character, prospect)) {
+                is StartDatingResult.Success -> {
+                    persist(result.character)
+                    _uiState.update {
+                        it.copy(
+                            character = result.character,
+                            showDatingProspects = false,
+                            datingProspects = emptyList(),
+                            relationshipMessage = context.getString(
+                                R.string.msg_started_dating,
+                                prospect.name
+                            ),
+                            netWorth = financeEngine.calculateNetWorth(result.character)
+                        )
+                    }
+                }
+                StartDatingResult.InsufficientFunds -> {
+                    _uiState.update {
+                        it.copy(
+                            relationshipMessage = context.getString(R.string.msg_date_cannot_afford)
+                        )
+                    }
+                }
+                StartDatingResult.Ineligible -> {
+                    _uiState.update {
+                        it.copy(
+                            relationshipMessage = context.getString(R.string.msg_date_ineligible)
+                        )
+                    }
+                }
             }
         }
     }
@@ -972,15 +1107,35 @@ class LifeViewModel @Inject constructor(
         if (!character.alive) return
 
         viewModelScope.launch {
-            val updatedCharacter = gameEngine.breakUpOrDivorce(character, personId)
-            persist(updatedCharacter)
-            _uiState.update {
-                it.copy(
-                    character = updatedCharacter,
-                    selectedFamilyMember = null,
-                    relationshipMessage = context.getString(R.string.msg_breakup),
-                    netWorth = financeEngine.calculateNetWorth(updatedCharacter)
-                )
+            when (val result = gameEngine.breakUpOrDivorce(character, personId)) {
+                is BreakUpResult.Success -> {
+                    persist(result.character)
+                    val message = if (result.wasMarried) {
+                        if (result.settlement > 0) {
+                            context.getString(
+                                R.string.msg_divorce_settlement,
+                                formatMoney(result.settlement, result.character.countryCode)
+                            )
+                        } else {
+                            context.getString(R.string.msg_divorce)
+                        }
+                    } else {
+                        context.getString(R.string.msg_breakup)
+                    }
+                    _uiState.update {
+                        it.copy(
+                            character = result.character,
+                            selectedFamilyMember = null,
+                            relationshipMessage = message,
+                            netWorth = financeEngine.calculateNetWorth(result.character)
+                        )
+                    }
+                }
+                BreakUpResult.NotPartner -> {
+                    _uiState.update {
+                        it.copy(relationshipMessage = context.getString(R.string.msg_breakup))
+                    }
+                }
             }
         }
     }
@@ -990,23 +1145,29 @@ class LifeViewModel @Inject constructor(
         if (!character.alive) return
 
         viewModelScope.launch {
-            val updatedCharacter = gameEngine.haveChild(character)
-            val hadChild = updatedCharacter.family.size > character.family.size
-            persist(updatedCharacter)
-            if (hadChild) {
-                processMidLifeAchievements(updatedCharacter)
-                enqueueCelebration(CelebrationType.CHILD_BORN)
-            }
-            _uiState.update {
-                it.copy(
-                    character = updatedCharacter,
-                    relationshipMessage = if (hadChild) {
-                        context.getString(R.string.msg_child_welcome)
-                    } else {
-                        context.getString(R.string.msg_child_need_marriage)
-                    },
-                    netWorth = financeEngine.calculateNetWorth(updatedCharacter)
-                )
+            when (val result = gameEngine.haveChild(character)) {
+                is HaveChildResult.Success -> {
+                    persist(result.character)
+                    processMidLifeAchievements(result.character)
+                    enqueueCelebration(CelebrationType.CHILD_BORN)
+                    _uiState.update {
+                        it.copy(
+                            character = result.character,
+                            relationshipMessage = context.getString(R.string.msg_child_welcome),
+                            netWorth = financeEngine.calculateNetWorth(result.character)
+                        )
+                    }
+                }
+                HaveChildResult.NeedSpouse -> {
+                    _uiState.update {
+                        it.copy(relationshipMessage = context.getString(R.string.msg_child_need_marriage))
+                    }
+                }
+                HaveChildResult.InsufficientFunds -> {
+                    _uiState.update {
+                        it.copy(relationshipMessage = context.getString(R.string.msg_child_cannot_afford))
+                    }
+                }
             }
         }
     }

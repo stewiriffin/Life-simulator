@@ -88,7 +88,9 @@ object ExpressionResolver {
         com.maisha.game.domain.InteractionType.TRAVEL_TOGETHER,
         com.maisha.game.domain.InteractionType.SPEND_TIME,
         com.maisha.game.domain.InteractionType.HELP_WITH_HOMEWORK,
-        com.maisha.game.domain.InteractionType.PAY_ALLOWANCE -> EventOutcome.Positive(1)
+        com.maisha.game.domain.InteractionType.PAY_ALLOWANCE,
+        com.maisha.game.domain.InteractionType.DATE_NIGHT,
+        com.maisha.game.domain.InteractionType.MAKE_PEACE -> EventOutcome.Positive(1)
         com.maisha.game.domain.InteractionType.PRANK -> EventOutcome.Surprising(1)
         else -> EventOutcome.Neutral
     }

@@ -34,9 +34,12 @@ import com.maisha.game.ui.theme.TealPrimary
 fun PetCard(
     pet: Pet,
     speciesLabel: String,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    onClick: (() -> Unit)? = null
 ) {
     Card(
+        onClick = onClick ?: {},
+        enabled = onClick != null,
         modifier = modifier.fillMaxWidth(),
         shape = MaishaRadius.cardShape,
         colors = CardDefaults.cardColors(

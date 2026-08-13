@@ -30,14 +30,15 @@ class MixedHeritageTest {
             name = "Test",
             age = 30,
             gender = Gender.MALE,
-            stats = Stats(health = 80, happiness = 70, smarts = 60, looks = 50, money = 0),
+            stats = Stats(health = 80, happiness = 70, smarts = 60, looks = 50, money = 500_000),
             birthYear = 1995,
             countryCode = "KE",
             birthCountryCode = "KE",
             family = listOf(spouse)
         )
 
-        val updated = relationshipEngine.haveChild(character)
+        val birth = relationshipEngine.haveChild(character) as HaveChildResult.Success
+        val updated = birth.character
         val child = updated.family.first { it.relation == RelationType.CHILD }
         assertEquals("KE", child.countryCode)
         assertEquals("NG", child.secondaryCountryCode)
@@ -59,13 +60,14 @@ class MixedHeritageTest {
             name = "Test",
             age = 30,
             gender = Gender.MALE,
-            stats = Stats(health = 80, happiness = 70, smarts = 60, looks = 50, money = 0),
+            stats = Stats(health = 80, happiness = 70, smarts = 60, looks = 50, money = 500_000),
             birthYear = 1995,
             countryCode = "KE",
             family = listOf(spouse)
         )
 
-        val child = relationshipEngine.haveChild(character).family.first { it.relation == RelationType.CHILD }
+        val child = (relationshipEngine.haveChild(character) as HaveChildResult.Success)
+            .character.family.first { it.relation == RelationType.CHILD }
         assertNull(child.secondaryCountryCode)
     }
 }

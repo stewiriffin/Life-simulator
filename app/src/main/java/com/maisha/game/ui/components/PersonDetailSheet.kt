@@ -1,4 +1,4 @@
-// app/src/main/java/com/maisha/game/ui/components/PersonDetailSheet.kt (modified — pinned header, timeline, travel gate)
+// app/src/main/java/com/maisha/game/ui/components/PersonDetailSheet.kt
 package com.maisha.game.ui.components
 
 import androidx.compose.foundation.layout.Arrangement
@@ -12,6 +12,7 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text
@@ -32,6 +33,10 @@ import com.maisha.game.domain.RelationshipEngine
 import com.maisha.game.ui.avatar.AvatarImage
 import com.maisha.game.ui.avatar.ExpressionResolver
 import com.maisha.game.ui.illustrations.EmptyStateIllustration
+import com.maisha.game.ui.theme.AccentPink
+import com.maisha.game.ui.theme.InkTertiary
+import com.maisha.game.ui.theme.LifeGreen
+import com.maisha.game.ui.theme.NavyDeep
 import com.maisha.game.util.formatMoney
 
 @Composable
@@ -43,6 +48,9 @@ fun PersonDetailSheet(
     isIncarcerated: Boolean = false,
     isMarried: Boolean,
     relationLabel: String,
+    dateNightCost: Int = 0,
+    childHospitalCost: Int = 0,
+    divorceSettlementCost: Int = 0,
     onInteraction: (InteractionType, GiftTier?) -> Unit,
     onPropose: () -> Unit,
     onBreakUp: () -> Unit,
@@ -50,6 +58,7 @@ fun PersonDetailSheet(
 ) {
     val isSpouse = member.relation == RelationType.SPOUSE
     val isChild = member.relation == RelationType.CHILD
+    val isEnemy = member.relation == RelationType.ENEMY
     val isMinorChild = RelationshipEngine.isMinorChild(member)
     val canAskForMoney = !isSpouse && !isChild
     val canSetUpDate = member.relation == RelationType.SIBLING ||
@@ -59,6 +68,9 @@ fun PersonDetailSheet(
     val pendingTravel = rememberConfirmableAction<Unit>()
     val pendingAllowance = rememberConfirmableAction<Unit>()
     val pendingBreakUp = rememberConfirmableAction<Unit>()
+    val pendingDivorce = rememberConfirmableAction<Unit>()
+    val pendingHaveChild = rememberConfirmableAction<Unit>()
+    val pendingDateNight = rememberConfirmableAction<Unit>()
     val travelCost = EconomyScaler.scaleRelationshipCost(
         RelationshipEngine.TRAVEL_BASE_COST_KENYA,
         playerCountryCode,
@@ -68,6 +80,31 @@ fun PersonDetailSheet(
         RelationshipEngine.ALLOWANCE_BASE_COST_KENYA,
         playerCountryCode
     )
+    val resolvedDateNightCost = if (dateNightCost > 0) {
+        dateNightCost
+    } else {
+        EconomyScaler.scaleRelationshipCost(
+            RelationshipEngine.DATE_NIGHT_COST_KENYA,
+            playerCountryCode,
+            playerAge
+        )
+    }
+    val resolvedChildCost = if (childHospitalCost > 0) {
+        childHospitalCost
+    } else {
+        EconomyScaler.scaleAmount(
+            RelationshipEngine.CHILD_HOSPITAL_COST_KENYA,
+            playerCountryCode
+        )
+    }
+    val resolvedDivorceCost = if (divorceSettlementCost > 0) {
+        divorceSettlementCost
+    } else {
+        EconomyScaler.scaleAmount(
+            RelationshipEngine.DIVORCE_SETTLEMENT_KENYA,
+            playerCountryCode
+        )
+    }
     val tier = relationshipTierFor(member.relationshipLevel)
     val expression = ExpressionResolver.resolvePersonExpression(member)
     val travelEnabled = RelationshipEngine.canTravelTogether(member) && !isIncarcerated
@@ -82,10 +119,12 @@ fun PersonDetailSheet(
         state = pendingGiftTier,
         onConfirmed = { giftTier -> onInteraction(InteractionType.GIFT, giftTier) }
     ) { giftTier, onConfirm, onDismiss ->
-        val cost = giftCost(giftTier)
         ConfirmActionDialog(
             title = stringResource(R.string.confirm_gift_title),
-            description = stringResource(R.string.confirm_cost_body, formatMoney(cost, playerCountryCode)),
+            description = stringResource(
+                R.string.confirm_cost_body,
+                formatMoney(giftCost(giftTier), playerCountryCode)
+            ),
             confirmLabel = stringResource(R.string.btn_confirm),
             severity = ConfirmSeverity.NEUTRAL,
             onConfirm = onConfirm,
@@ -99,7 +138,10 @@ fun PersonDetailSheet(
     ) { _, onConfirm, onDismiss ->
         ConfirmActionDialog(
             title = stringResource(R.string.confirm_travel_title),
-            description = stringResource(R.string.confirm_cost_body, formatMoney(travelCost, playerCountryCode)),
+            description = stringResource(
+                R.string.confirm_cost_body,
+                formatMoney(travelCost, playerCountryCode)
+            ),
             confirmLabel = stringResource(R.string.btn_confirm),
             severity = ConfirmSeverity.NEUTRAL,
             onConfirm = onConfirm,
@@ -125,6 +167,40 @@ fun PersonDetailSheet(
         )
     }
 
+    ConfirmableActionHost(
+        state = pendingDateNight,
+        onConfirmed = { onInteraction(InteractionType.DATE_NIGHT, null) }
+    ) { _, onConfirm, onDismiss ->
+        ConfirmActionDialog(
+            title = stringResource(R.string.btn_date_night),
+            description = stringResource(
+                R.string.confirm_cost_body,
+                formatMoney(resolvedDateNightCost, playerCountryCode)
+            ),
+            confirmLabel = stringResource(R.string.btn_confirm),
+            severity = ConfirmSeverity.NEUTRAL,
+            onConfirm = onConfirm,
+            onDismiss = onDismiss
+        )
+    }
+
+    ConfirmableActionHost(
+        state = pendingHaveChild,
+        onConfirmed = { onHaveChild() }
+    ) { _, onConfirm, onDismiss ->
+        ConfirmActionDialog(
+            title = stringResource(R.string.confirm_have_child_title),
+            description = stringResource(
+                R.string.confirm_have_child_body,
+                formatMoney(resolvedChildCost, playerCountryCode)
+            ),
+            confirmLabel = stringResource(R.string.btn_have_child),
+            severity = ConfirmSeverity.NEUTRAL,
+            onConfirm = onConfirm,
+            onDismiss = onDismiss
+        )
+    }
+
     if (isSpouse && !member.isMarried) {
         ConfirmableActionHost(
             state = pendingBreakUp,
@@ -135,6 +211,26 @@ fun PersonDetailSheet(
                 description = stringResource(R.string.confirm_break_up_body, member.name),
                 confirmLabel = stringResource(R.string.btn_break_up),
                 severity = ConfirmSeverity.NEUTRAL,
+                onConfirm = onConfirm,
+                onDismiss = onDismiss
+            )
+        }
+    }
+
+    if (isSpouse && member.isMarried) {
+        ConfirmableActionHost(
+            state = pendingDivorce,
+            onConfirmed = { onBreakUp() }
+        ) { _, onConfirm, onDismiss ->
+            ConfirmActionDialog(
+                title = stringResource(R.string.confirm_divorce_title),
+                description = stringResource(
+                    R.string.confirm_divorce_body,
+                    member.name,
+                    formatMoney(resolvedDivorceCost.coerceAtMost(playerMoney), playerCountryCode)
+                ),
+                confirmLabel = stringResource(R.string.btn_divorce),
+                severity = ConfirmSeverity.WARNING,
                 onConfirm = onConfirm,
                 onDismiss = onDismiss
             )
@@ -219,11 +315,7 @@ fun PersonDetailSheet(
             verticalArrangement = Arrangement.spacedBy(8.dp)
         ) {
             if (member.milestones.isNotEmpty()) {
-                Text(
-                    text = stringResource(R.string.person_memories_title),
-                    style = MaterialTheme.typography.titleSmall,
-                    fontWeight = FontWeight.SemiBold
-                )
+                SheetSectionTitle(stringResource(R.string.person_memories_title))
                 MilestoneTimeline(milestones = member.milestones)
             } else {
                 EmptyStateCard(
@@ -234,10 +326,8 @@ fun PersonDetailSheet(
                 )
             }
 
-            Spacer(modifier = Modifier.height(4.dp))
-            Text(stringResource(R.string.interaction_positive), fontWeight = FontWeight.SemiBold)
-
             if (isMinorChild) {
+                SheetSectionTitle(stringResource(R.string.section_parenting_actions))
                 DetailSheetButton(
                     text = stringResource(R.string.btn_play_together),
                     onClick = { onInteraction(InteractionType.SPEND_TIME, null) }
@@ -261,8 +351,6 @@ fun PersonDetailSheet(
                     onClick = { pendingGiftTier.request(GiftTier.MEDIUM) },
                     enabled = playerMoney >= giftCost(GiftTier.MEDIUM)
                 )
-
-                Text(stringResource(R.string.interaction_parenting), fontWeight = FontWeight.SemiBold)
                 OutlinedButton(
                     onClick = { onInteraction(InteractionType.DISCIPLINE, null) },
                     modifier = Modifier.fillMaxWidth(),
@@ -271,14 +359,25 @@ fun PersonDetailSheet(
                     Text(stringResource(R.string.btn_discipline))
                 }
             } else {
+                SheetSectionTitle(stringResource(R.string.section_bond_actions))
                 DetailSheetButton(
-                    text = if (isChild) stringResource(R.string.btn_play_together) else stringResource(R.string.btn_spend_time),
+                    text = if (isChild) {
+                        stringResource(R.string.btn_play_together)
+                    } else {
+                        stringResource(R.string.btn_spend_time)
+                    },
                     onClick = { onInteraction(InteractionType.SPEND_TIME, null) }
                 )
                 DetailSheetButton(
                     text = stringResource(R.string.btn_compliment),
                     onClick = { onInteraction(InteractionType.COMPLIMENT, null) }
                 )
+                DetailSheetButton(
+                    text = stringResource(R.string.btn_ask_advice),
+                    onClick = { onInteraction(InteractionType.ASK_FOR_ADVICE, null) }
+                )
+
+                SheetSectionTitle(stringResource(R.string.section_spend_actions))
                 DetailSheetButton(
                     text = "${stringResource(R.string.btn_gift_small)} (${formatMoney(giftCost(GiftTier.SMALL), playerCountryCode)})",
                     onClick = { pendingGiftTier.request(GiftTier.SMALL) },
@@ -312,10 +411,8 @@ fun PersonDetailSheet(
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                 }
-                DetailSheetButton(
-                    text = stringResource(R.string.btn_ask_advice),
-                    onClick = { onInteraction(InteractionType.ASK_FOR_ADVICE, null) }
-                )
+
+                SheetSectionTitle(stringResource(R.string.section_fun_risk_actions))
                 DetailSheetButton(
                     text = stringResource(R.string.btn_prank),
                     onClick = { onInteraction(InteractionType.PRANK, null) }
@@ -326,8 +423,6 @@ fun PersonDetailSheet(
                         onClick = { onInteraction(InteractionType.SET_UP_ON_DATE, null) }
                     )
                 }
-
-                Text(stringResource(R.string.interaction_negative), fontWeight = FontWeight.SemiBold)
                 OutlinedButton(
                     onClick = { onInteraction(InteractionType.ARGUE, null) },
                     modifier = Modifier.fillMaxWidth(),
@@ -342,7 +437,6 @@ fun PersonDetailSheet(
                 ) {
                     Text(stringResource(R.string.btn_insult))
                 }
-
                 if (canAskForMoney) {
                     DetailSheetButton(
                         text = if (member.relationshipLevel > 60) {
@@ -356,37 +450,61 @@ fun PersonDetailSheet(
                 }
             }
 
+            if (isEnemy) {
+                SheetSectionTitle(stringResource(R.string.section_rival_actions))
+                DetailSheetButton(
+                    text = stringResource(R.string.btn_make_peace),
+                    onClick = { onInteraction(InteractionType.MAKE_PEACE, null) },
+                    emphasizeGreen = true
+                )
+            }
+
             if (isSpouse) {
-                Spacer(modifier = Modifier.height(4.dp))
+                SheetSectionTitle(stringResource(R.string.section_life_together))
                 if (!member.isMarried) {
                     DetailSheetButton(
                         text = if (member.relationshipLevel >= RelationshipEngine.PROPOSAL_THRESHOLD) {
                             stringResource(R.string.btn_propose_marriage)
                         } else {
-                            stringResource(R.string.btn_propose_locked, RelationshipEngine.PROPOSAL_THRESHOLD)
+                            stringResource(
+                                R.string.btn_propose_locked,
+                                RelationshipEngine.PROPOSAL_THRESHOLD
+                            )
                         },
                         onClick = onPropose,
-                        enabled = member.relationshipLevel >= RelationshipEngine.PROPOSAL_THRESHOLD
+                        enabled = member.relationshipLevel >= RelationshipEngine.PROPOSAL_THRESHOLD,
+                        emphasizePink = true
                     )
                 }
                 if (isMarried && member.isMarried) {
                     DetailSheetButton(
-                        text = stringResource(R.string.btn_have_child),
-                        onClick = onHaveChild
+                        text = "${stringResource(R.string.btn_date_night)} (${formatMoney(resolvedDateNightCost, playerCountryCode)})",
+                        onClick = { pendingDateNight.request(Unit) },
+                        enabled = playerMoney >= resolvedDateNightCost,
+                        emphasizePink = true
+                    )
+                    DetailSheetButton(
+                        text = "${stringResource(R.string.btn_have_child)} (${formatMoney(resolvedChildCost, playerCountryCode)})",
+                        onClick = { pendingHaveChild.request(Unit) },
+                        enabled = playerMoney >= resolvedChildCost,
+                        emphasizeGreen = true
                     )
                 }
                 OutlinedButton(
                     onClick = {
-                        if (member.isMarried) {
-                            onBreakUp()
-                        } else {
-                            pendingBreakUp.request(Unit)
-                        }
+                        if (member.isMarried) pendingDivorce.request(Unit)
+                        else pendingBreakUp.request(Unit)
                     },
                     modifier = Modifier.fillMaxWidth(),
                     shape = RoundedCornerShape(12.dp)
                 ) {
-                    Text(if (member.isMarried) stringResource(R.string.btn_divorce) else stringResource(R.string.btn_break_up))
+                    Text(
+                        if (member.isMarried) {
+                            stringResource(R.string.btn_divorce)
+                        } else {
+                            stringResource(R.string.btn_break_up)
+                        }
+                    )
                 }
             }
 
@@ -396,18 +514,43 @@ fun PersonDetailSheet(
 }
 
 @Composable
+private fun SheetSectionTitle(title: String) {
+    Text(
+        text = title.uppercase(),
+        style = MaterialTheme.typography.labelMedium,
+        fontWeight = FontWeight.Bold,
+        color = InkTertiary,
+        modifier = Modifier.padding(top = 8.dp, bottom = 2.dp)
+    )
+}
+
+@Composable
 private fun DetailSheetButton(
     text: String,
     onClick: () -> Unit,
-    enabled: Boolean = true
+    enabled: Boolean = true,
+    emphasizePink: Boolean = false,
+    emphasizeGreen: Boolean = false
 ) {
+    val colors = when {
+        emphasizePink -> ButtonDefaults.buttonColors(
+            containerColor = AccentPink,
+            contentColor = NavyDeep
+        )
+        emphasizeGreen -> ButtonDefaults.buttonColors(
+            containerColor = LifeGreen,
+            contentColor = NavyDeep
+        )
+        else -> ButtonDefaults.buttonColors()
+    }
     Button(
         onClick = onClick,
         enabled = enabled,
         modifier = Modifier
             .fillMaxWidth()
             .height(48.dp),
-        shape = RoundedCornerShape(12.dp)
+        shape = RoundedCornerShape(12.dp),
+        colors = colors
     ) {
         Text(text, maxLines = 2)
     }

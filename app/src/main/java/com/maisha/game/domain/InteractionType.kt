@@ -14,5 +14,7 @@ enum class InteractionType {
     SET_UP_ON_DATE,
     HELP_WITH_HOMEWORK,
     PAY_ALLOWANCE,
-    DISCIPLINE
+    DISCIPLINE,
+    DATE_NIGHT,
+    MAKE_PEACE
 }

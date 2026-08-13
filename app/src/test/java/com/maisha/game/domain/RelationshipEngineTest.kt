@@ -85,11 +85,17 @@ class RelationshipEngineTest {
         val character = TestFixtures.character(
             age = 30,
             countryCode = "KE",
-            family = listOf(spouse)
+            family = listOf(spouse),
+            stats = com.maisha.game.data.model.Stats(money = 500_000)
         )
-        val child = engine.haveChild(character).family.first { it.relation == RelationType.CHILD }
-        assertEquals("KE", child.countryCode)
-        assertEquals("NG", child.secondaryCountryCode)
+        when (val result = engine.haveChild(character)) {
+            is HaveChildResult.Success -> {
+                val child = result.character.family.first { it.relation == RelationType.CHILD }
+                assertEquals("KE", child.countryCode)
+                assertEquals("NG", child.secondaryCountryCode)
+            }
+            else -> error("Expected child success: $result")
+        }
     }
 
     @Test
