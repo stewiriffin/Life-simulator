@@ -6,7 +6,7 @@ import androidx.room.RoomDatabase
 
 @Database(
     entities = [CharacterEntity::class, AchievementEntity::class],
-    version = 26,
+    version = 27,
     exportSchema = false
 )
 abstract class MaishaDatabase : RoomDatabase() {

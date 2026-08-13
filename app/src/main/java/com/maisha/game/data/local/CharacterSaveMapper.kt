@@ -13,12 +13,14 @@ import com.maisha.game.data.model.HealthCondition
 import com.maisha.game.data.model.LifestyleState
 import com.maisha.game.data.model.Person
 import com.maisha.game.data.model.Pet
+import com.maisha.game.data.model.BucketGoal
 import com.maisha.game.data.model.Business
 import com.maisha.game.data.model.SkillProgress
 import com.maisha.game.data.model.SocialMediaState
 import com.maisha.game.data.model.Stats
 import com.maisha.game.data.model.PoliticalState
 import com.maisha.game.data.model.VisaType
+import com.maisha.game.domain.YearQuest
 import com.maisha.game.util.SerializationUtils
 
 sealed class SavedGameLoadResult {
@@ -137,6 +139,24 @@ internal object CharacterSaveMapper {
                 default = PoliticalState(),
                 slotId = slotId
             )
+            val activeYearQuests = SerializationUtils.safeDeserialize(
+                entity.activeYearQuestsJson,
+                fieldName = "activeYearQuests",
+                default = emptyList<YearQuest>(),
+                slotId = slotId
+            )
+            val unlockedMilestoneIds = SerializationUtils.safeDeserialize(
+                entity.unlockedMilestoneIdsJson,
+                fieldName = "unlockedMilestoneIds",
+                default = emptyList<String>(),
+                slotId = slotId
+            )
+            val bucketList = SerializationUtils.safeDeserialize(
+                entity.bucketListJson,
+                fieldName = "bucketList",
+                default = emptyList<BucketGoal>(),
+                slotId = slotId
+            )
             val will = entity.willJson?.let { json ->
                 SerializationUtils.safeDeserialize(
                     json,
@@ -202,7 +222,13 @@ internal object CharacterSaveMapper {
                         socialMedia = socialMedia,
                         skills = skills,
                         businesses = businesses,
-                        politics = politics
+                        politics = politics,
+                        activeYearQuests = activeYearQuests,
+                        questYearStreak = entity.questYearStreak.coerceAtLeast(0),
+                        questsCompletedThisYear = entity.questsCompletedThisYear.coerceAtLeast(0),
+                        unlockedMilestoneIds = unlockedMilestoneIds,
+                        bucketList = bucketList,
+                        skillShowcaseDoneThisYear = entity.skillShowcaseDoneThisYear
                     ),
                     triggeredEventIds = triggeredIds.toSet()
                 )

@@ -179,7 +179,13 @@ class CharacterRepository @Inject constructor(
             socialMediaJson = json.encodeToString(socialMedia),
             skillsJson = json.encodeToString(skills),
             businessesJson = json.encodeToString(businesses),
-            politicsJson = json.encodeToString(politics)
+            politicsJson = json.encodeToString(politics),
+            activeYearQuestsJson = json.encodeToString(activeYearQuests),
+            questYearStreak = questYearStreak,
+            questsCompletedThisYear = questsCompletedThisYear,
+            unlockedMilestoneIdsJson = json.encodeToString(unlockedMilestoneIds),
+            bucketListJson = json.encodeToString(bucketList),
+            skillShowcaseDoneThisYear = skillShowcaseDoneThisYear
         )
     }
 }

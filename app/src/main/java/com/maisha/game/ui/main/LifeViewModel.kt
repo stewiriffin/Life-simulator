@@ -52,6 +52,7 @@ import com.maisha.game.domain.RepairResult
 import com.maisha.game.domain.RetirementResult
 import com.maisha.game.domain.SideHustleFailure
 import com.maisha.game.domain.SideHustleResult
+import com.maisha.game.domain.BucketAdoptResult
 import com.maisha.game.domain.BusinessFailure
 import com.maisha.game.domain.BusinessResult
 import com.maisha.game.domain.SkillFailure
@@ -153,10 +154,19 @@ class LifeViewModel @Inject constructor(
                 is SavedGameLoadResult.Success -> {
                     val saved = result.game
                     triggeredEventIds = saved.triggeredEventIds
-                    val character = saved.character
+                    var character = saved.character
                     var introResult: AgeUpResult? = null
                     if (character.age == 0 && character.eventLog.isEmpty()) {
                         introResult = gameEngine.introEventsForNewborn(triggeredEventIds)
+                    }
+                    val loadedQuests = if (character.activeYearQuests.isNotEmpty()) {
+                        character.activeYearQuests
+                    } else {
+                        yearQuestEngine.generate(character)
+                    }
+                    if (character.activeYearQuests.isEmpty() && loadedQuests.isNotEmpty()) {
+                        character = character.copy(activeYearQuests = loadedQuests)
+                        persist(character)
                     }
                     _uiState.update {
                         it.copy(
@@ -166,7 +176,7 @@ class LifeViewModel @Inject constructor(
                             netWorth = financeEngine.calculateNetWorth(character),
                             navigateToLifeSummary = !character.alive,
                             headerExpression = ExpressionResolver.resolveExpression(character, null),
-                            yearQuests = yearQuestEngine.generate(character),
+                            yearQuests = loadedQuests,
                             yearQuestProgress = emptyList()
                         ).withDynasty(character, financeEngine.calculateNetWorth(character))
                     }
@@ -198,12 +208,15 @@ class LifeViewModel @Inject constructor(
             val netWorthBefore = financeEngine.calculateNetWorth(character)
             val ageBefore = character.age
             val jobLevelBefore = character.career.currentJob?.level ?: 0
-            val activeQuests = _uiState.value.yearQuests
+            val activeQuests = character.activeYearQuests.ifEmpty { _uiState.value.yearQuests }
             val progress = achievementRepository.getProgressSnapshot()
             val outcome = gameEngine.ageUp(character, triggeredEventIds, progress, slotId)
             val questProgress = yearQuestEngine.evaluate(activeQuests, character, outcome.character)
             val completedQuests = questProgress.filter { it.completed }
-            val rewardedCharacter = yearQuestEngine.applyRewards(outcome.character, completedQuests)
+            var rewardedCharacter = yearQuestEngine.applyRewards(outcome.character, completedQuests)
+            rewardedCharacter = yearQuestEngine.applyStreak(rewardedCharacter, activeQuests, questProgress)
+            val nextQuests = yearQuestEngine.generate(rewardedCharacter)
+            rewardedCharacter = rewardedCharacter.copy(activeYearQuests = nextQuests)
             if (outcome.newlyUnlockedAchievements.isNotEmpty()) {
                 achievementRepository.unlockAchievements(outcome.newlyUnlockedAchievements)
                 enqueueAchievementDialogs(outcome.newlyUnlockedAchievements)
@@ -235,6 +248,15 @@ class LifeViewModel @Inject constructor(
                     )
                 }
             }
+            if (outcome.newlyUnlockedMilestones.isNotEmpty()) {
+                enqueueCelebration(CelebrationType.LIFE_MILESTONE)
+            }
+            if (outcome.fameTierUp) {
+                enqueueCelebration(CelebrationType.FAME_TIER)
+            }
+            if (outcome.completedBucketGoals > 0) {
+                enqueueCelebration(CelebrationType.BUCKET_LIST)
+            }
             when (rewardedCharacter.age) {
                 18 -> if (ageBefore < 18) enqueueCelebration(CelebrationType.AGE_MILESTONE_18)
                 50 -> if (ageBefore < 50) enqueueCelebration(CelebrationType.AGE_MILESTONE_50)
@@ -264,7 +286,6 @@ class LifeViewModel @Inject constructor(
                 character = rewardedCharacter,
                 result = outcome.result
             )
-            val nextQuests = yearQuestEngine.generate(rewardedCharacter)
             _uiState.update { state ->
                 state.copy(
                     yearQuests = nextQuests,
@@ -1254,9 +1275,11 @@ class LifeViewModel @Inject constructor(
     fun onPostSocialContent() {
         val character = _uiState.value.character ?: return
         viewModelScope.launch {
+            val fameBefore = character.socialMedia.fameTier
             when (val result = gameEngine.postSocialMediaContent(character)) {
                 is SocialMediaResult.Success -> {
                     persist(result.character)
+                    processMidLifeAchievements(result.character)
                     if (result.followersGained != 0) {
                         val sign = if (result.followersGained > 0) "+" else ""
                         appendStatDeltas(
@@ -1268,6 +1291,9 @@ class LifeViewModel @Inject constructor(
                                 )
                             )
                         )
+                    }
+                    if (result.character.socialMedia.fameTier.ordinal > fameBefore.ordinal) {
+                        enqueueCelebration(CelebrationType.FAME_TIER)
                     }
                     val message = if (result.wentViral) {
                         context.getString(R.string.msg_social_post_viral, result.followersGained)
@@ -1359,9 +1385,86 @@ class LifeViewModel @Inject constructor(
                     val message = when (result.reason) {
                         SkillFailure.ALREADY_MASTERED ->
                             context.getString(R.string.msg_skill_mastered)
+                        SkillFailure.SHOWCASE_ALREADY_DONE ->
+                            context.getString(R.string.msg_skill_showcase_done)
+                        SkillFailure.NOT_MASTER ->
+                            context.getString(R.string.msg_skill_showcase_need_master)
                         else -> context.getString(R.string.msg_skill_ineligible)
                     }
                     _uiState.update { it.copy(actionMessage = message) }
+                }
+            }
+        }
+    }
+
+    fun onShowcaseSkill(skillType: SkillType) {
+        val character = _uiState.value.character ?: return
+        viewModelScope.launch {
+            val statsBefore = character.stats
+            when (val result = gameEngine.showcaseSkill(character, skillType)) {
+                is SkillResult.Success -> {
+                    persist(result.character)
+                    processMidLifeAchievements(result.character)
+                    appendStatDeltas(buildStatDeltas(statsBefore, result.character.stats))
+                    val payout = (-result.cost).coerceAtLeast(0)
+                    _uiState.update {
+                        it.copy(
+                            character = result.character,
+                            actionMessage = context.getString(
+                                R.string.msg_skill_showcase_success,
+                                formatMoney(payout, result.character.countryCode)
+                            ),
+                            netWorth = financeEngine.calculateNetWorth(result.character)
+                        )
+                    }
+                }
+                is SkillResult.Failed -> {
+                    val message = when (result.reason) {
+                        SkillFailure.SHOWCASE_ALREADY_DONE ->
+                            context.getString(R.string.msg_skill_showcase_done)
+                        SkillFailure.NOT_MASTER ->
+                            context.getString(R.string.msg_skill_showcase_need_master)
+                        else -> context.getString(R.string.msg_skill_ineligible)
+                    }
+                    _uiState.update { it.copy(actionMessage = message) }
+                }
+            }
+        }
+    }
+
+    fun onAdoptBucketGoal(templateId: String) {
+        val character = _uiState.value.character ?: return
+        viewModelScope.launch {
+            when (val result = gameEngine.adoptBucketGoal(character, templateId)) {
+                is BucketAdoptResult.Success -> {
+                    persist(result.character)
+                    _uiState.update {
+                        it.copy(
+                            character = result.character,
+                            actionMessage = context.getString(R.string.msg_bucket_adopted),
+                            netWorth = financeEngine.calculateNetWorth(result.character)
+                        )
+                    }
+                }
+                BucketAdoptResult.Full -> {
+                    _uiState.update {
+                        it.copy(actionMessage = context.getString(R.string.msg_bucket_full))
+                    }
+                }
+                BucketAdoptResult.InsufficientFunds -> {
+                    _uiState.update {
+                        it.copy(actionMessage = context.getString(R.string.msg_bucket_cannot_afford))
+                    }
+                }
+                BucketAdoptResult.AlreadyTracking -> {
+                    _uiState.update {
+                        it.copy(actionMessage = context.getString(R.string.msg_bucket_already))
+                    }
+                }
+                BucketAdoptResult.Ineligible -> {
+                    _uiState.update {
+                        it.copy(actionMessage = context.getString(R.string.msg_bucket_ineligible))
+                    }
                 }
             }
         }
@@ -1403,6 +1506,10 @@ class LifeViewModel @Inject constructor(
                             context.getString(R.string.msg_skill_cannot_afford)
                         SkillFailure.ALREADY_MASTERED ->
                             context.getString(R.string.msg_skill_mastered)
+                        SkillFailure.SHOWCASE_ALREADY_DONE ->
+                            context.getString(R.string.msg_skill_showcase_done)
+                        SkillFailure.NOT_MASTER ->
+                            context.getString(R.string.msg_skill_showcase_need_master)
                         else -> context.getString(R.string.msg_skill_ineligible)
                     }
                     _uiState.update { it.copy(actionMessage = message) }

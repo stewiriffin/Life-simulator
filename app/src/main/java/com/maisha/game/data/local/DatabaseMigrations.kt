@@ -298,6 +298,29 @@ internal object DatabaseMigrations {
         }
     }
 
+    private val MIGRATION_26_27 = object : Migration(26, 27) {
+        override fun migrate(db: SupportSQLiteDatabase) {
+            db.execSQL(
+                "ALTER TABLE character_save ADD COLUMN activeYearQuestsJson TEXT NOT NULL DEFAULT '[]'"
+            )
+            db.execSQL(
+                "ALTER TABLE character_save ADD COLUMN questYearStreak INTEGER NOT NULL DEFAULT 0"
+            )
+            db.execSQL(
+                "ALTER TABLE character_save ADD COLUMN questsCompletedThisYear INTEGER NOT NULL DEFAULT 0"
+            )
+            db.execSQL(
+                "ALTER TABLE character_save ADD COLUMN unlockedMilestoneIdsJson TEXT NOT NULL DEFAULT '[]'"
+            )
+            db.execSQL(
+                "ALTER TABLE character_save ADD COLUMN bucketListJson TEXT NOT NULL DEFAULT '[]'"
+            )
+            db.execSQL(
+                "ALTER TABLE character_save ADD COLUMN skillShowcaseDoneThisYear INTEGER NOT NULL DEFAULT 0"
+            )
+        }
+    }
+
     val ALL: Array<Migration> = arrayOf(
         MIGRATION_1_2,
         MIGRATION_2_3,
@@ -323,6 +346,7 @@ internal object DatabaseMigrations {
         MIGRATION_22_23,
         MIGRATION_23_24,
         MIGRATION_24_25,
-        MIGRATION_25_26
+        MIGRATION_25_26,
+        MIGRATION_26_27
     )
 }

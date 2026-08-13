@@ -46,7 +46,10 @@ object TestFixtures {
         generationNumber: Int = 1,
         relocationCount: Int = 0,
         relocationHistory: List<String> = emptyList(),
-        lastRelocationAge: Int? = null
+        lastRelocationAge: Int? = null,
+        hasDrivingLicense: Boolean = false,
+        questYearStreak: Int = 0,
+        bucketList: List<com.maisha.game.data.model.BucketGoal> = emptyList()
     ): Character = Character(
         name = name,
         age = age,
@@ -57,6 +60,7 @@ object TestFixtures {
         countryCode = countryCode,
         birthCountryCode = countryCode,
         citizenships = listOf(countryCode),
+        hasDrivingLicense = hasDrivingLicense,
         family = family,
         education = education,
         career = career,
@@ -71,7 +75,9 @@ object TestFixtures {
         generationNumber = generationNumber,
         relocationCount = relocationCount,
         relocationHistory = relocationHistory,
-        lastRelocationAge = lastRelocationAge
+        lastRelocationAge = lastRelocationAge,
+        questYearStreak = questYearStreak,
+        bucketList = bucketList
     )
 
     fun person(
@@ -189,7 +195,9 @@ object TestFixtures {
             skillEngine = SkillEngine(),
             businessEngine = BusinessEngine(financeEngine),
             politicsEngine = PoliticsEngine(financeEngine),
-            legacyEngine = LegacyEngine(MortalityEngine(), financeEngine)
+            legacyEngine = LegacyEngine(MortalityEngine(), financeEngine),
+            milestoneEngine = MilestoneEngine(),
+            bucketListEngine = BucketListEngine()
         )
     }
 }

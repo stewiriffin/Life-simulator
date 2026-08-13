@@ -167,6 +167,8 @@ fun LifeScreen(
     onMonetizeSocialAccount: () -> Unit,
     onPracticeSkill: (com.maisha.game.data.model.SkillType) -> Unit,
     onTakeMasterclass: (com.maisha.game.data.model.SkillType) -> Unit,
+    onShowcaseSkill: (com.maisha.game.data.model.SkillType) -> Unit,
+    onAdoptBucketGoal: (String) -> Unit,
     onRenewVisa: () -> Unit,
     onApplyForCitizenship: () -> Unit,
     onTakeDrivingTest: () -> Unit,
@@ -398,6 +400,8 @@ fun LifeScreen(
                 onPostSocialContent = onPostSocialContent,
                 onMonetizeSocialAccount = onMonetizeSocialAccount,
                 onPracticeSkill = onPracticeSkill,
+                onShowcaseSkill = onShowcaseSkill,
+                onAdoptBucketGoal = onAdoptBucketGoal,
                 onTakeMasterclass = onTakeMasterclass,
                 onRenewVisa = onRenewVisa,
                 onApplyForCitizenship = onApplyForCitizenship,
@@ -435,6 +439,7 @@ private fun LifeTabContent(
             expression = uiState.headerExpression,
             dynastyScore = uiState.dynastyScore,
             dynastyTitleKey = uiState.dynastyTitleKey,
+            questYearStreak = character.questYearStreak,
             onViewCharacterStats = onViewCharacterStats,
             onOpenSettings = onOpenSettings
         )
@@ -457,6 +462,13 @@ private fun LifeTabContent(
                         hasCriminalRecord = character.criminalRecord.hasRecord,
                         timesArrested = character.criminalRecord.timesArrested
                     )
+                }
+
+                if (character.unlockedMilestoneIds.isNotEmpty()) {
+                    item {
+                        Spacer(modifier = Modifier.height(8.dp))
+                        RecentMilestonesRow(milestoneIds = character.unlockedMilestoneIds)
+                    }
                 }
 
                 if (uiState.yearQuests.isNotEmpty()) {
@@ -551,6 +563,7 @@ private fun LifeHeroHeader(
     expression: Expression,
     dynastyScore: Int,
     dynastyTitleKey: String,
+    questYearStreak: Int,
     onViewCharacterStats: () -> Unit,
     onOpenSettings: () -> Unit
 ) {
@@ -656,6 +669,22 @@ private fun LifeHeroHeader(
                         HeroChip(
                             text = dynastyTitleLabel(dynastyTitleKey),
                             bg = GoldAccent.copy(alpha = 0.2f),
+                            fg = GoldAccent
+                        )
+                    }
+                    if (questYearStreak > 0) {
+                        HeroChip(
+                            text = stringResource(R.string.format_quest_streak, questYearStreak),
+                            bg = LifeGreen.copy(alpha = 0.35f),
+                            fg = GoldAccent
+                        )
+                    }
+                    if (character.socialMedia.hasAccount &&
+                        character.socialMedia.fameTier != com.maisha.game.data.model.FameTier.UNKNOWN
+                    ) {
+                        HeroChip(
+                            text = fameTierShortLabel(character.socialMedia.fameTier),
+                            bg = GoldAccent.copy(alpha = 0.22f),
                             fg = GoldAccent
                         )
                     }
@@ -1150,6 +1179,68 @@ private fun yearQuestTitle(quest: YearQuest, countryCode: String): String = when
         stringResource(R.string.year_quest_stay_clean)
     YearQuestKind.GROW_FOLLOWERS ->
         stringResource(R.string.year_quest_grow_followers, quest.target)
+    YearQuestKind.RAISE_SKILL ->
+        stringResource(R.string.year_quest_raise_skill, quest.target)
+}
+
+@Composable
+private fun RecentMilestonesRow(milestoneIds: List<String>) {
+    val recent = milestoneIds.takeLast(4).reversed()
+    Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+        Text(
+            text = stringResource(R.string.section_recent_milestones),
+            style = MaterialTheme.typography.labelMedium,
+            fontWeight = FontWeight.Bold,
+            color = InkTertiary,
+            letterSpacing = 0.8.sp
+        )
+        recent.forEach { id ->
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                Text(
+                    text = "✓",
+                    color = LifeGreen,
+                    style = MaterialTheme.typography.labelLarge,
+                    fontWeight = FontWeight.Bold
+                )
+                Text(
+                    text = milestoneTitle(id),
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = InkPrimary
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun milestoneTitle(id: String): String = when (id) {
+    com.maisha.game.domain.MilestoneEngine.ID_AGE_18 -> stringResource(R.string.milestone_age_18)
+    com.maisha.game.domain.MilestoneEngine.ID_AGE_50 -> stringResource(R.string.milestone_age_50)
+    com.maisha.game.domain.MilestoneEngine.ID_AGE_75 -> stringResource(R.string.milestone_age_75)
+    com.maisha.game.domain.MilestoneEngine.ID_AGE_100 -> stringResource(R.string.milestone_age_100)
+    com.maisha.game.domain.MilestoneEngine.ID_FIRST_JOB -> stringResource(R.string.milestone_first_job)
+    com.maisha.game.domain.MilestoneEngine.ID_DRIVING -> stringResource(R.string.milestone_driving_license)
+    com.maisha.game.domain.MilestoneEngine.ID_MARRIAGE -> stringResource(R.string.milestone_marriage)
+    com.maisha.game.domain.MilestoneEngine.ID_FIRST_CHILD -> stringResource(R.string.milestone_first_child)
+    com.maisha.game.domain.MilestoneEngine.ID_FIRST_HOME -> stringResource(R.string.milestone_first_home)
+    com.maisha.game.domain.MilestoneEngine.ID_FIRST_BUSINESS -> stringResource(R.string.milestone_first_business)
+    com.maisha.game.domain.MilestoneEngine.ID_ELECTED -> stringResource(R.string.milestone_elected)
+    com.maisha.game.domain.MilestoneEngine.ID_VERIFIED -> stringResource(R.string.milestone_verified)
+    com.maisha.game.domain.MilestoneEngine.ID_GRADUATED -> stringResource(R.string.milestone_graduated)
+    com.maisha.game.domain.MilestoneEngine.ID_WEALTHY -> stringResource(R.string.milestone_wealthy)
+    else -> stringResource(R.string.life_milestone_unknown)
+}
+
+@Composable
+private fun fameTierShortLabel(tier: com.maisha.game.data.model.FameTier): String = when (tier) {
+    com.maisha.game.data.model.FameTier.LOCAL -> stringResource(R.string.fame_tier_local)
+    com.maisha.game.data.model.FameTier.REGIONAL -> stringResource(R.string.fame_tier_regional)
+    com.maisha.game.data.model.FameTier.NATIONAL -> stringResource(R.string.fame_tier_national)
+    com.maisha.game.data.model.FameTier.GLOBAL -> stringResource(R.string.fame_tier_global)
+    com.maisha.game.data.model.FameTier.UNKNOWN -> stringResource(R.string.fame_tier_unknown)
 }
 
 @Composable

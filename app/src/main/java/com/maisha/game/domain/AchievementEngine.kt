@@ -9,6 +9,7 @@ import com.maisha.game.data.model.AssetType
 import com.maisha.game.data.model.Character
 import com.maisha.game.data.model.RelationType
 import com.maisha.game.data.model.SchoolStage
+import com.maisha.game.data.model.SkillType
 import com.maisha.game.data.model.relationshipTierFor
 import com.maisha.game.data.model.RelationshipTier
 import javax.inject.Inject
@@ -73,6 +74,10 @@ class AchievementEngine @Inject constructor(
             "home_away_from_home" -> checkHomeAwayFromHome(character)
             "world_traveler" -> checkWorldTraveler(character)
             "deep_roots" -> checkDeepRoots(character)
+            "skill_master" -> character.skills.any { it.level >= SkillEngine.TIER_MASTER_MIN }
+            "well_rounded" -> SkillType.entries.all { type ->
+                (character.skills.find { it.type == type }?.level ?: 0) >= SkillEngine.TIER_ADEPT_MIN
+            }
             else -> false
         }
 

@@ -49,7 +49,10 @@ data class AgeUpOutcome(
     val result: AgeUpResult,
     val newlyUnlockedAchievements: List<Achievement> = emptyList(),
     val relationshipDecayNotices: List<com.maisha.game.data.model.RelationshipDecayNotice> = emptyList(),
-    val newFriendName: String? = null
+    val newFriendName: String? = null,
+    val newlyUnlockedMilestones: List<MilestoneUnlock> = emptyList(),
+    val fameTierUp: Boolean = false,
+    val completedBucketGoals: Int = 0
 )
 
 /**
@@ -74,7 +77,9 @@ class GameEngine @Inject constructor(
     private val skillEngine: SkillEngine,
     private val businessEngine: BusinessEngine,
     private val politicsEngine: PoliticsEngine,
-    private val legacyEngine: LegacyEngine
+    private val legacyEngine: LegacyEngine,
+    private val milestoneEngine: MilestoneEngine,
+    private val bucketListEngine: BucketListEngine
 ) {
 
     /**
@@ -171,12 +176,45 @@ class GameEngine @Inject constructor(
                 ?: (updatedCharacter to rollEvents(updatedCharacter, triggeredEventIds).toAgeUpResult())
         }
 
-        val outcome = finalizeYear(characterAfterEvents, result, achievementProgress)
+        val depth = applyGamifyDepthSystems(
+            beforeYear = character,
+            afterYear = characterAfterEvents
+        )
+        val outcome = finalizeYear(depth.character, result, achievementProgress)
         scheduleNotificationNudges(slotId, outcome)
         return outcome.copy(
             relationshipDecayNotices = decayNotices,
-            newFriendName = newFriendName
+            newFriendName = newFriendName,
+            newlyUnlockedMilestones = depth.milestones,
+            fameTierUp = depth.fameTierUp,
+            completedBucketGoals = depth.completedBucketGoals
         )
+    }
+
+    private data class GamifyDepthResult(
+        val character: Character,
+        val milestones: List<MilestoneUnlock>,
+        val fameTierUp: Boolean,
+        val completedBucketGoals: Int
+    )
+
+    private fun applyGamifyDepthSystems(
+        beforeYear: Character,
+        afterYear: Character
+    ): GamifyDepthResult {
+        var updated = afterYear.copy(skillShowcaseDoneThisYear = false)
+        val fameBefore = updated.socialMedia.fameTier
+        updated = socialMediaEngine.syncFameTier(updated)
+        val fameTierUp = updated.socialMedia.fameTier.ordinal > fameBefore.ordinal
+
+        val netWorth = financeEngine.calculateNetWorth(updated)
+        val completedBefore = updated.bucketList.count { it.completed }
+        updated = bucketListEngine.evaluate(updated, netWorth)
+        val completedBucketGoals = updated.bucketList.count { it.completed } - completedBefore
+
+        val milestones = milestoneEngine.checkNewUnlocks(beforeYear, updated, netWorth)
+        updated = milestoneEngine.applyUnlocks(updated, milestones)
+        return GamifyDepthResult(updated, milestones, fameTierUp, completedBucketGoals)
     }
 
     private fun scheduleNotificationNudges(slotId: Int, outcome: AgeUpOutcome) {
@@ -561,7 +599,18 @@ class GameEngine @Inject constructor(
         skillType: com.maisha.game.data.model.SkillType
     ): SkillResult = skillEngine.takeMasterclass(character, skillType)
 
+    fun showcaseSkill(
+        character: Character,
+        skillType: com.maisha.game.data.model.SkillType
+    ): SkillResult = skillEngine.showcaseSkill(character, skillType)
+
     fun masterclassCost(character: Character): Int = skillEngine.masterclassCost(character)
+
+    fun adoptBucketGoal(character: Character, templateId: String): BucketAdoptResult =
+        bucketListEngine.adopt(character, templateId)
+
+    fun availableBucketTemplates(character: Character): List<BucketTemplate> =
+        bucketListEngine.availableTemplates(character)
 
     fun startBusiness(
         character: Character,

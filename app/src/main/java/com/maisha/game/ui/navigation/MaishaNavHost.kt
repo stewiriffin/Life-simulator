@@ -293,6 +293,8 @@ fun MaishaNavHost(
                 onMonetizeSocialAccount = viewModel::onMonetizeSocialAccount,
                 onPracticeSkill = viewModel::onPracticeSkill,
                 onTakeMasterclass = viewModel::onTakeMasterclass,
+                onShowcaseSkill = viewModel::onShowcaseSkill,
+                onAdoptBucketGoal = viewModel::onAdoptBucketGoal,
                 onRenewVisa = viewModel::onRenewVisa,
                 onApplyForCitizenship = viewModel::onApplyForCitizenship,
                 onTakeDrivingTest = viewModel::onTakeDrivingTest,

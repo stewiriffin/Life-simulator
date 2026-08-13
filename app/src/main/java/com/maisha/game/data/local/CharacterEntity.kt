@@ -51,5 +51,11 @@ data class CharacterEntity(
     val socialMediaJson: String = "{}",
     val skillsJson: String = "[]",
     val businessesJson: String = "[]",
-    val politicsJson: String = "{}"
+    val politicsJson: String = "{}",
+    val activeYearQuestsJson: String = "[]",
+    val questYearStreak: Int = 0,
+    val questsCompletedThisYear: Int = 0,
+    val unlockedMilestoneIdsJson: String = "[]",
+    val bucketListJson: String = "[]",
+    val skillShowcaseDoneThisYear: Boolean = false
 )

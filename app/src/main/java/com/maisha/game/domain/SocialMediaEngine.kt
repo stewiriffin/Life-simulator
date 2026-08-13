@@ -2,7 +2,9 @@
 package com.maisha.game.domain
 
 import com.maisha.game.data.model.Character
+import com.maisha.game.data.model.FameTier
 import com.maisha.game.data.model.SocialMediaState
+import com.maisha.game.util.clampStat
 import javax.inject.Inject
 import javax.inject.Singleton
 import kotlin.math.roundToInt
@@ -87,13 +89,14 @@ class SocialMediaEngine @Inject constructor(
         } else {
             "Posted an update. Gained $growth followers."
         }
-        val updated = character.copy(
+        val withFollowers = character.copy(
             socialMedia = character.socialMedia.copy(
                 followers = newFollowers,
                 isVerified = isVerified
             ),
             eventLog = EventLogCap.prepend(character.eventLog, logLine)
         )
+        val updated = syncFameTier(withFollowers)
         return SocialMediaResult.Success(
             character = updated,
             followersGained = growth,
@@ -145,6 +148,46 @@ class SocialMediaEngine @Inject constructor(
         )
     }
 
+    /** Recomputes [SocialMediaState.fameTier]; on tier-up grants happiness and a log line. */
+    fun syncFameTier(character: Character): Character {
+        if (!character.socialMedia.hasAccount) return character
+        val tier = fameTierFor(character.socialMedia.followers)
+        val previous = character.socialMedia.fameTier
+        if (tier == previous) return character
+        val rankedUp = tier.ordinal > previous.ordinal
+        var updated = character.copy(
+            socialMedia = character.socialMedia.copy(fameTier = tier)
+        )
+        if (rankedUp) {
+            updated = updated.copy(
+                stats = updated.stats.copy(
+                    happiness = clampStat(updated.stats.happiness + FAME_TIER_HAPPINESS)
+                ),
+                eventLog = EventLogCap.prepend(
+                    updated.eventLog,
+                    "Fame rose to ${fameLabel(tier)}."
+                )
+            )
+        }
+        return updated
+    }
+
+    fun fameTierFor(followers: Int): FameTier = when {
+        followers >= GLOBAL_FOLLOWERS -> FameTier.GLOBAL
+        followers >= NATIONAL_FOLLOWERS -> FameTier.NATIONAL
+        followers >= REGIONAL_FOLLOWERS -> FameTier.REGIONAL
+        followers >= LOCAL_FOLLOWERS -> FameTier.LOCAL
+        else -> FameTier.UNKNOWN
+    }
+
+    fun fameLabel(tier: FameTier): String = when (tier) {
+        FameTier.UNKNOWN -> "unknown"
+        FameTier.LOCAL -> "local"
+        FameTier.REGIONAL -> "regional"
+        FameTier.NATIONAL -> "national"
+        FameTier.GLOBAL -> "global"
+    }
+
     fun calculateFollowerGrowth(character: Character, wentViral: Boolean = false): Int {
         val looks = character.stats.looks.coerceIn(0, 100)
         val smarts = character.stats.smarts.coerceIn(0, 100)
@@ -171,5 +214,10 @@ class SocialMediaEngine @Inject constructor(
         private const val VIRAL_MULTIPLIER_MIN = 20
         private const val VIRAL_MULTIPLIER_MAX = 50
         private const val MAX_VIRAL_GROWTH = 250_000
+        const val LOCAL_FOLLOWERS = 1_000
+        const val REGIONAL_FOLLOWERS = 10_000
+        const val NATIONAL_FOLLOWERS = 100_000
+        const val GLOBAL_FOLLOWERS = 1_000_000
+        private const val FAME_TIER_HAPPINESS = 4
     }
 }

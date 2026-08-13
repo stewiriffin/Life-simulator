@@ -33,6 +33,7 @@ import com.maisha.game.ui.theme.AccentPink
 import com.maisha.game.ui.theme.GoldAccent
 import com.maisha.game.ui.theme.StatHappiness
 import com.maisha.game.ui.theme.StatHealth
+import com.maisha.game.ui.theme.StatLooks
 import com.maisha.game.ui.theme.StatSmarts
 import com.maisha.game.ui.theme.SuccessGreen
 import com.maisha.game.ui.theme.TealLight
@@ -182,6 +183,9 @@ private fun paletteFor(type: CelebrationType): List<Color> = when (type) {
     CelebrationType.AGE_MILESTONE_18 -> listOf(TealLight, StatHappiness, GoldAccent)
     CelebrationType.AGE_MILESTONE_50 -> listOf(GoldAccent, StatHealth, TealLight)
     CelebrationType.AGE_MILESTONE_100 -> listOf(GoldAccent, AccentPink, StatSmarts)
+    CelebrationType.LIFE_MILESTONE -> listOf(SuccessGreen, GoldAccent, TealLight)
+    CelebrationType.BUCKET_LIST -> listOf(GoldAccent, TealLight, StatHappiness)
+    CelebrationType.FAME_TIER -> listOf(GoldAccent, AccentPink, StatLooks)
 }
 
 private fun bannerRes(type: CelebrationType): Int = when (type) {
@@ -194,4 +198,7 @@ private fun bannerRes(type: CelebrationType): Int = when (type) {
     CelebrationType.AGE_MILESTONE_18 -> R.string.celebration_age_18
     CelebrationType.AGE_MILESTONE_50 -> R.string.celebration_age_50
     CelebrationType.AGE_MILESTONE_100 -> R.string.celebration_age_100
+    CelebrationType.LIFE_MILESTONE -> R.string.celebration_life_milestone
+    CelebrationType.BUCKET_LIST -> R.string.celebration_bucket_list
+    CelebrationType.FAME_TIER -> R.string.celebration_fame_tier
 }

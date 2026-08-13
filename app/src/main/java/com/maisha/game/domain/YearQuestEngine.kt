@@ -2,10 +2,12 @@ package com.maisha.game.domain
 
 import com.maisha.game.data.model.Character
 import com.maisha.game.data.model.SchoolStage
+import kotlinx.serialization.Serializable
 import javax.inject.Inject
 import javax.inject.Singleton
 import kotlin.random.Random
 
+@Serializable
 enum class YearQuestKind {
     RAISE_HAPPINESS,
     RAISE_HEALTH,
@@ -13,9 +15,11 @@ enum class YearQuestKind {
     STUDY_SMARTS,
     BOND_FAMILY,
     STAY_OUT_OF_TROUBLE,
-    GROW_FOLLOWERS
+    GROW_FOLLOWERS,
+    RAISE_SKILL
 }
 
+@Serializable
 data class YearQuest(
     val kind: YearQuestKind,
     /** Absolute target delta or threshold depending on [kind]. */
@@ -103,6 +107,17 @@ class YearQuestEngine @Inject constructor() {
                 rewardKarma = 2
             )
         }
+        if (character.age >= SkillEngine.MIN_SKILL_AGE &&
+            (character.skills.isEmpty() ||
+                character.skills.any { it.level < SkillEngine.MAX_SKILL_LEVEL })
+        ) {
+            pool += YearQuest(
+                kind = YearQuestKind.RAISE_SKILL,
+                target = 10,
+                titleResHint = "year_quest_raise_skill",
+                rewardKarma = 3
+            )
+        }
 
         if (pool.isEmpty()) return emptyList()
         return pool.shuffled(random).take(QUESTS_PER_YEAR)
@@ -136,6 +151,40 @@ class YearQuestEngine @Inject constructor() {
         )
     }
 
+    /**
+     * Updates [Character.questYearStreak]: +1 when every active quest completed, else reset to 0.
+     * Clean-year streak bonus karma is capped.
+     */
+    fun applyStreak(
+        character: Character,
+        quests: List<YearQuest>,
+        progress: List<YearQuestProgress>
+    ): Character {
+        if (quests.isEmpty()) {
+            return character.copy(questsCompletedThisYear = 0)
+        }
+        val completedCount = progress.count { it.completed }
+        val cleanYear = completedCount == quests.size
+        val nextStreak = if (cleanYear) character.questYearStreak + 1 else 0
+        var updated = character.copy(
+            questYearStreak = nextStreak,
+            questsCompletedThisYear = completedCount
+        )
+        if (cleanYear && nextStreak > 0) {
+            val bonus = nextStreak.coerceAtMost(STREAK_KARMA_CAP)
+            updated = updated.copy(
+                stats = updated.stats.copy(
+                    karma = (updated.stats.karma + bonus).coerceIn(0, 100)
+                ),
+                eventLog = EventLogCap.prepend(
+                    updated.eventLog,
+                    "Quest streak: $nextStreak year${if (nextStreak == 1) "" else "s"}! Karma +$bonus."
+                )
+            )
+        }
+        return updated
+    }
+
     private fun humanLabel(kind: YearQuestKind): String = when (kind) {
         YearQuestKind.RAISE_HAPPINESS -> "raise happiness"
         YearQuestKind.RAISE_HEALTH -> "raise health"
@@ -144,6 +193,7 @@ class YearQuestEngine @Inject constructor() {
         YearQuestKind.BOND_FAMILY -> "bond with family"
         YearQuestKind.STAY_OUT_OF_TROUBLE -> "stay out of trouble"
         YearQuestKind.GROW_FOLLOWERS -> "grow followers"
+        YearQuestKind.RAISE_SKILL -> "improve a skill"
     }
 
     private fun progressToward(quest: YearQuest, before: Character, after: Character): Int =
@@ -168,6 +218,14 @@ class YearQuestEngine @Inject constructor() {
             }
             YearQuestKind.GROW_FOLLOWERS ->
                 (after.socialMedia.followers - before.socialMedia.followers).coerceAtLeast(0)
+            YearQuestKind.RAISE_SKILL -> {
+                val beforeMax = before.skills.maxOfOrNull { it.level } ?: 0
+                val afterSum = after.skills.sumOf { it.level }
+                val beforeSum = before.skills.sumOf { it.level }
+                (afterSum - beforeSum).coerceAtLeast(0).coerceAtLeast(
+                    (after.skills.maxOfOrNull { it.level } ?: 0) - beforeMax
+                )
+            }
         }
 
     private fun avgBond(character: Character): Float {
@@ -188,5 +246,6 @@ class YearQuestEngine @Inject constructor() {
     companion object {
         const val MIN_QUEST_AGE = 10
         const val QUESTS_PER_YEAR = 2
+        const val STREAK_KARMA_CAP = 5
     }
 }

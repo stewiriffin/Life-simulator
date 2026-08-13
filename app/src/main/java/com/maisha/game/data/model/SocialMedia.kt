@@ -1,7 +1,15 @@
-// app/src/main/java/com/maisha/game/data/model/SocialMedia.kt
 package com.maisha.game.data.model
 
 import kotlinx.serialization.Serializable
+
+@Serializable
+enum class FameTier {
+    UNKNOWN,
+    LOCAL,
+    REGIONAL,
+    NATIONAL,
+    GLOBAL
+}
 
 /**
  * Online presence for a [Character]: account, followers, and verification status.
@@ -12,5 +20,7 @@ data class SocialMediaState(
     val hasAccount: Boolean = false,
     val followers: Int = 0,
     val isVerified: Boolean = false,
-    val monetizedThisYear: Boolean = false
+    val monetizedThisYear: Boolean = false,
+    /** Highest fame tier reached (for tier-up detection / UI). */
+    val fameTier: FameTier = FameTier.UNKNOWN
 )

@@ -1,6 +1,8 @@
 // app/src/main/java/com/maisha/game/data/model/Character.kt (modified — birthCountryCode for relocation)
 package com.maisha.game.data.model
 
+import com.maisha.game.domain.YearQuest
+
 /**
  * Complete playable state for one life in a save slot.
  *
@@ -64,7 +66,16 @@ data class Character(
     val socialMedia: SocialMediaState = SocialMediaState(),
     val skills: List<SkillProgress> = emptyList(),
     val businesses: List<Business> = emptyList(),
-    val politics: PoliticalState = PoliticalState()
+    val politics: PoliticalState = PoliticalState(),
+    /** Soft goals for the current in-game year (persisted). */
+    val activeYearQuests: List<YearQuest> = emptyList(),
+    /** Consecutive years with every year-quest completed. */
+    val questYearStreak: Int = 0,
+    val questsCompletedThisYear: Int = 0,
+    val unlockedMilestoneIds: List<String> = emptyList(),
+    val bucketList: List<BucketGoal> = emptyList(),
+    /** Master-skill showcase payout claimed this year. */
+    val skillShowcaseDoneThisYear: Boolean = false
 ) {
     /** Passports held; falls back to birth country for pre-immigration saves. */
     fun passportsHeld(): List<String> =

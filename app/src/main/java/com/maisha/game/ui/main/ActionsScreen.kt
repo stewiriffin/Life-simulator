@@ -35,12 +35,16 @@ import com.maisha.game.data.model.HealthCondition
 import com.maisha.game.data.model.HustleType
 import com.maisha.game.data.model.LifestyleOption
 import com.maisha.game.data.model.PetSpecies
+import com.maisha.game.data.model.BucketGoalKind
+import com.maisha.game.data.model.FameTier
 import com.maisha.game.data.model.SkillType
+import com.maisha.game.domain.BucketListEngine
 import com.maisha.game.domain.EducationEngine
 import com.maisha.game.domain.HealthEngine
 import com.maisha.game.domain.RelationshipEngine
 import com.maisha.game.domain.RelocationEngine
 import com.maisha.game.domain.SkillEngine
+import com.maisha.game.domain.SkillMasteryTier
 import com.maisha.game.domain.SocialMediaEngine
 import com.maisha.game.ui.components.ActionCard
 import com.maisha.game.ui.components.ConditionBadge
@@ -71,6 +75,8 @@ private sealed class PendingAction {
     data object MonetizeSocialAccount : PendingAction()
     data class PracticeSkill(val type: SkillType) : PendingAction()
     data class Masterclass(val type: SkillType) : PendingAction()
+    data class ShowcaseSkill(val type: SkillType) : PendingAction()
+    data class AdoptBucket(val templateId: String) : PendingAction()
     data object RenewVisa : PendingAction()
     data object ApplyCitizenship : PendingAction()
     data object TakeDrivingTest : PendingAction()
@@ -93,6 +99,8 @@ fun ActionsScreen(
     onMonetizeSocialAccount: () -> Unit,
     onPracticeSkill: (SkillType) -> Unit,
     onTakeMasterclass: (SkillType) -> Unit,
+    onShowcaseSkill: (SkillType) -> Unit,
+    onAdoptBucketGoal: (String) -> Unit,
     onRenewVisa: () -> Unit,
     onApplyForCitizenship: () -> Unit,
     onTakeDrivingTest: () -> Unit,
@@ -122,6 +130,10 @@ fun ActionsScreen(
         !awaitingTrial
     val showSkillActions = character.alive &&
         character.age >= SkillEngine.MIN_SKILL_AGE &&
+        !incarcerated &&
+        !awaitingTrial
+    val showBucketList = character.alive &&
+        character.age >= 14 &&
         !incarcerated &&
         !awaitingTrial
     val showImmigrationOffice = character.alive &&
@@ -167,6 +179,7 @@ fun ActionsScreen(
         showAdoptPetActions ||
         showSocialMediaActions ||
         showSkillActions ||
+        showBucketList ||
         showImmigrationOffice ||
         showDrivingTest ||
         showPhilanthropy ||
@@ -366,6 +379,18 @@ fun ActionsScreen(
                         }
                     } else {
                         item {
+                            Text(
+                                text = stringResource(
+                                    R.string.format_fame_badge,
+                                    fameTierLabel(character.socialMedia.fameTier)
+                                ),
+                                style = MaterialTheme.typography.labelLarge,
+                                fontWeight = FontWeight.SemiBold,
+                                color = MaterialTheme.colorScheme.primary,
+                                modifier = Modifier.padding(bottom = 4.dp)
+                            )
+                        }
+                        item {
                             ActionCard(
                                 icon = AppIcons.Looks,
                                 title = stringResource(R.string.btn_post_social_update),
@@ -451,11 +476,58 @@ fun ActionsScreen(
                             level = level,
                             masterclassCostLabel = formatMoney(masterclassCost, character.countryCode),
                             canAffordMasterclass = character.stats.money >= masterclassCost,
+                            canShowcase = level >= SkillEngine.TIER_MASTER_MIN &&
+                                !character.skillShowcaseDoneThisYear,
                             onPractice = {
                                 pendingAction.request(PendingAction.PracticeSkill(skillType))
                             },
                             onMasterclass = {
                                 pendingAction.request(PendingAction.Masterclass(skillType))
+                            },
+                            onShowcase = {
+                                pendingAction.request(PendingAction.ShowcaseSkill(skillType))
+                            }
+                        )
+                    }
+                }
+
+                if (showBucketList) {
+                    item {
+                        SectionHeader(title = stringResource(R.string.section_bucket_list))
+                    }
+                    items(
+                        character.bucketList.filter { !it.completed },
+                        key = { "active_${it.id}" }
+                    ) { goal ->
+                        ActionCard(
+                            icon = AppIcons.Smarts,
+                            title = bucketTitle(goal.kind),
+                            description = bucketDescription(goal.kind),
+                            metaLabel = stringResource(
+                                R.string.format_bucket_active,
+                                bucketTitle(goal.kind)
+                            ),
+                            onClick = {}
+                        )
+                    }
+                    items(
+                        BucketListEngine().availableTemplates(character),
+                        key = { "tpl_${it.id}" }
+                    ) { template ->
+                        val cost = EconomyScaler.scaleAmount(
+                            template.commitmentKenya,
+                            character.countryCode
+                        )
+                        ActionCard(
+                            icon = AppIcons.Money,
+                            title = bucketTitle(template.kind),
+                            description = bucketDescription(template.kind),
+                            metaLabel = stringResource(
+                                R.string.format_bucket_commitment,
+                                formatMoney(cost, character.countryCode)
+                            ),
+                            onClick = {
+                                pendingAction.request(PendingAction.AdoptBucket(template.id))
                             }
                         )
                     }
@@ -668,6 +740,8 @@ fun ActionsScreen(
                 PendingAction.MonetizeSocialAccount -> onMonetizeSocialAccount()
                 is PendingAction.PracticeSkill -> onPracticeSkill(action.type)
                 is PendingAction.Masterclass -> onTakeMasterclass(action.type)
+                is PendingAction.ShowcaseSkill -> onShowcaseSkill(action.type)
+                is PendingAction.AdoptBucket -> onAdoptBucketGoal(action.templateId)
                 PendingAction.RenewVisa -> onRenewVisa()
                 PendingAction.ApplyCitizenship -> onApplyForCitizenship()
                 PendingAction.TakeDrivingTest -> onTakeDrivingTest()
@@ -787,6 +861,26 @@ fun ActionsScreen(
                     onDismiss = onDismiss
                 )
             }
+            is PendingAction.ShowcaseSkill -> {
+                ConfirmActionDialog(
+                    title = stringResource(R.string.btn_showcase_skill),
+                    description = stringResource(R.string.skill_showcase_desc),
+                    confirmLabel = stringResource(R.string.btn_showcase_skill),
+                    severity = ConfirmSeverity.NEUTRAL,
+                    onConfirm = onConfirm,
+                    onDismiss = onDismiss
+                )
+            }
+            is PendingAction.AdoptBucket -> {
+                ConfirmActionDialog(
+                    title = stringResource(R.string.section_bucket_list),
+                    description = stringResource(R.string.msg_bucket_adopted),
+                    confirmLabel = stringResource(R.string.btn_confirm),
+                    severity = ConfirmSeverity.NEUTRAL,
+                    onConfirm = onConfirm,
+                    onDismiss = onDismiss
+                )
+            }
             PendingAction.RenewVisa -> {
                 ConfirmActionDialog(
                     title = stringResource(R.string.dialog_renew_visa_title),
@@ -894,9 +988,19 @@ private fun SkillActionCard(
     level: Int,
     masterclassCostLabel: String,
     canAffordMasterclass: Boolean,
+    canShowcase: Boolean,
     onPractice: () -> Unit,
-    onMasterclass: () -> Unit
+    onMasterclass: () -> Unit,
+    onShowcase: () -> Unit
 ) {
+    val tier = SkillEngine.masteryTierOf(level)
+    val (current, next) = SkillEngine.progressToNextTierOf(level)
+    val tierLabel = skillTierLabel(tier)
+    val progressLabel = if (tier == SkillMasteryTier.MASTER && level >= SkillEngine.MAX_SKILL_LEVEL) {
+        stringResource(R.string.format_skill_tier_capped, tierLabel)
+    } else {
+        stringResource(R.string.format_skill_tier_progress, tierLabel, current, next)
+    }
     Column(
         modifier = Modifier.fillMaxWidth(),
         verticalArrangement = Arrangement.spacedBy(6.dp)
@@ -904,7 +1008,7 @@ private fun SkillActionCard(
         StatBar(
             type = StatType.SKILL,
             value = level,
-            label = skillTypeLabel(skillType),
+            label = "${skillTypeLabel(skillType)} · $progressLabel",
             showIcon = false
         )
         ActionCard(
@@ -925,7 +1029,59 @@ private fun SkillActionCard(
             },
             onClick = { if (canAffordMasterclass) onMasterclass() }
         )
+        if (tier == SkillMasteryTier.MASTER) {
+            ActionCard(
+                icon = AppIcons.Money,
+                title = stringResource(R.string.btn_showcase_skill),
+                description = stringResource(R.string.skill_showcase_desc),
+                metaLabel = if (canShowcase) {
+                    progressLabel
+                } else {
+                    stringResource(R.string.msg_skill_showcase_done)
+                },
+                onClick = { if (canShowcase) onShowcase() }
+            )
+        }
     }
+}
+
+@Composable
+private fun skillTierLabel(tier: SkillMasteryTier): String = when (tier) {
+    SkillMasteryTier.NOVICE -> stringResource(R.string.skill_tier_novice)
+    SkillMasteryTier.ADEPT -> stringResource(R.string.skill_tier_adept)
+    SkillMasteryTier.EXPERT -> stringResource(R.string.skill_tier_expert)
+    SkillMasteryTier.MASTER -> stringResource(R.string.skill_tier_master)
+}
+
+@Composable
+private fun fameTierLabel(tier: FameTier): String = when (tier) {
+    FameTier.UNKNOWN -> stringResource(R.string.fame_tier_unknown)
+    FameTier.LOCAL -> stringResource(R.string.fame_tier_local)
+    FameTier.REGIONAL -> stringResource(R.string.fame_tier_regional)
+    FameTier.NATIONAL -> stringResource(R.string.fame_tier_national)
+    FameTier.GLOBAL -> stringResource(R.string.fame_tier_global)
+}
+
+@Composable
+private fun bucketTitle(kind: BucketGoalKind): String = when (kind) {
+    BucketGoalKind.OWN_HOME -> stringResource(R.string.bucket_own_home_title)
+    BucketGoalKind.REACH_FAME -> stringResource(R.string.bucket_reach_fame_title)
+    BucketGoalKind.START_BUSINESS -> stringResource(R.string.bucket_start_business_title)
+    BucketGoalKind.WIN_OFFICE -> stringResource(R.string.bucket_win_office_title)
+    BucketGoalKind.RAISE_CHILD -> stringResource(R.string.bucket_raise_child_title)
+    BucketGoalKind.HIT_WEALTH -> stringResource(R.string.bucket_hit_wealth_title)
+    BucketGoalKind.MASTER_SKILL -> stringResource(R.string.bucket_master_skill_title)
+}
+
+@Composable
+private fun bucketDescription(kind: BucketGoalKind): String = when (kind) {
+    BucketGoalKind.OWN_HOME -> stringResource(R.string.bucket_own_home_desc)
+    BucketGoalKind.REACH_FAME -> stringResource(R.string.bucket_reach_fame_desc)
+    BucketGoalKind.START_BUSINESS -> stringResource(R.string.bucket_start_business_desc)
+    BucketGoalKind.WIN_OFFICE -> stringResource(R.string.bucket_win_office_desc)
+    BucketGoalKind.RAISE_CHILD -> stringResource(R.string.bucket_raise_child_desc)
+    BucketGoalKind.HIT_WEALTH -> stringResource(R.string.bucket_hit_wealth_desc)
+    BucketGoalKind.MASTER_SKILL -> stringResource(R.string.bucket_master_skill_desc)
 }
 
 @Composable

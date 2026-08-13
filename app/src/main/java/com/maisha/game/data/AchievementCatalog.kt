@@ -224,6 +224,20 @@ object AchievementCatalog {
             descriptionRes = R.string.achievement_deep_roots_description,
             category = AchievementCategory.WORLDLY,
             iconName = "tree_deep"
+        ),
+        Achievement(
+            id = "skill_master",
+            titleRes = R.string.achievement_skill_master_title,
+            descriptionRes = R.string.achievement_skill_master_description,
+            category = AchievementCategory.CAREER,
+            iconName = "star"
+        ),
+        Achievement(
+            id = "well_rounded",
+            titleRes = R.string.achievement_well_rounded_title,
+            descriptionRes = R.string.achievement_well_rounded_description,
+            category = AchievementCategory.CAREER,
+            iconName = "shuffle"
         )
     )
 
