@@ -3,6 +3,8 @@ package com.maisha.game.ui.main
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -15,15 +17,17 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.KeyboardArrowDown
 import androidx.compose.material.icons.filled.KeyboardArrowUp
 import androidx.compose.material.icons.filled.Lock
-import androidx.compose.material.icons.filled.ShoppingBag
+import com.maisha.game.ui.components.CategoryFilterChipRow
 import com.maisha.game.ui.components.ConfirmActionDialog
 import com.maisha.game.ui.components.ConfirmSeverity
 import com.maisha.game.ui.components.ConfirmableActionHost
+import com.maisha.game.ui.components.TabPageHero
 import com.maisha.game.ui.components.rememberConfirmableAction
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
@@ -42,13 +46,16 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableFloatStateOf
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateMapOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
@@ -71,12 +78,17 @@ import com.maisha.game.ui.components.StatBar
 import com.maisha.game.ui.components.StatType
 import com.maisha.game.ui.illustrations.EmptyStateIllustration
 import com.maisha.game.ui.theme.CoralNegative
+import com.maisha.game.ui.theme.CreamBg
 import com.maisha.game.ui.theme.GoldAccent
+import com.maisha.game.ui.theme.InkTertiary
+import com.maisha.game.ui.theme.LifeGreen
 import com.maisha.game.ui.theme.MaishaRadius
 import com.maisha.game.ui.theme.MaishaSpacing
 import com.maisha.game.ui.theme.SuccessGreen
 import com.maisha.game.ui.theme.TealPrimary
 import com.maisha.game.util.formatMoney
+
+private enum class AssetsCategory { ALL, OVERVIEW, OWNED, SHOP, MARKETS, ESTATE }
 
 @Composable
 fun AssetsScreen(
@@ -113,6 +125,44 @@ fun AssetsScreen(
     var showWithdrawDialog by remember { mutableStateOf(false) }
     var showSavingsDepositDialog by remember { mutableStateOf(false) }
     var showSavingsWithdrawDialog by remember { mutableStateOf(false) }
+    var selectedCategory by rememberSaveable { mutableIntStateOf(0) }
+    var shopTypeFilter by rememberSaveable { mutableStateOf("ALL") }
+    val category = AssetsCategory.entries.getOrElse(selectedCategory) { AssetsCategory.ALL }
+    fun show(cat: AssetsCategory): Boolean =
+        category == AssetsCategory.ALL || category == cat
+
+    val chipLabels = listOf(
+        stringResource(R.string.chip_assets_all),
+        stringResource(R.string.chip_assets_overview),
+        stringResource(R.string.chip_assets_owned),
+        stringResource(R.string.chip_assets_shop),
+        stringResource(R.string.chip_assets_markets),
+        stringResource(R.string.chip_assets_estate)
+    )
+    val shopCatalog = AssetCatalog.getAssetsForCountry(character.countryCode).filter { item ->
+        when (shopTypeFilter) {
+            "HOUSE" -> item.type == AssetType.HOUSE
+            "CAR" -> item.type == AssetType.CAR
+            "MOTORBIKE" -> item.type == AssetType.MOTORBIKE
+            "HEIRLOOM" -> item.type == AssetType.HEIRLOOM
+            else -> true
+        }
+    }
+    val livingCost = financeEngine.estimateAnnualCostOfLiving(character)
+    val heroSecondary = buildString {
+        append(stringResource(R.string.chip_assets_savings_short))
+        append(" ")
+        append(formatMoney(character.savingsBalance, character.countryCode))
+    }
+    val heroTertiary = if (character.investmentPortfolioValue > 0) {
+        buildString {
+            append(stringResource(R.string.chip_assets_portfolio_short))
+            append(" ")
+            append(formatMoney(character.investmentPortfolioValue, character.countryCode))
+        }
+    } else {
+        null
+    }
 
     LaunchedEffect(uiState.assetsMessage) {
         uiState.assetsMessage?.let { message ->
@@ -262,140 +312,192 @@ fun AssetsScreen(
         )
     }
 
-    LazyColumn(
+    Column(
         modifier = modifier
             .fillMaxSize()
-            .padding(horizontal = MaishaSpacing.md, vertical = MaishaSpacing.sm),
-        verticalArrangement = Arrangement.spacedBy(MaishaSpacing.sm + 2.dp)
+            .background(CreamBg)
     ) {
-        item {
-            Text(
-                text = stringResource(R.string.screen_assets),
-                style = MaterialTheme.typography.headlineSmall,
-                fontWeight = FontWeight.Bold
-            )
-            Text(
-                text = stringResource(
-                    R.string.format_cash_savings_net_worth,
-                    formatMoney(character.stats.money, character.countryCode),
-                    formatMoney(character.savingsBalance, character.countryCode),
-                    formatMoney(netWorth, character.countryCode)
-                ),
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                maxLines = 2,
-                overflow = TextOverflow.Ellipsis
-            )
-        }
+        TabPageHero(
+            title = stringResource(R.string.screen_assets),
+            subtitle = stringResource(R.string.assets_subtitle),
+            primaryChip = formatMoney(character.stats.money, character.countryCode),
+            secondaryChip = stringResource(
+                R.string.format_net_worth_chip,
+                formatMoney(netWorth, character.countryCode)
+            ),
+            tertiaryChip = heroTertiary ?: heroSecondary
+        )
 
-        item {
-            LivingStandardCard(
-                character = character,
-                estimatedCost = financeEngine.estimateAnnualCostOfLiving(character),
-                onSelect = onSetLivingStandard
-            )
-        }
+        CategoryFilterChipRow(
+            labels = chipLabels,
+            selectedIndex = selectedCategory,
+            onSelected = { selectedCategory = it },
+            modifier = Modifier.padding(horizontal = 16.dp, vertical = 10.dp)
+        )
 
-        item {
-            SavingsAccountCard(
-                savingsBalance = character.savingsBalance,
-                lastInterestPercent = character.lastSavingsInterestPercent,
-                countryCode = character.countryCode,
-                canDeposit = character.stats.money > 0 && character.alive,
-                canWithdraw = character.savingsBalance > 0 && character.alive,
-                onDeposit = { showSavingsDepositDialog = true },
-                onWithdraw = { showSavingsWithdrawDialog = true }
-            )
-        }
-
-        item {
-            InvestmentPortfolioCard(
-                portfolioValue = character.investmentPortfolioValue,
-                lastReturnPercent = character.lastPortfolioReturnPercent,
-                countryCode = character.countryCode,
-                canDeposit = character.stats.money > 0 && character.alive,
-                canWithdraw = character.investmentPortfolioValue > 0 && character.alive,
-                onDeposit = { showInvestDialog = true },
-                onWithdraw = { showWithdrawDialog = true }
-            )
-        }
-
-        item {
-            Text(
-                text = stringResource(R.string.section_owned_count, character.assets.size),
-                style = MaterialTheme.typography.titleSmall,
-                fontWeight = FontWeight.SemiBold
-            )
-        }
-
-        if (character.assets.isEmpty()) {
-            item {
-                EmptyStateCard(
-                    illustration = EmptyStateIllustration.ASSETS,
-                    title = stringResource(R.string.section_owned_count, 0),
-                    message = stringResource(R.string.empty_assets)
-                )
-            }
-        } else {
-            items(character.assets, key = { it.id }) { asset ->
-                OwnedAssetCard(
-                    asset = asset,
-                    countryCode = character.countryCode,
-                    currentGeneration = character.generationNumber,
-                    repairCost = financeEngine.calculateRepairCost(asset, character.countryCode),
-                    yearlyYield = financeEngine.estimateYearlyRent(asset),
-                    onSell = { onSellAsset(asset.id) },
-                    onRepair = { pendingRepair.request(asset) },
-                    onRentOut = { pendingRentOut.request(asset) },
-                    onEvict = { pendingEvict.request(asset) }
-                )
-            }
-        }
-
-        item {
-            Spacer(modifier = Modifier.height(4.dp))
-            Text(
-                text = stringResource(R.string.section_shop),
-                style = MaterialTheme.typography.titleSmall,
-                fontWeight = FontWeight.SemiBold
-            )
-        }
-
-        items(AssetCatalog.getAssetsForCountry(character.countryCode), key = { it.id }) { catalogItem ->
-            ShopAssetCard(
-                item = catalogItem,
-                countryCode = character.countryCode,
-                canAfford = character.stats.money >= catalogItem.purchasePrice,
-                onBuy = { pendingPurchase.request(catalogItem) }
-            )
-        }
-
-        if (willBeneficiaries.isNotEmpty() && character.alive) {
-            item {
-                Spacer(modifier = Modifier.height(12.dp))
-                Text(
-                    text = stringResource(R.string.section_estate_planning),
-                    style = MaterialTheme.typography.titleSmall,
-                    fontWeight = FontWeight.SemiBold
-                )
-                Spacer(modifier = Modifier.height(8.dp))
-                Button(
-                    onClick = { showWillEditor = true },
-                    modifier = Modifier.fillMaxWidth(),
-                    shape = MaishaRadius.buttonShape,
-                    colors = ButtonDefaults.buttonColors(containerColor = TealPrimary)
-                ) {
-                    Text(stringResource(R.string.btn_last_will))
-                }
-                if (character.will != null) {
+        LazyColumn(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(horizontal = 16.dp),
+            verticalArrangement = Arrangement.spacedBy(MaishaSpacing.sm + 2.dp)
+        ) {
+            if (show(AssetsCategory.OVERVIEW) || category == AssetsCategory.ALL) {
+                item {
+                    LivingStandardCard(
+                        character = character,
+                        estimatedCost = livingCost,
+                        onSelect = onSetLivingStandard
+                    )
                     Text(
-                        text = stringResource(R.string.will_on_file),
+                        text = stringResource(
+                            R.string.format_living_cost_age_up_hint,
+                            formatMoney(livingCost, character.countryCode)
+                        ),
                         style = MaterialTheme.typography.labelSmall,
-                        color = SuccessGreen,
+                        color = InkTertiary,
                         modifier = Modifier.padding(top = 6.dp)
                     )
                 }
             }
+
+            if (show(AssetsCategory.MARKETS)) {
+                item {
+                    SavingsAccountCard(
+                        savingsBalance = character.savingsBalance,
+                        lastInterestPercent = character.lastSavingsInterestPercent,
+                        countryCode = character.countryCode,
+                        canDeposit = character.stats.money > 0 && character.alive,
+                        canWithdraw = character.savingsBalance > 0 && character.alive,
+                        onDeposit = { showSavingsDepositDialog = true },
+                        onWithdraw = { showSavingsWithdrawDialog = true }
+                    )
+                }
+
+                item {
+                    InvestmentPortfolioCard(
+                        portfolioValue = character.investmentPortfolioValue,
+                        lastReturnPercent = character.lastPortfolioReturnPercent,
+                        countryCode = character.countryCode,
+                        canDeposit = character.stats.money > 0 && character.alive,
+                        canWithdraw = character.investmentPortfolioValue > 0 && character.alive,
+                        onDeposit = { showInvestDialog = true },
+                        onWithdraw = { showWithdrawDialog = true }
+                    )
+                }
+            }
+
+            if (show(AssetsCategory.ESTATE) && willBeneficiaries.isNotEmpty() && character.alive) {
+                item {
+                    Text(
+                        text = stringResource(R.string.section_estate_planning),
+                        style = MaterialTheme.typography.titleSmall,
+                        fontWeight = FontWeight.SemiBold,
+                        color = TealPrimary
+                    )
+                    Spacer(modifier = Modifier.height(8.dp))
+                    Button(
+                        onClick = { showWillEditor = true },
+                        modifier = Modifier.fillMaxWidth(),
+                        shape = MaishaRadius.buttonShape,
+                        colors = ButtonDefaults.buttonColors(containerColor = TealPrimary)
+                    ) {
+                        Text(stringResource(R.string.btn_last_will))
+                    }
+                    if (character.will != null) {
+                        Text(
+                            text = stringResource(R.string.will_on_file),
+                            style = MaterialTheme.typography.labelSmall,
+                            color = SuccessGreen,
+                            modifier = Modifier.padding(top = 6.dp)
+                        )
+                    }
+                }
+            }
+
+            if (show(AssetsCategory.OWNED)) {
+                item {
+                    Text(
+                        text = stringResource(R.string.section_owned_count, character.assets.size),
+                        style = MaterialTheme.typography.titleSmall,
+                        fontWeight = FontWeight.SemiBold,
+                        color = TealPrimary
+                    )
+                }
+
+                if (character.assets.isEmpty()) {
+                    item {
+                        EmptyStateCard(
+                            illustration = EmptyStateIllustration.ASSETS,
+                            title = stringResource(R.string.section_owned_count, 0),
+                            message = stringResource(R.string.empty_assets)
+                        )
+                    }
+                } else {
+                    items(character.assets, key = { it.id }) { asset ->
+                        OwnedAssetCard(
+                            asset = asset,
+                            countryCode = character.countryCode,
+                            currentGeneration = character.generationNumber,
+                            repairCost = financeEngine.calculateRepairCost(asset, character.countryCode),
+                            yearlyYield = financeEngine.estimateYearlyRent(asset),
+                            onSell = { onSellAsset(asset.id) },
+                            onRepair = { pendingRepair.request(asset) },
+                            onRentOut = { pendingRentOut.request(asset) },
+                            onEvict = { pendingEvict.request(asset) }
+                        )
+                    }
+                }
+            }
+
+            if (show(AssetsCategory.SHOP)) {
+                item {
+                    Text(
+                        text = stringResource(R.string.section_shop),
+                        style = MaterialTheme.typography.titleSmall,
+                        fontWeight = FontWeight.SemiBold,
+                        color = TealPrimary
+                    )
+                    Spacer(modifier = Modifier.height(8.dp))
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .horizontalScroll(rememberScrollState()),
+                        horizontalArrangement = Arrangement.spacedBy(6.dp)
+                    ) {
+                        listOf(
+                            "ALL" to R.string.chip_shop_all,
+                            "HOUSE" to R.string.chip_shop_house,
+                            "CAR" to R.string.chip_shop_car,
+                            "MOTORBIKE" to R.string.chip_shop_motorbike,
+                            "HEIRLOOM" to R.string.chip_shop_heirloom
+                        ).forEach { (key, labelRes) ->
+                            val active = shopTypeFilter == key
+                            Text(
+                                text = stringResource(labelRes),
+                                style = MaterialTheme.typography.labelMedium,
+                                fontWeight = FontWeight.Bold,
+                                color = if (active) Color.White else TealPrimary,
+                                modifier = Modifier
+                                    .clip(RoundedCornerShape(99.dp))
+                                    .background(if (active) LifeGreen else Color.White)
+                                    .clickable { shopTypeFilter = key }
+                                    .padding(horizontal = 12.dp, vertical = 6.dp)
+                            )
+                        }
+                    }
+                }
+
+                items(shopCatalog, key = { it.id }) { catalogItem ->
+                    ShopAssetCard(
+                        item = catalogItem,
+                        countryCode = character.countryCode,
+                        canAfford = character.stats.money >= catalogItem.purchasePrice,
+                        onBuy = { pendingPurchase.request(catalogItem) }
+                    )
+                }
+            }
+
+            item { Spacer(modifier = Modifier.height(16.dp)) }
         }
     }
 

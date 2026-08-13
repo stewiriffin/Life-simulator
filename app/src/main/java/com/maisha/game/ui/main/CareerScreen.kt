@@ -1,6 +1,7 @@
 // app/src/main/java/com/maisha/game/ui/main/CareerScreen.kt
 package com.maisha.game.ui.main
 
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -37,6 +38,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -61,8 +63,13 @@ import com.maisha.game.data.model.Job
 import com.maisha.game.data.model.PoliticalOffice
 import com.maisha.game.data.model.SchoolStage
 import com.maisha.game.data.model.TaxPolicyType
+import com.maisha.game.data.model.WorkEffort
 import com.maisha.game.domain.BusinessEngine
+import com.maisha.game.domain.CareerEngine
+import com.maisha.game.domain.HealthEngine
 import com.maisha.game.domain.PoliticsEngine
+import com.maisha.game.domain.RelocationEngine
+import com.maisha.game.ui.components.CategoryFilterChipRow
 import com.maisha.game.ui.components.ConfirmActionDialog
 import com.maisha.game.ui.components.ConfirmSeverity
 import com.maisha.game.ui.components.ConfirmableActionHost
@@ -72,10 +79,14 @@ import com.maisha.game.ui.components.IllustrationImage
 import com.maisha.game.ui.components.RecordBadge
 import com.maisha.game.ui.components.StatBar
 import com.maisha.game.ui.components.StatType
+import com.maisha.game.ui.components.TabPageHero
 import com.maisha.game.ui.illustrations.EmptyStateIllustration
 import com.maisha.game.ui.illustrations.EmptyStateIllustrationView
 import com.maisha.game.ui.theme.CoralNegative
+import com.maisha.game.ui.theme.CreamBg
 import com.maisha.game.ui.theme.GoldAccent
+import com.maisha.game.ui.theme.InkTertiary
+import com.maisha.game.ui.theme.LifeGreen
 import com.maisha.game.ui.theme.MaishaRadius
 import com.maisha.game.ui.theme.MaishaSpacing
 import com.maisha.game.ui.theme.NavyDeep
@@ -84,6 +95,8 @@ import com.maisha.game.ui.theme.TealPrimary
 import com.maisha.game.util.formatMoney
 
 private const val MIN_RETIREMENT_AGE = 60
+
+private enum class CareerCategory { ALL, WORK, SCHOOL, BUSINESS, POLITICS }
 
 @Composable
 fun CareerScreen(
@@ -256,175 +269,296 @@ fun CareerScreen(
         !character.criminalRecord.currentlyIncarcerated &&
         !character.criminalRecord.awaitingTrial &&
         character.businesses.size < BusinessEngine.MAX_BUSINESSES
+    val politicsEligible = character.alive &&
+        character.age >= PoliticsEngine.MIN_OFFICE_AGE &&
+        !character.criminalRecord.currentlyIncarcerated &&
+        !character.criminalRecord.awaitingTrial
+    val resources = LocalContext.current.resources
+    val careerEngine = remember { CareerEngine(HealthEngine(), RelocationEngine()) }
+    val hireChance = if (!isRetired && currentJob == null && character.alive) {
+        (careerEngine.hireSuccessChance(character) * 100f).toInt()
+    } else {
+        null
+    }
+
+    var selectedCategory by rememberSaveable { mutableIntStateOf(0) }
+    val category = CareerCategory.entries.getOrElse(selectedCategory) { CareerCategory.ALL }
+    fun show(cat: CareerCategory): Boolean =
+        category == CareerCategory.ALL || category == cat
+
+    var historyExpanded by rememberSaveable { mutableStateOf(false) }
+
+    val heroSubtitle = when {
+        isRetired -> stringResource(R.string.career_subtitle_retired)
+        currentJob != null -> stringResource(
+            R.string.career_subtitle_employed,
+            currentJob.title
+        )
+        else -> stringResource(R.string.career_subtitle_open)
+    }
+    val heroPrimary = when {
+        isRetired -> formatMoney(character.career.pensionAmount, character.countryCode)
+        currentJob != null -> CareerFormatter.formatSalary(currentJob, resources, character.countryCode)
+        else -> formatMoney(character.stats.money, character.countryCode)
+    }
+    val heroSecondary = when {
+        isRetired -> stringResource(R.string.chip_career_pension)
+        currentJob != null -> stringResource(
+            R.string.format_job_level_short,
+            currentJob.level,
+            character.career.yearsAtCurrentJob
+        )
+        hireChance != null -> stringResource(R.string.format_hire_chance, hireChance)
+        else -> null
+    }
+    val heroTertiary = when {
+        currentJob != null -> stringResource(
+            R.string.format_work_effort_chip,
+            when (character.career.plannedWorkEffort) {
+                WorkEffort.COAST -> stringResource(R.string.work_effort_coast)
+                WorkEffort.NORMAL -> stringResource(R.string.work_effort_normal)
+                WorkEffort.GRIND -> stringResource(R.string.work_effort_grind)
+            }
+        )
+        else -> null
+    }
+
+    val chipLabels = listOf(
+        stringResource(R.string.chip_career_all),
+        stringResource(R.string.chip_career_work),
+        stringResource(R.string.chip_career_school),
+        stringResource(R.string.chip_career_business),
+        stringResource(R.string.chip_career_politics)
+    )
 
     Column(
         modifier = modifier
             .fillMaxSize()
-            .verticalScroll(rememberScrollState())
-            .padding(horizontal = MaishaSpacing.md, vertical = MaishaSpacing.sm)
+            .background(CreamBg)
     ) {
-        Text(
-            text = stringResource(R.string.screen_career),
-            style = MaterialTheme.typography.headlineSmall,
-            fontWeight = FontWeight.Bold,
-            color = if (isMilitaryCareer) militaryAccent else MaterialTheme.colorScheme.onSurface
+        TabPageHero(
+            title = stringResource(R.string.screen_career),
+            subtitle = heroSubtitle,
+            primaryChip = heroPrimary,
+            secondaryChip = heroSecondary,
+            tertiaryChip = heroTertiary
         )
 
-        if (showDeploymentBanner) {
-            Spacer(modifier = Modifier.height(8.dp))
-            Card(
-                modifier = Modifier.fillMaxWidth(),
-                shape = MaishaRadius.cardShape,
-                colors = CardDefaults.cardColors(containerColor = militaryAccent)
-            ) {
-                Text(
-                    text = stringResource(R.string.banner_active_deployment),
-                    style = MaterialTheme.typography.labelLarge,
-                    fontWeight = FontWeight.Bold,
-                    color = Color.White,
-                    textAlign = TextAlign.Center,
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(horizontal = 12.dp, vertical = 10.dp)
-                )
+        CategoryFilterChipRow(
+            labels = chipLabels,
+            selectedIndex = selectedCategory,
+            onSelected = { selectedCategory = it },
+            modifier = Modifier.padding(horizontal = 16.dp, vertical = 10.dp)
+        )
+
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .verticalScroll(rememberScrollState())
+                .padding(horizontal = 16.dp)
+                .padding(bottom = 20.dp)
+        ) {
+            if (showDeploymentBanner) {
+                Card(
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = MaishaRadius.cardShape,
+                    colors = CardDefaults.cardColors(containerColor = militaryAccent)
+                ) {
+                    Text(
+                        text = stringResource(R.string.banner_active_deployment),
+                        style = MaterialTheme.typography.labelLarge,
+                        fontWeight = FontWeight.Bold,
+                        color = Color.White,
+                        textAlign = TextAlign.Center,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = 12.dp, vertical = 10.dp)
+                    )
+                }
+                Spacer(modifier = Modifier.height(10.dp))
             }
-        }
 
-        Spacer(modifier = Modifier.height(10.dp))
-
-        if (character.criminalRecord.hasRecord) {
-            RecordBadge(timesArrested = character.criminalRecord.timesArrested)
-            Spacer(modifier = Modifier.height(8.dp))
-        }
-
-        EducationSectionCard(
-            education = character.education,
-            countryCode = character.countryCode,
-            onDropOut = { dropOutConfirm.request(Unit) }
-        )
-
-        Spacer(modifier = Modifier.height(12.dp))
-
-        PoliticsSection(
-            character = character,
-            selectedOffice = selectedOffice,
-            onOfficeSelected = { selectedOffice = it },
-            campaignInvestment = campaignInvestment,
-            onLaunchCampaign = { campaignConfirm.request(selectedOffice) },
-            onPassTaxPolicy = { taxPolicyConfirm.request(it) }
-        )
-
-        Spacer(modifier = Modifier.height(12.dp))
-
-        when {
-            isRetired -> {
-                RetiredStateCard(
-                    pensionAmount = character.career.pensionAmount,
-                    countryCode = character.countryCode
-                )
-                Spacer(modifier = Modifier.height(12.dp))
+            if (character.criminalRecord.hasRecord && show(CareerCategory.WORK)) {
+                RecordBadge(timesArrested = character.criminalRecord.timesArrested)
+                Spacer(modifier = Modifier.height(8.dp))
             }
-            currentJob != null -> {
-                CurrentJobCard(
-                    character = character,
-                    canRetire = character.age >= MIN_RETIREMENT_AGE,
-                    onQuitJob = onQuitJob,
-                    onRetire = { retireConfirm.request(Unit) },
-                    onSetWorkEffort = onSetWorkEffort
-                )
-                Spacer(modifier = Modifier.height(12.dp))
-            }
-        }
 
-        Text(
-            text = stringResource(R.string.section_my_businesses),
-            style = MaterialTheme.typography.titleSmall,
-            fontWeight = FontWeight.SemiBold,
-            color = TealPrimary
-        )
-        Spacer(modifier = Modifier.height(MaishaSpacing.sm))
-
-        if (character.businesses.isEmpty()) {
-            Text(
-                text = stringResource(R.string.empty_businesses),
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
-            )
-        } else {
-            character.businesses.forEach { business ->
-                BusinessCard(
-                    business = business,
+            if (show(CareerCategory.SCHOOL)) {
+                EducationSectionCard(
+                    education = character.education,
                     countryCode = character.countryCode,
-                    onSell = { sellBusinessConfirm.request(business) }
+                    onDropOut = { dropOutConfirm.request(Unit) }
                 )
-                Spacer(modifier = Modifier.height(MaishaSpacing.sm))
+                Spacer(modifier = Modifier.height(12.dp))
             }
-        }
 
-        if (canStartBusiness) {
-            Spacer(modifier = Modifier.height(4.dp))
-            Button(
-                onClick = {
-                    businessName = ""
-                    businessIndustry = BusinessIndustry.TECH
-                    businessInvestment = tiers.first()
-                    startBusinessConfirm.request(Unit)
-                },
-                modifier = Modifier.fillMaxWidth(),
-                shape = RoundedCornerShape(14.dp),
-                colors = ButtonDefaults.buttonColors(containerColor = TealPrimary)
-            ) {
-                Text(
-                    text = stringResource(R.string.btn_start_business),
-                    fontWeight = FontWeight.SemiBold
-                )
+            if (show(CareerCategory.POLITICS)) {
+                if (politicsEligible || character.politics.currentOffice != null) {
+                    PoliticsSection(
+                        character = character,
+                        selectedOffice = selectedOffice,
+                        onOfficeSelected = { selectedOffice = it },
+                        campaignInvestment = campaignInvestment,
+                        onLaunchCampaign = { campaignConfirm.request(selectedOffice) },
+                        onPassTaxPolicy = { taxPolicyConfirm.request(it) }
+                    )
+                } else {
+                    Text(
+                        text = stringResource(R.string.section_politics),
+                        style = MaterialTheme.typography.titleSmall,
+                        fontWeight = FontWeight.SemiBold,
+                        color = TealPrimary
+                    )
+                    Spacer(modifier = Modifier.height(4.dp))
+                    Text(
+                        text = stringResource(R.string.politics_locked_hint),
+                        style = MaterialTheme.typography.bodySmall,
+                        color = InkTertiary
+                    )
+                }
+                Spacer(modifier = Modifier.height(12.dp))
             }
-        }
 
-        if (!isRetired && currentJob == null) {
-            Spacer(modifier = Modifier.height(16.dp))
-            Text(
-                text = stringResource(R.string.section_job_listings),
-                style = MaterialTheme.typography.titleSmall,
-                fontWeight = FontWeight.SemiBold
-            )
-            Spacer(modifier = Modifier.height(MaishaSpacing.sm))
+            if (show(CareerCategory.WORK)) {
+                when {
+                    isRetired -> {
+                        RetiredStateCard(
+                            pensionAmount = character.career.pensionAmount,
+                            countryCode = character.countryCode
+                        )
+                        Spacer(modifier = Modifier.height(12.dp))
+                    }
+                    currentJob != null -> {
+                        CurrentJobCard(
+                            character = character,
+                            canRetire = character.age >= MIN_RETIREMENT_AGE,
+                            retirementPensionEstimate = retirementPensionEstimate,
+                            onQuitJob = onQuitJob,
+                            onRetire = { retireConfirm.request(Unit) },
+                            onSetWorkEffort = onSetWorkEffort
+                        )
+                        Spacer(modifier = Modifier.height(12.dp))
+                    }
+                }
 
-            if (eligibleJobs.isEmpty()) {
-                EmptyStateCard(
-                    illustration = EmptyStateIllustration.ACTIONS,
-                    title = stringResource(R.string.screen_career),
-                    message = stringResource(R.string.empty_career_no_eligible)
-                )
-            } else {
-                Column(verticalArrangement = Arrangement.spacedBy(MaishaSpacing.sm)) {
-                    JobPool.getJobsForCountry(character.countryCode).forEach { job ->
-                        val isEligible = job.id in eligibleIds
-                        val reason = jobIneligibilityReason(character, job)
-                        JobListingCard(
-                            job = job,
-                            countryCode = character.countryCode,
-                            isEligible = isEligible,
-                            ineligibilityReason = reason,
-                            onApply = { onApplyForJob(job.id) }
+                if (!isRetired && currentJob == null) {
+                    Text(
+                        text = stringResource(R.string.section_job_listings),
+                        style = MaterialTheme.typography.titleSmall,
+                        fontWeight = FontWeight.SemiBold,
+                        color = TealPrimary
+                    )
+                    if (hireChance != null) {
+                        Text(
+                            text = stringResource(R.string.format_hire_outlook, hireChance),
+                            style = MaterialTheme.typography.bodySmall,
+                            color = InkTertiary,
+                            modifier = Modifier.padding(top = 4.dp, bottom = 8.dp)
+                        )
+                    } else {
+                        Spacer(modifier = Modifier.height(MaishaSpacing.sm))
+                    }
+
+                    Text(
+                        text = stringResource(R.string.career_side_hustle_hint),
+                        style = MaterialTheme.typography.labelMedium,
+                        color = LifeGreen,
+                        modifier = Modifier.padding(bottom = 8.dp)
+                    )
+
+                    if (eligibleJobs.isEmpty()) {
+                        EmptyStateCard(
+                            illustration = EmptyStateIllustration.ACTIONS,
+                            title = stringResource(R.string.screen_career),
+                            message = stringResource(R.string.empty_career_no_eligible)
+                        )
+                    } else {
+                        Column(verticalArrangement = Arrangement.spacedBy(MaishaSpacing.sm)) {
+                            JobPool.getJobsForCountry(character.countryCode).forEach { job ->
+                                val isEligible = job.id in eligibleIds
+                                val reason = jobIneligibilityReason(character, job)
+                                JobListingCard(
+                                    job = job,
+                                    countryCode = character.countryCode,
+                                    isEligible = isEligible,
+                                    ineligibilityReason = reason,
+                                    onApply = { onApplyForJob(job.id) }
+                                )
+                            }
+                        }
+                    }
+                    Spacer(modifier = Modifier.height(12.dp))
+                }
+
+                if (character.career.jobHistory.isNotEmpty()) {
+                    TextButton(onClick = { historyExpanded = !historyExpanded }) {
+                        Text(
+                            text = if (historyExpanded) {
+                                stringResource(R.string.btn_collapse_job_history)
+                            } else {
+                                stringResource(R.string.btn_expand_job_history)
+                            }
+                        )
+                    }
+                    if (historyExpanded) {
+                        Text(
+                            text = stringResource(
+                                R.string.format_job_history,
+                                character.career.jobHistory.joinToString(", ")
+                            ),
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
                     }
                 }
             }
-        }
 
-        if (character.career.jobHistory.isNotEmpty()) {
-            Spacer(modifier = Modifier.height(8.dp))
-            Text(
-                text = stringResource(
-                    R.string.format_job_history,
-                    character.career.jobHistory.joinToString(", ")
-                ),
-                style = MaterialTheme.typography.labelSmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                maxLines = 2,
-                overflow = TextOverflow.Ellipsis
-            )
+            if (show(CareerCategory.BUSINESS)) {
+                Text(
+                    text = stringResource(R.string.section_my_businesses),
+                    style = MaterialTheme.typography.titleSmall,
+                    fontWeight = FontWeight.SemiBold,
+                    color = TealPrimary
+                )
+                Spacer(modifier = Modifier.height(MaishaSpacing.sm))
+
+                if (character.businesses.isEmpty()) {
+                    Text(
+                        text = stringResource(R.string.empty_businesses),
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                } else {
+                    character.businesses.forEach { business ->
+                        BusinessCard(
+                            business = business,
+                            countryCode = character.countryCode,
+                            onSell = { sellBusinessConfirm.request(business) }
+                        )
+                        Spacer(modifier = Modifier.height(MaishaSpacing.sm))
+                    }
+                }
+
+                if (canStartBusiness) {
+                    Spacer(modifier = Modifier.height(4.dp))
+                    Button(
+                        onClick = {
+                            businessName = ""
+                            businessIndustry = BusinessIndustry.TECH
+                            businessInvestment = tiers.first()
+                            startBusinessConfirm.request(Unit)
+                        },
+                        modifier = Modifier.fillMaxWidth(),
+                        shape = RoundedCornerShape(14.dp),
+                        colors = ButtonDefaults.buttonColors(containerColor = TealPrimary)
+                    ) {
+                        Text(
+                            text = stringResource(R.string.btn_start_business),
+                            fontWeight = FontWeight.SemiBold
+                        )
+                    }
+                }
+            }
         }
     }
 }
@@ -753,6 +887,7 @@ private fun EducationSectionCard(
 private fun CurrentJobCard(
     character: Character,
     canRetire: Boolean,
+    retirementPensionEstimate: Int,
     onQuitJob: () -> Unit,
     onRetire: () -> Unit,
     onSetWorkEffort: (com.maisha.game.data.model.WorkEffort) -> Unit
@@ -763,12 +898,17 @@ private fun CurrentJobCard(
     val cardColor = if (job.isMilitary) {
         militaryAccent.copy(alpha = 0.22f)
     } else {
-        TealPrimary.copy(alpha = 0.15f)
+        Color.White
+    }
+    val effortOutlook = when (character.career.plannedWorkEffort) {
+        WorkEffort.COAST -> stringResource(R.string.work_effort_outlook_coast)
+        WorkEffort.NORMAL -> stringResource(R.string.work_effort_outlook_normal)
+        WorkEffort.GRIND -> stringResource(R.string.work_effort_outlook_grind)
     }
 
     Card(
         modifier = Modifier.fillMaxWidth(),
-        shape = MaishaRadius.cardShape,
+        shape = RoundedCornerShape(16.dp),
         colors = CardDefaults.cardColors(containerColor = cardColor)
     ) {
         Column(modifier = Modifier.padding(14.dp)) {
@@ -821,6 +961,12 @@ private fun CurrentJobCard(
                 fontWeight = FontWeight.SemiBold
             )
             Text(
+                text = effortOutlook,
+                style = MaterialTheme.typography.bodySmall,
+                color = TealPrimary,
+                modifier = Modifier.padding(bottom = 4.dp)
+            )
+            Text(
                 text = stringResource(R.string.work_effort_desc),
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
@@ -830,7 +976,7 @@ private fun CurrentJobCard(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.spacedBy(6.dp)
             ) {
-                com.maisha.game.data.model.WorkEffort.entries.forEach { effort ->
+                WorkEffort.entries.forEach { effort ->
                     FilterChip(
                         selected = character.career.plannedWorkEffort == effort,
                         onClick = { onSetWorkEffort(effort) },
@@ -838,11 +984,11 @@ private fun CurrentJobCard(
                         label = {
                             Text(
                                 text = when (effort) {
-                                    com.maisha.game.data.model.WorkEffort.COAST ->
+                                    WorkEffort.COAST ->
                                         stringResource(R.string.work_effort_coast)
-                                    com.maisha.game.data.model.WorkEffort.NORMAL ->
+                                    WorkEffort.NORMAL ->
                                         stringResource(R.string.work_effort_normal)
-                                    com.maisha.game.data.model.WorkEffort.GRIND ->
+                                    WorkEffort.GRIND ->
                                         stringResource(R.string.work_effort_grind)
                                 },
                                 maxLines = 1
@@ -861,9 +1007,31 @@ private fun CurrentJobCard(
                 label = stringResource(R.string.stat_performance)
             )
 
+            if (canRetire) {
+                Spacer(modifier = Modifier.height(8.dp))
+                Text(
+                    text = stringResource(
+                        R.string.format_pension_estimate,
+                        formatMoney(retirementPensionEstimate, character.countryCode)
+                    ),
+                    style = MaterialTheme.typography.labelMedium,
+                    color = GoldAccent,
+                    fontWeight = FontWeight.SemiBold
+                )
+            }
+
             Spacer(modifier = Modifier.height(12.dp))
 
+            OutlinedButton(
+                onClick = onQuitJob,
+                modifier = Modifier.fillMaxWidth(),
+                shape = RoundedCornerShape(12.dp),
+                enabled = character.alive
+            ) {
+                Text(stringResource(R.string.btn_quit_job))
+            }
             if (canRetire) {
+                Spacer(modifier = Modifier.height(8.dp))
                 Button(
                     onClick = onRetire,
                     modifier = Modifier.fillMaxWidth(),
@@ -874,14 +1042,6 @@ private fun CurrentJobCard(
                     )
                 ) {
                     Text(stringResource(R.string.btn_retire))
-                }
-            } else {
-                OutlinedButton(
-                    onClick = onQuitJob,
-                    modifier = Modifier.fillMaxWidth(),
-                    shape = RoundedCornerShape(12.dp)
-                ) {
-                    Text(stringResource(R.string.btn_quit_job))
                 }
             }
         }

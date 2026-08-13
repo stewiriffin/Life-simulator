@@ -1174,6 +1174,44 @@
     <string name="msg_leisure_cannot_afford">Not enough cash for that.</string>
     <string name="msg_leisure_ineligible">You can\'t do that right now.</string>
 
+    <!-- Career / Assets page deepen -->
+    <string name="career_subtitle_employed">Working as %1$s</string>
+    <string name="career_subtitle_retired">Enjoying retirement</string>
+    <string name="career_subtitle_open">Find work, study, or build something</string>
+    <string name="chip_career_all">All</string>
+    <string name="chip_career_work">Work</string>
+    <string name="chip_career_school">School</string>
+    <string name="chip_career_business">Business</string>
+    <string name="chip_career_politics">Politics</string>
+    <string name="chip_career_pension">Pension</string>
+    <string name="format_job_level_short">Lvl %1$d · %2$d yrs</string>
+    <string name="format_hire_chance">~%1$d%% hire odds</string>
+    <string name="format_hire_outlook">Your current hire odds are about %1$d%%.</string>
+    <string name="format_work_effort_chip">Effort: %1$s</string>
+    <string name="work_effort_outlook_coast">Coast: lower pay, less stress next Age Up</string>
+    <string name="work_effort_outlook_normal">Normal: steady pay and performance</string>
+    <string name="work_effort_outlook_grind">Grind: higher pay, more burnout next Age Up</string>
+    <string name="format_pension_estimate">Pension estimate: %1$s / year</string>
+    <string name="career_side_hustle_hint">Need extra cash? Side hustles live on the Actions · Earn tab.</string>
+    <string name="btn_expand_job_history">Show career path</string>
+    <string name="btn_collapse_job_history">Hide career path</string>
+    <string name="assets_subtitle">Cash, property, and markets</string>
+    <string name="chip_assets_all">All</string>
+    <string name="chip_assets_overview">Overview</string>
+    <string name="chip_assets_owned">Owned</string>
+    <string name="chip_assets_shop">Shop</string>
+    <string name="chip_assets_markets">Markets</string>
+    <string name="chip_assets_estate">Estate</string>
+    <string name="chip_assets_savings_short">Savings</string>
+    <string name="chip_assets_portfolio_short">Portfolio</string>
+    <string name="format_net_worth_chip">NW %1$s</string>
+    <string name="format_living_cost_age_up_hint">About %1$s will be billed on next Age Up</string>
+    <string name="chip_shop_all">All</string>
+    <string name="chip_shop_house">Homes</string>
+    <string name="chip_shop_car">Cars</string>
+    <string name="chip_shop_motorbike">Bikes</string>
+    <string name="chip_shop_heirloom">Heirlooms</string>
+
     <!-- Format strings -->
     <string name="format_age">Age %d</string>
 
