@@ -41,7 +41,8 @@ sealed class AgeUpResult {
 
 data class FamilyInteractionResult(
     val character: Character,
-    val message: String
+    val messageKey: String,
+    val messageArgs: List<String> = emptyList()
 )
 
 data class AgeUpOutcome(

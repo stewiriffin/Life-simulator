@@ -35,6 +35,7 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.stringResource
@@ -46,6 +47,7 @@ import com.maisha.game.ui.illustrations.OnboardingIllustration
 import com.maisha.game.ui.illustrations.OnboardingIllustrationView
 import com.maisha.game.ui.theme.AppIcons
 import com.maisha.game.ui.theme.GoldAccent
+import com.maisha.game.ui.theme.LifeGreen
 import com.maisha.game.ui.theme.MaishaRadius
 import com.maisha.game.ui.theme.MaishaSpacing
 import com.maisha.game.ui.theme.NavyDeep
@@ -134,8 +136,8 @@ fun OnboardingScreen(
                         pressedElevation = 2.dp
                     ),
                     colors = ButtonDefaults.buttonColors(
-                        containerColor = GoldAccent,
-                        contentColor = NavyDeep
+                        containerColor = LifeGreen,
+                        contentColor = Color.White
                     )
                 ) {
                     Text(

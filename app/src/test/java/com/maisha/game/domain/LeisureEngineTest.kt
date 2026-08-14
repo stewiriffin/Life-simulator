@@ -3,6 +3,7 @@ package com.maisha.game.domain
 import com.maisha.game.data.model.CriminalRecord
 import com.maisha.game.data.model.Stats
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
@@ -45,6 +46,44 @@ class LeisureEngineTest {
             LeisureResult.Ineligible,
             engine.perform(locked, LeisureActivity.NIGHT_OUT)
         )
+    }
+
+    @Test
+    fun activitiesFor_childGetsPlaygroundNotSpa() {
+        val child = TestFixtures.character(
+            age = 10,
+            stats = Stats(money = 20_000, happiness = 50, health = 70)
+        )
+        val activities = engine.activitiesFor(child)
+        assertTrue(activities.contains(LeisureActivity.PLAYGROUND))
+        assertTrue(activities.contains(LeisureActivity.STUDY_BUDDY))
+        assertTrue(activities.contains(LeisureActivity.CHORES))
+        assertFalse(activities.contains(LeisureActivity.SPA_DAY))
+    }
+
+    @Test
+    fun chores_paysCashAndIsEligibleForTween() {
+        val tween = TestFixtures.character(
+            age = 12,
+            stats = Stats(money = 100, happiness = 50, health = 70)
+        )
+        val result = engine.perform(tween, LeisureActivity.CHORES)
+        assertTrue(result is LeisureResult.Success)
+        val after = (result as LeisureResult.Success).character
+        assertTrue(after.stats.money > tween.stats.money)
+    }
+
+    @Test
+    fun adultLeisure_ineligibleForYoungChild() {
+        val toddler = TestFixtures.character(
+            age = 4,
+            stats = Stats(money = 50_000)
+        )
+        assertEquals(
+            LeisureResult.Ineligible,
+            engine.perform(toddler, LeisureActivity.PLAYGROUND)
+        )
+        assertTrue(engine.activitiesFor(toddler).isEmpty())
     }
 }
 

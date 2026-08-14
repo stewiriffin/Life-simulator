@@ -56,6 +56,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.maisha.game.R
+import com.maisha.game.data.local.OnboardingTips
 import com.maisha.game.data.model.BucketGoalKind
 import com.maisha.game.data.model.CareerState
 import com.maisha.game.data.model.Character
@@ -80,6 +81,7 @@ import com.maisha.game.ui.components.AchievementUnlockedDialog
 import com.maisha.game.ui.components.AgeUpButton
 import com.maisha.game.ui.components.AppLoadingIndicator
 import com.maisha.game.ui.components.CountryFlag
+import com.maisha.game.ui.components.DismissibleTipCard
 import com.maisha.game.ui.components.EmptyStateCard
 import com.maisha.game.ui.components.FloatingStatChangeLayer
 import com.maisha.game.ui.components.MainTab
@@ -195,6 +197,9 @@ fun LifeScreen(
     onFeedbackHandled: () -> Unit,
     onDismissFamilyDatingTip: () -> Unit,
     onDismissFamilyDetailTip: () -> Unit,
+    onDismissYearQuestsTip: () -> Unit = {},
+    onDismissLeisureTip: () -> Unit = {},
+    onDismissAssetsMarketsTip: () -> Unit = {},
     onThrowParty: (Int) -> Unit
 ) {
     if (uiState.isLoading) {
@@ -345,6 +350,7 @@ fun LifeScreen(
                 onOpenSettings = onOpenSettings,
                 onStatDeltaFinished = onStatDeltaFinished,
                 onYearRecapDismissed = onYearRecapDismissed,
+                onDismissYearQuestsTip = onDismissYearQuestsTip,
                 modifier = Modifier.padding(innerPadding)
             )
             MainTab.FAMILY -> FamilyScreen(
@@ -408,6 +414,7 @@ fun LifeScreen(
                 onWithdrawSavings = onWithdrawSavings,
                 onSetLivingStandard = onSetLivingStandard,
                 onAssetsMessageDismissed = onAssetsMessageDismissed,
+                onDismissAssetsMarketsTip = onDismissAssetsMarketsTip,
                 modifier = Modifier.padding(innerPadding)
             )
             MainTab.ACTIONS -> ActionsScreen(
@@ -434,6 +441,7 @@ fun LifeScreen(
                 donationTiers = donationTiers,
                 onPerformLeisure = onPerformLeisure,
                 onActionMessageDismissed = onActionMessageDismissed,
+                onDismissLeisureTip = onDismissLeisureTip,
                 modifier = Modifier.padding(innerPadding)
             )
             }
@@ -452,6 +460,7 @@ private fun LifeTabContent(
     onOpenSettings: () -> Unit,
     onStatDeltaFinished: (Long) -> Unit,
     onYearRecapDismissed: () -> Unit,
+    onDismissYearQuestsTip: () -> Unit,
     modifier: Modifier = Modifier
 ) {
     val journalEntries = remember(character.eventLog) {
@@ -500,6 +509,19 @@ private fun LifeTabContent(
                         hasCriminalRecord = character.criminalRecord.hasRecord,
                         timesArrested = character.criminalRecord.timesArrested
                     )
+                }
+
+                val showQuestsTip = uiState.tipsLoaded &&
+                    OnboardingTips.YEAR_QUESTS !in uiState.seenTipIds &&
+                    uiState.yearQuests.isNotEmpty()
+                if (showQuestsTip) {
+                    item {
+                        Spacer(modifier = Modifier.height(8.dp))
+                        DismissibleTipCard(
+                            text = stringResource(R.string.tip_year_quests),
+                            onDismiss = onDismissYearQuestsTip
+                        )
+                    }
                 }
 
                 if (uiState.yearRecapLines.isNotEmpty()) {
@@ -1169,6 +1191,30 @@ private fun StatusInfoCard(
                         fg = TealPrimary
                     )
                 }
+                if (character.isLivingAbroad()) {
+                    HeroChip(
+                        text = if (character.currentVisa != null) {
+                            stringResource(
+                                R.string.format_visa_chip,
+                                character.visaYearsRemaining
+                            )
+                        } else {
+                            stringResource(R.string.chip_abroad_citizen_flavor)
+                        },
+                        bg = TealPrimary.copy(alpha = 0.18f),
+                        fg = TealPrimary
+                    )
+                    if (character.yearsInCurrentCountry > 0) {
+                        HeroChip(
+                            text = stringResource(
+                                R.string.format_years_in_country,
+                                character.yearsInCurrentCountry
+                            ),
+                            bg = TealPrimary.copy(alpha = 0.1f),
+                            fg = TealPrimary
+                        )
+                    }
+                }
             }
         }
     }
@@ -1351,6 +1397,13 @@ private fun yearQuestTitle(quest: YearQuest, countryCode: String): String = when
         stringResource(R.string.year_quest_grow_followers, quest.target)
     YearQuestKind.RAISE_SKILL ->
         stringResource(R.string.year_quest_raise_skill, quest.target)
+    YearQuestKind.HOLD_JOB ->
+        stringResource(R.string.year_quest_hold_job)
+    YearQuestKind.GROW_SAVINGS ->
+        stringResource(
+            R.string.year_quest_grow_savings,
+            formatMoney(quest.target, countryCode)
+        )
 }
 
 @Composable

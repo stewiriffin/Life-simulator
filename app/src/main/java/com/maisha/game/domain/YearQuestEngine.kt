@@ -16,7 +16,9 @@ enum class YearQuestKind {
     BOND_FAMILY,
     STAY_OUT_OF_TROUBLE,
     GROW_FOLLOWERS,
-    RAISE_SKILL
+    RAISE_SKILL,
+    HOLD_JOB,
+    GROW_SAVINGS
 }
 
 @Serializable
@@ -25,7 +27,11 @@ data class YearQuest(
     /** Absolute target delta or threshold depending on [kind]. */
     val target: Int,
     val titleResHint: String,
-    val rewardKarma: Int = 3
+    val rewardKarma: Int = 3,
+    /** Occasional cash reward (Kenya baseline; scaled by caller if needed). 0 = none. */
+    val rewardCashKenya: Int = 0,
+    /** Flat happiness bump on completion. */
+    val rewardHappiness: Int = 0
 )
 
 data class YearQuestProgress(
@@ -47,11 +53,12 @@ class YearQuestEngine @Inject constructor() {
     fun generate(character: Character, random: Random = Random.Default): List<YearQuest> {
         if (!character.alive || character.age < MIN_QUEST_AGE) return emptyList()
         val pool = mutableListOf<YearQuest>()
+        val childTargets = character.age < 14
 
         if (character.stats.happiness < 90) {
             pool += YearQuest(
                 kind = YearQuestKind.RAISE_HAPPINESS,
-                target = 8,
+                target = if (childTargets) 5 else 8,
                 titleResHint = "year_quest_raise_happiness",
                 rewardKarma = 3
             )
@@ -59,7 +66,7 @@ class YearQuestEngine @Inject constructor() {
         if (character.stats.health < 90) {
             pool += YearQuest(
                 kind = YearQuestKind.RAISE_HEALTH,
-                target = 6,
+                target = if (childTargets) 4 else 6,
                 titleResHint = "year_quest_raise_health",
                 rewardKarma = 3
             )
@@ -118,6 +125,25 @@ class YearQuestEngine @Inject constructor() {
                 rewardKarma = 3
             )
         }
+        if (character.age >= 18 && character.career.currentJob != null) {
+            pool += YearQuest(
+                kind = YearQuestKind.HOLD_JOB,
+                target = 1,
+                titleResHint = "year_quest_hold_job",
+                rewardKarma = 3,
+                rewardCashKenya = 5_000,
+                rewardHappiness = 2
+            )
+        }
+        if (character.age >= 16) {
+            pool += YearQuest(
+                kind = YearQuestKind.GROW_SAVINGS,
+                target = savingsTarget(character),
+                titleResHint = "year_quest_grow_savings",
+                rewardKarma = 2,
+                rewardCashKenya = 2_500
+            )
+        }
 
         if (pool.isEmpty()) return emptyList()
         return pool.shuffled(random).take(QUESTS_PER_YEAR)
@@ -139,10 +165,19 @@ class YearQuestEngine @Inject constructor() {
     fun applyRewards(character: Character, completed: List<YearQuestProgress>): Character {
         if (completed.isEmpty()) return character
         val karmaGain = completed.sumOf { it.quest.rewardKarma }
+        val cashGain = completed.sumOf { it.quest.rewardCashKenya }
+        val happinessGain = completed.sumOf { it.quest.rewardHappiness }
+        val scaledCash = if (cashGain > 0) {
+            com.maisha.game.data.EconomyScaler.scaleAmount(cashGain, character.countryCode)
+        } else {
+            0
+        }
         val labels = completed.joinToString(", ") { humanLabel(it.quest.kind) }
         return character.copy(
             stats = character.stats.copy(
-                karma = (character.stats.karma + karmaGain).coerceIn(0, 100)
+                karma = (character.stats.karma + karmaGain).coerceIn(0, 100),
+                money = character.stats.money + scaledCash,
+                happiness = (character.stats.happiness + happinessGain).coerceIn(0, 100)
             ),
             eventLog = EventLogCap.prepend(
                 character.eventLog,
@@ -194,6 +229,8 @@ class YearQuestEngine @Inject constructor() {
         YearQuestKind.STAY_OUT_OF_TROUBLE -> "stay out of trouble"
         YearQuestKind.GROW_FOLLOWERS -> "grow followers"
         YearQuestKind.RAISE_SKILL -> "improve a skill"
+        YearQuestKind.HOLD_JOB -> "keep your job"
+        YearQuestKind.GROW_SAVINGS -> "grow savings"
     }
 
     private fun progressToward(quest: YearQuest, before: Character, after: Character): Int =
@@ -226,6 +263,14 @@ class YearQuestEngine @Inject constructor() {
                     (after.skills.maxOfOrNull { it.level } ?: 0) - beforeMax
                 )
             }
+            YearQuestKind.HOLD_JOB -> {
+                val keptSameJob = before.career.currentJob != null &&
+                    after.career.currentJob?.id == before.career.currentJob?.id &&
+                    !after.career.isRetired
+                if (keptSameJob) 1 else 0
+            }
+            YearQuestKind.GROW_SAVINGS ->
+                (after.savingsBalance - before.savingsBalance).coerceAtLeast(0)
         }
 
     private fun avgBond(character: Character): Float {
@@ -243,8 +288,17 @@ class YearQuestEngine @Inject constructor() {
         return baseline.coerceIn(10_000, 500_000)
     }
 
+    private fun savingsTarget(character: Character): Int {
+        val baseline = when {
+            character.career.currentJob != null ->
+                (character.career.currentJob!!.baseSalary * 0.1f).toInt()
+            else -> 10_000
+        }
+        return baseline.coerceIn(5_000, 200_000)
+    }
+
     companion object {
-        const val MIN_QUEST_AGE = 10
+        const val MIN_QUEST_AGE = 6
         const val QUESTS_PER_YEAR = 2
         const val STREAK_KARMA_CAP = 5
     }

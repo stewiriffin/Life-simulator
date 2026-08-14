@@ -235,8 +235,8 @@ class RelationshipEngineTest {
         assertEquals(50_000, onAdult.character.stats.money)
         assertEquals(50, onAdult.character.family.first { it.id == "adult" }.relationshipLevel)
         assertEquals(50, onSibling.character.family.first { it.id == "sib" }.relationshipLevel)
-        assertTrue(onAdult.message.contains("under 18"))
-        assertTrue(onSibling.message.contains("under 18"))
+        assertEquals("msg_parenting_minor_only", onAdult.messageKey)
+        assertEquals("msg_parenting_minor_only", onSibling.messageKey)
     }
 
     @Test

@@ -20,6 +20,9 @@
     <string name="content_desc_dismiss_tip">Dismiss tip</string>
     <string name="tip_family_dating">Once you turn 18, you can look for a partner here.</string>
     <string name="tip_first_death_achievements">Your achievements carry over to your next life.</string>
+    <string name="tip_year_quests">Complete yearly quests on the Life tab for karma and streaks.</string>
+    <string name="tip_leisure">Leisure on Actions boosts mood — pick something that fits your age.</string>
+    <string name="tip_assets_markets">Savings and investments grow over Age Ups on the Assets Markets tab.</string>
 
     <!-- Share life card -->
     <string name="btn_share_my_life">Share My Life</string>
@@ -836,6 +839,9 @@
     <string name="msg_pet_cannot_afford">Not enough cash for that pet care.</string>
     <string name="msg_pet_already_done">Already done that with your pet this year.</string>
     <string name="msg_pet_care_ineligible">You can\'t care for pets right now.</string>
+    <string name="msg_pet_play">Played with %1$s. Bond grew.</string>
+    <string name="msg_pet_feed">Fed %1$s.</string>
+    <string name="msg_pet_vet">Vet visit complete for %1$s.</string>
     <string name="confirm_have_child_title">Welcome a child?</string>
     <string name="confirm_have_child_body">Hospital and care fees will cost about %1$s.</string>
     <string name="confirm_divorce_title">File for divorce?</string>
@@ -872,6 +878,29 @@
     <string name="msg_ask_money_not_close">%s isn\'t close enough to ask for money.</string>
     <string name="msg_ask_money_success">%1$s gave you %2$s.</string>
     <string name="msg_ask_money_refused">%s refused to give you money.</string>
+    <string name="msg_travel_incarcerated">You can\'t travel while incarcerated.</string>
+    <string name="msg_parenting_minor_only">That only works with your children under 18.</string>
+    <string name="msg_gift_cannot_afford">You can\'t afford that gift (%1$s).</string>
+    <string name="msg_gift_success">You gave %1$s a gift. They loved it!</string>
+    <string name="msg_compliment_success">You complimented %1$s. They smiled.</string>
+    <string name="msg_insult_success">You threw a petty insult at %1$s. You felt a little satisfied — they did not.</string>
+    <string name="msg_travel_requires_quality_time">Spend quality time with %1$s before planning a trip together.</string>
+    <string name="msg_travel_cannot_afford">You can\'t afford a trip (%1$s).</string>
+    <string name="msg_travel_success">You and %1$s took a trip together. Great memories!</string>
+    <string name="msg_advice_success">%1$s shared some wisdom. You feel a bit smarter.</string>
+    <string name="msg_prank_success">Your prank on %1$s landed perfectly. You both laughed.</string>
+    <string name="msg_prank_backfired">Your prank on %1$s backfired. Oops.</string>
+    <string name="msg_set_up_date_ineligible">You can only set up siblings or friends on dates.</string>
+    <string name="msg_set_up_date_success">You set %1$s up on a date. Word around %2$s is they\'re seeing someone new.</string>
+    <string name="msg_homework_success">You helped %1$s with homework. They seem more confident.</string>
+    <string name="msg_allowance_cannot_afford">You can\'t afford allowance (%1$s).</string>
+    <string name="msg_allowance_success">You gave %1$s %2$s allowance.</string>
+    <string name="msg_date_night_partner_only">Date night is for your partner.</string>
+    <string name="msg_date_night_cannot_afford">You need %1$s for a date night.</string>
+    <string name="msg_date_night_success">Date night with %1$s (%2$s).</string>
+    <string name="msg_make_peace_not_enemy">There\'s no feud to settle here.</string>
+    <string name="msg_make_peace_success">You reached out to make peace with %1$s.</string>
+    <string name="msg_discipline_success">You disciplined %1$s. The house is quieter — and tenser.</string>
 
     <string name="label_country">Country</string>
     <string name="label_search_country">Search countries</string>
@@ -1018,6 +1047,8 @@
     <string name="year_quest_stay_clean">Stay out of trouble</string>
     <string name="year_quest_grow_followers">Grow your audience (+%1$d followers)</string>
     <string name="year_quest_raise_skill">Level up a skill (+%1$d)</string>
+    <string name="year_quest_hold_job">Keep your job through the year</string>
+    <string name="year_quest_grow_savings">Grow savings by %1$s</string>
     <string name="year_quest_progress">%1$d / %2$d</string>
     <string name="year_quest_complete_badge">Done</string>
     <string name="msg_year_quests_complete">Year quests complete! Karma +%1$d</string>
@@ -1109,6 +1140,7 @@
     <string name="format_dynasty_score_short">%1$d pts</string>
     <string name="format_karma_chip">Karma %1$d</string>
     <string name="format_visa_chip">Visa · %1$dy</string>
+    <string name="format_years_in_country">%1$dy abroad</string>
     <string name="chip_abroad_citizen_flavor">Abroad</string>
     <string name="section_lifestyle_pulse">Lifestyle</string>
     <string name="chip_lifestyle_insurance">Insurance</string>
@@ -1160,10 +1192,19 @@
     <string name="leisure_city_show_desc">Catch a performance and soak up the culture.</string>
     <string name="leisure_spa_day_title">Spa day</string>
     <string name="leisure_spa_day_desc">A proper pamper session for health and happiness.</string>
+    <string name="leisure_playground_title">Playground</string>
+    <string name="leisure_playground_desc">Run around with friends and burn off energy.</string>
+    <string name="leisure_study_buddy_title">Study buddy</string>
+    <string name="leisure_study_buddy_desc">Hit the books with a friend and sharpen your smarts.</string>
+    <string name="leisure_chores_title">Chores</string>
+    <string name="leisure_chores_desc">Help around the house for a little pocket money.</string>
     <string name="leisure_effect_night_out">+Happy · −Health</string>
     <string name="leisure_effect_nature_day">+Happy · +Health</string>
     <string name="leisure_effect_city_show">+Happy</string>
     <string name="leisure_effect_spa_day">+Happy · +Health</string>
+    <string name="leisure_effect_playground">+Happy · +Health</string>
+    <string name="leisure_effect_study">+Happy · +Smarts</string>
+    <string name="leisure_effect_chores">−Happy · +Cash</string>
     <string name="format_leisure_meta">%1$s · %2$s</string>
     <string name="dialog_leisure_body">%1$s Cost: %2$s</string>
     <string name="btn_leisure_go">Go</string>
@@ -1171,8 +1212,19 @@
     <string name="msg_leisure_nature_day">Nature cleared your head.</string>
     <string name="msg_leisure_city_show">The show was worth it.</string>
     <string name="msg_leisure_spa_day">You feel renewed.</string>
+    <string name="msg_leisure_playground">You played outside with friends.</string>
+    <string name="msg_leisure_study_buddy">A solid study session paid off.</string>
+    <string name="msg_leisure_chores">Chores done — pocket money earned.</string>
     <string name="msg_leisure_cannot_afford">Not enough cash for that.</string>
     <string name="msg_leisure_ineligible">You can\'t do that right now.</string>
+
+    <!-- Family page chrome -->
+    <string name="family_quest_hint">Helps this year\'s family bond quest</string>
+    <string name="chip_family_all">All</string>
+    <string name="chip_family_family">Family</string>
+    <string name="chip_family_friends">Friends</string>
+    <string name="chip_family_pets">Pets</string>
+    <string name="family_subtitle_default">Your people</string>
 
     <!-- Career / Assets page deepen -->
     <string name="career_subtitle_employed">Working as %1$s</string>

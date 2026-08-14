@@ -4,6 +4,7 @@ package com.maisha.game.ui.main
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -12,10 +13,10 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.selection.selectable
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Lock
 import androidx.compose.material3.AlertDialog
@@ -97,6 +98,20 @@ import com.maisha.game.util.formatMoney
 private const val MIN_RETIREMENT_AGE = 60
 
 private enum class CareerCategory { ALL, WORK, SCHOOL, BUSINESS, POLITICS }
+
+private enum class CareerListContentType {
+    Banner,
+    Badge,
+    Education,
+    Politics,
+    WorkState,
+    JobHeader,
+    JobListing,
+    JobHistory,
+    BusinessHeader,
+    BusinessCard,
+    StartBusiness
+}
 
 @Composable
 fun CareerScreen(
@@ -351,211 +366,269 @@ fun CareerScreen(
             modifier = Modifier.padding(horizontal = 16.dp, vertical = 10.dp)
         )
 
-        Column(
+        LazyColumn(
             modifier = Modifier
                 .fillMaxSize()
-                .verticalScroll(rememberScrollState())
-                .padding(horizontal = 16.dp)
-                .padding(bottom = 20.dp)
+                .padding(horizontal = 16.dp),
+            contentPadding = PaddingValues(bottom = 20.dp),
+            verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
             if (showDeploymentBanner) {
-                Card(
-                    modifier = Modifier.fillMaxWidth(),
-                    shape = MaishaRadius.cardShape,
-                    colors = CardDefaults.cardColors(containerColor = militaryAccent)
+                item(
+                    key = "deployment_banner",
+                    contentType = CareerListContentType.Banner
                 ) {
-                    Text(
-                        text = stringResource(R.string.banner_active_deployment),
-                        style = MaterialTheme.typography.labelLarge,
-                        fontWeight = FontWeight.Bold,
-                        color = Color.White,
-                        textAlign = TextAlign.Center,
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(horizontal = 12.dp, vertical = 10.dp)
-                    )
+                    Card(
+                        modifier = Modifier.fillMaxWidth(),
+                        shape = MaishaRadius.cardShape,
+                        colors = CardDefaults.cardColors(containerColor = militaryAccent)
+                    ) {
+                        Text(
+                            text = stringResource(R.string.banner_active_deployment),
+                            style = MaterialTheme.typography.labelLarge,
+                            fontWeight = FontWeight.Bold,
+                            color = Color.White,
+                            textAlign = TextAlign.Center,
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(horizontal = 12.dp, vertical = 10.dp)
+                        )
+                    }
                 }
-                Spacer(modifier = Modifier.height(10.dp))
             }
 
             if (character.criminalRecord.hasRecord && show(CareerCategory.WORK)) {
-                RecordBadge(timesArrested = character.criminalRecord.timesArrested)
-                Spacer(modifier = Modifier.height(8.dp))
+                item(
+                    key = "record_badge",
+                    contentType = CareerListContentType.Badge
+                ) {
+                    RecordBadge(timesArrested = character.criminalRecord.timesArrested)
+                }
             }
 
             if (show(CareerCategory.SCHOOL)) {
-                EducationSectionCard(
-                    education = character.education,
-                    countryCode = character.countryCode,
-                    onDropOut = { dropOutConfirm.request(Unit) }
-                )
-                Spacer(modifier = Modifier.height(12.dp))
+                item(
+                    key = "education",
+                    contentType = CareerListContentType.Education
+                ) {
+                    EducationSectionCard(
+                        education = character.education,
+                        countryCode = character.countryCode,
+                        onDropOut = { dropOutConfirm.request(Unit) }
+                    )
+                }
             }
 
             if (show(CareerCategory.POLITICS)) {
-                if (politicsEligible || character.politics.currentOffice != null) {
-                    PoliticsSection(
-                        character = character,
-                        selectedOffice = selectedOffice,
-                        onOfficeSelected = { selectedOffice = it },
-                        campaignInvestment = campaignInvestment,
-                        onLaunchCampaign = { campaignConfirm.request(selectedOffice) },
-                        onPassTaxPolicy = { taxPolicyConfirm.request(it) }
-                    )
-                } else {
-                    Text(
-                        text = stringResource(R.string.section_politics),
-                        style = MaterialTheme.typography.titleSmall,
-                        fontWeight = FontWeight.SemiBold,
-                        color = TealPrimary
-                    )
-                    Spacer(modifier = Modifier.height(4.dp))
-                    Text(
-                        text = stringResource(R.string.politics_locked_hint),
-                        style = MaterialTheme.typography.bodySmall,
-                        color = InkTertiary
-                    )
+                item(
+                    key = "politics",
+                    contentType = CareerListContentType.Politics
+                ) {
+                    if (politicsEligible || character.politics.currentOffice != null) {
+                        PoliticsSection(
+                            character = character,
+                            selectedOffice = selectedOffice,
+                            onOfficeSelected = { selectedOffice = it },
+                            campaignInvestment = campaignInvestment,
+                            onLaunchCampaign = { campaignConfirm.request(selectedOffice) },
+                            onPassTaxPolicy = { taxPolicyConfirm.request(it) }
+                        )
+                    } else {
+                        Column {
+                            Text(
+                                text = stringResource(R.string.section_politics),
+                                style = MaterialTheme.typography.titleSmall,
+                                fontWeight = FontWeight.SemiBold,
+                                color = TealPrimary
+                            )
+                            Spacer(modifier = Modifier.height(4.dp))
+                            Text(
+                                text = stringResource(R.string.politics_locked_hint),
+                                style = MaterialTheme.typography.bodySmall,
+                                color = InkTertiary
+                            )
+                        }
+                    }
                 }
-                Spacer(modifier = Modifier.height(12.dp))
             }
 
             if (show(CareerCategory.WORK)) {
                 when {
                     isRetired -> {
-                        RetiredStateCard(
-                            pensionAmount = character.career.pensionAmount,
-                            countryCode = character.countryCode
-                        )
-                        Spacer(modifier = Modifier.height(12.dp))
+                        item(
+                            key = "retired",
+                            contentType = CareerListContentType.WorkState
+                        ) {
+                            RetiredStateCard(
+                                pensionAmount = character.career.pensionAmount,
+                                countryCode = character.countryCode
+                            )
+                        }
                     }
                     currentJob != null -> {
-                        CurrentJobCard(
-                            character = character,
-                            canRetire = character.age >= MIN_RETIREMENT_AGE,
-                            retirementPensionEstimate = retirementPensionEstimate,
-                            onQuitJob = onQuitJob,
-                            onRetire = { retireConfirm.request(Unit) },
-                            onSetWorkEffort = onSetWorkEffort
-                        )
-                        Spacer(modifier = Modifier.height(12.dp))
+                        item(
+                            key = "current_job",
+                            contentType = CareerListContentType.WorkState
+                        ) {
+                            CurrentJobCard(
+                                character = character,
+                                canRetire = character.age >= MIN_RETIREMENT_AGE,
+                                retirementPensionEstimate = retirementPensionEstimate,
+                                onQuitJob = onQuitJob,
+                                onRetire = { retireConfirm.request(Unit) },
+                                onSetWorkEffort = onSetWorkEffort
+                            )
+                        }
                     }
                 }
 
                 if (!isRetired && currentJob == null) {
-                    Text(
-                        text = stringResource(R.string.section_job_listings),
-                        style = MaterialTheme.typography.titleSmall,
-                        fontWeight = FontWeight.SemiBold,
-                        color = TealPrimary
-                    )
-                    if (hireChance != null) {
-                        Text(
-                            text = stringResource(R.string.format_hire_outlook, hireChance),
-                            style = MaterialTheme.typography.bodySmall,
-                            color = InkTertiary,
-                            modifier = Modifier.padding(top = 4.dp, bottom = 8.dp)
-                        )
-                    } else {
-                        Spacer(modifier = Modifier.height(MaishaSpacing.sm))
-                    }
-
-                    Text(
-                        text = stringResource(R.string.career_side_hustle_hint),
-                        style = MaterialTheme.typography.labelMedium,
-                        color = LifeGreen,
-                        modifier = Modifier.padding(bottom = 8.dp)
-                    )
-
-                    if (eligibleJobs.isEmpty()) {
-                        EmptyStateCard(
-                            illustration = EmptyStateIllustration.ACTIONS,
-                            title = stringResource(R.string.screen_career),
-                            message = stringResource(R.string.empty_career_no_eligible)
-                        )
-                    } else {
-                        Column(verticalArrangement = Arrangement.spacedBy(MaishaSpacing.sm)) {
-                            JobPool.getJobsForCountry(character.countryCode).forEach { job ->
-                                val isEligible = job.id in eligibleIds
-                                val reason = jobIneligibilityReason(character, job)
-                                JobListingCard(
-                                    job = job,
-                                    countryCode = character.countryCode,
-                                    isEligible = isEligible,
-                                    ineligibilityReason = reason,
-                                    onApply = { onApplyForJob(job.id) }
+                    item(
+                        key = "job_listings_header",
+                        contentType = CareerListContentType.JobHeader
+                    ) {
+                        Column {
+                            Text(
+                                text = stringResource(R.string.section_job_listings),
+                                style = MaterialTheme.typography.titleSmall,
+                                fontWeight = FontWeight.SemiBold,
+                                color = TealPrimary
+                            )
+                            if (hireChance != null) {
+                                Text(
+                                    text = stringResource(R.string.format_hire_outlook, hireChance),
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = InkTertiary,
+                                    modifier = Modifier.padding(top = 4.dp, bottom = 8.dp)
+                                )
+                            } else {
+                                Spacer(modifier = Modifier.height(MaishaSpacing.sm))
+                            }
+                            Text(
+                                text = stringResource(R.string.career_side_hustle_hint),
+                                style = MaterialTheme.typography.labelMedium,
+                                color = LifeGreen,
+                                modifier = Modifier.padding(bottom = 4.dp)
+                            )
+                            if (eligibleJobs.isEmpty()) {
+                                Spacer(modifier = Modifier.height(8.dp))
+                                EmptyStateCard(
+                                    illustration = EmptyStateIllustration.ACTIONS,
+                                    title = stringResource(R.string.screen_career),
+                                    message = stringResource(R.string.empty_career_no_eligible)
                                 )
                             }
                         }
                     }
-                    Spacer(modifier = Modifier.height(12.dp))
+
+                    if (eligibleJobs.isNotEmpty()) {
+                        val countryJobs = JobPool.getJobsForCountry(character.countryCode)
+                        items(
+                            items = countryJobs,
+                            key = { it.id },
+                            contentType = { CareerListContentType.JobListing }
+                        ) { job ->
+                            val isEligible = job.id in eligibleIds
+                            val reason = jobIneligibilityReason(character, job)
+                            JobListingCard(
+                                job = job,
+                                countryCode = character.countryCode,
+                                isEligible = isEligible,
+                                ineligibilityReason = reason,
+                                onApply = { onApplyForJob(job.id) }
+                            )
+                        }
+                    }
                 }
 
                 if (character.career.jobHistory.isNotEmpty()) {
-                    TextButton(onClick = { historyExpanded = !historyExpanded }) {
-                        Text(
-                            text = if (historyExpanded) {
-                                stringResource(R.string.btn_collapse_job_history)
-                            } else {
-                                stringResource(R.string.btn_expand_job_history)
+                    item(
+                        key = "job_history",
+                        contentType = CareerListContentType.JobHistory
+                    ) {
+                        Column {
+                            TextButton(onClick = { historyExpanded = !historyExpanded }) {
+                                Text(
+                                    text = if (historyExpanded) {
+                                        stringResource(R.string.btn_collapse_job_history)
+                                    } else {
+                                        stringResource(R.string.btn_expand_job_history)
+                                    }
+                                )
                             }
-                        )
-                    }
-                    if (historyExpanded) {
-                        Text(
-                            text = stringResource(
-                                R.string.format_job_history,
-                                character.career.jobHistory.joinToString(", ")
-                            ),
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
+                            if (historyExpanded) {
+                                Text(
+                                    text = stringResource(
+                                        R.string.format_job_history,
+                                        character.career.jobHistory.joinToString(", ")
+                                    ),
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                                )
+                            }
+                        }
                     }
                 }
             }
 
             if (show(CareerCategory.BUSINESS)) {
-                Text(
-                    text = stringResource(R.string.section_my_businesses),
-                    style = MaterialTheme.typography.titleSmall,
-                    fontWeight = FontWeight.SemiBold,
-                    color = TealPrimary
-                )
-                Spacer(modifier = Modifier.height(MaishaSpacing.sm))
+                item(
+                    key = "business_header",
+                    contentType = CareerListContentType.BusinessHeader
+                ) {
+                    Column {
+                        Text(
+                            text = stringResource(R.string.section_my_businesses),
+                            style = MaterialTheme.typography.titleSmall,
+                            fontWeight = FontWeight.SemiBold,
+                            color = TealPrimary
+                        )
+                        if (character.businesses.isEmpty()) {
+                            Spacer(modifier = Modifier.height(MaishaSpacing.sm))
+                            Text(
+                                text = stringResource(R.string.empty_businesses),
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
+                    }
+                }
 
-                if (character.businesses.isEmpty()) {
-                    Text(
-                        text = stringResource(R.string.empty_businesses),
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                } else {
-                    character.businesses.forEach { business ->
+                if (character.businesses.isNotEmpty()) {
+                    items(
+                        items = character.businesses,
+                        key = { it.id },
+                        contentType = { CareerListContentType.BusinessCard }
+                    ) { business ->
                         BusinessCard(
                             business = business,
                             countryCode = character.countryCode,
                             onSell = { sellBusinessConfirm.request(business) }
                         )
-                        Spacer(modifier = Modifier.height(MaishaSpacing.sm))
                     }
                 }
 
                 if (canStartBusiness) {
-                    Spacer(modifier = Modifier.height(4.dp))
-                    Button(
-                        onClick = {
-                            businessName = ""
-                            businessIndustry = BusinessIndustry.TECH
-                            businessInvestment = tiers.first()
-                            startBusinessConfirm.request(Unit)
-                        },
-                        modifier = Modifier.fillMaxWidth(),
-                        shape = RoundedCornerShape(14.dp),
-                        colors = ButtonDefaults.buttonColors(containerColor = TealPrimary)
+                    item(
+                        key = "start_business",
+                        contentType = CareerListContentType.StartBusiness
                     ) {
-                        Text(
-                            text = stringResource(R.string.btn_start_business),
-                            fontWeight = FontWeight.SemiBold
-                        )
+                        Button(
+                            onClick = {
+                                businessName = ""
+                                businessIndustry = BusinessIndustry.TECH
+                                businessInvestment = tiers.first()
+                                startBusinessConfirm.request(Unit)
+                            },
+                            modifier = Modifier.fillMaxWidth(),
+                            shape = RoundedCornerShape(14.dp),
+                            colors = ButtonDefaults.buttonColors(containerColor = TealPrimary)
+                        ) {
+                            Text(
+                                text = stringResource(R.string.btn_start_business),
+                                fontWeight = FontWeight.SemiBold
+                            )
+                        }
                     }
                 }
             }

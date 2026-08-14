@@ -26,12 +26,43 @@ android {
     }
 
     buildTypes {
+        debug {
+            buildConfigField("Boolean", "USE_TEST_ADS", "true")
+            // Google sample units — safe for debug builds.
+            buildConfigField(
+                "String",
+                "AD_INTERSTITIAL",
+                "\"ca-app-pub-3940256099942544/1033173712\""
+            )
+            buildConfigField(
+                "String",
+                "AD_REWARDED",
+                "\"ca-app-pub-3940256099942544/5224354917\""
+            )
+            buildConfigField(
+                "String",
+                "AD_BANNER",
+                "\"ca-app-pub-3940256099942544/6300978111\""
+            )
+        }
         release {
             isMinifyEnabled = false
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"
             )
+            // Override via gradle.properties: ADMOB_INTERSTITIAL / ADMOB_REWARDED / ADMOB_BANNER.
+            // Falls back to Google test units until real IDs are provided (never ship that mix).
+            val interstitial = (project.findProperty("ADMOB_INTERSTITIAL") as String?)
+                ?: "ca-app-pub-3940256099942544/1033173712"
+            val rewarded = (project.findProperty("ADMOB_REWARDED") as String?)
+                ?: "ca-app-pub-3940256099942544/5224354917"
+            val banner = (project.findProperty("ADMOB_BANNER") as String?)
+                ?: "ca-app-pub-3940256099942544/6300978111"
+            buildConfigField("Boolean", "USE_TEST_ADS", "false")
+            buildConfigField("String", "AD_INTERSTITIAL", "\"$interstitial\"")
+            buildConfigField("String", "AD_REWARDED", "\"$rewarded\"")
+            buildConfigField("String", "AD_BANNER", "\"$banner\"")
         }
     }
 

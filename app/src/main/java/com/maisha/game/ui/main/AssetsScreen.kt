@@ -66,12 +66,14 @@ import com.maisha.game.R
 import com.maisha.game.data.AssetCatalog
 import com.maisha.game.data.CatalogAsset
 import com.maisha.game.data.IllustrationCatalog
+import com.maisha.game.data.local.OnboardingTips
 import com.maisha.game.data.model.Asset
 import com.maisha.game.data.model.AssetType
 import com.maisha.game.data.model.Character
 import com.maisha.game.data.model.Person
 import com.maisha.game.data.model.RelationType
 import com.maisha.game.domain.FinanceEngine
+import com.maisha.game.ui.components.DismissibleTipCard
 import com.maisha.game.ui.components.EmptyStateCard
 import com.maisha.game.ui.components.IllustrationImage
 import com.maisha.game.ui.components.StatBar
@@ -109,6 +111,7 @@ fun AssetsScreen(
     onWithdrawSavings: (Int) -> Unit,
     onSetLivingStandard: (com.maisha.game.data.model.LivingStandard) -> Unit,
     onAssetsMessageDismissed: () -> Unit,
+    onDismissAssetsMarketsTip: () -> Unit = {},
     modifier: Modifier = Modifier
 ) {
     val pendingPurchase = rememberConfirmableAction<CatalogAsset>()
@@ -334,6 +337,16 @@ fun AssetsScreen(
             onSelected = { selectedCategory = it },
             modifier = Modifier.padding(horizontal = 16.dp, vertical = 10.dp)
         )
+
+        val showMarketsTip = uiState.tipsLoaded &&
+            OnboardingTips.ASSETS_MARKETS !in uiState.seenTipIds
+        if (showMarketsTip) {
+            DismissibleTipCard(
+                text = stringResource(R.string.tip_assets_markets),
+                onDismiss = onDismissAssetsMarketsTip,
+                modifier = Modifier.padding(start = 16.dp, end = 16.dp, bottom = 8.dp)
+            )
+        }
 
         LazyColumn(
             modifier = Modifier

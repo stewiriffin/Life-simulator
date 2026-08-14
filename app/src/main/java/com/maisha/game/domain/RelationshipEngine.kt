@@ -74,7 +74,11 @@ sealed class SeekFriendshipResult {
 }
 
 sealed class PetCareResult {
-    data class Success(val character: Character, val message: String) : PetCareResult()
+    data class Success(
+        val character: Character,
+        val messageKey: String,
+        val messageArgs: List<String> = emptyList()
+    ) : PetCareResult()
     data object InsufficientFunds : PetCareResult()
     data object AlreadyDone : PetCareResult()
     data object NotFound : PetCareResult()
@@ -554,7 +558,11 @@ class RelationshipEngine @Inject constructor(
                 "Played with ${pet.name}."
             )
         )
-        return PetCareResult.Success(updated, "Played with ${pet.name}. Bond grew.")
+        return PetCareResult.Success(
+            updated,
+            messageKey = "msg_pet_play",
+            messageArgs = listOf(pet.name)
+        )
     }
 
     private fun feedPet(character: Character, index: Int, pet: Pet): PetCareResult {
@@ -573,7 +581,11 @@ class RelationshipEngine @Inject constructor(
                 "Fed ${pet.name} (${formatMoney(cost, character.countryCode)})."
             )
         )
-        return PetCareResult.Success(updated, "Fed ${pet.name}.")
+        return PetCareResult.Success(
+            updated,
+            messageKey = "msg_pet_feed",
+            messageArgs = listOf(pet.name)
+        )
     }
 
     private fun vetPet(character: Character, index: Int, pet: Pet): PetCareResult {
@@ -594,7 +606,11 @@ class RelationshipEngine @Inject constructor(
                 "Took ${pet.name} to the vet (${formatMoney(cost, character.countryCode)})."
             )
         )
-        return PetCareResult.Success(updated, "Vet visit complete for ${pet.name}.")
+        return PetCareResult.Success(
+            updated,
+            messageKey = "msg_pet_vet",
+            messageArgs = listOf(pet.name)
+        )
     }
 
     /**
@@ -610,7 +626,7 @@ class RelationshipEngine @Inject constructor(
     ): FamilyInteractionResult {
         val memberIndex = character.family.indexOfFirst { it.id == personId }
         if (memberIndex == -1) {
-            return FamilyInteractionResult(character, "Person not found.")
+            return FamilyInteractionResult(character, "msg_person_not_found")
         }
 
         val member = character.family[memberIndex]
@@ -619,13 +635,13 @@ class RelationshipEngine @Inject constructor(
         ) {
             return FamilyInteractionResult(
                 character = character,
-                message = "You can't travel while incarcerated."
+                messageKey = "msg_travel_incarcerated"
             )
         }
         if (isParentingAction(interactionType) && !Companion.isMinorChild(member)) {
             return FamilyInteractionResult(
                 character = character,
-                message = "That only works with your children under 18."
+                messageKey = "msg_parenting_minor_only"
             )
         }
         return when (interactionType) {
@@ -844,10 +860,10 @@ class RelationshipEngine @Inject constructor(
         val updatedStats = character.stats.copy(
             happiness = clampStat(character.stats.happiness + 5)
         )
-        val message = when (member.relation) {
-            RelationType.SPOUSE -> "You spent quality time with ${member.name}."
-            RelationType.CHILD -> "You played with ${member.name}."
-            else -> "You spent quality time with ${member.name}."
+        val messageKey = when (member.relation) {
+            RelationType.SPOUSE -> "msg_spend_time_spouse"
+            RelationType.CHILD -> "msg_spend_time_child"
+            else -> "msg_spend_time_other"
         }
         return FamilyInteractionResult(
             character = commitMemberUpdate(
@@ -855,7 +871,8 @@ class RelationshipEngine @Inject constructor(
                 interactionType = InteractionType.SPEND_TIME,
                 recordFirstQualityTime = true
             ).copy(stats = updatedStats),
-            message = message
+            messageKey = messageKey,
+            messageArgs = listOf(member.name)
         )
     }
 
@@ -870,10 +887,10 @@ class RelationshipEngine @Inject constructor(
         val updatedStats = character.stats.copy(
             happiness = clampStat(character.stats.happiness - 5)
         )
-        val message = when (member.relation) {
-            RelationType.SPOUSE -> "You argued with ${member.name}."
-            RelationType.CHILD -> "You scolded ${member.name}."
-            else -> "You argued with ${member.name}."
+        val messageKey = when (member.relation) {
+            RelationType.SPOUSE -> "msg_argue_spouse"
+            RelationType.CHILD -> "msg_scold_child"
+            else -> "msg_argue_other"
         }
         return FamilyInteractionResult(
             character = commitMemberUpdate(
@@ -882,7 +899,8 @@ class RelationshipEngine @Inject constructor(
                 milestoneKind = MilestoneKind.BIG_ARGUMENT,
                 subjectName = member.name
             ).copy(stats = updatedStats),
-            message = message
+            messageKey = messageKey,
+            messageArgs = listOf(member.name)
         )
     }
 
@@ -894,13 +912,14 @@ class RelationshipEngine @Inject constructor(
         if (member.relation == RelationType.SPOUSE || member.relation == RelationType.CHILD) {
             return FamilyInteractionResult(
                 character = character,
-                message = "That doesn't apply here."
+                messageKey = "msg_ask_money_not_applicable"
             )
         }
         if (member.relationshipLevel <= 60) {
             return FamilyInteractionResult(
                 character = character,
-                message = "${member.name} isn't close enough to ask for money."
+                messageKey = "msg_ask_money_not_close",
+                messageArgs = listOf(member.name)
             )
         }
         val success = Random.nextFloat() < ASK_MONEY_SUCCESS_CHANCE
@@ -912,7 +931,8 @@ class RelationshipEngine @Inject constructor(
                     family = character.family.replaceAt(memberIndex, marked),
                     stats = character.stats.copy(money = character.stats.money + amount)
                 ),
-                message = "${member.name} gave you ${formatMoney(amount, character.countryCode)}."
+                messageKey = "msg_ask_money_success",
+                messageArgs = listOf(member.name, formatMoney(amount, character.countryCode))
             )
         } else {
             val updatedMember = member.copy(
@@ -923,7 +943,8 @@ class RelationshipEngine @Inject constructor(
                 character = character.copy(
                     family = character.family.replaceAt(memberIndex, updatedMember)
                 ),
-                message = "${member.name} refused to give you money."
+                messageKey = "msg_ask_money_refused",
+                messageArgs = listOf(member.name)
             )
         }
     }
@@ -939,7 +960,8 @@ class RelationshipEngine @Inject constructor(
         if (character.stats.money < cost) {
             return FamilyInteractionResult(
                 character = character,
-                message = "You can't afford that gift (${formatMoney(cost, character.countryCode)})."
+                messageKey = "msg_gift_cannot_afford",
+                messageArgs = listOf(formatMoney(cost, character.countryCode))
             )
         }
         val updatedMember = member.copy(
@@ -958,7 +980,8 @@ class RelationshipEngine @Inject constructor(
                     happiness = clampStat(character.stats.happiness + 3)
                 )
             ),
-            message = "You gave ${member.name} a gift. They loved it!"
+            messageKey = "msg_gift_success",
+            messageArgs = listOf(member.name)
         )
     }
 
@@ -982,7 +1005,8 @@ class RelationshipEngine @Inject constructor(
                     happiness = clampStat(character.stats.happiness + 1)
                 )
             ),
-            message = "You complimented ${member.name}. They smiled."
+            messageKey = "msg_compliment_success",
+            messageArgs = listOf(member.name)
         )
     }
 
@@ -1005,7 +1029,8 @@ class RelationshipEngine @Inject constructor(
                     happiness = clampStat(character.stats.happiness + 2)
                 )
             ),
-            message = "You threw a petty insult at ${member.name}. You felt a little satisfied — they did not."
+            messageKey = "msg_insult_success",
+            messageArgs = listOf(member.name)
         )
     }
 
@@ -1017,7 +1042,8 @@ class RelationshipEngine @Inject constructor(
         if (!canTravelTogether(member)) {
             return FamilyInteractionResult(
                 character = character,
-                message = "Spend quality time with ${member.name} before planning a trip together."
+                messageKey = "msg_travel_requires_quality_time",
+                messageArgs = listOf(member.name)
             )
         }
         val cost = EconomyScaler.scaleRelationshipCost(
@@ -1028,7 +1054,8 @@ class RelationshipEngine @Inject constructor(
         if (character.stats.money < cost) {
             return FamilyInteractionResult(
                 character = character,
-                message = "You can't afford a trip (${formatMoney(cost, character.countryCode)})."
+                messageKey = "msg_travel_cannot_afford",
+                messageArgs = listOf(formatMoney(cost, character.countryCode))
             )
         }
         val updatedMember = member.copy(
@@ -1046,7 +1073,8 @@ class RelationshipEngine @Inject constructor(
                     happiness = clampStat(character.stats.happiness + 8)
                 )
             ),
-            message = "You and ${member.name} took a trip together. Great memories!"
+            messageKey = "msg_travel_success",
+            messageArgs = listOf(member.name)
         )
     }
 
@@ -1067,7 +1095,8 @@ class RelationshipEngine @Inject constructor(
                     smarts = clampStat(character.stats.smarts + 2)
                 )
             ),
-            message = "${member.name} shared some wisdom. You feel a bit smarter."
+            messageKey = "msg_advice_success",
+            messageArgs = listOf(member.name)
         )
     }
 
@@ -1077,10 +1106,10 @@ class RelationshipEngine @Inject constructor(
         member: Person
     ): FamilyInteractionResult {
         val landedWell = Random.nextFloat() < 0.55f
-        val (relDelta, happyDelta, message) = if (landedWell) {
-            Triple(8, 6, "Your prank on ${member.name} landed perfectly. You both laughed.")
+        val (relDelta, happyDelta, messageKey) = if (landedWell) {
+            Triple(8, 6, "msg_prank_success")
         } else {
-            Triple(-6, 2, "Your prank on ${member.name} backfired. Oops.")
+            Triple(-6, 2, "msg_prank_backfired")
         }
         val updatedMember = member.copy(
             relationshipLevel = clampRelationshipLevel(member.relationshipLevel + relDelta)
@@ -1094,7 +1123,8 @@ class RelationshipEngine @Inject constructor(
                     happiness = clampStat(character.stats.happiness + happyDelta)
                 )
             ),
-            message = message
+            messageKey = messageKey,
+            messageArgs = listOf(member.name)
         )
     }
 
@@ -1109,7 +1139,7 @@ class RelationshipEngine @Inject constructor(
         ) {
             return FamilyInteractionResult(
                 character = character,
-                message = "You can only set up siblings or friends on dates."
+                messageKey = "msg_set_up_date_ineligible"
             )
         }
         val updatedMember = member.copy(
@@ -1123,7 +1153,8 @@ class RelationshipEngine @Inject constructor(
                 milestoneKind = MilestoneKind.SET_UP_ON_DATE,
                 subjectName = member.name
             ),
-            message = "You set ${member.name} up on a date. Word around $countryName is they're seeing someone new."
+            messageKey = "msg_set_up_date_success",
+            messageArgs = listOf(member.name, countryName)
         )
     }
 
@@ -1150,7 +1181,8 @@ class RelationshipEngine @Inject constructor(
                     health = clampStat(character.stats.health + HOMEWORK_HEALTH_DELTA)
                 )
             ),
-            message = "You helped ${member.name} with homework. They seem more confident."
+            messageKey = "msg_homework_success",
+            messageArgs = listOf(member.name)
         )
     }
 
@@ -1163,7 +1195,8 @@ class RelationshipEngine @Inject constructor(
         if (character.stats.money < cost) {
             return FamilyInteractionResult(
                 character = character,
-                message = "You can't afford allowance (${formatMoney(cost, character.countryCode)})."
+                messageKey = "msg_allowance_cannot_afford",
+                messageArgs = listOf(formatMoney(cost, character.countryCode))
             )
         }
         val updatedMember = member.copy(
@@ -1181,7 +1214,8 @@ class RelationshipEngine @Inject constructor(
                     happiness = clampStat(character.stats.happiness + ALLOWANCE_HAPPINESS_DELTA)
                 )
             ),
-            message = "You gave ${member.name} ${formatMoney(cost, character.countryCode)} allowance."
+            messageKey = "msg_allowance_success",
+            messageArgs = listOf(member.name, formatMoney(cost, character.countryCode))
         )
     }
 
@@ -1191,13 +1225,14 @@ class RelationshipEngine @Inject constructor(
         member: Person
     ): FamilyInteractionResult {
         if (member.relation != RelationType.SPOUSE) {
-            return FamilyInteractionResult(character, "Date night is for your partner.")
+            return FamilyInteractionResult(character, "msg_date_night_partner_only")
         }
         val cost = dateNightCost(character)
         if (character.stats.money < cost) {
             return FamilyInteractionResult(
                 character,
-                "You need ${formatMoney(cost, character.countryCode)} for a date night."
+                "msg_date_night_cannot_afford",
+                listOf(formatMoney(cost, character.countryCode))
             )
         }
         val updatedMember = member.copy(
@@ -1218,8 +1253,9 @@ class RelationshipEngine @Inject constructor(
             recordFirstQualityTime = true
         )
         return FamilyInteractionResult(
-            updated,
-            "Date night with ${member.name} (${formatMoney(cost, character.countryCode)})."
+            character = updated,
+            messageKey = "msg_date_night_success",
+            messageArgs = listOf(member.name, formatMoney(cost, character.countryCode))
         )
     }
 
@@ -1229,7 +1265,7 @@ class RelationshipEngine @Inject constructor(
         member: Person
     ): FamilyInteractionResult {
         if (member.relation != RelationType.ENEMY) {
-            return FamilyInteractionResult(character, "There's no feud to settle here.")
+            return FamilyInteractionResult(character, "msg_make_peace_not_enemy")
         }
         val updatedMember = member.copy(
             relationshipLevel = clampRelationshipLevel(member.relationshipLevel + 18)
@@ -1245,8 +1281,9 @@ class RelationshipEngine @Inject constructor(
             interactionType = InteractionType.MAKE_PEACE
         )
         return FamilyInteractionResult(
-            updated,
-            "You reached out to make peace with ${member.name}."
+            character = updated,
+            messageKey = "msg_make_peace_success",
+            messageArgs = listOf(member.name)
         )
     }
 
@@ -1272,7 +1309,8 @@ class RelationshipEngine @Inject constructor(
                     health = clampStat(character.stats.health + DISCIPLINE_HEALTH_DELTA)
                 )
             ),
-            message = "You disciplined ${member.name}. The house is quieter — and tenser."
+            messageKey = "msg_discipline_success",
+            messageArgs = listOf(member.name)
         )
     }
 

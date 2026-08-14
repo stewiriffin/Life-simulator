@@ -26,6 +26,9 @@ object OnboardingTips {
     const val FAMILY_DATING = "family_dating"
     const val FAMILY_DETAIL = "family_detail"
     const val FIRST_DEATH_ACHIEVEMENTS = "first_death_achievements"
+    const val YEAR_QUESTS = "year_quests"
+    const val LEISURE = "leisure_intro"
+    const val ASSETS_MARKETS = "assets_markets"
 }
 
 private val Context.settingsDataStore: DataStore<Preferences> by preferencesDataStore(

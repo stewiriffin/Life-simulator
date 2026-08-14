@@ -319,6 +319,9 @@ fun MaishaNavHost(
                 onFeedbackHandled = viewModel::onFeedbackHandled,
                 onDismissFamilyDatingTip = viewModel::onDismissFamilyDatingTip,
                 onDismissFamilyDetailTip = viewModel::onDismissFamilyDetailTip,
+                onDismissYearQuestsTip = viewModel::onDismissYearQuestsTip,
+                onDismissLeisureTip = viewModel::onDismissLeisureTip,
+                onDismissAssetsMarketsTip = viewModel::onDismissAssetsMarketsTip,
                 onThrowParty = viewModel::onThrowParty
             )
 

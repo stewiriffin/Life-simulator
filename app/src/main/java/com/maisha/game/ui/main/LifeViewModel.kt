@@ -377,6 +377,22 @@ class LifeViewModel @Inject constructor(
         dismissTip(OnboardingTips.FAMILY_DATING)
     }
 
+    fun onDismissFamilyDetailTip() {
+        dismissTip(OnboardingTips.FAMILY_DETAIL)
+    }
+
+    fun onDismissYearQuestsTip() {
+        dismissTip(OnboardingTips.YEAR_QUESTS)
+    }
+
+    fun onDismissLeisureTip() {
+        dismissTip(OnboardingTips.LEISURE)
+    }
+
+    fun onDismissAssetsMarketsTip() {
+        dismissTip(OnboardingTips.ASSETS_MARKETS)
+    }
+
     private fun dismissTip(tipId: String) {
         viewModelScope.launch {
             settingsRepository.markTipSeen(tipId)
@@ -939,7 +955,10 @@ class LifeViewModel @Inject constructor(
                         it.copy(
                             character = result.character,
                             selectedPet = result.character.pets.find { p -> p.id == petId },
-                            familyInteractionMessage = result.message,
+                            familyInteractionMessage = resolveDomainString(
+                                result.messageKey,
+                                result.messageArgs
+                            ),
                             netWorth = financeEngine.calculateNetWorth(result.character)
                         )
                     }
@@ -1016,6 +1035,19 @@ class LifeViewModel @Inject constructor(
         }
     }
 
+    fun resolveDomainString(key: String, args: List<String>): String {
+        val resId = context.resources.getIdentifier(key, "string", context.packageName)
+        return if (resId != 0) {
+            if (args.isEmpty()) {
+                context.getString(resId)
+            } else {
+                context.getString(resId, *args.toTypedArray())
+            }
+        } else {
+            key
+        }
+    }
+
     fun onFamilyInteraction(personId: String, type: InteractionType, giftTier: GiftTier? = null) {
         val character = _uiState.value.character ?: return
         if (!character.alive) return
@@ -1028,7 +1060,10 @@ class LifeViewModel @Inject constructor(
             _uiState.update {
                 it.copy(
                     character = result.character,
-                    familyInteractionMessage = result.message,
+                    familyInteractionMessage = resolveDomainString(
+                        result.messageKey,
+                        result.messageArgs
+                    ),
                     selectedFamilyMember = result.character.family.find { person -> person.id == personId },
                     netWorth = financeEngine.calculateNetWorth(result.character),
                     headerExpression = ExpressionResolver.resolveExpression(
@@ -2161,10 +2196,6 @@ class LifeViewModel @Inject constructor(
         CrimeType.FRAUD -> context.getString(R.string.crime_type_fraud)
     }
 
-    fun onDismissFamilyDetailTip() {
-        dismissTip(OnboardingTips.FAMILY_DETAIL)
-    }
-
     fun donationTiers(): List<Int> {
         val character = _uiState.value.character ?: return emptyList()
         return gameEngine.donationTiers(character.countryCode)
@@ -2204,6 +2235,9 @@ class LifeViewModel @Inject constructor(
                     persist(result.character)
                     processMidLifeAchievements(result.character)
                     val msgRes = when (result.activity) {
+                        LeisureActivity.PLAYGROUND -> R.string.msg_leisure_playground
+                        LeisureActivity.STUDY_BUDDY -> R.string.msg_leisure_study_buddy
+                        LeisureActivity.CHORES -> R.string.msg_leisure_chores
                         LeisureActivity.NIGHT_OUT -> R.string.msg_leisure_night_out
                         LeisureActivity.NATURE_DAY -> R.string.msg_leisure_nature_day
                         LeisureActivity.CITY_SHOW -> R.string.msg_leisure_city_show

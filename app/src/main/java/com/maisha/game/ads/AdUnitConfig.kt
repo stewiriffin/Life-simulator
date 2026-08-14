@@ -1,12 +1,15 @@
-// app/src/main/java/com/maisha/game/ads/AdUnitConfig.kt
 package com.maisha.game.ads
 
+import com.maisha.game.BuildConfig
+
 /**
- * AdMob test ad unit IDs for development.
- * Swap for production unit IDs during Play Store prep — do not mix test units with production app IDs.
+ * AdMob unit IDs from [BuildConfig].
+ * Debug always uses Google sample units. Release reads `ADMOB_*` from gradle.properties
+ * (falls back to sample units until you set real IDs — do not ship that mix).
  */
 object AdUnitConfig {
-    const val INTERSTITIAL = "ca-app-pub-3940256099942544/1033173712"
-    const val REWARDED = "ca-app-pub-3940256099942544/5224354917"
-    const val BANNER = "ca-app-pub-3940256099942544/6300978111"
+    val INTERSTITIAL: String = BuildConfig.AD_INTERSTITIAL
+    val REWARDED: String = BuildConfig.AD_REWARDED
+    val BANNER: String = BuildConfig.AD_BANNER
+    val usingTestAds: Boolean = BuildConfig.USE_TEST_ADS
 }

@@ -1,6 +1,7 @@
 // app/src/main/java/com/maisha/game/ui/main/FamilyScreen.kt
 package com.maisha.game.ui.main
 
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -30,11 +31,14 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.key
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -50,10 +54,12 @@ import com.maisha.game.domain.GiftTier
 import com.maisha.game.domain.InteractionType
 import com.maisha.game.domain.PetCareAction
 import com.maisha.game.domain.RelationshipEngine
+import com.maisha.game.domain.YearQuestKind
 import com.maisha.game.domain.hasSpouse
 import com.maisha.game.domain.isMarried
 import com.maisha.game.domain.isPlatonicAlly
 import com.maisha.game.ui.avatar.ExpressionResolver
+import com.maisha.game.ui.components.CategoryFilterChipRow
 import com.maisha.game.ui.components.ConfirmActionDialog
 import com.maisha.game.ui.components.ConfirmSeverity
 import com.maisha.game.ui.components.ConfirmableActionHost
@@ -62,26 +68,31 @@ import com.maisha.game.ui.components.countryDisplayName
 import com.maisha.game.ui.components.DismissibleTipCard
 import com.maisha.game.ui.components.EmptyStateCard
 import com.maisha.game.ui.components.PersonAvatar
-import com.maisha.game.ui.components.PetDetailSheet
-import com.maisha.game.ui.components.StatBar
-import com.maisha.game.ui.components.StatType
-import com.maisha.game.ui.components.rememberConfirmableAction
-import com.maisha.game.ui.illustrations.EmptyStateIllustration
-import com.maisha.game.ui.theme.AppIcons
 import com.maisha.game.ui.components.PersonCard
 import com.maisha.game.ui.components.PersonDetailSheet
 import com.maisha.game.ui.components.PetCard
+import com.maisha.game.ui.components.PetDetailSheet
+import com.maisha.game.ui.components.StatBar
+import com.maisha.game.ui.components.StatType
+import com.maisha.game.ui.components.TabPageHero
+import com.maisha.game.ui.components.rememberConfirmableAction
+import com.maisha.game.ui.illustrations.EmptyStateIllustration
 import com.maisha.game.ui.theme.AccentPink
-import com.maisha.game.ui.theme.CreamMuted
+import com.maisha.game.ui.theme.AppIcons
+import com.maisha.game.ui.theme.CreamBg
 import com.maisha.game.ui.theme.GoldAccent
 import com.maisha.game.ui.theme.InkTertiary
+import com.maisha.game.ui.theme.LifeGreen
 import com.maisha.game.ui.theme.MaishaSpacing
 import com.maisha.game.ui.theme.NavyDeep
 import com.maisha.game.util.formatMoney
 
+private enum class FamilyCategory { ALL, FAMILY, FRIENDS, PETS }
+
 private enum class FamilyListContentType {
     SectionHeader,
-    PersonCard
+    PersonCard,
+    PetCard
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -228,170 +239,282 @@ fun FamilyScreen(
         )
     }
 
+    val partnerStatus = when {
+        character.isMarried() -> stringResource(R.string.social_status_married)
+        character.hasSpouse() -> stringResource(R.string.social_status_dating)
+        else -> stringResource(R.string.social_status_single)
+    }
+    var selectedCategory by rememberSaveable { mutableIntStateOf(0) }
+    val category = FamilyCategory.entries.getOrElse(selectedCategory) { FamilyCategory.ALL }
+    fun show(cat: FamilyCategory): Boolean =
+        category == FamilyCategory.ALL || category == cat
+    val showFamily = show(FamilyCategory.FAMILY)
+    val showFriends = show(FamilyCategory.FRIENDS)
+    val showPets = show(FamilyCategory.PETS)
+    val chipLabels = listOf(
+        stringResource(R.string.chip_family_all),
+        stringResource(R.string.chip_family_family),
+        stringResource(R.string.chip_family_friends),
+        stringResource(R.string.chip_family_pets)
+    )
+    val hasBondFamilyQuest = uiState.yearQuests.any { it.kind == YearQuestKind.BOND_FAMILY }
+    val listEmpty = when (category) {
+        FamilyCategory.ALL -> character.family.isEmpty() && character.pets.isEmpty()
+        FamilyCategory.FAMILY ->
+            parents.isEmpty() && siblings.isEmpty() && partner.isEmpty() &&
+                children.isEmpty() && others.isEmpty()
+        FamilyCategory.FRIENDS -> socialCircle.isEmpty()
+        FamilyCategory.PETS -> character.pets.isEmpty()
+    }
+
     Box(modifier = modifier.fillMaxSize()) {
         Column(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(horizontal = MaishaSpacing.md, vertical = MaishaSpacing.sm)
+                .background(CreamBg)
         ) {
-            Text(
-                text = stringResource(R.string.screen_relationships),
-                style = MaterialTheme.typography.headlineSmall,
-                fontWeight = FontWeight.Bold
+            TabPageHero(
+                title = stringResource(R.string.screen_relationships),
+                subtitle = partnerStatus,
+                primaryChip = stringResource(
+                    R.string.format_friend_slots,
+                    friendCount,
+                    RelationshipEngine.MAX_FRIENDS
+                ),
+                secondaryChip = if (character.pets.isNotEmpty()) {
+                    stringResource(R.string.format_pet_count_short, character.pets.size)
+                } else {
+                    null
+                }
             )
 
-            Spacer(modifier = Modifier.height(8.dp))
+            if (hasBondFamilyQuest) {
+                Text(
+                    text = stringResource(R.string.family_quest_hint),
+                    style = MaterialTheme.typography.labelMedium,
+                    color = LifeGreen,
+                    fontWeight = FontWeight.SemiBold,
+                    modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)
+                )
+            }
 
-            SocialSummaryStrip(
-                partnerStatus = when {
-                    character.isMarried() -> stringResource(R.string.social_status_married)
-                    character.hasSpouse() -> stringResource(R.string.social_status_dating)
-                    else -> stringResource(R.string.social_status_single)
-                },
-                friendCount = friendCount,
-                maxFriends = RelationshipEngine.MAX_FRIENDS,
-                petCount = character.pets.size
+            CategoryFilterChipRow(
+                labels = chipLabels,
+                selectedIndex = selectedCategory,
+                onSelected = { selectedCategory = it },
+                modifier = Modifier.padding(horizontal = 16.dp, vertical = 10.dp)
             )
 
-            Spacer(modifier = Modifier.height(10.dp))
-
-            val showDatingTip = uiState.tipsLoaded &&
-                OnboardingTips.FAMILY_DATING !in uiState.seenTipIds &&
-                !character.hasSpouse()
-            if (showDatingTip) {
-                DismissibleTipCard(
-                    text = stringResource(R.string.tip_family_dating),
-                    onDismiss = onDismissFamilyDatingTip,
-                    modifier = Modifier.padding(bottom = 10.dp)
-                )
-            }
-
-            val showDetailTip = uiState.tipsLoaded &&
-                OnboardingTips.FAMILY_DETAIL !in uiState.seenTipIds &&
-                character.family.isNotEmpty()
-            if (showDetailTip) {
-                DismissibleTipCard(
-                    text = stringResource(R.string.tip_family_detail),
-                    onDismiss = onDismissFamilyDetailTip,
-                    modifier = Modifier.padding(bottom = 10.dp)
-                )
-            }
-
-            if (character.age >= 18 && !character.hasSpouse()) {
-                Button(
-                    onClick = onFindDate,
-                    modifier = Modifier.fillMaxWidth(),
-                    shape = RoundedCornerShape(14.dp),
-                    colors = ButtonDefaults.buttonColors(
-                        containerColor = AccentPink,
-                        contentColor = NavyDeep
-                    )
-                ) {
-                    Icon(imageVector = AppIcons.Family, contentDescription = null)
-                    Text(
-                        text = "  ${stringResource(R.string.btn_find_date)}",
-                        fontWeight = FontWeight.SemiBold
+            Column(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(horizontal = 16.dp)
+            ) {
+                val showDatingTip = uiState.tipsLoaded &&
+                    OnboardingTips.FAMILY_DATING !in uiState.seenTipIds &&
+                    !character.hasSpouse()
+                if (showDatingTip) {
+                    DismissibleTipCard(
+                        text = stringResource(R.string.tip_family_dating),
+                        onDismiss = onDismissFamilyDatingTip,
+                        modifier = Modifier.padding(bottom = 10.dp)
                     )
                 }
-                Spacer(modifier = Modifier.height(8.dp))
-            }
 
-            if (canMeetPeople) {
-                OutlinedButton(
-                    onClick = onSeekFriendship,
-                    modifier = Modifier.fillMaxWidth(),
-                    shape = RoundedCornerShape(14.dp)
-                ) {
-                    Text(
-                        text = stringResource(
-                            R.string.btn_meet_people,
-                            formatMoney(seekCost, character.countryCode)
-                        ),
-                        fontWeight = FontWeight.SemiBold
+                val showDetailTip = uiState.tipsLoaded &&
+                    OnboardingTips.FAMILY_DETAIL !in uiState.seenTipIds &&
+                    character.family.isNotEmpty()
+                if (showDetailTip) {
+                    DismissibleTipCard(
+                        text = stringResource(R.string.tip_family_detail),
+                        onDismiss = onDismissFamilyDetailTip,
+                        modifier = Modifier.padding(bottom = 10.dp)
                     )
                 }
-                Spacer(modifier = Modifier.height(10.dp))
-            }
 
-            if (character.family.isEmpty() && character.pets.isEmpty()) {
-                EmptyStateCard(
-                    illustration = EmptyStateIllustration.FAMILY,
-                    title = stringResource(R.string.empty_family_title),
-                    message = stringResource(R.string.empty_family),
-                    actionLabel = if (character.age >= 18 && !character.hasSpouse()) {
-                        stringResource(R.string.btn_find_date)
-                    } else {
-                        null
-                    },
-                    onAction = if (character.age >= 18 && !character.hasSpouse()) onFindDate else null,
-                    modifier = Modifier.padding(top = MaishaSpacing.sm)
-                )
-            } else {
-                LazyColumn(
-                    modifier = Modifier.fillMaxSize(),
-                    verticalArrangement = Arrangement.spacedBy(8.dp)
-                ) {
-                    if (parents.isNotEmpty()) {
-                        item(contentType = FamilyListContentType.SectionHeader) {
-                            FamilySectionHeader(stringResource(R.string.section_parents))
+                if (character.age >= 18 && !character.hasSpouse()) {
+                    Button(
+                        onClick = onFindDate,
+                        modifier = Modifier.fillMaxWidth(),
+                        shape = RoundedCornerShape(14.dp),
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = LifeGreen,
+                            contentColor = Color.White
+                        )
+                    ) {
+                        Icon(imageVector = AppIcons.Family, contentDescription = null)
+                        Text(
+                            text = "  ${stringResource(R.string.btn_find_date)}",
+                            fontWeight = FontWeight.SemiBold
+                        )
+                    }
+                    Spacer(modifier = Modifier.height(8.dp))
+                }
+
+                if (canMeetPeople) {
+                    OutlinedButton(
+                        onClick = onSeekFriendship,
+                        modifier = Modifier.fillMaxWidth(),
+                        shape = RoundedCornerShape(14.dp)
+                    ) {
+                        Text(
+                            text = stringResource(
+                                R.string.btn_meet_people,
+                                formatMoney(seekCost, character.countryCode)
+                            ),
+                            fontWeight = FontWeight.SemiBold
+                        )
+                    }
+                    Spacer(modifier = Modifier.height(10.dp))
+                }
+
+                if (listEmpty) {
+                    EmptyStateCard(
+                        illustration = EmptyStateIllustration.FAMILY,
+                        title = stringResource(R.string.empty_family_title),
+                        message = stringResource(R.string.empty_family),
+                        actionLabel = if (character.age >= 18 && !character.hasSpouse()) {
+                            stringResource(R.string.btn_find_date)
+                        } else {
+                            null
+                        },
+                        onAction = if (character.age >= 18 && !character.hasSpouse()) {
+                            onFindDate
+                        } else {
+                            null
+                        },
+                        modifier = Modifier.padding(top = MaishaSpacing.sm)
+                    )
+                } else {
+                    LazyColumn(
+                        modifier = Modifier.fillMaxSize(),
+                        verticalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        if (showFamily && parents.isNotEmpty()) {
+                            item(
+                                key = "header_parents",
+                                contentType = FamilyListContentType.SectionHeader
+                            ) {
+                                FamilySectionHeader(stringResource(R.string.section_parents))
+                            }
+                            items(
+                                parents,
+                                key = { it.id },
+                                contentType = { FamilyListContentType.PersonCard }
+                            ) { member ->
+                                FamilyPersonCard(member, character.countryCode) {
+                                    onMemberClick(member)
+                                }
+                            }
                         }
-                        items(parents, key = { it.id }) { member ->
-                            FamilyPersonCard(member, character.countryCode) { onMemberClick(member) }
+                        if (showFamily && siblings.isNotEmpty()) {
+                            item(
+                                key = "header_siblings",
+                                contentType = FamilyListContentType.SectionHeader
+                            ) {
+                                FamilySectionHeader(stringResource(R.string.section_siblings))
+                            }
+                            items(
+                                siblings,
+                                key = { it.id },
+                                contentType = { FamilyListContentType.PersonCard }
+                            ) { member ->
+                                FamilyPersonCard(member, character.countryCode) {
+                                    onMemberClick(member)
+                                }
+                            }
+                        }
+                        if (showFamily && partner.isNotEmpty()) {
+                            item(
+                                key = "header_partner",
+                                contentType = FamilyListContentType.SectionHeader
+                            ) {
+                                FamilySectionHeader(stringResource(R.string.section_partner))
+                            }
+                            items(
+                                partner,
+                                key = { it.id },
+                                contentType = { FamilyListContentType.PersonCard }
+                            ) { member ->
+                                FamilyPersonCard(member, character.countryCode) {
+                                    onMemberClick(member)
+                                }
+                            }
+                        }
+                        if (showFamily && children.isNotEmpty()) {
+                            item(
+                                key = "header_children",
+                                contentType = FamilyListContentType.SectionHeader
+                            ) {
+                                FamilySectionHeader(stringResource(R.string.section_children))
+                            }
+                            items(
+                                children,
+                                key = { it.id },
+                                contentType = { FamilyListContentType.PersonCard }
+                            ) { member ->
+                                FamilyPersonCard(member, character.countryCode) {
+                                    onMemberClick(member)
+                                }
+                            }
+                        }
+                        if (showFriends && socialCircle.isNotEmpty()) {
+                            item(
+                                key = "header_friends",
+                                contentType = FamilyListContentType.SectionHeader
+                            ) {
+                                FamilySectionHeader(stringResource(R.string.section_friends_rivals))
+                            }
+                            items(
+                                socialCircle,
+                                key = { it.id },
+                                contentType = { FamilyListContentType.PersonCard }
+                            ) { member ->
+                                FamilyPersonCard(member, character.countryCode) {
+                                    onMemberClick(member)
+                                }
+                            }
+                        }
+                        if (showFamily && others.isNotEmpty()) {
+                            item(
+                                key = "header_other",
+                                contentType = FamilyListContentType.SectionHeader
+                            ) {
+                                FamilySectionHeader(stringResource(R.string.section_other))
+                            }
+                            items(
+                                others,
+                                key = { it.id },
+                                contentType = { FamilyListContentType.PersonCard }
+                            ) { member ->
+                                FamilyPersonCard(member, character.countryCode) {
+                                    onMemberClick(member)
+                                }
+                            }
+                        }
+                        if (showPets && character.pets.isNotEmpty()) {
+                            item(
+                                key = "header_pets",
+                                contentType = FamilyListContentType.SectionHeader
+                            ) {
+                                FamilySectionHeader(stringResource(R.string.section_pets))
+                            }
+                            items(
+                                character.pets,
+                                key = { it.id },
+                                contentType = { FamilyListContentType.PetCard }
+                            ) { pet ->
+                                PetCard(
+                                    pet = pet,
+                                    speciesLabel = petSpeciesLabel(pet.species),
+                                    onClick = { onPetClick(pet) }
+                                )
+                            }
+                        }
+                        item(key = "fab_spacer") {
+                            Spacer(modifier = Modifier.height(72.dp))
                         }
                     }
-                    if (siblings.isNotEmpty()) {
-                        item(contentType = FamilyListContentType.SectionHeader) {
-                            FamilySectionHeader(stringResource(R.string.section_siblings))
-                        }
-                        items(siblings, key = { it.id }) { member ->
-                            FamilyPersonCard(member, character.countryCode) { onMemberClick(member) }
-                        }
-                    }
-                    if (partner.isNotEmpty()) {
-                        item(contentType = FamilyListContentType.SectionHeader) {
-                            FamilySectionHeader(stringResource(R.string.section_partner))
-                        }
-                        items(partner, key = { it.id }) { member ->
-                            FamilyPersonCard(member, character.countryCode) { onMemberClick(member) }
-                        }
-                    }
-                    if (children.isNotEmpty()) {
-                        item(contentType = FamilyListContentType.SectionHeader) {
-                            FamilySectionHeader(stringResource(R.string.section_children))
-                        }
-                        items(children, key = { it.id }) { member ->
-                            FamilyPersonCard(member, character.countryCode) { onMemberClick(member) }
-                        }
-                    }
-                    if (socialCircle.isNotEmpty()) {
-                        item(contentType = FamilyListContentType.SectionHeader) {
-                            FamilySectionHeader(stringResource(R.string.section_friends_rivals))
-                        }
-                        items(socialCircle, key = { it.id }) { member ->
-                            FamilyPersonCard(member, character.countryCode) { onMemberClick(member) }
-                        }
-                    }
-                    if (others.isNotEmpty()) {
-                        item(contentType = FamilyListContentType.SectionHeader) {
-                            FamilySectionHeader(stringResource(R.string.section_other))
-                        }
-                        items(others, key = { it.id }) { member ->
-                            FamilyPersonCard(member, character.countryCode) { onMemberClick(member) }
-                        }
-                    }
-                    if (character.pets.isNotEmpty()) {
-                        item(contentType = FamilyListContentType.SectionHeader) {
-                            FamilySectionHeader(stringResource(R.string.section_pets))
-                        }
-                        items(character.pets, key = { it.id }) { pet ->
-                            PetCard(
-                                pet = pet,
-                                speciesLabel = petSpeciesLabel(pet.species),
-                                onClick = { onPetClick(pet) }
-                            )
-                        }
-                    }
-                    item { Spacer(modifier = Modifier.height(72.dp)) }
                 }
             }
         }
@@ -402,8 +525,8 @@ fun FamilyScreen(
                 modifier = Modifier
                     .align(Alignment.BottomEnd)
                     .padding(MaishaSpacing.md),
-                containerColor = GoldAccent,
-                contentColor = NavyDeep
+                containerColor = LifeGreen,
+                contentColor = Color.White
             ) {
                 Icon(
                     imageVector = AppIcons.Family,
@@ -534,45 +657,6 @@ fun FamilyScreen(
             )
         }
     }
-}
-
-@Composable
-private fun SocialSummaryStrip(
-    partnerStatus: String,
-    friendCount: Int,
-    maxFriends: Int,
-    petCount: Int
-) {
-    Card(
-        modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(14.dp),
-        colors = CardDefaults.cardColors(containerColor = CreamMuted)
-    ) {
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 12.dp, vertical = 10.dp),
-            horizontalArrangement = Arrangement.SpaceBetween
-        ) {
-            SummaryChip(label = partnerStatus)
-            SummaryChip(
-                label = stringResource(R.string.format_friend_slots, friendCount, maxFriends)
-            )
-            SummaryChip(
-                label = stringResource(R.string.format_pet_count_short, petCount)
-            )
-        }
-    }
-}
-
-@Composable
-private fun SummaryChip(label: String) {
-    Text(
-        text = label,
-        style = MaterialTheme.typography.labelMedium,
-        fontWeight = FontWeight.SemiBold,
-        color = NavyDeep
-    )
 }
 
 @Composable
