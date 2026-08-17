@@ -70,6 +70,7 @@ import com.maisha.game.ui.components.EmptyStateCard
 import com.maisha.game.ui.components.PersonAvatar
 import com.maisha.game.ui.components.PersonCard
 import com.maisha.game.ui.components.PersonDetailSheet
+import com.maisha.game.ui.components.MaishaIcon
 import com.maisha.game.ui.components.PetCard
 import com.maisha.game.ui.components.PetDetailSheet
 import com.maisha.game.ui.components.StatBar
@@ -342,7 +343,7 @@ fun FamilyScreen(
                             contentColor = Color.White
                         )
                     ) {
-                        Icon(imageVector = AppIcons.Family, contentDescription = null)
+                        MaishaIcon(icon = AppIcons.Family, contentDescription = null, size = 24.dp)
                         Text(
                             text = "  ${stringResource(R.string.btn_find_date)}",
                             fontWeight = FontWeight.SemiBold
@@ -528,9 +529,10 @@ fun FamilyScreen(
                 containerColor = LifeGreen,
                 contentColor = Color.White
             ) {
-                Icon(
-                    imageVector = AppIcons.Family,
-                    contentDescription = stringResource(R.string.btn_host_party)
+                MaishaIcon(
+                    icon = AppIcons.Family,
+                    contentDescription = stringResource(R.string.btn_host_party),
+                    size = 24.dp
                 )
             }
         }

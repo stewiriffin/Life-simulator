@@ -53,8 +53,9 @@ import com.maisha.game.R
 import com.maisha.game.data.model.Achievement
 import com.maisha.game.feedback.HapticType
 import com.maisha.game.ui.feedback.LocalFeedbackManager
+import com.maisha.game.data.IllustrationCatalog
+import com.maisha.game.ui.components.IllustrationImage
 import com.maisha.game.util.achievementDescription
-import com.maisha.game.ui.theme.AppIcons
 import com.maisha.game.ui.theme.GoldAccent
 import com.maisha.game.ui.theme.TealPrimary
 import kotlinx.coroutines.delay
@@ -142,11 +143,11 @@ fun AchievementUnlockedDialog(
                                     ),
                                 contentAlignment = Alignment.Center
                             ) {
-                                Icon(
-                                    imageVector = AppIcons.forAchievementCategory(achievement.category),
-                                    contentDescription = null,
-                                    tint = GoldAccent,
-                                    modifier = Modifier.size(28.dp)
+                                IllustrationImage(
+                                    ref = IllustrationCatalog.getIllustrationForAchievementCategory(
+                                        achievement.category
+                                    ),
+                                    size = 36.dp
                                 )
                             }
                         }

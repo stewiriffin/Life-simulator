@@ -248,7 +248,10 @@ private fun ShareWordmark() {
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(8.dp)
     ) {
-        Text(text = "🌍", fontSize = 22.sp)
+        IllustrationImage(
+            ref = IllustrationCatalog.rasterNamed("img_icon_globe"),
+            size = 22.dp
+        )
         Text(
             text = stringResource(R.string.app_name).uppercase(),
             color = GoldAccent,

@@ -270,8 +270,7 @@ private fun AchievementTrophyCard(
                     ref = IllustrationCatalog.getIllustrationForAchievementCategory(
                         item.achievement.category
                     ),
-                    size = 28.dp,
-                    tint = if (unlocked) GoldAccent else Color.Gray
+                    size = 36.dp
                 )
                 if (!unlocked) {
                     Icon(

@@ -178,11 +178,9 @@ fun StatBar(
                 modifier = Modifier.weight(1f)
             ) {
                 if (showIcon) {
-                    Icon(
-                        imageVector = type.icon(),
-                        contentDescription = null,
-                        tint = barColor,
-                        modifier = Modifier.size(16.dp)
+                    MaishaStatIcon(
+                        type = type,
+                        size = 18.dp
                     )
                 }
                 Text(

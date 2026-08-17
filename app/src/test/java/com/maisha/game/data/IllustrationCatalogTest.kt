@@ -25,6 +25,14 @@ class IllustrationCatalogTest {
     }
 
     @Test
+    fun allRasterBundles_existOnDisk() {
+        IllustrationCatalog.allRasterResourceNames().forEach { name ->
+            val resId = context.resources.getIdentifier(name, "drawable", context.packageName)
+            assertTrue("Missing raster bundle $name", resId != 0)
+        }
+    }
+
+    @Test
     fun catalogAssets_sameType_canHaveDistinctArt() {
         val compact = IllustrationCatalog.getIllustrationForCatalogAsset("car_vitz")
         val luxury = IllustrationCatalog.getIllustrationForCatalogAsset("car_new")
@@ -33,6 +41,17 @@ class IllustrationCatalogTest {
         val studio = IllustrationCatalog.getIllustrationForCatalogAsset("apartment_studio")
         val mansion = IllustrationCatalog.getIllustrationForCatalogAsset("house_karen")
         assertNotEquals(studio.resourceName, mansion.resourceName)
+    }
+
+    @Test
+    fun jobsAndAchievements_useRasterArt() {
+        assertEquals(ResourceType.RASTER, IllustrationCatalog.getIllustrationForJob("teacher").resourceType)
+        assertEquals(
+            ResourceType.RASTER,
+            IllustrationCatalog.getIllustrationForAchievementCategory(
+                com.maisha.game.data.model.AchievementCategory.FAMILY
+            ).resourceType
+        )
     }
 
     @Test
@@ -53,6 +72,14 @@ class IllustrationCatalogTest {
     }
 
     @Test
+    fun achievementIconNames_mapToRaster() {
+        assertEquals(
+            "img_achievement_education",
+            IllustrationCatalog.getIllustrationForAchievementIcon("graduation_cap").resourceName
+        )
+    }
+
+    @Test
     fun heirloomCatalogIds_mapToUniqueIcons() {
         val ids = AssetCatalog.getHeirloomAssets().map { it.id }
         val names = ids.map {
@@ -60,13 +87,6 @@ class IllustrationCatalogTest {
         }.toSet()
         assertEquals(ids.size, names.size)
         assertTrue(names.all { it.startsWith("img_asset_heirloom_") })
-    }
-
-    @Test
-    fun catalogAssets_useRasterHeroImages() {
-        val ref = IllustrationCatalog.getIllustrationForCatalogAsset("car_vitz")
-        assertEquals(ResourceType.RASTER, ref.resourceType)
-        assertTrue(ref.resourceName.startsWith("img_asset_"))
     }
 
     @Test

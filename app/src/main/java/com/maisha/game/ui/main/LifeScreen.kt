@@ -86,6 +86,7 @@ import com.maisha.game.ui.components.EmptyStateCard
 import com.maisha.game.ui.components.FloatingStatChangeLayer
 import com.maisha.game.ui.components.MainTab
 import com.maisha.game.ui.components.MaishaBottomNav
+import com.maisha.game.ui.components.MaishaIcon
 import com.maisha.game.ui.components.MoneyStatRow
 import com.maisha.game.ui.components.PersonAvatar
 import com.maisha.game.ui.components.RecordBadge
@@ -1140,18 +1141,18 @@ private fun StatusInfoCard(
             verticalArrangement = Arrangement.spacedBy(MaishaSpacing.sm)
         ) {
             StatusInfoRow(
-                icon = { Icon(AppIcons.Wealth, contentDescription = null, tint = GoldAccent) },
+                icon = { MaishaIcon(AppIcons.Wealth, contentDescription = null, size = 22.dp) },
                 label = stringResource(R.string.label_cash),
                 value = formatMoney(character.stats.money, countryCode),
                 valueColor = GoldAccent
             )
             StatusInfoRow(
-                icon = { Icon(AppIcons.Wealth, contentDescription = null, tint = StatType.MONEY.color()) },
+                icon = { MaishaIcon(AppIcons.Wealth, contentDescription = null, size = 22.dp) },
                 label = stringResource(R.string.label_net_worth),
                 value = formatMoney(netWorth, countryCode)
             )
             StatusInfoRow(
-                icon = { Icon(AppIcons.Education, contentDescription = null, tint = StatType.SMARTS.color()) },
+                icon = { MaishaIcon(AppIcons.Education, contentDescription = null, size = 22.dp) },
                 label = stringResource(R.string.label_education),
                 value = EducationFormatter.formatStatus(education, resources, countryCode)
             )
@@ -1166,7 +1167,7 @@ private fun StatusInfoCard(
                 )
             }
             StatusInfoRow(
-                icon = { Icon(AppIcons.Career, contentDescription = null, tint = GoldAccent) },
+                icon = { MaishaIcon(AppIcons.Career, contentDescription = null, size = 22.dp) },
                 label = stringResource(R.string.label_career),
                 value = CareerFormatter.formatStatus(career, resources)
             )

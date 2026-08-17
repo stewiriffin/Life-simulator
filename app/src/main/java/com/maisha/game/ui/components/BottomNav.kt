@@ -95,10 +95,10 @@ fun MaishaBottomNav(
                                 .padding(horizontal = 10.dp, vertical = 4.dp),
                             contentAlignment = Alignment.Center
                         ) {
-                            Icon(
-                                imageVector = item.icon,
+                            MaishaNavIcon(
+                                tab = item.tab,
                                 contentDescription = label,
-                                tint = if (selected) LifeGreen else MaterialTheme.colorScheme.onSurfaceVariant
+                                size = 26.dp
                             )
                         }
                     }

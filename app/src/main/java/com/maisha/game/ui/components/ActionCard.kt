@@ -91,11 +91,11 @@ fun ActionCard(
             horizontalArrangement = Arrangement.spacedBy(12.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            Icon(
-                imageVector = icon,
+            MaishaIcon(
+                icon = icon,
                 contentDescription = null,
-                tint = iconTint,
-                modifier = Modifier.size(24.dp)
+                size = 32.dp,
+                modifier = Modifier
             )
             Column(
                 modifier = Modifier.weight(1f),

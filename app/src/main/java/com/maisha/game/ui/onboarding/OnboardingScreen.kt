@@ -44,6 +44,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import com.maisha.game.R
 import com.maisha.game.ui.illustrations.OnboardingIllustration
+import com.maisha.game.ui.components.MaishaIcon
 import com.maisha.game.ui.illustrations.OnboardingIllustrationView
 import com.maisha.game.ui.theme.AppIcons
 import com.maisha.game.ui.theme.GoldAccent
@@ -348,11 +349,10 @@ private fun ChoicesSlide(pageOffset: Float) {
                         horizontalAlignment = Alignment.CenterHorizontally,
                         verticalArrangement = Arrangement.spacedBy(6.dp)
                     ) {
-                        Icon(
-                            imageVector = icon,
+                        MaishaIcon(
+                            icon = icon,
                             contentDescription = null,
-                            tint = tint,
-                            modifier = Modifier.size(22.dp)
+                            size = 28.dp
                         )
                         Text(
                             text = stringResource(labelRes),
