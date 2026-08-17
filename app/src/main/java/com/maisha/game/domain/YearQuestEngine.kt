@@ -51,7 +51,8 @@ data class YearQuestProgress(
 class YearQuestEngine @Inject constructor() {
 
     fun generate(character: Character, random: Random = Random.Default): List<YearQuest> {
-        if (!character.alive || character.age < MIN_QUEST_AGE) return emptyList()
+        if (!character.alive || character.age < MIN_SOFT_QUEST_AGE) return emptyList()
+        val softOnly = character.age < MIN_QUEST_AGE
         val pool = mutableListOf<YearQuest>()
         val childTargets = character.age < 14
 
@@ -71,82 +72,88 @@ class YearQuestEngine @Inject constructor() {
                 rewardKarma = 3
             )
         }
-        if (character.age >= 16) {
-            pool += YearQuest(
-                kind = YearQuestKind.EARN_MONEY,
-                target = moneyTarget(character),
-                titleResHint = "year_quest_earn_money",
-                rewardKarma = 2
-            )
-        }
-        if (character.education.stage == SchoolStage.PRIMARY ||
-            character.education.stage == SchoolStage.SECONDARY ||
-            character.education.stage == SchoolStage.UNIVERSITY
-        ) {
-            pool += YearQuest(
-                kind = YearQuestKind.STUDY_SMARTS,
-                target = 5,
-                titleResHint = "year_quest_study_smarts",
-                rewardKarma = 3
-            )
-        }
-        if (character.family.any { it.alive }) {
-            pool += YearQuest(
-                kind = YearQuestKind.BOND_FAMILY,
-                target = 8,
-                titleResHint = "year_quest_bond_family",
-                rewardKarma = 4
-            )
-        }
-        if (character.age >= 14) {
-            pool += YearQuest(
-                kind = YearQuestKind.STAY_OUT_OF_TROUBLE,
-                target = 1,
-                titleResHint = "year_quest_stay_clean",
-                rewardKarma = 4
-            )
-        }
-        if (character.socialMedia.hasAccount) {
-            pool += YearQuest(
-                kind = YearQuestKind.GROW_FOLLOWERS,
-                target = 500,
-                titleResHint = "year_quest_grow_followers",
-                rewardKarma = 2
-            )
-        }
-        if (character.age >= SkillEngine.MIN_SKILL_AGE &&
-            (character.skills.isEmpty() ||
-                character.skills.any { it.level < SkillEngine.MAX_SKILL_LEVEL })
-        ) {
-            pool += YearQuest(
-                kind = YearQuestKind.RAISE_SKILL,
-                target = 10,
-                titleResHint = "year_quest_raise_skill",
-                rewardKarma = 3
-            )
-        }
-        if (character.age >= 18 && character.career.currentJob != null) {
-            pool += YearQuest(
-                kind = YearQuestKind.HOLD_JOB,
-                target = 1,
-                titleResHint = "year_quest_hold_job",
-                rewardKarma = 3,
-                rewardCashKenya = 5_000,
-                rewardHappiness = 2
-            )
-        }
-        if (character.age >= 16) {
-            pool += YearQuest(
-                kind = YearQuestKind.GROW_SAVINGS,
-                target = savingsTarget(character),
-                titleResHint = "year_quest_grow_savings",
-                rewardKarma = 2,
-                rewardCashKenya = 2_500
-            )
+        if (!softOnly) {
+            if (character.age >= 16) {
+                pool += YearQuest(
+                    kind = YearQuestKind.EARN_MONEY,
+                    target = moneyTarget(character),
+                    titleResHint = "year_quest_earn_money",
+                    rewardKarma = 2
+                )
+            }
+            if (character.education.stage == SchoolStage.PRIMARY ||
+                character.education.stage == SchoolStage.SECONDARY ||
+                character.education.stage == SchoolStage.UNIVERSITY
+            ) {
+                pool += YearQuest(
+                    kind = YearQuestKind.STUDY_SMARTS,
+                    target = 5,
+                    titleResHint = "year_quest_study_smarts",
+                    rewardKarma = 3
+                )
+            }
+            if (character.family.any { it.alive }) {
+                pool += YearQuest(
+                    kind = YearQuestKind.BOND_FAMILY,
+                    target = 8,
+                    titleResHint = "year_quest_bond_family",
+                    rewardKarma = 4
+                )
+            }
+            if (character.age >= 14) {
+                pool += YearQuest(
+                    kind = YearQuestKind.STAY_OUT_OF_TROUBLE,
+                    target = 1,
+                    titleResHint = "year_quest_stay_clean",
+                    rewardKarma = 4
+                )
+            }
+            if (character.socialMedia.hasAccount) {
+                pool += YearQuest(
+                    kind = YearQuestKind.GROW_FOLLOWERS,
+                    target = 500,
+                    titleResHint = "year_quest_grow_followers",
+                    rewardKarma = 2
+                )
+            }
+            if (character.age >= SkillEngine.MIN_SKILL_AGE &&
+                (character.skills.isEmpty() ||
+                    character.skills.any { it.level < SkillEngine.MAX_SKILL_LEVEL })
+            ) {
+                pool += YearQuest(
+                    kind = YearQuestKind.RAISE_SKILL,
+                    target = 10,
+                    titleResHint = "year_quest_raise_skill",
+                    rewardKarma = 3
+                )
+            }
+            if (character.age >= 18 && character.career.currentJob != null) {
+                pool += YearQuest(
+                    kind = YearQuestKind.HOLD_JOB,
+                    target = 1,
+                    titleResHint = "year_quest_hold_job",
+                    rewardKarma = 3,
+                    rewardCashKenya = 5_000,
+                    rewardHappiness = 2
+                )
+            }
+            if (character.age >= 16) {
+                pool += YearQuest(
+                    kind = YearQuestKind.GROW_SAVINGS,
+                    target = savingsTarget(character),
+                    titleResHint = "year_quest_grow_savings",
+                    rewardKarma = 2,
+                    rewardCashKenya = 2_500
+                )
+            }
         }
 
         if (pool.isEmpty()) return emptyList()
-        return pool.shuffled(random).take(QUESTS_PER_YEAR)
+        return if (softOnly) {
+            pool.shuffled(random).take(SOFT_QUESTS_PER_YEAR)
+        } else {
+            pool.shuffled(random).take(QUESTS_PER_YEAR)
+        }
     }
 
     fun evaluate(
@@ -298,7 +305,9 @@ class YearQuestEngine @Inject constructor() {
     }
 
     companion object {
+        const val MIN_SOFT_QUEST_AGE = 3
         const val MIN_QUEST_AGE = 6
+        const val SOFT_QUESTS_PER_YEAR = 1
         const val QUESTS_PER_YEAR = 2
         const val STREAK_KARMA_CAP = 5
     }

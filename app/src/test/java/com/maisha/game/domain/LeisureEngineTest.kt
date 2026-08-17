@@ -83,7 +83,42 @@ class LeisureEngineTest {
             LeisureResult.Ineligible,
             engine.perform(toddler, LeisureActivity.PLAYGROUND)
         )
-        assertTrue(engine.activitiesFor(toddler).isEmpty())
+    }
+
+    @Test
+    fun toddlerGetsStorytimeAndParkActivities() {
+        val toddler = TestFixtures.character(
+            age = 3,
+            stats = Stats(money = 50_000, happiness = 50, health = 70, smarts = 40)
+        )
+        val activities = engine.activitiesFor(toddler)
+        assertTrue(activities.contains(LeisureActivity.STORYTIME))
+        assertTrue(activities.contains(LeisureActivity.PARK_CAREGIVER))
+        assertFalse(activities.contains(LeisureActivity.PLAYGROUND))
+        val result = engine.perform(toddler, LeisureActivity.STORYTIME)
+        assertTrue(result is LeisureResult.Success)
+    }
+
+    @Test
+    fun midLifeGetsRetreatAndReunion() {
+        val adult = TestFixtures.character(
+            age = 35,
+            stats = Stats(money = 200_000, happiness = 50, health = 70)
+        )
+        val activities = engine.activitiesFor(adult)
+        assertTrue(activities.contains(LeisureActivity.WEEKEND_RETREAT))
+        assertTrue(activities.contains(LeisureActivity.REUNION_DINNER))
+    }
+
+    @Test
+    fun seniorGetsGrandkidsAndMemoir() {
+        val senior = TestFixtures.character(
+            age = 62,
+            stats = Stats(money = 100_000, happiness = 50, health = 70, smarts = 60)
+        )
+        val activities = engine.activitiesFor(senior)
+        assertTrue(activities.contains(LeisureActivity.GRANDKIDS_DAY))
+        assertTrue(activities.contains(LeisureActivity.MEMOIR_WRITING))
     }
 }
 

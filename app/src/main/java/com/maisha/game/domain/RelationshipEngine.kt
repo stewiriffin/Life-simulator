@@ -644,6 +644,12 @@ class RelationshipEngine @Inject constructor(
                 messageKey = "msg_parenting_minor_only"
             )
         }
+        if (isAdultChildAction(interactionType) && !Companion.isAdultChild(member)) {
+            return FamilyInteractionResult(
+                character = character,
+                messageKey = "msg_adult_child_only"
+            )
+        }
         return when (interactionType) {
             InteractionType.SPEND_TIME -> applySpendTime(character, memberIndex, member)
             InteractionType.ARGUE -> applyArgue(character, memberIndex, member)
@@ -660,6 +666,9 @@ class RelationshipEngine @Inject constructor(
             InteractionType.DISCIPLINE -> applyDiscipline(character, memberIndex, member)
             InteractionType.DATE_NIGHT -> applyDateNight(character, memberIndex, member)
             InteractionType.MAKE_PEACE -> applyMakePeace(character, memberIndex, member)
+            InteractionType.FINANCIAL_SUPPORT -> applyFinancialSupport(character, memberIndex, member)
+            InteractionType.CELEBRATE_MILESTONE -> applyCelebrateMilestone(character, memberIndex, member)
+            InteractionType.DISCUSS_LIFE_CHOICES -> applyDiscussLifeChoices(character, memberIndex, member)
         }
     }
 
@@ -1287,6 +1296,101 @@ class RelationshipEngine @Inject constructor(
         )
     }
 
+    private fun applyFinancialSupport(
+        character: Character,
+        memberIndex: Int,
+        member: Person
+    ): FamilyInteractionResult {
+        val cost = EconomyScaler.scaleAmount(FINANCIAL_SUPPORT_COST_KENYA, character.countryCode)
+        if (character.stats.money < cost) {
+            return FamilyInteractionResult(
+                character = character,
+                messageKey = "msg_financial_support_cannot_afford",
+                messageArgs = listOf(formatMoney(cost, character.countryCode))
+            )
+        }
+        val updatedMember = member.copy(
+            relationshipLevel = clampRelationshipLevel(member.relationshipLevel + 12)
+        ).coerceRelationship()
+        return FamilyInteractionResult(
+            character = commitMemberUpdate(
+                character.copy(
+                    stats = character.stats.copy(
+                        money = character.stats.money - cost,
+                        karma = clampStat(character.stats.karma + 2)
+                    )
+                ),
+                memberIndex,
+                updatedMember,
+                interactionType = InteractionType.FINANCIAL_SUPPORT,
+                recordFirstQualityTime = true
+            ),
+            messageKey = "msg_financial_support_success",
+            messageArgs = listOf(member.name, formatMoney(cost, character.countryCode))
+        )
+    }
+
+    private fun applyCelebrateMilestone(
+        character: Character,
+        memberIndex: Int,
+        member: Person
+    ): FamilyInteractionResult {
+        val cost = EconomyScaler.scaleAmount(CELEBRATE_MILESTONE_COST_KENYA, character.countryCode)
+        if (character.stats.money < cost) {
+            return FamilyInteractionResult(
+                character = character,
+                messageKey = "msg_celebrate_cannot_afford",
+                messageArgs = listOf(formatMoney(cost, character.countryCode))
+            )
+        }
+        val updatedMember = member.copy(
+            relationshipLevel = clampRelationshipLevel(member.relationshipLevel + 15)
+        ).coerceRelationship()
+        return FamilyInteractionResult(
+            character = commitMemberUpdate(
+                character.copy(
+                    stats = character.stats.copy(
+                        money = character.stats.money - cost,
+                        happiness = clampStat(character.stats.happiness + 6)
+                    )
+                ),
+                memberIndex,
+                updatedMember,
+                interactionType = InteractionType.CELEBRATE_MILESTONE,
+                milestoneKind = MilestoneKind.QUALITY_TIME,
+                subjectName = member.name
+            ),
+            messageKey = "msg_celebrate_milestone_success",
+            messageArgs = listOf(member.name)
+        )
+    }
+
+    private fun applyDiscussLifeChoices(
+        character: Character,
+        memberIndex: Int,
+        member: Person
+    ): FamilyInteractionResult {
+        val updatedMember = member.copy(
+            relationshipLevel = clampRelationshipLevel(member.relationshipLevel + 8)
+        ).coerceRelationship()
+        return FamilyInteractionResult(
+            character = commitMemberUpdate(
+                character.copy(
+                    stats = character.stats.copy(
+                        happiness = clampStat(character.stats.happiness + 3),
+                        smarts = clampStat(character.stats.smarts + 1)
+                    )
+                ),
+                memberIndex,
+                updatedMember,
+                interactionType = InteractionType.DISCUSS_LIFE_CHOICES,
+                recordFirstQualityTime = true
+            ),
+            messageKey = "msg_discuss_life_success",
+            messageArgs = listOf(member.name)
+        )
+    }
+
     private fun applyDiscipline(
         character: Character,
         memberIndex: Int,
@@ -1372,6 +1476,13 @@ class RelationshipEngine @Inject constructor(
         InteractionType.HELP_WITH_HOMEWORK,
         InteractionType.PAY_ALLOWANCE,
         InteractionType.DISCIPLINE -> true
+        else -> false
+    }
+
+    private fun isAdultChildAction(type: InteractionType): Boolean = when (type) {
+        InteractionType.FINANCIAL_SUPPORT,
+        InteractionType.CELEBRATE_MILESTONE,
+        InteractionType.DISCUSS_LIFE_CHOICES -> true
         else -> false
     }
 
@@ -1480,12 +1591,17 @@ class RelationshipEngine @Inject constructor(
         const val SEEK_FRIEND_COST_KENYA = 5_000
         const val PET_FEED_COST_KENYA = 1_500
         const val PET_VET_COST_KENYA = 8_000
+        const val FINANCIAL_SUPPORT_COST_KENYA = 5_000
+        const val CELEBRATE_MILESTONE_COST_KENYA = 8_000
 
         fun allowanceCost(character: Character): Int =
             EconomyScaler.scaleAmount(ALLOWANCE_BASE_COST_KENYA, character.countryCode)
 
         fun isMinorChild(person: Person): Boolean =
             person.relation == RelationType.CHILD && person.alive && person.age < MINOR_CHILD_MAX_AGE
+
+        fun isAdultChild(person: Person): Boolean =
+            person.relation == RelationType.CHILD && person.alive && person.age >= MINOR_CHILD_MAX_AGE
 
         fun partyBudgetNiceKenya(): Int =
             (PARTY_BUDGET_MIN_KENYA + PARTY_BUDGET_MAX_KENYA) / 2

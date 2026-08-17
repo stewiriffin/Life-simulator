@@ -310,4 +310,59 @@ class RelationshipEngineTest {
         )
         assertEquals(60, after.family.first { it.id == "m1" }.relationshipLevel)
     }
+
+    @Test
+    fun financialSupport_adultChildOnly() {
+        val grownChild = TestFixtures.person(
+            id = "c1",
+            relation = RelationType.CHILD,
+            age = 22,
+            relationshipLevel = 55
+        )
+        val minor = TestFixtures.person(
+            id = "c2",
+            relation = RelationType.CHILD,
+            age = 10,
+            relationshipLevel = 55
+        )
+        val character = TestFixtures.character(
+            stats = Stats(money = 100_000, happiness = 50),
+            family = listOf(grownChild, minor)
+        )
+        val success = engine.progressRelationship(
+            character,
+            "c1",
+            InteractionType.FINANCIAL_SUPPORT
+        )
+        assertEquals("msg_financial_support_success", success.messageKey)
+        assertTrue(success.character.stats.money < character.stats.money)
+
+        val blocked = engine.progressRelationship(
+            character,
+            "c2",
+            InteractionType.FINANCIAL_SUPPORT
+        )
+        assertEquals("msg_adult_child_only", blocked.messageKey)
+    }
+
+    @Test
+    fun discussLifeChoices_boostsAdultChildBond() {
+        val grownChild = TestFixtures.person(
+            id = "c1",
+            relation = RelationType.CHILD,
+            age = 25,
+            relationshipLevel = 50
+        )
+        val character = TestFixtures.character(
+            stats = Stats(money = 50_000, happiness = 50),
+            family = listOf(grownChild)
+        )
+        val result = engine.progressRelationship(
+            character,
+            "c1",
+            InteractionType.DISCUSS_LIFE_CHOICES
+        )
+        assertEquals("msg_discuss_life_success", result.messageKey)
+        assertTrue(result.character.family.first().relationshipLevel > 50)
+    }
 }

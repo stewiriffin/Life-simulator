@@ -12,6 +12,21 @@ class YearQuestEngineTest {
     private val engine = YearQuestEngine()
 
     @Test
+    fun generate_softQuestsFromAge3() {
+        val preschooler = TestFixtures.character(
+            age = 3,
+            stats = Stats(happiness = 50, health = 70, smarts = 40, looks = 50, money = 0)
+        )
+        val quests = engine.generate(preschooler, Random(2))
+        assertTrue(quests.isNotEmpty())
+        assertTrue(
+            quests.all {
+                it.kind == YearQuestKind.RAISE_HAPPINESS || it.kind == YearQuestKind.RAISE_HEALTH
+            }
+        )
+    }
+
+    @Test
     fun generate_returnsQuestsForTeenWithFamily() {
         val character = TestFixtures.character(
             age = 16,

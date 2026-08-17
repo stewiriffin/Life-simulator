@@ -439,6 +439,181 @@
         "resultText": "A small bribe changed hands. Early lessons in delegation."
       }
     ]
+  },
+  {
+    "id": "daycare_first_day",
+    "minAge": 3,
+    "maxAge": 4,
+    "text": "Your first day at daycare. Bright walls, unfamiliar faces, and a teacher kneeling to greet you at the door.",
+    "weight": 6,
+    "tags": ["one_time", "milestone"],
+    "choices": [
+      {
+        "label": "Wave goodbye bravely",
+        "statEffects": { "happiness": 4, "smarts": 2 },
+        "resultText": "You joined the toy corner within minutes. A teacher said you were a natural."
+      },
+      {
+        "label": "Cling to your parent's leg",
+        "statEffects": { "happiness": -2 },
+        "resultText": "Tears and extra cuddles. You settled in by snack time."
+      },
+      {
+        "label": "Explore every corner immediately",
+        "statEffects": { "happiness": 5, "health": 1 },
+        "resultText": "Blocks, puzzles, and a slide — you mapped the whole room before lunch."
+      }
+    ]
+  },
+  {
+    "id": "blanket_fort",
+    "minAge": 2,
+    "maxAge": 4,
+    "text": "You drag chairs and blankets into the sitting room and build a secret fort with a sibling or parent.",
+    "weight": 6,
+    "tags": ["milestone"],
+    "choices": [
+      {
+        "label": "Declare it your castle",
+        "statEffects": { "happiness": 6, "smarts": 1 },
+        "resultText": "You ruled from inside the blankets until dinner called you out."
+      },
+      {
+        "label": "Invite someone in",
+        "statEffects": { "happiness": 5 },
+        "resultText": "The fort got crowded and wonderful. Whispered plans echoed inside."
+      }
+    ]
+  },
+  {
+    "id": "learning_colors",
+    "minAge": 1,
+    "maxAge": 3,
+    "text": "A parent points at fruits on the table — red tomatoes, yellow bananas — and asks you to name the colours.",
+    "weight": 5,
+    "tags": ["milestone"],
+    "choices": [
+      {
+        "label": "Get most of them right",
+        "statEffects": { "smarts": 4, "happiness": 3 },
+        "resultText": "Clapping filled the kitchen. You shouted the colours with pride."
+      },
+      {
+        "label": "Mix them up and laugh",
+        "statEffects": { "happiness": 4, "smarts": 1 },
+        "resultText": "Everything was \"blue\" for a week. The table still laughed with you."
+      }
+    ]
+  },
+  {
+    "id": "first_friend_toddler",
+    "minAge": 2,
+    "maxAge": 4,
+    "text": "At the playground another toddler shares a bucket and shovel with you at the sand pit.",
+    "weight": 7,
+    "tags": ["one_time", "milestone"],
+    "choices": [
+      {
+        "label": "Build a sand tower together",
+        "statEffects": { "happiness": 6 },
+        "resultText": "You knocked it down and rebuilt it twice. A friendship started in the sand."
+      },
+      {
+        "label": "Hug them impulsively",
+        "statEffects": { "happiness": 5, "health": 1 },
+        "resultText": "Their parent laughed. Yours took a photo you'll see for years."
+      },
+      {
+        "label": "Grab the shovel and run",
+        "statEffects": { "happiness": 2 },
+        "resultText": "Sharing came hard today. A parent returned the shovel and you tried again."
+      }
+    ]
+  },
+  {
+    "id": "pacifier_weaning",
+    "minAge": 1,
+    "maxAge": 3,
+    "text": "Your parents decide it is time to give up the pacifier. A small ceremony with a box and a reward is planned.",
+    "weight": 5,
+    "tags": ["milestone"],
+    "choices": [
+      {
+        "label": "Hand it over bravely",
+        "statEffects": { "happiness": 2, "smarts": 2 },
+        "resultText": "The first night was hard. By the third, you barely noticed."
+      },
+      {
+        "label": "Hide an extra one",
+        "statEffects": { "happiness": 3, "smarts": -1 },
+        "resultText": "They found it under the pillow. The negotiation continued."
+      }
+    ]
+  },
+  {
+    "id": "teddy_companion",
+    "minAge": 0,
+    "maxAge": 3,
+    "text": "Someone gives you a soft teddy bear. It becomes your constant companion — meals, naps, and car rides.",
+    "weight": 7,
+    "tags": ["milestone"],
+    "choices": [
+      {
+        "label": "Name it and never let go",
+        "statEffects": { "happiness": 6, "health": 1 },
+        "resultText": "The bear survived washes, trips, and one dramatic loss-and-find at the market."
+      },
+      {
+        "label": "Share it with a sibling",
+        "statEffects": { "happiness": 4 },
+        "resultText": "Turns out two small hands can love one bear. Mostly peacefully."
+      }
+    ]
+  },
+  {
+    "id": "splash_pool",
+    "minAge": 2,
+    "maxAge": 4,
+    "text": "On a hot afternoon someone fills a small splash pool in the yard. Cool water and squeals fill the air.",
+    "weight": 6,
+    "tags": [],
+    "choices": [
+      {
+        "label": "Jump in with both feet",
+        "statEffects": { "happiness": 6, "health": 2 },
+        "resultText": "Water went everywhere. Nobody minded."
+      },
+      {
+        "label": "Splash everyone nearby",
+        "statEffects": { "happiness": 5, "health": 1 },
+        "resultText": "A water war broke out. You were the smallest and loudest soldier."
+      },
+      {
+        "label": "Sit on the edge and dip toes",
+        "statEffects": { "happiness": 3 },
+        "resultText": "Caution first — then a full plunge when nobody was watching."
+      }
+    ]
+  },
+  {
+    "id": "lullaby_night",
+    "minAge": 0,
+    "maxAge": 2,
+    "text": "A parent sings a lullaby in the dark room. The melody is soft and familiar.",
+    "weight": 7,
+    "tags": ["milestone"],
+    "choices": [
+      {
+        "label": "Drift off peacefully",
+        "statEffects": { "happiness": 5, "health": 2 },
+        "resultText": "You fell asleep mid-verse. Safe and warm."
+      },
+      {
+        "label": "Hum along sleepily",
+        "statEffects": { "happiness": 4, "smarts": 1 },
+        "resultText": "Your tiny voice joined the song. They smiled in the dark."
+      }
+    ]
   }
   ]
 }

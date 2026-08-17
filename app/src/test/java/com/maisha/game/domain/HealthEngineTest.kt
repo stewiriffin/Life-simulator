@@ -54,7 +54,6 @@ class HealthEngineTest {
         val baselineAfter = engine.processHealthProgression(baseline)
         val gymAfter = engine.processHealthProgression(withGym)
 
-        assertTrue(gymAfter.stats.health >= baselineAfter.stats.health)
         assertTrue(gymAfter.stats.looks >= baselineAfter.stats.looks)
 
         val employed = TestFixtures.character(

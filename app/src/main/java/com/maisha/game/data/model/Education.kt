@@ -52,5 +52,7 @@ data class EducationState(
     val courseOfStudy: String? = null,
     val schoolName: String? = null,
     val kcpePassed: Boolean? = null,
-    val kcseGrade: String? = null
+    val kcseGrade: String? = null,
+    /** Applied on the next grade advance during Age Up. */
+    val plannedStudyEffort: StudyEffort = StudyEffort.NORMAL
 )

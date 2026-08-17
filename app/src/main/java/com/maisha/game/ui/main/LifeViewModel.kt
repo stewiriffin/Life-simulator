@@ -8,6 +8,7 @@ import androidx.lifecycle.viewModelScope
 import com.maisha.game.R
 import com.maisha.game.ads.AdFrequencyController
 import com.maisha.game.data.AchievementRepository
+import com.maisha.game.data.EconomyScaler
 import com.maisha.game.data.events.EventRepository
 import com.maisha.game.data.local.CharacterRepository
 import com.maisha.game.data.local.MAX_SLOTS
@@ -29,6 +30,7 @@ import com.maisha.game.data.model.Person
 import com.maisha.game.data.model.RelationshipDecayNotice
 import com.maisha.game.data.model.RelationshipTier
 import com.maisha.game.data.model.SchoolStage
+import com.maisha.game.data.model.StudyEffort
 import com.maisha.game.data.model.Stats
 import com.maisha.game.domain.AdoptPetResult
 import com.maisha.game.domain.AgeUpResult
@@ -66,6 +68,7 @@ import com.maisha.game.domain.BusinessFailure
 import com.maisha.game.domain.BusinessResult
 import com.maisha.game.domain.SkillFailure
 import com.maisha.game.domain.SkillResult
+import com.maisha.game.domain.StudySessionResult
 import com.maisha.game.data.model.BusinessIndustry
 import com.maisha.game.domain.SocialMediaFailure
 import com.maisha.game.domain.SocialMediaResult
@@ -327,12 +330,31 @@ class LifeViewModel @Inject constructor(
                 character = rewardedCharacter,
                 result = outcome.result
             )
+            val netWorthAfter = financeEngine.calculateNetWorth(rewardedCharacter)
+            val willReviewThreshold = EconomyScaler.scaleAmount(
+                WILL_REVIEW_NET_WORTH_KENYA,
+                rewardedCharacter.countryCode
+            )
+            val shouldNudgeWillReview = rewardedCharacter.age >= WILL_REVIEW_MIN_AGE &&
+                netWorthAfter >= willReviewThreshold &&
+                rewardedCharacter.will == null &&
+                gameEngine.willBeneficiaries(rewardedCharacter).isNotEmpty()
             _uiState.update { state ->
                 state.copy(
                     yearQuests = nextQuests,
                     yearQuestProgress = emptyList(),
-                    yearRecapLines = recapLines
-                ).withDynasty(rewardedCharacter, financeEngine.calculateNetWorth(rewardedCharacter))
+                    yearRecapLines = recapLines,
+                    lifePulseMessage = if (shouldNudgeWillReview) {
+                        context.getString(R.string.tip_review_will)
+                    } else {
+                        state.lifePulseMessage
+                    },
+                    actionMessage = if (shouldNudgeWillReview) {
+                        context.getString(R.string.tip_review_will)
+                    } else {
+                        state.actionMessage
+                    }
+                ).withDynasty(rewardedCharacter, netWorthAfter)
             }
             suppressQuestRefresh = false
             val earnedInterstitialSlot = rewardedCharacter.alive &&
@@ -802,6 +824,47 @@ class LifeViewModel @Inject constructor(
                     character = updated,
                     careerMessage = context.getString(R.string.msg_work_effort_set)
                 )
+            }
+        }
+    }
+
+    fun onSetStudyEffort(effort: StudyEffort) {
+        val character = _uiState.value.character ?: return
+        if (!character.alive) return
+        viewModelScope.launch {
+            val updated = gameEngine.setPlannedStudyEffort(character, effort)
+            persist(updated)
+            _uiState.update {
+                it.copy(
+                    character = updated,
+                    careerMessage = context.getString(R.string.msg_study_effort_set)
+                )
+            }
+        }
+    }
+
+    fun onPerformStudySession() {
+        val character = _uiState.value.character ?: return
+        if (!character.alive) return
+        viewModelScope.launch {
+            when (val result = gameEngine.performStudySession(character)) {
+                is StudySessionResult.Success -> {
+                    persist(result.character)
+                    processMidLifeAchievements(result.character)
+                    _uiState.update {
+                        it.copy(
+                            character = result.character,
+                            actionMessage = context.getString(R.string.msg_study_session_success),
+                            netWorth = financeEngine.calculateNetWorth(result.character),
+                            headerExpression = ExpressionResolver.resolveExpression(result.character, null)
+                        )
+                    }
+                }
+                StudySessionResult.Ineligible -> {
+                    _uiState.update {
+                        it.copy(actionMessage = context.getString(R.string.msg_study_session_ineligible))
+                    }
+                }
             }
         }
     }
@@ -2234,15 +2297,7 @@ class LifeViewModel @Inject constructor(
                 is LeisureResult.Success -> {
                     persist(result.character)
                     processMidLifeAchievements(result.character)
-                    val msgRes = when (result.activity) {
-                        LeisureActivity.PLAYGROUND -> R.string.msg_leisure_playground
-                        LeisureActivity.STUDY_BUDDY -> R.string.msg_leisure_study_buddy
-                        LeisureActivity.CHORES -> R.string.msg_leisure_chores
-                        LeisureActivity.NIGHT_OUT -> R.string.msg_leisure_night_out
-                        LeisureActivity.NATURE_DAY -> R.string.msg_leisure_nature_day
-                        LeisureActivity.CITY_SHOW -> R.string.msg_leisure_city_show
-                        LeisureActivity.SPA_DAY -> R.string.msg_leisure_spa_day
-                    }
+                    val msgRes = leisureMessageRes(result.activity)
                     _uiState.update {
                         it.copy(
                             character = result.character,
@@ -2434,6 +2489,8 @@ class LifeViewModel @Inject constructor(
 
     companion object {
         private const val EXPRESSION_FLASH_MS = 1_500L
+        private const val WILL_REVIEW_MIN_AGE = 60
+        private const val WILL_REVIEW_NET_WORTH_KENYA = 500_000
     }
 }
 

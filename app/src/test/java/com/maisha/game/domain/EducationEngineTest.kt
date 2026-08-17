@@ -317,4 +317,14 @@ class EducationEngineTest {
             .filter { it.minEducation == SchoolStage.GRADUATED }
         assertTrue(graduatedJobs.isEmpty())
     }
+
+    @Test
+    fun setPlannedStudyEffort_persistsOnEducationState() {
+        val student = TestFixtures.character(
+            age = 12,
+            education = EducationState(stage = SchoolStage.PRIMARY, currentGrade = 5, gpa = 2.0f)
+        )
+        val updated = engine.setPlannedStudyEffort(student, com.maisha.game.data.model.StudyEffort.HARD)
+        assertEquals(com.maisha.game.data.model.StudyEffort.HARD, updated.education.plannedStudyEffort)
+    }
 }

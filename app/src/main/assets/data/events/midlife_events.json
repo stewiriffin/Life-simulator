@@ -1,0 +1,329 @@
+{
+  "events": [
+    {
+      "id": "career_plateau",
+      "minAge": 26,
+      "maxAge": 59,
+      "text": "You've been in the same role for years. Promotions pass you by and you wonder if this is as far as you climb.",
+      "weight": 5,
+      "tags": ["career"],
+      "choices": [
+        { "label": "Ask your manager for a development plan", "statEffects": { "happiness": -2, "smarts": 3 }, "performanceEffect": 8, "resultText": "The conversation was awkward but honest. A path forward emerged." },
+        { "label": "Accept the plateau and focus on stability", "statEffects": { "happiness": 2 }, "performanceEffect": -3, "resultText": "Less ambition, less stress. You made peace with the ceiling." },
+        { "label": "Start looking elsewhere", "statEffects": { "happiness": -4, "smarts": 2 }, "resultText": "Updated résumé, new listings. Change might be overdue." }
+      ]
+    },
+    {
+      "id": "empty_nest",
+      "minAge": 26,
+      "maxAge": 59,
+      "text": "Your last child moves out. The house is quiet in a way it hasn't been in decades.",
+      "weight": 5,
+      "tags": ["relationship", "requires_child", "milestone"],
+      "choices": [
+        { "label": "Celebrate their independence", "statEffects": { "happiness": 6 }, "childRelationshipEffect": 8, "resultText": "Pride outweighed the silence. You raised someone ready to fly." },
+        { "label": "Redecorate their old room immediately", "statEffects": { "money": -10000, "happiness": 4 }, "resultText": "A home office, finally. The past made space for the present." },
+        { "label": "Feel the loss deeply", "statEffects": { "happiness": -8, "health": -2 }, "resultText": "Meals for one. You called more often than they needed." }
+      ]
+    },
+    {
+      "id": "aging_parent_visit",
+      "minAge": 26,
+      "maxAge": 59,
+      "text": "You visit your aging parent and notice they're slower, frailer, and forgetting small things.",
+      "weight": 6,
+      "tags": ["relationship", "requires_parent"],
+      "choices": [
+        { "label": "Schedule a thorough check-up for them", "statEffects": { "money": -8000, "happiness": -2 }, "familyRelationshipEffect": 10, "resultText": "The doctor had answers. You felt less helpless." },
+        { "label": "Spend the day reminiscing", "statEffects": { "happiness": 5 }, "familyRelationshipEffect": 8, "resultText": "Old photos and stories. Time felt precious." },
+        { "label": "Cut the visit short — it's too hard", "statEffects": { "happiness": -5 }, "familyRelationshipEffect": -6, "resultText": "You drove away guilty. Avoidance doesn't slow the clock." }
+      ]
+    },
+    {
+      "id": "health_scare_checkup",
+      "minAge": 26,
+      "maxAge": 59,
+      "text": "A routine check-up flags something concerning. The doctor wants follow-up tests.",
+      "weight": 5,
+      "tags": ["health"],
+      "choices": [
+        { "label": "Get every test done promptly", "statEffects": { "money": -12000, "happiness": -4, "health": 5 }, "resultText": "Results came back manageable. Relief hit like a wave." },
+        { "label": "Ignore it for now", "statEffects": { "happiness": 2, "health": -8 }, "resultText": "The worry faded until a symptom reminded you." },
+        { "label": "Overhaul your lifestyle immediately", "statEffects": { "happiness": -3, "health": 8 }, "resultText": "Less salt, more steps. Small changes felt like reclaiming control." }
+      ]
+    },
+    {
+      "id": "college_reunion",
+      "minAge": 26,
+      "maxAge": 59,
+      "text": "Your university class reunion is this weekend. Names you haven't spoken in years appear on the guest list.",
+      "weight": 4,
+      "tags": ["general"],
+      "choices": [
+        { "label": "Go and reconnect", "statEffects": { "money": -6000, "happiness": 8 }, "resultText": "Awkward hellos became real laughter. You remembered who you were." },
+        { "label": "Skip it — you've moved on", "statEffects": { "happiness": -2 }, "resultText": "Photos flooded social media. A twinge of curiosity lingered." },
+        { "label": "Attend but leave early", "statEffects": { "money": -3000, "happiness": 3 }, "resultText": "One drink, a few handshakes. Enough nostalgia for one night." }
+      ]
+    },
+    {
+      "id": "promotion_rival",
+      "minAge": 26,
+      "maxAge": 59,
+      "text": "A colleague you've competed with for years gets the promotion you wanted. The announcement email lands in everyone's inbox.",
+      "weight": 5,
+      "tags": ["career", "negative"],
+      "choices": [
+        { "label": "Congratulate them sincerely", "statEffects": { "happiness": -5, "smarts": 2 }, "performanceEffect": 5, "resultText": "Grace cost you pride. Your reputation stayed intact." },
+        { "label": "Confront your boss privately", "statEffects": { "happiness": -3 }, "performanceEffect": -5, "resultText": "Feedback stung. At least you know where you stand." },
+        { "label": "Channel the anger into your work", "statEffects": { "happiness": -6, "health": -2 }, "performanceEffect": 12, "resultText": "Late nights, sharper output. Next time, maybe." }
+      ]
+    },
+    {
+      "id": "sandwich_generation",
+      "minAge": 26,
+      "maxAge": 59,
+      "text": "You're stretched between aging parents who need help and children who still depend on you. Everyone wants a piece of your time.",
+      "weight": 6,
+      "tags": ["relationship", "requires_child", "requires_parent", "negative"],
+      "choices": [
+        { "label": "Set boundaries and share the load", "statEffects": { "happiness": -4, "health": -2 }, "familyRelationshipEffect": 5, "childRelationshipEffect": 3, "resultText": "Sibling, spouse, community — you learned to delegate." },
+        { "label": "Drop everything for family", "statEffects": { "happiness": -6, "health": -5, "money": -5000 }, "familyRelationshipEffect": 10, "childRelationshipEffect": 8, "resultText": "Exhaustion became your normal. They felt loved." },
+        { "label": "Prioritise your own wellbeing", "statEffects": { "happiness": 3, "health": 3 }, "familyRelationshipEffect": -5, "resultText": "Guilt followed, but you couldn't pour from an empty cup." }
+      ]
+    },
+    {
+      "id": "midlife_hobby",
+      "minAge": 26,
+      "maxAge": 59,
+      "text": "You realise you haven't picked up a hobby purely for joy in years. A flyer for pottery, hiking, or guitar lessons catches your eye.",
+      "weight": 4,
+      "tags": ["general", "positive"],
+      "choices": [
+        { "label": "Sign up this week", "statEffects": { "money": -5000, "happiness": 8, "health": 2 }, "resultText": "Clumsy beginnings, genuine delight. You had forgotten how fun learning felt." },
+        { "label": "Bookmark it for later", "statEffects": { "happiness": -1 }, "resultText": "Later never came. The flyer yellowed on the fridge." },
+        { "label": "Turn it into a side hustle", "statEffects": { "money": -3000, "happiness": 4, "smarts": 2 }, "resultText": "Joy mixed with spreadsheets. Maybe that was the point." }
+      ]
+    },
+    {
+      "id": "old_friend_returns",
+      "minAge": 26,
+      "maxAge": 59,
+      "text": "A friend from your twenties reaches out after years of silence. They want to meet for coffee and catch up.",
+      "weight": 4,
+      "tags": ["relationship", "requires_friend"],
+      "choices": [
+        { "label": "Meet them with open arms", "statEffects": { "happiness": 7 }, "resultText": "Stories overlapped and diverged. The friendship picked up where it left off." },
+        { "label": "Keep it polite but guarded", "statEffects": { "happiness": 2 }, "resultText": "Pleasant hour, careful topics. Trust rebuilt slowly." },
+        { "label": "Decline — too much water under the bridge", "statEffects": { "happiness": -3 }, "resultText": "Some doors stay closed for good reason." }
+      ]
+    },
+    {
+      "id": "salary_negotiation",
+      "minAge": 26,
+      "maxAge": 59,
+      "text": "Performance reviews are due. You've carried extra work all year and believe you deserve a raise.",
+      "weight": 5,
+      "tags": ["career"],
+      "choices": [
+        { "label": "Make a strong case with numbers", "statEffects": { "happiness": 2, "smarts": 2 }, "performanceEffect": 10, "resultText": "They met you partway. Not everything, but progress." },
+        { "label": "Accept whatever they offer", "statEffects": { "happiness": -4 }, "performanceEffect": -5, "resultText": "Politeness cost you money. Resentment simmered quietly." },
+        { "label": "Threaten to leave if undervalued", "statEffects": { "happiness": -6 }, "performanceEffect": 5, "resultText": "High stakes poker. You won a bump — and a wary manager." }
+      ]
+    },
+    {
+      "id": "mentor_younger_colleague",
+      "minAge": 26,
+      "maxAge": 59,
+      "text": "A younger colleague asks you to mentor them. They see experience in you that you sometimes forget you have.",
+      "weight": 4,
+      "tags": ["career", "positive"],
+      "choices": [
+        { "label": "Take them under your wing", "statEffects": { "happiness": 6, "smarts": 2 }, "performanceEffect": 8, "resultText": "Teaching refreshed your own skills. They flourished." },
+        { "label": "Offer occasional advice only", "statEffects": { "happiness": 2 }, "performanceEffect": 3, "resultText": "Quick tips over coffee. Enough without the commitment." },
+        { "label": "Decline — you're too busy", "statEffects": { "happiness": -2 }, "resultText": "They found someone else. You wondered what you missed." }
+      ]
+    },
+    {
+      "id": "marriage_anniversary_doubt",
+      "minAge": 26,
+      "maxAge": 59,
+      "text": "Your anniversary approaches and you catch yourself wondering if you and your partner have grown apart.",
+      "weight": 4,
+      "tags": ["relationship", "requires_married"],
+      "choices": [
+        { "label": "Plan something meaningful together", "statEffects": { "money": -8000, "happiness": 6 }, "spouseRelationshipEffect": 12, "resultText": "Old jokes resurfaced. The distance felt bridgeable." },
+        { "label": "Suggest couples counselling", "statEffects": { "money": -10000, "happiness": -3 }, "spouseRelationshipEffect": 8, "resultText": "Hard conversations in a neutral room. A start." },
+        { "label": "Say nothing and let the day pass", "statEffects": { "happiness": -6 }, "spouseRelationshipEffect": -8, "resultText": "Another year, another quiet dinner. The doubt grew." }
+      ]
+    },
+    {
+      "id": "fitness_challenge",
+      "minAge": 26,
+      "maxAge": 59,
+      "text": "A friend invites you to a fitness challenge — a 5K, a gym streak, or a step-count competition.",
+      "weight": 4,
+      "tags": ["health", "positive"],
+      "choices": [
+        { "label": "Commit and train seriously", "statEffects": { "happiness": 5, "health": 8 }, "resultText": "Sore muscles, better sleep. You crossed the finish line proud." },
+        { "label": "Join half-heartedly", "statEffects": { "happiness": 2, "health": 3 }, "resultText": "Some effort beat none. Progress was modest but real." },
+        { "label": "Decline — your body isn't what it was", "statEffects": { "happiness": -2, "health": -2 }, "resultText": "The couch won. So did the creeping stiffness." }
+      ]
+    },
+    {
+      "id": "volunteer_midlife",
+      "minAge": 26,
+      "maxAge": 59,
+      "text": "A local charity needs volunteers on weekends. You have skills and time you've never offered before.",
+      "weight": 3,
+      "tags": ["general", "positive"],
+      "choices": [
+        { "label": "Sign up for regular shifts", "statEffects": { "happiness": 8, "health": 2 }, "resultText": "Purpose outside work. Strangers became familiar faces." },
+        { "label": "Donate money instead of time", "statEffects": { "money": -8000, "happiness": 4 }, "resultText": "The cheque helped. You still wondered about showing up." },
+        { "label": "Pass — your plate is full", "statEffects": { "happiness": -1 }, "resultText": "The flyer went in the bin. Life stayed unchanged." }
+      ]
+    },
+    {
+      "id": "side_project_idea",
+      "minAge": 26,
+      "maxAge": 59,
+      "text": "A business idea or creative project keeps you awake at night. It could be a blog, a shop, or an app.",
+      "weight": 4,
+      "tags": ["career"],
+      "choices": [
+        { "label": "Launch a small pilot", "statEffects": { "money": -15000, "happiness": 6, "smarts": 3 }, "resultText": "Rough edges, real feedback. You finally tried." },
+        { "label": "Research but don't commit yet", "statEffects": { "happiness": 2, "smarts": 2 }, "resultText": "Spreadsheets and notes piled up. Action waited." },
+        { "label": "Talk yourself out of it", "statEffects": { "happiness": -3 }, "resultText": "Too risky, too late. The idea faded by morning." }
+      ]
+    },
+    {
+      "id": "parent_health_crisis",
+      "minAge": 26,
+      "maxAge": 59,
+      "text": "Your parent is hospitalised suddenly. Decisions about care, bills, and siblings fall on your shoulders.",
+      "weight": 5,
+      "tags": ["relationship", "requires_parent", "negative"],
+      "choices": [
+        { "label": "Take charge of their care", "statEffects": { "money": -20000, "happiness": -6, "health": -3 }, "familyRelationshipEffect": 12, "resultText": "Sleepless nights in waiting rooms. They knew you showed up." },
+        { "label": "Coordinate remotely with siblings", "statEffects": { "money": -8000, "happiness": -4 }, "familyRelationshipEffect": 5, "resultText": "Video calls and shared spreadsheets. Imperfect but shared." },
+        { "label": "Struggle to cope and withdraw", "statEffects": { "happiness": -10, "health": -4 }, "familyRelationshipEffect": -8, "resultText": "Guilt compounded grief. Healing would take time." }
+      ]
+    },
+    {
+      "id": "child_moves_back",
+      "minAge": 26,
+      "maxAge": 59,
+      "text": "Your adult child asks to move back home — job loss, divorce, or savings running out.",
+      "weight": 5,
+      "tags": ["relationship", "requires_child"],
+      "choices": [
+        { "label": "Welcome them with clear rules", "statEffects": { "happiness": -2, "money": -5000 }, "childRelationshipEffect": 8, "resultText": "Chores, rent, deadlines. Tough love under one roof." },
+        { "label": "Offer financial help but not a room", "statEffects": { "money": -15000, "happiness": 2 }, "childRelationshipEffect": 5, "resultText": "Support without surrendering your space. Boundaries held." },
+        { "label": "Refuse — they need to stand alone", "statEffects": { "happiness": -5 }, "childRelationshipEffect": -10, "resultText": "The argument was bitter. Independence cut both ways." }
+      ]
+    },
+    {
+      "id": "downsizing_home_thought",
+      "minAge": 26,
+      "maxAge": 59,
+      "text": "The family home feels too large now. You start browsing smaller places and calculating what you'd save.",
+      "weight": 4,
+      "tags": ["finance"],
+      "choices": [
+        { "label": "List the house and downsize", "statEffects": { "money": 50000, "happiness": 4 }, "resultText": "Less yard, less upkeep. Freedom in fewer rooms." },
+        { "label": "Stay — too many memories here", "statEffects": { "happiness": 3, "money": -5000 }, "resultText": "Empty bedrooms stayed empty. Nostalgia won the debate." },
+        { "label": "Rent out a spare room instead", "statEffects": { "money": 8000, "happiness": -2 }, "resultText": "A stranger's footsteps in the hall. Compromise income." }
+      ]
+    },
+    {
+      "id": "dream_trip_deferred",
+      "minAge": 26,
+      "maxAge": 59,
+      "text": "You've postponed a dream trip for years — kids, work, bills always came first. The destination still calls.",
+      "weight": 4,
+      "tags": ["general"],
+      "choices": [
+        { "label": "Book it finally", "statEffects": { "money": -35000, "happiness": 12 }, "resultText": "Passport stamped, photos taken. Worth every deferred shilling." },
+        { "label": "Save another year", "statEffects": { "happiness": -2, "money": 5000 }, "resultText": "The spreadsheet said wait. The calendar turned again." },
+        { "label": "Let the dream go", "statEffects": { "happiness": -6 }, "resultText": "Some windows close. You made peace — mostly." }
+      ]
+    },
+    {
+      "id": "workplace_burnout",
+      "minAge": 26,
+      "maxAge": 59,
+      "text": "Exhaustion hits bone-deep. Even small tasks feel impossible and Sunday nights fill you with dread.",
+      "weight": 6,
+      "tags": ["career", "negative"],
+      "choices": [
+        { "label": "Take medical leave and rest", "statEffects": { "happiness": 4, "health": 8, "money": -5000 }, "performanceEffect": -10, "resultText": "Weeks off the hamster wheel. You remembered what rested felt like." },
+        { "label": "Push through — bills don't pause", "statEffects": { "happiness": -8, "health": -6 }, "performanceEffect": -5, "resultText": "You showed up hollow. Something had to give eventually." },
+        { "label": "Negotiate reduced hours", "statEffects": { "happiness": 2, "health": 4, "money": -8000 }, "performanceEffect": 3, "resultText": "Less pay, more air. A fragile balance." }
+      ]
+    },
+    {
+      "id": "skill_refresh_course",
+      "minAge": 26,
+      "maxAge": 59,
+      "text": "Your industry is changing fast. A short course in new tools or methods could keep you relevant.",
+      "weight": 4,
+      "tags": ["career"],
+      "choices": [
+        { "label": "Enrol and complete it", "statEffects": { "money": -12000, "smarts": 6, "happiness": 4 }, "performanceEffect": 15, "resultText": "Certificates and confidence. You weren't obsolete yet." },
+        { "label": "Learn free resources online", "statEffects": { "smarts": 3, "happiness": 2 }, "performanceEffect": 8, "resultText": "YouTube and forums filled gaps. Good enough for now." },
+        { "label": "Decide experience beats training", "statEffects": { "happiness": -2 }, "performanceEffect": -5, "resultText": "Younger hires spoke a language you didn't. The gap widened." }
+      ]
+    },
+    {
+      "id": "friendship_rekindled",
+      "minAge": 26,
+      "maxAge": 59,
+      "text": "You bump into someone you drifted from years ago. Apologies are awkward but the warmth is still there.",
+      "weight": 3,
+      "tags": ["relationship", "requires_friend", "positive"],
+      "choices": [
+        { "label": "Exchange numbers and meet again", "statEffects": { "happiness": 7 }, "resultText": "Lunch turned into hours. Old bonds can be rebuilt." },
+        { "label": "Enjoy the moment and move on", "statEffects": { "happiness": 4 }, "resultText": "A good conversation, no promises. Enough for one day." },
+        { "label": "Keep walking — the past stays past", "statEffects": { "happiness": -1 }, "resultText": "Polite nods. Some chapters stay closed." }
+      ]
+    },
+    {
+      "id": "legacy_question",
+      "minAge": 26,
+      "maxAge": 59,
+      "text": "You lie awake asking what you'll leave behind — children, work, community, or nothing at all.",
+      "weight": 4,
+      "tags": ["general", "milestone"],
+      "choices": [
+        { "label": "Start a project that outlasts you", "statEffects": { "money": -10000, "happiness": 6 }, "resultText": "A scholarship, a garden, a book — something with your name on it." },
+        { "label": "Invest more in relationships", "statEffects": { "happiness": 8 }, "familyRelationshipEffect": 8, "resultText": "Legacy as love given daily. Simpler than monuments." },
+        { "label": "Decide legacy is a young person's worry", "statEffects": { "happiness": -3 }, "resultText": "The question returned at 3 a.m. anyway." }
+      ]
+    },
+    {
+      "id": "financial_audit",
+      "minAge": 26,
+      "maxAge": 59,
+      "text": "You sit down with bank statements and realise retirement and emergencies need a honest reckoning.",
+      "weight": 5,
+      "tags": ["finance"],
+      "choices": [
+        { "label": "Build a strict savings plan", "statEffects": { "happiness": -3, "money": 15000, "smarts": 3 }, "resultText": "Spreadsheets, automatic transfers. Future-you might thank present-you." },
+        { "label": "Consult a financial adviser", "statEffects": { "money": -5000, "smarts": 4, "happiness": 2 }, "resultText": "Jargon translated into steps. Less panic, more plan." },
+        { "label": "Close the laptop and hope for the best", "statEffects": { "happiness": 1, "money": -3000 }, "resultText": "Ignorance felt lighter until the next bill arrived." }
+      ]
+    },
+    {
+      "id": "gratitude_moment",
+      "minAge": 26,
+      "maxAge": 59,
+      "text": "An ordinary evening — a meal, a sunset, a message from someone you love — stops you mid-step.",
+      "weight": 3,
+      "tags": ["general", "positive"],
+      "choices": [
+        { "label": "Pause and feel it fully", "statEffects": { "happiness": 10, "health": 2 }, "resultText": "Brief and overwhelming. You were luckier than you remembered." },
+        { "label": "Text someone you appreciate", "statEffects": { "happiness": 7 }, "familyRelationshipEffect": 5, "resultText": "A few words sent ripples. Gratitude shared multiplies." },
+        { "label": "Shrug it off — life goes on", "statEffects": { "happiness": 1 }, "resultText": "The moment passed unmarked. Busy tomorrow anyway." }
+      ]
+    }
+  ]
+}

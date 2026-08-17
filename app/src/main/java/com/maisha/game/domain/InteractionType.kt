@@ -16,5 +16,11 @@ enum class InteractionType {
     PAY_ALLOWANCE,
     DISCIPLINE,
     DATE_NIGHT,
-    MAKE_PEACE
+    MAKE_PEACE,
+    /** Adult child: cash support. */
+    FINANCIAL_SUPPORT,
+    /** Adult child: celebrate wedding, job, etc. */
+    CELEBRATE_MILESTONE,
+    /** Adult child: talk through life choices. */
+    DISCUSS_LIFE_CHOICES
 }

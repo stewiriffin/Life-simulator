@@ -10,6 +10,7 @@ enum class ActionFamily {
     SOCIAL_MONETIZE,
     SKILL_PRACTICE,
     SKILL_SHOWCASE,
+    STUDY,
     CRIME,
     VOLUNTEER,
     DONATE
@@ -27,6 +28,8 @@ object ActionQuestHints {
             kind == YearQuestKind.GROW_FOLLOWERS
         ActionFamily.SKILL_PRACTICE ->
             kind == YearQuestKind.RAISE_SKILL
+        ActionFamily.STUDY ->
+            kind == YearQuestKind.STUDY_SMARTS
         ActionFamily.CRIME -> false
         ActionFamily.VOLUNTEER, ActionFamily.DONATE ->
             kind == YearQuestKind.RAISE_HAPPINESS

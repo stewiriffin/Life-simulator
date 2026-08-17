@@ -147,6 +147,7 @@ fun LifeScreen(
     onSellBusiness: (String) -> Unit,
     businessInvestmentTiers: List<Int>,
     onSetWorkEffort: (com.maisha.game.data.model.WorkEffort) -> Unit,
+    onSetStudyEffort: (com.maisha.game.data.model.StudyEffort) -> Unit,
     onCareerMessageDismissed: () -> Unit,
     onPurchaseAsset: (String) -> Unit,
     onSellAsset: (String) -> Unit,
@@ -186,6 +187,7 @@ fun LifeScreen(
     onDonateToCharity: (Int) -> Unit,
     donationTiers: List<Int>,
     onPerformLeisure: (com.maisha.game.domain.LeisureActivity) -> Unit,
+    onPerformStudySession: () -> Unit = {},
     onActionMessageDismissed: () -> Unit,
     onLifePulseMessageDismissed: () -> Unit,
     onYearRecapDismissed: () -> Unit,
@@ -393,6 +395,7 @@ fun LifeScreen(
                 onLaunchCampaign = onLaunchCampaign,
                 onPassTaxPolicy = onPassTaxPolicy,
                 onSetWorkEffort = onSetWorkEffort,
+                onSetStudyEffort = onSetStudyEffort,
                 onCareerMessageDismissed = onCareerMessageDismissed,
                 modifier = Modifier.padding(innerPadding)
             )
@@ -440,6 +443,7 @@ fun LifeScreen(
                 onDonateToCharity = onDonateToCharity,
                 donationTiers = donationTiers,
                 onPerformLeisure = onPerformLeisure,
+                onPerformStudySession = onPerformStudySession,
                 onActionMessageDismissed = onActionMessageDismissed,
                 onDismissLeisureTip = onDismissLeisureTip,
                 modifier = Modifier.padding(innerPadding)
@@ -555,6 +559,12 @@ private fun LifeTabContent(
                             quests = uiState.yearQuests,
                             progress = uiState.yearQuestProgress,
                             countryCode = character.countryCode
+                        )
+                    }
+                    item {
+                        YearFocusStrip(
+                            quests = uiState.yearQuests,
+                            progress = uiState.yearQuestProgress
                         )
                     }
                 }
@@ -1404,6 +1414,43 @@ private fun yearQuestTitle(quest: YearQuest, countryCode: String): String = when
             R.string.year_quest_grow_savings,
             formatMoney(quest.target, countryCode)
         )
+}
+
+@Composable
+private fun YearFocusStrip(
+    quests: List<YearQuest>,
+    progress: List<YearQuestProgress>
+) {
+    val incomplete = quests.filter { quest ->
+        progress.none { it.quest.kind == quest.kind && it.quest.target == quest.target && it.completed }
+    }
+    val focusQuest = incomplete.firstOrNull() ?: return
+    val hintRes = when (focusQuest.kind) {
+        YearQuestKind.RAISE_HAPPINESS,
+        YearQuestKind.RAISE_HEALTH,
+        YearQuestKind.STAY_OUT_OF_TROUBLE -> R.string.year_focus_actions
+        YearQuestKind.BOND_FAMILY -> R.string.year_focus_family
+        YearQuestKind.STUDY_SMARTS,
+        YearQuestKind.HOLD_JOB,
+        YearQuestKind.RAISE_SKILL -> R.string.year_focus_career
+        YearQuestKind.EARN_MONEY,
+        YearQuestKind.GROW_SAVINGS,
+        YearQuestKind.GROW_FOLLOWERS -> R.string.year_focus_assets
+    }
+    Spacer(modifier = Modifier.height(6.dp))
+    Text(
+        text = stringResource(R.string.section_year_focus),
+        style = MaterialTheme.typography.labelMedium,
+        fontWeight = FontWeight.Bold,
+        color = InkTertiary,
+        letterSpacing = 0.8.sp
+    )
+    Text(
+        text = stringResource(hintRes),
+        style = MaterialTheme.typography.bodySmall,
+        color = MaterialTheme.colorScheme.onSurfaceVariant,
+        modifier = Modifier.padding(top = 2.dp, bottom = 4.dp)
+    )
 }
 
 @Composable

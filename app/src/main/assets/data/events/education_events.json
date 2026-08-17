@@ -359,6 +359,94 @@
           "resultText": "Nobody believed you. Expulsion papers arrived the next morning."
         }
       ]
+    },
+    {
+      "id": "university_plagiarism",
+      "minAge": 18,
+      "maxAge": 24,
+      "text": "Your university professor runs your final project through a plagiarism checker. It comes back 90% copied. You are summoned to a disciplinary hearing.",
+      "weight": 3,
+      "tags": ["education", "one_time"],
+      "choices": [
+        {
+          "label": "Confess and beg for mercy",
+          "statEffects": { "happiness": -6, "smarts": -2 },
+          "gpaEffect": -1.0,
+          "resultText": "You were given a zero for the course and placed on academic probation, but allowed to stay."
+        },
+        {
+          "label": "Deny it completely",
+          "statEffects": { "happiness": -8, "smarts": -1 },
+          "triggersExpulsion": true,
+          "resultText": "The committee found your denial insulting. You were immediately expelled from the university."
+        }
+      ]
+    },
+    {
+      "id": "severe_bullying_escalation",
+      "minAge": 14,
+      "maxAge": 17,
+      "text": "The school bullies corner you in the changing rooms. They have pushed you too far this time.",
+      "weight": 4,
+      "tags": ["education", "one_time"],
+      "choices": [
+        {
+          "label": "Walk away and report them",
+          "statEffects": { "happiness": 2 },
+          "resultText": "You walked away. The administration finally took action against them."
+        },
+        {
+          "label": "Fight back with a weapon",
+          "statEffects": { "happiness": -5, "health": -2 },
+          "triggersExpulsion": true,
+          "resultText": "You severely injured one of them. The school had zero tolerance for weapons and expelled you."
+        }
+      ]
+    },
+    {
+      "id": "viral_opportunity_dropout",
+      "minAge": 16,
+      "maxAge": 22,
+      "text": "One of your videos goes viral. A talent agency offers you a lucrative contract, but it requires full-time commitment, meaning you'd have to leave school.",
+      "weight": 3,
+      "tags": ["education", "one_time"],
+      "choices": [
+        {
+          "label": "Sign the contract and drop out",
+          "statEffects": { "money": 50000, "happiness": 5, "smarts": -1 },
+          "triggersDropout": true,
+          "resultText": "You dropped out to chase fame. The money is great, but your parents are worried."
+        },
+        {
+          "label": "Decline and stay in school",
+          "statEffects": { "smarts": 2, "happiness": -2 },
+          "gpaEffect": 0.1,
+          "resultText": "You prioritized your education. The viral fame faded quickly."
+        }
+      ]
+    },
+    {
+      "id": "financial_pressure_dropout",
+      "minAge": 15,
+      "maxAge": 20,
+      "text": "Money is tight at home. You notice your family struggling to pay for basic needs while you spend your days studying.",
+      "weight": 4,
+      "tags": ["education", "one_time"],
+      "choices": [
+        {
+          "label": "Drop out and find a job",
+          "statEffects": { "happiness": -3, "smarts": -1 },
+          "triggersDropout": true,
+          "familyRelationshipEffect": 5,
+          "resultText": "You left school to help support the family. They were grateful, but it was a tough sacrifice."
+        },
+        {
+          "label": "Keep studying and hope for the best",
+          "statEffects": { "smarts": 2, "happiness": -4 },
+          "gpaEffect": 0.1,
+          "resultText": "You stayed in school. The guilt weighed heavily on you, but you kept your grades up."
+        }
+      ]
     }
   ]
 }

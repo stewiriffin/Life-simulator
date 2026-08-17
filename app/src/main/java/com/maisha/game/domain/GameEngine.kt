@@ -45,6 +45,11 @@ data class FamilyInteractionResult(
     val messageArgs: List<String> = emptyList()
 )
 
+sealed class StudySessionResult {
+    data class Success(val character: Character) : StudySessionResult()
+    data object Ineligible : StudySessionResult()
+}
+
 data class AgeUpOutcome(
     val character: Character,
     val result: AgeUpResult,
@@ -699,6 +704,42 @@ class GameEngine @Inject constructor(
     fun setPlannedWorkEffort(character: Character, effort: WorkEffort): Character =
         careerEngine.setPlannedWorkEffort(character, effort)
 
+    fun setPlannedStudyEffort(character: Character, effort: StudyEffort): Character =
+        educationEngine.setPlannedStudyEffort(character, effort)
+
+    fun performStudySession(character: Character): StudySessionResult {
+        if (!character.alive) return StudySessionResult.Ineligible
+        val stage = character.education.stage
+        if (stage != SchoolStage.PRIMARY &&
+            stage != SchoolStage.SECONDARY &&
+            stage != SchoolStage.UNIVERSITY
+        ) {
+            return StudySessionResult.Ineligible
+        }
+        if (character.education.expelled || character.education.droppedOutFrom != null) {
+            return StudySessionResult.Ineligible
+        }
+        val withEffort = educationEngine.setPlannedStudyEffort(character, StudyEffort.HARD)
+        val updated = when (stage) {
+            SchoolStage.UNIVERSITY -> {
+                val smartsDelta = EffortResolver.studySmartsDelta(StudyEffort.HARD)
+                val happinessDelta = EffortResolver.studyHappinessDelta(StudyEffort.HARD)
+                withEffort.copy(
+                    stats = withEffort.stats.copy(
+                        smarts = clampStat(withEffort.stats.smarts + smartsDelta),
+                        happiness = clampStat(withEffort.stats.happiness + happinessDelta)
+                    ),
+                    eventLog = EventLogCap.prepend(
+                        withEffort.eventLog,
+                        "You crammed hard for upcoming exams."
+                    )
+                )
+            }
+            else -> educationEngine.applyStudyEffort(withEffort, StudyEffort.HARD)
+        }
+        return StudySessionResult.Success(updated)
+    }
+
     fun updateWill(character: Character, will: Map<String, Int>?): Character {
         if (will == null) {
             return character.copy(will = null)
@@ -902,7 +943,7 @@ class GameEngine @Inject constructor(
         return when (stage) {
             SchoolStage.PRIMARY, SchoolStage.SECONDARY -> {
                 if (preStage == stage) {
-                    educationEngine.advanceGrade(character, StudyEffort.NORMAL)
+                    educationEngine.advanceGrade(character, character.education.plannedStudyEffort)
                 } else {
                     character
                 }

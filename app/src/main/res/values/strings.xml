@@ -1264,6 +1264,83 @@
     <string name="chip_shop_motorbike">Bikes</string>
     <string name="chip_shop_heirloom">Heirlooms</string>
 
+    <!-- Wave 1: toddler / mid-life / senior leisure -->
+    <string name="leisure_storytime_title">Storytime</string>
+    <string name="leisure_storytime_desc">Cuddle up for a bedtime story.</string>
+    <string name="leisure_park_caregiver_title">Park outing</string>
+    <string name="leisure_park_caregiver_desc">Fresh air with your caregiver.</string>
+    <string name="leisure_nap_routine_title">Nap time</string>
+    <string name="leisure_nap_routine_desc">Rest up for tomorrow.</string>
+    <string name="leisure_playdate_title">Playdate</string>
+    <string name="leisure_playdate_desc">Play with a little friend.</string>
+    <string name="leisure_weekend_retreat_title">Weekend retreat</string>
+    <string name="leisure_weekend_retreat_desc">Unplug and recharge away from the grind.</string>
+    <string name="leisure_reunion_dinner_title">Reunion dinner</string>
+    <string name="leisure_reunion_dinner_desc">Catch up with old friends over a meal.</string>
+    <string name="leisure_grandkids_day_title">Grandkids day</string>
+    <string name="leisure_grandkids_day_desc">Spend the day with grandchildren.</string>
+    <string name="leisure_community_club_title">Community club</string>
+    <string name="leisure_community_club_desc">Meet neighbours at the local club.</string>
+    <string name="leisure_memoir_title">Memoir writing</string>
+    <string name="leisure_memoir_desc">Write down stories from your life.</string>
+    <string name="leisure_effect_storytime">+Happy · +Smarts</string>
+    <string name="leisure_effect_park">+Happy · +Health</string>
+    <string name="leisure_effect_nap">+Health</string>
+    <string name="leisure_effect_playdate">+Happy</string>
+    <string name="leisure_effect_retreat">+Happy · +Health</string>
+    <string name="leisure_effect_reunion">+Happy · +Smarts</string>
+    <string name="leisure_effect_grandkids">+Happy</string>
+    <string name="leisure_effect_community">+Happy · +Health</string>
+    <string name="leisure_effect_memoir">+Smarts</string>
+    <string name="msg_leisure_storytime">A cozy story lifted your mood.</string>
+    <string name="msg_leisure_park">You had fun at the park.</string>
+    <string name="msg_leisure_nap">You woke up refreshed.</string>
+    <string name="msg_leisure_playdate">Playdate success!</string>
+    <string name="msg_leisure_weekend_retreat">The retreat did you good.</string>
+    <string name="msg_leisure_reunion_dinner">Old friendships feel alive again.</string>
+    <string name="msg_leisure_grandkids">Grandkids filled the day with joy.</string>
+    <string name="msg_leisure_community_club">You found your people at the club.</string>
+    <string name="msg_leisure_memoir">You captured another chapter of your story.</string>
+
+    <!-- Study effort -->
+    <string name="label_study_effort">Study effort this year</string>
+    <string name="study_effort_slack">Coast</string>
+    <string name="study_effort_normal">Normal</string>
+    <string name="study_effort_hard">Grind</string>
+    <string name="study_effort_outlook_slack">Coasting may hurt your GPA next Age Up.</string>
+    <string name="study_effort_outlook_normal">Steady studying keeps grades on track.</string>
+    <string name="study_effort_outlook_hard">Grinding boosts GPA — but costs happiness.</string>
+    <string name="msg_study_effort_set">Study effort set for next Age Up.</string>
+    <string name="action_study_session_title">Cram session</string>
+    <string name="action_study_session_desc">Set grind effort and boost smarts now.</string>
+    <string name="msg_study_session_success">You hit the books hard.</string>
+    <string name="msg_study_session_ineligible">You need to be enrolled in school.</string>
+    <string name="tip_study_gpa">Higher GPA improves hire odds after graduation.</string>
+
+    <!-- Adult child interactions -->
+    <string name="section_adult_child_actions">Grown child</string>
+    <string name="btn_visit_adult_child">Visit</string>
+    <string name="btn_financial_support">Send support (%1$s)</string>
+    <string name="btn_celebrate_milestone">Celebrate milestone (%1$s)</string>
+    <string name="btn_discuss_life">Discuss life choices</string>
+    <string name="msg_adult_child_only">That only works with your grown children.</string>
+    <string name="msg_financial_support_success">You supported %1$s with %2$s.</string>
+    <string name="msg_financial_support_cannot_afford">You need %1$s to send support.</string>
+    <string name="msg_celebrate_milestone_success">You celebrated a milestone with %1$s.</string>
+    <string name="msg_celebrate_cannot_afford">You need %1$s to celebrate.</string>
+    <string name="msg_discuss_life_success">You and %1$s talked through life plans.</string>
+
+    <!-- Actions / Life UI -->
+    <string name="format_actions_this_year">This year · %1$d things you can do</string>
+    <string name="empty_actions_toddler_title">Still little</string>
+    <string name="empty_actions_toddler_body">Try Storytime or a park outing on the Live tab.</string>
+    <string name="section_year_focus">Year focus</string>
+    <string name="year_focus_actions">Actions tab — leisure or study</string>
+    <string name="year_focus_family">Family tab — bond with someone</string>
+    <string name="year_focus_career">Career tab — work or school</string>
+    <string name="year_focus_assets">Assets tab — grow savings</string>
+    <string name="tip_review_will">Your net worth is growing — review your will on the Assets · Estate tab.</string>
+
     <!-- Format strings -->
     <string name="format_age">Age %d</string>
 

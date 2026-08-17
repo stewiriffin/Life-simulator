@@ -60,6 +60,7 @@ fun PersonDetailSheet(
     val isChild = member.relation == RelationType.CHILD
     val isEnemy = member.relation == RelationType.ENEMY
     val isMinorChild = RelationshipEngine.isMinorChild(member)
+    val isAdultChild = RelationshipEngine.isAdultChild(member)
     val canAskForMoney = !isSpouse && !isChild
     val canSetUpDate = member.relation == RelationType.SIBLING ||
         member.relation == RelationType.FRIEND ||
@@ -71,6 +72,8 @@ fun PersonDetailSheet(
     val pendingDivorce = rememberConfirmableAction<Unit>()
     val pendingHaveChild = rememberConfirmableAction<Unit>()
     val pendingDateNight = rememberConfirmableAction<Unit>()
+    val pendingFinancialSupport = rememberConfirmableAction<Unit>()
+    val pendingCelebrateMilestone = rememberConfirmableAction<Unit>()
     val travelCost = EconomyScaler.scaleRelationshipCost(
         RelationshipEngine.TRAVEL_BASE_COST_KENYA,
         playerCountryCode,
@@ -105,6 +108,14 @@ fun PersonDetailSheet(
             playerCountryCode
         )
     }
+    val financialSupportCost = EconomyScaler.scaleAmount(
+        RelationshipEngine.FINANCIAL_SUPPORT_COST_KENYA,
+        playerCountryCode
+    )
+    val celebrateMilestoneCost = EconomyScaler.scaleAmount(
+        RelationshipEngine.CELEBRATE_MILESTONE_COST_KENYA,
+        playerCountryCode
+    )
     val tier = relationshipTierFor(member.relationshipLevel)
     val expression = ExpressionResolver.resolvePersonExpression(member)
     val travelEnabled = RelationshipEngine.canTravelTogether(member) && !isIncarcerated
@@ -195,6 +206,43 @@ fun PersonDetailSheet(
                 formatMoney(resolvedChildCost, playerCountryCode)
             ),
             confirmLabel = stringResource(R.string.btn_have_child),
+            severity = ConfirmSeverity.NEUTRAL,
+            onConfirm = onConfirm,
+            onDismiss = onDismiss
+        )
+    }
+
+    ConfirmableActionHost(
+        state = pendingCelebrateMilestone,
+        onConfirmed = { onInteraction(InteractionType.CELEBRATE_MILESTONE, null) }
+    ) { _, onConfirm, onDismiss ->
+        ConfirmActionDialog(
+            title = stringResource(R.string.btn_celebrate_milestone, formatMoney(celebrateMilestoneCost, playerCountryCode)),
+            description = stringResource(
+                R.string.confirm_cost_body,
+                formatMoney(celebrateMilestoneCost, playerCountryCode)
+            ),
+            confirmLabel = stringResource(R.string.btn_confirm),
+            severity = ConfirmSeverity.NEUTRAL,
+            onConfirm = onConfirm,
+            onDismiss = onDismiss
+        )
+    }
+
+    ConfirmableActionHost(
+        state = pendingFinancialSupport,
+        onConfirmed = { onInteraction(InteractionType.FINANCIAL_SUPPORT, null) }
+    ) { _, onConfirm, onDismiss ->
+        ConfirmActionDialog(
+            title = stringResource(
+                R.string.btn_financial_support,
+                formatMoney(financialSupportCost, playerCountryCode)
+            ),
+            description = stringResource(
+                R.string.confirm_cost_body,
+                formatMoney(financialSupportCost, playerCountryCode)
+            ),
+            confirmLabel = stringResource(R.string.btn_confirm),
             severity = ConfirmSeverity.NEUTRAL,
             onConfirm = onConfirm,
             onDismiss = onDismiss
@@ -326,6 +374,34 @@ fun PersonDetailSheet(
                 )
             }
 
+            if (isAdultChild) {
+                SheetSectionTitle(stringResource(R.string.section_adult_child_actions))
+                DetailSheetButton(
+                    text = stringResource(R.string.btn_visit_adult_child),
+                    onClick = { onInteraction(InteractionType.SPEND_TIME, null) }
+                )
+                DetailSheetButton(
+                    text = stringResource(
+                        R.string.btn_financial_support,
+                        formatMoney(financialSupportCost, playerCountryCode)
+                    ),
+                    onClick = { pendingFinancialSupport.request(Unit) },
+                    enabled = playerMoney >= financialSupportCost
+                )
+                DetailSheetButton(
+                    text = stringResource(
+                        R.string.btn_celebrate_milestone,
+                        formatMoney(celebrateMilestoneCost, playerCountryCode)
+                    ),
+                    onClick = { pendingCelebrateMilestone.request(Unit) },
+                    enabled = playerMoney >= celebrateMilestoneCost
+                )
+                DetailSheetButton(
+                    text = stringResource(R.string.btn_discuss_life),
+                    onClick = { onInteraction(InteractionType.DISCUSS_LIFE_CHOICES, null) }
+                )
+            }
+
             if (isMinorChild) {
                 SheetSectionTitle(stringResource(R.string.section_parenting_actions))
                 DetailSheetButton(
@@ -359,15 +435,19 @@ fun PersonDetailSheet(
                     Text(stringResource(R.string.btn_discipline))
                 }
             } else {
-                SheetSectionTitle(stringResource(R.string.section_bond_actions))
-                DetailSheetButton(
-                    text = if (isChild) {
-                        stringResource(R.string.btn_play_together)
-                    } else {
-                        stringResource(R.string.btn_spend_time)
-                    },
-                    onClick = { onInteraction(InteractionType.SPEND_TIME, null) }
-                )
+                if (!isAdultChild) {
+                    SheetSectionTitle(stringResource(R.string.section_bond_actions))
+                    DetailSheetButton(
+                        text = if (isChild) {
+                            stringResource(R.string.btn_play_together)
+                        } else {
+                            stringResource(R.string.btn_spend_time)
+                        },
+                        onClick = { onInteraction(InteractionType.SPEND_TIME, null) }
+                    )
+                } else {
+                    SheetSectionTitle(stringResource(R.string.section_bond_actions))
+                }
                 DetailSheetButton(
                     text = stringResource(R.string.btn_compliment),
                     onClick = { onInteraction(InteractionType.COMPLIMENT, null) }

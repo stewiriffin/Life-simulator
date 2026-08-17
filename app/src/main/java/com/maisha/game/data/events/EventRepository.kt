@@ -102,9 +102,10 @@ class EventRepository private constructor(
         val finance = loadEventsFromAsset(context, "data/events/finance_events.json")
         val relationship = loadEventsFromAsset(context, "data/events/relationship_events.json")
         val general = loadEventsFromAsset(context, "data/events/general_events.json")
+        val midlife = loadEventsFromAsset(context, "data/events/midlife_events.json")
         val holidays = loadEventsFromAsset(context, "data/events/holiday_events.json")
         val crime = loadEventsFromAsset(context, "data/events/crime_events.json")
-        return starter + education + career + finance + relationship + general + holidays + crime
+        return starter + education + career + finance + relationship + general + midlife + holidays + crime
     }
 
     private fun loadEventsFromAsset(context: Context, path: String): List<LifeEvent> {
@@ -141,7 +142,8 @@ class EventRepository private constructor(
                 passesExpatGate(event, character) &&
                 passesHolidayGate(event, character) &&
                 passesMixedHeritageGate(event, character) &&
-                passesIncarcerationGate(event, character)
+                passesIncarcerationGate(event, character) &&
+                passesEducationGate(event, character)
         }.mapNotNull { event -> resolveFlavorForCharacter(event, character) }
     }
 
@@ -344,6 +346,15 @@ class EventRepository private constructor(
             incarcerated -> false
             else -> true
         }
+    }
+
+    private fun passesEducationGate(event: LifeEvent, character: Character?): Boolean {
+        if ("education" !in event.tags) return true
+        if (character == null) return false
+        val stage = character.education.stage
+        return stage == com.maisha.game.data.model.SchoolStage.PRIMARY ||
+            stage == com.maisha.game.data.model.SchoolStage.SECONDARY ||
+            stage == com.maisha.game.data.model.SchoolStage.UNIVERSITY
     }
 
     fun pickRandomEvent(

@@ -46,6 +46,7 @@ import com.maisha.game.data.model.HealthCondition
 import com.maisha.game.data.model.HustleType
 import com.maisha.game.data.model.LifestyleOption
 import com.maisha.game.data.model.PetSpecies
+import com.maisha.game.data.model.SchoolStage
 import com.maisha.game.data.model.SkillType
 import com.maisha.game.data.local.OnboardingTips
 import com.maisha.game.domain.ActionFamily
@@ -139,6 +140,7 @@ fun ActionsScreen(
     onDonateToCharity: (Int) -> Unit,
     donationTiers: List<Int>,
     onPerformLeisure: (LeisureActivity) -> Unit,
+    onPerformStudySession: () -> Unit = {},
     onActionMessageDismissed: () -> Unit,
     onDismissLeisureTip: () -> Unit = {},
     modifier: Modifier = Modifier
@@ -189,6 +191,14 @@ fun ActionsScreen(
         character.age >= 12 &&
         !incarcerated &&
         !awaitingTrial
+    val showStudySession = character.alive &&
+        !incarcerated &&
+        !awaitingTrial &&
+        (character.education.stage == SchoolStage.PRIMARY ||
+            character.education.stage == SchoolStage.SECONDARY ||
+            character.education.stage == SchoolStage.UNIVERSITY) &&
+        !character.education.expelled &&
+        character.education.droppedOutFrom == null
     val donationAmounts = donationTiers.ifEmpty {
         listOf(100, 1_000, 10_000).map {
             EconomyScaler.scaleAmount(it, character.countryCode)
@@ -215,14 +225,35 @@ fun ActionsScreen(
     )
     val crimeStatus = CrimeStatusMapper.map(character.criminalRecord)
 
-    val hasCare = untreated.isNotEmpty() || showLifestyleActions || showLeisureActions
+    val hasCare = untreated.isNotEmpty() || showLifestyleActions || showLeisureActions || showStudySession
     val hasEarn = showSideHustleActions || showSocialMediaActions || showSkillActions
-    val hasGrow = showSkillActions || showBucketList || showAdoptPetActions || showSocialMediaActions
+    val hasGrow = showSkillActions || showBucketList || showAdoptPetActions || showSocialMediaActions || showStudySession
     val hasLive = showDrivingTest || showPhilanthropy || showImmigrationOffice || showLeisureActions
     val hasRisk = showCrimeActions || incarcerated || awaitingTrial
     val hasContent = hasCare || hasEarn || hasGrow || hasLive || hasRisk
+    val leisureActivities = remember(character.age, character.criminalRecord) {
+        leisureEngine.activitiesFor(character)
+    }
+    val actionCount = remember(
+        leisureActivities.size,
+        showStudySession,
+        untreated.size,
+        showSideHustleActions,
+        showSkillActions
+    ) {
+        var count = leisureActivities.size
+        if (showStudySession) count++
+        count += untreated.size
+        if (showSideHustleActions) count += JobPool.getAllSideHustleTypes().size
+        if (showSkillActions) count += SkillType.entries.size
+        count
+    }
 
-    val defaultCategory = if (untreated.isNotEmpty()) ActionCategory.CARE else ActionCategory.ALL
+    val defaultCategory = when {
+        untreated.isNotEmpty() -> ActionCategory.CARE
+        character.age < 18 -> ActionCategory.LIVE
+        else -> ActionCategory.ALL
+    }
     var selectedCategory by rememberSaveable { mutableStateOf(defaultCategory.name) }
     val category = ActionCategory.entries.find { it.name == selectedCategory } ?: ActionCategory.ALL
 
@@ -255,7 +286,11 @@ fun ActionsScreen(
     ) {
         TabPageHero(
             title = stringResource(R.string.screen_actions),
-            subtitle = stringResource(R.string.actions_subtitle),
+            subtitle = if (hasContent && actionCount > 0) {
+                stringResource(R.string.format_actions_this_year, actionCount)
+            } else {
+                stringResource(R.string.actions_subtitle)
+            },
             primaryChip = formatMoney(character.stats.money, character.countryCode)
         )
 
@@ -286,10 +321,15 @@ fun ActionsScreen(
         }
 
         if (!hasContent) {
+            val isToddler = character.age <= 4
             EmptyStateCard(
                 illustration = EmptyStateIllustration.ACTIONS,
-                title = stringResource(R.string.empty_actions_title),
-                message = stringResource(R.string.empty_actions_body),
+                title = stringResource(
+                    if (isToddler) R.string.empty_actions_toddler_title else R.string.empty_actions_title
+                ),
+                message = stringResource(
+                    if (isToddler) R.string.empty_actions_toddler_body else R.string.empty_actions_body
+                ),
                 modifier = Modifier
                     .weight(1f)
                     .padding(horizontal = MaishaSpacing.md)
@@ -435,7 +475,7 @@ fun ActionsScreen(
 
                 if ((show(ActionCategory.CARE) || show(ActionCategory.LIVE)) && showLeisureActions) {
                     item { SectionHeader(title = stringResource(R.string.section_leisure)) }
-                    items(leisureEngine.activitiesFor(character), key = { it.name }) { activity ->
+                    items(leisureActivities, key = { it.name }) { activity ->
                         val cost = leisureEngine.cost(activity, character.countryCode)
                         val isChores = activity == LeisureActivity.CHORES
                         val canAfford = isChores || character.stats.money >= cost
@@ -465,6 +505,21 @@ fun ActionsScreen(
                                     pendingAction.request(PendingAction.Leisure(activity))
                                 }
                             }
+                        )
+                    }
+                }
+
+                if ((show(ActionCategory.CARE) || show(ActionCategory.GROW)) && showStudySession) {
+                    item { SectionHeader(title = stringResource(R.string.label_education)) }
+                    item {
+                        ActionCard(
+                            icon = AppIcons.Education,
+                            title = stringResource(R.string.action_study_session_title),
+                            description = stringResource(R.string.action_study_session_desc),
+                            metaLabel = stringResource(R.string.study_effort_hard),
+                            accent = ActionCardAccent.CARE,
+                            questHint = questHintIf(yearQuests, ActionFamily.STUDY, questHintLabel),
+                            onClick = onPerformStudySession
                         )
                     }
                 }
@@ -1392,39 +1447,6 @@ private fun adoptPetDescription(species: PetSpecies): String = when (species) {
     PetSpecies.BIRD -> stringResource(R.string.pet_adopt_bird_desc)
     PetSpecies.FISH -> stringResource(R.string.pet_adopt_fish_desc)
     PetSpecies.EXOTIC -> stringResource(R.string.pet_adopt_exotic_desc)
-}
-
-@Composable
-private fun leisureTitle(activity: LeisureActivity): String = when (activity) {
-    LeisureActivity.PLAYGROUND -> stringResource(R.string.leisure_playground_title)
-    LeisureActivity.STUDY_BUDDY -> stringResource(R.string.leisure_study_buddy_title)
-    LeisureActivity.CHORES -> stringResource(R.string.leisure_chores_title)
-    LeisureActivity.NIGHT_OUT -> stringResource(R.string.leisure_night_out_title)
-    LeisureActivity.NATURE_DAY -> stringResource(R.string.leisure_nature_day_title)
-    LeisureActivity.CITY_SHOW -> stringResource(R.string.leisure_city_show_title)
-    LeisureActivity.SPA_DAY -> stringResource(R.string.leisure_spa_day_title)
-}
-
-@Composable
-private fun leisureDescription(activity: LeisureActivity): String = when (activity) {
-    LeisureActivity.PLAYGROUND -> stringResource(R.string.leisure_playground_desc)
-    LeisureActivity.STUDY_BUDDY -> stringResource(R.string.leisure_study_buddy_desc)
-    LeisureActivity.CHORES -> stringResource(R.string.leisure_chores_desc)
-    LeisureActivity.NIGHT_OUT -> stringResource(R.string.leisure_night_out_desc)
-    LeisureActivity.NATURE_DAY -> stringResource(R.string.leisure_nature_day_desc)
-    LeisureActivity.CITY_SHOW -> stringResource(R.string.leisure_city_show_desc)
-    LeisureActivity.SPA_DAY -> stringResource(R.string.leisure_spa_day_desc)
-}
-
-@Composable
-private fun leisureEffectLabel(activity: LeisureActivity): String = when (activity) {
-    LeisureActivity.PLAYGROUND -> stringResource(R.string.leisure_effect_playground)
-    LeisureActivity.STUDY_BUDDY -> stringResource(R.string.leisure_effect_study)
-    LeisureActivity.CHORES -> stringResource(R.string.leisure_effect_chores)
-    LeisureActivity.NIGHT_OUT -> stringResource(R.string.leisure_effect_night_out)
-    LeisureActivity.NATURE_DAY -> stringResource(R.string.leisure_effect_nature_day)
-    LeisureActivity.CITY_SHOW -> stringResource(R.string.leisure_effect_city_show)
-    LeisureActivity.SPA_DAY -> stringResource(R.string.leisure_effect_spa_day)
 }
 
 @Composable

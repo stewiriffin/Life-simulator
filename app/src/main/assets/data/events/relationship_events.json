@@ -428,6 +428,162 @@
         { "label": "Throw them a send-off", "statEffects": { "money": -6000, "happiness": 5 }, "resultText": "Hugs, tears, and a promise to visit." },
         { "label": "A quiet goodbye", "statEffects": { "happiness": 2 }, "resultText": "Short and sincere. You both know it matters." }
       ]
+    },
+    {
+      "id": "adult_child_career_news",
+      "minAge": 40,
+      "maxAge": 80,
+      "text": "Your grown child calls with big career news — a promotion, a resignation, or a bold new venture.",
+      "weight": 4,
+      "tags": ["relationship", "requires_child"],
+      "choices": [
+        { "label": "Celebrate their ambition", "statEffects": { "happiness": 8 }, "childRelationshipEffect": 10, "resultText": "Pride poured through the phone. They felt seen." },
+        { "label": "Offer cautious advice", "statEffects": { "happiness": 2, "smarts": 1 }, "childRelationshipEffect": 3, "resultText": "They listened politely. Whether they followed it is another story." },
+        { "label": "Compare to your own path", "statEffects": { "happiness": -4 }, "childRelationshipEffect": -6, "resultText": "The conversation turned defensive. Old dynamics resurfaced." }
+      ]
+    },
+    {
+      "id": "adult_child_wedding_invite",
+      "minAge": 40,
+      "maxAge": 80,
+      "text": "Your adult child announces they're getting married. Invitations, guest lists, and family politics follow.",
+      "weight": 4,
+      "tags": ["relationship", "requires_child", "milestone"],
+      "choices": [
+        { "label": "Help plan generously", "statEffects": { "money": -25000, "happiness": 10 }, "childRelationshipEffect": 12, "resultText": "Tasteful, joyful, exhausting. They thanked you through tears." },
+        { "label": "Attend and stay out of the details", "statEffects": { "money": -8000, "happiness": 6 }, "childRelationshipEffect": 6, "resultText": "Your seat was front row. Drama stayed backstage." },
+        { "label": "Voice concerns about their partner", "statEffects": { "happiness": -8 }, "childRelationshipEffect": -12, "resultText": "The invitation still came — with colder handwriting." }
+      ]
+    },
+    {
+      "id": "adult_child_asks_for_loan",
+      "minAge": 40,
+      "maxAge": 80,
+      "text": "Your grown child asks for a substantial loan — rent, business capital, or medical bills they can't cover alone.",
+      "weight": 5,
+      "tags": ["relationship", "requires_child"],
+      "choices": [
+        { "label": "Lend what you can afford", "statEffects": { "money": -30000, "happiness": 2 }, "childRelationshipEffect": 10, "resultText": "They promised to repay you. Family came first." },
+        { "label": "Offer advice instead of cash", "statEffects": { "happiness": -3, "smarts": 2 }, "childRelationshipEffect": -4, "resultText": "Not what they wanted. Maybe what they needed." },
+        { "label": "Refuse — you've retired your wallet", "statEffects": { "happiness": -5 }, "childRelationshipEffect": -10, "resultText": "Silence stretched between you for weeks." }
+      ]
+    },
+    {
+      "id": "adult_child_grandchild_news",
+      "minAge": 40,
+      "maxAge": 80,
+      "text": "Your adult child tells you they're expecting a baby. You're going to be a grandparent.",
+      "weight": 5,
+      "tags": ["relationship", "requires_child", "milestone", "positive"],
+      "choices": [
+        { "label": "Shower them with joy and support", "statEffects": { "happiness": 12 }, "childRelationshipEffect": 12, "resultText": "Tears, hugs, and already-planned visit dates." },
+        { "label": "Offer practical help when the time comes", "statEffects": { "happiness": 8, "money": -5000 }, "childRelationshipEffect": 8, "resultText": "A crib, a casserole, a listening ear — you meant it." },
+        { "label": "Worry aloud about their readiness", "statEffects": { "happiness": -4 }, "childRelationshipEffect": -6, "resultText": "Their smile dimmed. You wished you'd bitten your tongue." }
+      ]
+    },
+    {
+      "id": "adult_child_estranged_call",
+      "minAge": 40,
+      "maxAge": 80,
+      "text": "A grown child you haven't spoken to in months — or years — reaches out with a tentative message.",
+      "weight": 4,
+      "tags": ["relationship", "requires_child"],
+      "choices": [
+        { "label": "Reply warmly and suggest meeting", "statEffects": { "happiness": 6 }, "childRelationshipEffect": 15, "resultText": "Awkward coffee became a long overdue talk." },
+        { "label": "Respond but keep your guard up", "statEffects": { "happiness": 2 }, "childRelationshipEffect": 5, "resultText": "Small steps. Trust rebuilt in inches." },
+        { "label": "Ignore the message", "statEffects": { "happiness": -6 }, "childRelationshipEffect": -8, "resultText": "The silence on your side spoke louder than words." }
+      ]
+    },
+    {
+      "id": "adult_child_moves_abroad",
+      "minAge": 40,
+      "maxAge": 80,
+      "text": "Your adult child announces they're moving abroad for work or love. Another timezone, another life.",
+      "weight": 4,
+      "tags": ["relationship", "requires_child"],
+      "choices": [
+        { "label": "Support the move wholeheartedly", "statEffects": { "happiness": 4 }, "childRelationshipEffect": 10, "resultText": "Video calls and visit plans. Distance, not absence." },
+        { "label": "Ask them to reconsider", "statEffects": { "happiness": -5 }, "childRelationshipEffect": -8, "resultText": "They went anyway. Goodbyes at the airport hurt." },
+        { "label": "Plan your first visit before they leave", "statEffects": { "money": -20000, "happiness": 6 }, "childRelationshipEffect": 8, "resultText": "One more week together. Memories to hold until flights resume." }
+      ]
+    },
+    {
+      "id": "adult_child_health_scare",
+      "minAge": 40,
+      "maxAge": 80,
+      "text": "Your grown child faces a health scare. Hospital corridors feel as frightening as when they were small.",
+      "weight": 5,
+      "tags": ["relationship", "requires_child", "negative"],
+      "choices": [
+        { "label": "Stay by their side through treatment", "statEffects": { "happiness": -6, "health": -3, "money": -10000 }, "childRelationshipEffect": 15, "resultText": "Sleepless chairs and held hands. They knew you never left." },
+        { "label": "Coordinate family support from home", "statEffects": { "money": -8000, "happiness": -4 }, "childRelationshipEffect": 8, "resultText": "Meals, calls, prayers. You did what distance allowed." },
+        { "label": "Struggle and pull away", "statEffects": { "happiness": -10, "health": -4 }, "childRelationshipEffect": -10, "resultText": "Fear made you small. They noticed your absence." }
+      ]
+    },
+    {
+      "id": "adult_child_holiday_visit",
+      "minAge": 40,
+      "maxAge": 80,
+      "text": "The holidays approach and your grown children debate who hosts, who travels, and who brings the kids.",
+      "weight": 4,
+      "tags": ["relationship", "requires_child"],
+      "choices": [
+        { "label": "Open your home to everyone", "statEffects": { "money": -15000, "happiness": 8, "health": -2 }, "childRelationshipEffect": 10, "resultText": "Crowded, loud, perfect. The table barely fit." },
+        { "label": "Travel to be near them instead", "statEffects": { "money": -12000, "happiness": 6 }, "childRelationshipEffect": 8, "resultText": "Unfamiliar kitchen, familiar laughter. Worth the trip." },
+        { "label": "Spend the holiday quietly alone", "statEffects": { "happiness": -6 }, "childRelationshipEffect": -4, "resultText": "A small meal, a quiet TV. You told yourself it was fine." }
+      ]
+    },
+    {
+      "id": "adult_child_parenting_advice",
+      "minAge": 40,
+      "maxAge": 80,
+      "text": "Your grown child vents about raising their own kids. They ask how you handled the hard years.",
+      "weight": 4,
+      "tags": ["relationship", "requires_child"],
+      "choices": [
+        { "label": "Share honest stories without lecturing", "statEffects": { "happiness": 5, "smarts": 1 }, "childRelationshipEffect": 10, "resultText": "They laughed at your mistakes. Wisdom without judgment." },
+        { "label": "Tell them they're overthinking it", "statEffects": { "happiness": -2 }, "childRelationshipEffect": -5, "resultText": "Unhelpful shorthand. They stopped asking." },
+        { "label": "Admit you don't remember — you muddled through too", "statEffects": { "happiness": 4 }, "childRelationshipEffect": 6, "resultText": "Relief in shared imperfection. Parenting has no manual." }
+      ]
+    },
+    {
+      "id": "adult_child_inheritance_talk",
+      "minAge": 40,
+      "maxAge": 80,
+      "text": "Your grown children raise the topic of inheritance — wills, property, and fairness between siblings.",
+      "weight": 3,
+      "tags": ["relationship", "requires_child"],
+      "choices": [
+        { "label": "Draft a clear will with a lawyer", "statEffects": { "money": -8000, "happiness": 2, "smarts": 2 }, "childRelationshipEffect": 5, "resultText": "Paperwork now, fewer fights later. You hope." },
+        { "label": "Defer the conversation", "statEffects": { "happiness": -3 }, "childRelationshipEffect": -4, "resultText": "Awkward silence. The question will return." },
+        { "label": "Divide assets openly at the table", "statEffects": { "happiness": -5 }, "childRelationshipEffect": -2, "resultText": "Tension and transparency. At least nothing was hidden." }
+      ]
+    },
+    {
+      "id": "adult_child_caregiving_reverse",
+      "minAge": 40,
+      "maxAge": 80,
+      "text": "Roles reverse — your adult child insists on helping you after a fall, illness, or lonely stretch.",
+      "weight": 4,
+      "tags": ["relationship", "requires_child", "positive"],
+      "choices": [
+        { "label": "Accept their help gratefully", "statEffects": { "happiness": 4, "health": 5 }, "childRelationshipEffect": 10, "resultText": "Meals delivered, drives arranged. Love flowed both directions." },
+        { "label": "Refuse — you raised them to be independent, not your nurse", "statEffects": { "happiness": -4, "health": -3 }, "childRelationshipEffect": -6, "resultText": "Pride slowed healing. They worried from afar." },
+        { "label": "Negotiate limited help on your terms", "statEffects": { "happiness": 2, "health": 3 }, "childRelationshipEffect": 6, "resultText": "Groceries yes, moving in no. Compromise kept dignity." }
+      ]
+    },
+    {
+      "id": "adult_child_surprise_visit",
+      "minAge": 40,
+      "maxAge": 80,
+      "text": "Your grown child shows up unannounced at your door with bags and a grin.",
+      "weight": 4,
+      "tags": ["relationship", "requires_child", "positive"],
+      "choices": [
+        { "label": "Drop everything and welcome them in", "statEffects": { "happiness": 10, "money": -3000 }, "childRelationshipEffect": 12, "resultText": "Takeout, old photos, hours of talk. The best surprise." },
+        { "label": "Enjoy the visit but ask them to call next time", "statEffects": { "happiness": 6 }, "childRelationshipEffect": 4, "resultText": "Joy mixed with mild scolding. They promised — mostly." },
+        { "label": "Say you're too busy right now", "statEffects": { "happiness": -5 }, "childRelationshipEffect": -8, "resultText": "Their smile faltered at the threshold. You regretted it instantly." }
+      ]
     }
   ]
 }

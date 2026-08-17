@@ -64,6 +64,7 @@ import com.maisha.game.data.model.Job
 import com.maisha.game.data.model.PoliticalOffice
 import com.maisha.game.data.model.SchoolStage
 import com.maisha.game.data.model.TaxPolicyType
+import com.maisha.game.data.model.StudyEffort
 import com.maisha.game.data.model.WorkEffort
 import com.maisha.game.domain.BusinessEngine
 import com.maisha.game.domain.CareerEngine
@@ -130,6 +131,7 @@ fun CareerScreen(
     onLaunchCampaign: (PoliticalOffice, Int) -> Unit,
     onPassTaxPolicy: (TaxPolicyType) -> Unit,
     onSetWorkEffort: (com.maisha.game.data.model.WorkEffort) -> Unit,
+    onSetStudyEffort: (StudyEffort) -> Unit,
     onCareerMessageDismissed: () -> Unit,
     modifier: Modifier = Modifier
 ) {
@@ -414,7 +416,8 @@ fun CareerScreen(
                     EducationSectionCard(
                         education = character.education,
                         countryCode = character.countryCode,
-                        onDropOut = { dropOutConfirm.request(Unit) }
+                        onDropOut = { dropOutConfirm.request(Unit) },
+                        onSetStudyEffort = onSetStudyEffort
                     )
                 }
             }
@@ -907,11 +910,23 @@ private fun RetiredStateCard(
 private fun EducationSectionCard(
     education: EducationState,
     countryCode: String,
-    onDropOut: () -> Unit
+    onDropOut: () -> Unit,
+    onSetStudyEffort: (StudyEffort) -> Unit
 ) {
     val resources = LocalContext.current.resources
     val canDropOut = education.stage == SchoolStage.SECONDARY ||
         education.stage == SchoolStage.UNIVERSITY
+    val showStudyEffort = education.stage == SchoolStage.PRIMARY ||
+        education.stage == SchoolStage.SECONDARY ||
+        education.stage == SchoolStage.UNIVERSITY
+    val studyEffortEnabled = showStudyEffort &&
+        !education.expelled &&
+        education.droppedOutFrom == null
+    val effortOutlook = when (education.plannedStudyEffort) {
+        StudyEffort.SLACK -> stringResource(R.string.study_effort_outlook_slack)
+        StudyEffort.NORMAL -> stringResource(R.string.study_effort_outlook_normal)
+        StudyEffort.HARD -> stringResource(R.string.study_effort_outlook_hard)
+    }
 
     Card(
         modifier = Modifier.fillMaxWidth(),
@@ -941,6 +956,51 @@ private fun EducationSectionCard(
                     style = MaterialTheme.typography.labelSmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
+            }
+            if (studyEffortEnabled) {
+                Spacer(modifier = Modifier.height(10.dp))
+                Text(
+                    text = stringResource(R.string.label_study_effort),
+                    style = MaterialTheme.typography.labelMedium,
+                    fontWeight = FontWeight.SemiBold
+                )
+                Text(
+                    text = effortOutlook,
+                    style = MaterialTheme.typography.bodySmall,
+                    color = TealPrimary,
+                    modifier = Modifier.padding(bottom = 4.dp)
+                )
+                Text(
+                    text = stringResource(R.string.tip_study_gpa),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+                Spacer(modifier = Modifier.height(6.dp))
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(6.dp)
+                ) {
+                    StudyEffort.entries.forEach { effort ->
+                        FilterChip(
+                            selected = education.plannedStudyEffort == effort,
+                            onClick = { onSetStudyEffort(effort) },
+                            label = {
+                                Text(
+                                    text = when (effort) {
+                                        StudyEffort.SLACK ->
+                                            stringResource(R.string.study_effort_slack)
+                                        StudyEffort.NORMAL ->
+                                            stringResource(R.string.study_effort_normal)
+                                        StudyEffort.HARD ->
+                                            stringResource(R.string.study_effort_hard)
+                                    },
+                                    maxLines = 1
+                                )
+                            },
+                            modifier = Modifier.weight(1f)
+                        )
+                    }
+                }
             }
             if (canDropOut) {
                 Spacer(modifier = Modifier.height(12.dp))

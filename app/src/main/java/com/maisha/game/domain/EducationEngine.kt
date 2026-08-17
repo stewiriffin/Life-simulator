@@ -100,6 +100,19 @@ class EducationEngine @Inject constructor(
         return applyStudyEffort(character, studyChoice, incrementGrade = false)
     }
 
+    /** Sets the effort applied on the next grade advance during Age Up. */
+    fun setPlannedStudyEffort(character: Character, effort: StudyEffort): Character {
+        val education = character.education
+        if (education.expelled || education.droppedOutFrom != null) return character
+        if (education.stage != SchoolStage.PRIMARY &&
+            education.stage != SchoolStage.SECONDARY &&
+            education.stage != SchoolStage.UNIVERSITY
+        ) {
+            return character
+        }
+        return character.copy(education = education.copy(plannedStudyEffort = effort))
+    }
+
     private fun applyStudyEffort(
         character: Character,
         studyChoice: StudyEffort,

@@ -497,6 +497,9 @@ object AppIcons {
         InteractionType.DISCIPLINE -> Argue
         InteractionType.DATE_NIGHT -> SetUpDate
         InteractionType.MAKE_PEACE -> Compliment
+        InteractionType.FINANCIAL_SUPPORT -> AskMoney
+        InteractionType.CELEBRATE_MILESTONE -> Gift
+        InteractionType.DISCUSS_LIFE_CHOICES -> Advice
     }
 
     private fun icon(name: String, block: androidx.compose.ui.graphics.vector.PathBuilder.() -> Unit): ImageVector {

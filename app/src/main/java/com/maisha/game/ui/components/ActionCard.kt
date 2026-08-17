@@ -87,7 +87,7 @@ fun ActionCard(
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(12.dp),
+                .padding(10.dp),
             horizontalArrangement = Arrangement.spacedBy(12.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
@@ -95,7 +95,7 @@ fun ActionCard(
                 imageVector = icon,
                 contentDescription = null,
                 tint = iconTint,
-                modifier = Modifier.size(28.dp)
+                modifier = Modifier.size(24.dp)
             )
             Column(
                 modifier = Modifier.weight(1f),
