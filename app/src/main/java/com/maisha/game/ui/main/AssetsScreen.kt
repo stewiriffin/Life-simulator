@@ -73,9 +73,9 @@ import com.maisha.game.data.model.Character
 import com.maisha.game.data.model.Person
 import com.maisha.game.data.model.RelationType
 import com.maisha.game.domain.FinanceEngine
+import com.maisha.game.ui.components.AssetHeroImage
 import com.maisha.game.ui.components.DismissibleTipCard
 import com.maisha.game.ui.components.EmptyStateCard
-import com.maisha.game.ui.components.IllustrationImage
 import com.maisha.game.ui.components.StatBar
 import com.maisha.game.ui.components.StatType
 import com.maisha.game.ui.illustrations.EmptyStateIllustration
@@ -1017,17 +1017,19 @@ private fun OwnedAssetCard(
             }
         )
     ) {
-        Column(modifier = Modifier.padding(12.dp)) {
+        Column {
+            AssetHeroImage(
+                ref = IllustrationCatalog.getIllustrationForOwnedAsset(asset),
+                height = if (isHeirloom) 120.dp else 132.dp,
+                contentDescription = asset.name,
+                cornerRadius = 12.dp
+            )
+            Column(modifier = Modifier.padding(12.dp)) {
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.spacedBy(10.dp),
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                IllustrationImage(
-                    ref = IllustrationCatalog.getIllustrationForOwnedAsset(asset),
-                    size = 52.dp,
-                    contentDescription = asset.name
-                )
                 Column(
                     modifier = Modifier.weight(1f),
                     verticalArrangement = Arrangement.spacedBy(2.dp)
@@ -1186,6 +1188,7 @@ private fun OwnedAssetCard(
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
             }
+            }
         }
     }
 }
@@ -1226,18 +1229,20 @@ private fun ShopAssetCard(
             containerColor = MaterialTheme.colorScheme.surface
         )
     ) {
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(12.dp),
-            horizontalArrangement = Arrangement.spacedBy(10.dp),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            IllustrationImage(
+        Column {
+            AssetHeroImage(
                 ref = IllustrationCatalog.getIllustrationForCatalogAsset(item.id),
-                size = 52.dp,
-                contentDescription = item.name
+                height = 140.dp,
+                contentDescription = item.name,
+                cornerRadius = 12.dp
             )
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(12.dp),
+                horizontalArrangement = Arrangement.spacedBy(10.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
             Column(modifier = Modifier.weight(1f)) {
                 Text(
                     text = item.name,
@@ -1293,6 +1298,7 @@ private fun ShopAssetCard(
                         stringResource(R.string.btn_locked)
                     }
                 )
+            }
             }
         }
     }

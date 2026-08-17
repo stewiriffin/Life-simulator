@@ -3,6 +3,7 @@ package com.maisha.game.data
 import android.content.Context
 import androidx.test.core.app.ApplicationProvider
 import com.maisha.game.data.model.AssetType
+import com.maisha.game.data.model.ResourceType
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotEquals
 import org.junit.Assert.assertTrue
@@ -46,7 +47,7 @@ class IllustrationCatalogTest {
         val asset = (result as com.maisha.game.domain.PurchaseResult.Success).character.assets.single()
         assertEquals("car_new", asset.catalogId)
         assertEquals(
-            "ill_asset_car_new",
+            "img_asset_car_new",
             IllustrationCatalog.getIllustrationForOwnedAsset(asset).resourceName
         )
     }
@@ -58,7 +59,14 @@ class IllustrationCatalogTest {
             IllustrationCatalog.getIllustrationForCatalogAsset(it).resourceName
         }.toSet()
         assertEquals(ids.size, names.size)
-        assertTrue(names.all { it.startsWith("ill_asset_heirloom_") })
+        assertTrue(names.all { it.startsWith("img_asset_heirloom_") })
+    }
+
+    @Test
+    fun catalogAssets_useRasterHeroImages() {
+        val ref = IllustrationCatalog.getIllustrationForCatalogAsset("car_vitz")
+        assertEquals(ResourceType.RASTER, ref.resourceType)
+        assertTrue(ref.resourceName.startsWith("img_asset_"))
     }
 
     @Test

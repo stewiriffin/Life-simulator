@@ -8,14 +8,20 @@ import com.maisha.game.data.model.IllustrationRef
 import com.maisha.game.data.model.ResourceType
 
 /**
- * Maps game entities to illustration resources. Vector drawables in res/drawable/ill_* —
- * replace resourceName only when importing final art.
+ * Maps game entities to illustration resources. Asset shop art uses raster PNGs in
+ * res/drawable-nodpi/img_asset_* (BitLife-style hero images). Jobs still use ill_* vectors.
  */
 object IllustrationCatalog {
 
     private fun vector(id: String, resourceName: String) = IllustrationRef(
         id = id,
         resourceType = ResourceType.VECTOR_DRAWABLE,
+        resourceName = resourceName
+    )
+
+    private fun raster(id: String, resourceName: String) = IllustrationRef(
+        id = id,
+        resourceType = ResourceType.RASTER,
         resourceName = resourceName
     )
 
@@ -39,50 +45,50 @@ object IllustrationCatalog {
     )
 
     private val assetTypeIllustrations: Map<AssetType, IllustrationRef> = mapOf(
-        AssetType.HOUSE to vector("asset_house", "ill_asset_house"),
-        AssetType.CAR to vector("asset_car", "ill_asset_car"),
-        AssetType.MOTORBIKE to vector("asset_motorbike", "ill_asset_motorbike"),
-        AssetType.HEIRLOOM to vector("asset_heirloom", "ill_asset_heirloom_ring")
+        AssetType.HOUSE to raster("asset_house", "img_asset_house_suburban"),
+        AssetType.CAR to raster("asset_car", "img_asset_car_sedan"),
+        AssetType.MOTORBIKE to raster("asset_motorbike", "img_asset_motorbike_used"),
+        AssetType.HEIRLOOM to raster("asset_heirloom", "img_asset_heirloom_ring")
     )
 
-    /** Per [AssetCatalog] id — swap drawable files without touching call sites. */
+    /** Per [AssetCatalog] id — PNG hero art in drawable-nodpi (swap files to retheme). */
     private val catalogAssetIllustrations: Map<String, IllustrationRef> = mapOf(
         // Motorbikes
-        "motorbike_used" to vector("asset_motorbike_used", "ill_asset_motorbike_used"),
-        "boda_basic" to vector("asset_boda_basic", "ill_asset_motorbike_used"),
-        "motorbike_new" to vector("asset_motorbike_new", "ill_asset_motorbike_new"),
-        "boda_new" to vector("asset_boda_new", "ill_asset_motorbike_new"),
+        "motorbike_used" to raster("asset_motorbike_used", "img_asset_motorbike_used"),
+        "boda_basic" to raster("asset_boda_basic", "img_asset_motorbike_used"),
+        "motorbike_new" to raster("asset_motorbike_new", "img_asset_motorbike_new"),
+        "boda_new" to raster("asset_boda_new", "img_asset_motorbike_new"),
         // Cars
-        "car_used_compact" to vector("asset_car_compact", "ill_asset_car_compact"),
-        "car_vitz" to vector("asset_car_vitz", "ill_asset_car_compact"),
-        "car_used_mid" to vector("asset_car_mid", "ill_asset_car_mid"),
-        "car_probox" to vector("asset_car_probox", "ill_asset_car_mid"),
-        "car_sedan_used" to vector("asset_car_sedan", "ill_asset_car_sedan"),
-        "car_new" to vector("asset_car_new", "ill_asset_car_new"),
+        "car_used_compact" to raster("asset_car_compact", "img_asset_car_compact"),
+        "car_vitz" to raster("asset_car_vitz", "img_asset_car_compact"),
+        "car_used_mid" to raster("asset_car_mid", "img_asset_car_mid"),
+        "car_probox" to raster("asset_car_probox", "img_asset_car_mid"),
+        "car_sedan_used" to raster("asset_car_sedan", "img_asset_car_sedan"),
+        "car_new" to raster("asset_car_new", "img_asset_car_new"),
         // Houses — universal + Kenya
-        "apartment_studio" to vector("asset_house_studio", "ill_asset_house_studio"),
-        "bedsitter_rongai" to vector("asset_bedsitter", "ill_asset_house_studio"),
-        "apartment_1br" to vector("asset_house_apartment", "ill_asset_house_apartment"),
-        "apartment_kasarani" to vector("asset_apartment_kasarani", "ill_asset_house_apartment"),
-        "house_suburban" to vector("asset_house_suburban", "ill_asset_house_suburban"),
-        "house_thika" to vector("asset_house_thika", "ill_asset_house_suburban"),
-        "house_family" to vector("asset_house_family", "ill_asset_house_luxury"),
-        "house_karen" to vector("asset_house_karen", "ill_asset_house_luxury"),
+        "apartment_studio" to raster("asset_house_studio", "img_asset_house_studio"),
+        "bedsitter_rongai" to raster("asset_bedsitter", "img_asset_house_studio"),
+        "apartment_1br" to raster("asset_house_apartment", "img_asset_house_apartment"),
+        "apartment_kasarani" to raster("asset_apartment_kasarani", "img_asset_house_apartment"),
+        "house_suburban" to raster("asset_house_suburban", "img_asset_house_suburban"),
+        "house_thika" to raster("asset_house_thika", "img_asset_house_suburban"),
+        "house_family" to raster("asset_house_family", "img_asset_house_luxury"),
+        "house_karen" to raster("asset_house_karen", "img_asset_house_luxury"),
         // Country exclusives
-        "jp_tokyo_micro" to vector("asset_jp_micro", "ill_asset_house_studio"),
-        "gb_london_flat" to vector("asset_gb_flat", "ill_asset_house_apartment"),
-        "us_suburban_home" to vector("asset_us_suburban", "ill_asset_house_suburban"),
-        "fr_haussmann_flat" to vector("asset_fr_haussmann", "ill_asset_house_apartment"),
-        "de_altbau_wohnung" to vector("asset_de_altbau", "ill_asset_house_apartment"),
-        "br_cobertura" to vector("asset_br_cobertura", "ill_asset_house_condo"),
-        "mx_casa_colonia" to vector("asset_mx_casa", "ill_asset_house_suburban"),
-        "ca_condo_tower" to vector("asset_ca_condo", "ill_asset_house_condo"),
+        "jp_tokyo_micro" to raster("asset_jp_micro", "img_asset_house_studio"),
+        "gb_london_flat" to raster("asset_gb_flat", "img_asset_house_apartment"),
+        "us_suburban_home" to raster("asset_us_suburban", "img_asset_house_suburban"),
+        "fr_haussmann_flat" to raster("asset_fr_haussmann", "img_asset_house_apartment"),
+        "de_altbau_wohnung" to raster("asset_de_altbau", "img_asset_house_apartment"),
+        "br_cobertura" to raster("asset_br_cobertura", "img_asset_house_condo"),
+        "mx_casa_colonia" to raster("asset_mx_casa", "img_asset_house_suburban"),
+        "ca_condo_tower" to raster("asset_ca_condo", "img_asset_house_condo"),
         // Heirlooms
-        "heirloom_pocket_watch" to vector("asset_heirloom_watch", "ill_asset_heirloom_watch"),
-        "heirloom_rare_gemstone" to vector("asset_heirloom_gem", "ill_asset_heirloom_gem"),
-        "heirloom_ancient_manuscript" to vector("asset_heirloom_scroll", "ill_asset_heirloom_scroll"),
-        "heirloom_ivory_comb" to vector("asset_heirloom_comb", "ill_asset_heirloom_comb"),
-        "heirloom_gold_signet" to vector("asset_heirloom_ring", "ill_asset_heirloom_ring")
+        "heirloom_pocket_watch" to raster("asset_heirloom_watch", "img_asset_heirloom_watch"),
+        "heirloom_rare_gemstone" to raster("asset_heirloom_gem", "img_asset_heirloom_gem"),
+        "heirloom_ancient_manuscript" to raster("asset_heirloom_scroll", "img_asset_heirloom_scroll"),
+        "heirloom_ivory_comb" to raster("asset_heirloom_comb", "img_asset_heirloom_comb"),
+        "heirloom_gold_signet" to raster("asset_heirloom_ring", "img_asset_heirloom_ring")
     )
 
     private val achievementIllustrations: Map<AchievementCategory, IllustrationRef> = mapOf(
@@ -96,7 +102,7 @@ object IllustrationCatalog {
     )
 
     private val defaultJob = vector("job_default", "ill_job_service")
-    private val defaultAsset = vector("asset_default", "ill_asset_car")
+    private val defaultAsset = raster("asset_default", "img_asset_car_sedan")
     private val defaultAchievement = vector("achievement_default", "ill_achievement_career")
 
     fun getIllustrationForJob(jobId: String): IllustrationRef =
