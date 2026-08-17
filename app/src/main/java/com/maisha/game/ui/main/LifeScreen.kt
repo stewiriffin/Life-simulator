@@ -262,10 +262,14 @@ fun LifeScreen(
     }
 
     uiState.currentEvent?.let { event ->
+        val queueTotal = uiState.pendingEvents.size + 1
+        val queueIndex = queueTotal - uiState.pendingEvents.size
         EventDialog(
             event = event,
             character = character,
             expression = uiState.headerExpression,
+            eventQueueIndex = queueIndex,
+            eventQueueTotal = queueTotal,
             onChoiceSelected = onChoiceSelected
         )
     }

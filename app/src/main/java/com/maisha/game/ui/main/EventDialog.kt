@@ -14,6 +14,8 @@ fun EventDialog(
     event: LifeEvent,
     character: Character,
     expression: Expression = Expression.NEUTRAL,
+    eventQueueIndex: Int = 1,
+    eventQueueTotal: Int = 1,
     onChoiceSelected: (EventChoice) -> Unit
 ) {
     EventDialogStyled(
@@ -22,6 +24,8 @@ fun EventDialog(
         playerAvatarConfig = character.avatarConfig,
         playerAge = character.age,
         playerExpression = expression,
+        eventQueueIndex = eventQueueIndex,
+        eventQueueTotal = eventQueueTotal,
         onChoiceSelected = onChoiceSelected
     )
 }

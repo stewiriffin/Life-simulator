@@ -46,10 +46,10 @@ class CountryCatalogContentTest {
     }
 
     @Test
-    fun `Kenya asset catalog includes bedsitter`() {
+    fun `Kenya asset catalog includes bedsitter and boda naming on universal ids`() {
         val assets = AssetCatalog.getAssetsForCountry("KE")
         assertTrue(assets.any { it.name.contains("Bedsitter", ignoreCase = true) })
-        assertTrue(assets.any { it.id == "boda_basic" })
+        assertTrue(assets.any { it.id == "motorbike_used" && it.name.contains("Boda", ignoreCase = true) })
     }
 
     @Test

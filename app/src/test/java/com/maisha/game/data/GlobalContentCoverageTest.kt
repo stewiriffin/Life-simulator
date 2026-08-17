@@ -73,6 +73,15 @@ class GlobalContentCoverageTest {
     }
 
     @Test
+    fun `unknown country economy uses neutral baseline not Kenya multiplier`() {
+        val unknown = EconomyScaler.scaleAmount(1000, "ZZ")
+        val us = EconomyScaler.scaleAmount(1000, "US")
+        val ke = EconomyScaler.scaleAmount(1000, "KE")
+        assertEquals(us, unknown)
+        assertNotEquals(ke, unknown)
+    }
+
+    @Test
     fun `country catalog codes align with name pool and economy scaler keys`() {
         val rosterCodes = CountryCatalog.all().map { it.code }.toSet()
         assertTrue(rosterCodes.contains("KE"))

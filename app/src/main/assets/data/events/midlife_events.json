@@ -242,7 +242,7 @@
       "weight": 4,
       "tags": ["general"],
       "choices": [
-        { "label": "Book it finally", "statEffects": { "money": -35000, "happiness": 12 }, "resultText": "Passport stamped, photos taken. Worth every deferred shilling." },
+        { "label": "Book it finally", "statEffects": { "money": -35000, "happiness": 12 }, "resultText": "Passport stamped, photos taken. Worth every penny you saved." },
         { "label": "Save another year", "statEffects": { "happiness": -2, "money": 5000 }, "resultText": "The spreadsheet said wait. The calendar turned again." },
         { "label": "Let the dream go", "statEffects": { "happiness": -6 }, "resultText": "Some windows close. You made peace — mostly." }
       ]

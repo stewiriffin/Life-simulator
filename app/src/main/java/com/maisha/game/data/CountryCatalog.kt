@@ -17,21 +17,21 @@ import com.maisha.game.data.model.HolidayFlavor
 object CountryCatalog {
 
     private val countries: List<Country> = listOf(
-        Country("KE", "Kenya", "KES", "KSh"),
-        Country("NG", "Nigeria", "NGN", "₦"),
-        Country("ZA", "South Africa", "ZAR", "R"),
-        Country("EG", "Egypt", "EGP", "E£"),
-        Country("US", "United States", "USD", "$"),
+        Country("BR", "Brazil", "BRL", "R$"),
         Country("CA", "Canada", "CAD", "CA$"),
-        Country("GB", "United Kingdom", "GBP", "£"),
+        Country("EG", "Egypt", "EGP", "E£"),
         Country("FR", "France", "EUR", "€"),
         Country("DE", "Germany", "EUR", "€"),
         Country("IN", "India", "INR", "₹"),
-        Country("JP", "Japan", "JPY", "¥"),
-        Country("PH", "Philippines", "PHP", "₱"),
         Country("ID", "Indonesia", "IDR", "Rp"),
-        Country("BR", "Brazil", "BRL", "R$"),
-        Country("MX", "Mexico", "MXN", "MX$")
+        Country("JP", "Japan", "JPY", "¥"),
+        Country("KE", "Kenya", "KES", "KSh"),
+        Country("MX", "Mexico", "MXN", "MX$"),
+        Country("NG", "Nigeria", "NGN", "₦"),
+        Country("PH", "Philippines", "PHP", "₱"),
+        Country("ZA", "South Africa", "ZAR", "R"),
+        Country("GB", "United Kingdom", "GBP", "£"),
+        Country("US", "United States", "USD", "$")
     )
 
     private val flavors: Map<String, CountryFlavor> = listOf(

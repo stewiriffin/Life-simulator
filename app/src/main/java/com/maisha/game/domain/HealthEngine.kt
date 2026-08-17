@@ -277,11 +277,8 @@ class HealthEngine @Inject constructor() {
         return total
     }
 
-    fun yearlyLifestyleCost(lifestyle: LifestyleState): Int =
-        yearlyLifestyleCost(lifestyle, "KE")
-
-    private fun scaledLifestyleCost(baseKenya: Int, countryCode: String): Int =
-        com.maisha.game.data.EconomyScaler.scaleAmount(baseKenya, countryCode)
+    private fun scaledLifestyleCost(baseAmount: Int, countryCode: String): Int =
+        com.maisha.game.data.EconomyScaler.scaleAmount(baseAmount, countryCode)
 
     private fun applyLifestyleCosts(character: Character): Character {
         val lifestyle = character.lifestyle

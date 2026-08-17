@@ -313,6 +313,7 @@ class CareerEngineTest {
         val baseMoney = 10_000
         val deployed = TestFixtures.character(
             age = 22,
+            countryCode = "KE",
             stats = Stats(health = 80, happiness = 70, smarts = 50, looks = 50, money = baseMoney),
             career = CareerState(
                 currentJob = militaryJob,

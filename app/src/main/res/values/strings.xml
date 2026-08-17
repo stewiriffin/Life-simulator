@@ -694,11 +694,16 @@
 
     <!-- Event dialog -->
     <string name="event_dialog_subtitle">Life Event</string>
+    <string name="event_choose_prompt">What will you do?</string>
+    <string name="event_age_badge">Age %1$d</string>
+    <string name="event_queue_progress">Event %1$d of %2$d</string>
+    <string name="event_speaker_you">%1$s (You)</string>
     <string name="event_category_education">Education</string>
     <string name="event_category_career">Career</string>
     <string name="event_category_finance">Finance</string>
     <string name="event_category_relationships">Relationships</string>
     <string name="event_category_family">Family</string>
+    <string name="event_category_crime">Crime</string>
     <string name="event_category_life">Life</string>
 
     <!-- Achievements -->

@@ -227,6 +227,12 @@ object AssetCatalog {
     )
 
     private val housingNameOverrides: Map<String, Map<String, String>> = mapOf(
+        "KE" to mapOf(
+            "apartment_studio" to "Bedsitter",
+            "apartment_1br" to "1BR Apartment",
+            "house_suburban" to "Maisonette",
+            "house_family" to "Family Home"
+        ),
         "NG" to mapOf("apartment_studio" to "Self-Contain"),
         "PH" to mapOf("apartment_studio" to "Bedspace"),
         "IN" to mapOf("apartment_studio" to "PG Room"),
@@ -240,6 +246,17 @@ object AssetCatalog {
         "EG" to mapOf("apartment_studio" to "Studio Flat — Cairo"),
         "ID" to mapOf("apartment_studio" to "Kost Room"),
         "ZA" to mapOf("apartment_studio" to "Bachelor Flat")
+    )
+
+    private val vehicleNameOverrides: Map<String, Map<String, String>> = mapOf(
+        "KE" to mapOf(
+            "motorbike_used" to "Used Boda Boda",
+            "motorbike_new" to "Honda Boxer 150",
+            "car_used_compact" to "Used Toyota Vitz",
+            "car_used_mid" to "Used Toyota Probox",
+            "car_sedan_used" to "Used Toyota Axio",
+            "car_new" to "New Toyota Corolla"
+        )
     )
 
     /** Exclusive listings only offered in that country (prices still EconomyScaler-scaled at purchase). */
@@ -332,11 +349,10 @@ object AssetCatalog {
         getPurchasableAssetsForCountry(countryCode)
 
     fun getPurchasableAssetsForCountry(countryCode: String): List<CatalogAsset> {
-        val base = if (countryCode == "KE") kenyaAssets else {
-            val overrides = housingNameOverrides[countryCode] ?: emptyMap()
-            universalAssets.map { asset ->
-                overrides[asset.id]?.let { localizedName -> asset.copy(name = localizedName) } ?: asset
-            }
+        val nameOverrides = (housingNameOverrides[countryCode].orEmpty() +
+            vehicleNameOverrides[countryCode].orEmpty())
+        val base = universalAssets.map { asset ->
+            nameOverrides[asset.id]?.let { localizedName -> asset.copy(name = localizedName) } ?: asset
         }
         val exclusive = countryExclusiveAssets[countryCode].orEmpty()
         return (base + exclusive).filter { it.isPurchasable }
@@ -348,8 +364,8 @@ object AssetCatalog {
     fun getHeirloomAssets(): List<CatalogAsset> = heirloomAssets
 
     fun hasCountryFlavorAssets(countryCode: String): Boolean =
-        countryCode == "KE" ||
-            countryCode in housingNameOverrides ||
+        countryCode in housingNameOverrides ||
+            countryCode in vehicleNameOverrides ||
             countryCode in countryExclusiveAssets
 
     fun findById(catalogId: String): CatalogAsset? = items.find { it.id == catalogId }

@@ -31,7 +31,7 @@ object TestFixtures {
         stats: Stats = Stats(),
         birthYear: Int = 2000,
         alive: Boolean = true,
-        countryCode: String = "KE",
+        countryCode: String = "US",
         family: List<Person> = emptyList(),
         education: EducationState = EducationState(),
         career: CareerState = CareerState(),
@@ -90,7 +90,7 @@ object TestFixtures {
         relationshipLevel: Int = 60,
         interactedThisYear: Boolean = false,
         gender: Gender = Gender.FEMALE,
-        countryCode: String = "KE",
+        countryCode: String = "US",
         isMarried: Boolean = false
     ): Person = Person(
         id = id,
@@ -163,7 +163,7 @@ object TestFixtures {
         relationship: Int,
         relation: RelationType = RelationType.CHILD,
         gender: Gender = Gender.MALE,
-        countryCode: String = "KE",
+        countryCode: String = "US",
         avatarConfig: com.maisha.game.data.model.AvatarConfig = com.maisha.game.data.model.AvatarConfig.DEFAULT
     ): Person = Person(
         id = id,

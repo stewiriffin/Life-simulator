@@ -350,6 +350,30 @@
       ]
     },
     {
+      "id": "motorbike_engine_seized",
+      "minAge": 18,
+      "maxAge": 50,
+      "text": "Your motorbike's engine seizes mid-ride with a loud clunk. You push it to the nearest mechanic in the heat.",
+      "weight": 5,
+      "tags": ["finance"],
+      "choices": [
+        {
+          "label": "Pay for a full engine rebuild",
+          "statEffects": { "money": -18000, "happiness": -2 },
+          "conditionEffect": 22,
+          "targetAssetType": "MOTORBIKE",
+          "resultText": "The mechanic works miracles. The bike roars back to life."
+        },
+        {
+          "label": "Walk away and leave it",
+          "statEffects": { "happiness": -15 },
+          "forceConditionValue": 0,
+          "targetAssetType": "MOTORBIKE",
+          "resultText": "Rust takes over. The bike never runs again."
+        }
+      ]
+    },
+    {
       "id": "heirloom_attic_discovery",
       "minAge": 25,
       "maxAge": 80,
