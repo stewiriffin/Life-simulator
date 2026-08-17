@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Suburban home — pitched roof -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="48dp"
+    android:height="48dp"
+    android:viewportWidth="48"
+    android:viewportHeight="48">
+    <path android:fillColor="#1A8A8A" android:pathData="M24,6 L42,22 L42,40 L6,40 L6,22 Z" />
+    <path android:fillColor="#152238" android:pathData="M24,6 L6,22 L10,22 L24,10 L38,22 L42,22 Z" />
+    <path android:fillColor="#F4B942" android:pathData="M20,26 L28,26 L28,40 L20,40 Z" />
+    <path android:fillColor="#152238" android:pathData="M8,36 L16,36 L16,40 L8,40 Z" />
+</vector>

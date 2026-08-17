@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- New luxury car — sleek profile + accent stripe -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="48dp"
+    android:height="48dp"
+    android:viewportWidth="48"
+    android:viewportHeight="48">
+    <path android:fillColor="#1A8A8A" android:pathData="M4,32 L44,32 L40,26 L36,16 L12,16 L8,26 Z" />
+    <path android:fillColor="#152238" android:pathData="M14,18 L34,18 L32,16 L16,16 Z" />
+    <path android:fillColor="#F4B942" android:pathData="M8,28 L40,28 L40,26 L8,26 Z" />
+    <path android:fillColor="#F4B942" android:pathData="M10,32 m-5,0 a5,5 0 1,1 10,0 a5,5 0 1,1 -10,0" />
+    <path android:fillColor="#F4B942" android:pathData="M38,32 m-5,0 a5,5 0 1,1 10,0 a5,5 0 1,1 -10,0" />
+</vector>

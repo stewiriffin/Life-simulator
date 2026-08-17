@@ -1,13 +1,14 @@
-// app/src/main/java/com/maisha/game/data/IllustrationCatalog.kt (new)
+// app/src/main/java/com/maisha/game/data/IllustrationCatalog.kt (modified — per-catalog asset icons)
 package com.maisha.game.data
 
 import com.maisha.game.data.model.AchievementCategory
+import com.maisha.game.data.model.Asset
 import com.maisha.game.data.model.AssetType
 import com.maisha.game.data.model.IllustrationRef
 import com.maisha.game.data.model.ResourceType
 
 /**
- * Maps game entities to illustration resources. Placeholder drawables in res/drawable/ill_* —
+ * Maps game entities to illustration resources. Vector drawables in res/drawable/ill_* —
  * replace resourceName only when importing final art.
  */
 object IllustrationCatalog {
@@ -41,7 +42,47 @@ object IllustrationCatalog {
         AssetType.HOUSE to vector("asset_house", "ill_asset_house"),
         AssetType.CAR to vector("asset_car", "ill_asset_car"),
         AssetType.MOTORBIKE to vector("asset_motorbike", "ill_asset_motorbike"),
-        AssetType.HEIRLOOM to vector("asset_house", "ill_asset_house")
+        AssetType.HEIRLOOM to vector("asset_heirloom", "ill_asset_heirloom_ring")
+    )
+
+    /** Per [AssetCatalog] id — swap drawable files without touching call sites. */
+    private val catalogAssetIllustrations: Map<String, IllustrationRef> = mapOf(
+        // Motorbikes
+        "motorbike_used" to vector("asset_motorbike_used", "ill_asset_motorbike_used"),
+        "boda_basic" to vector("asset_boda_basic", "ill_asset_motorbike_used"),
+        "motorbike_new" to vector("asset_motorbike_new", "ill_asset_motorbike_new"),
+        "boda_new" to vector("asset_boda_new", "ill_asset_motorbike_new"),
+        // Cars
+        "car_used_compact" to vector("asset_car_compact", "ill_asset_car_compact"),
+        "car_vitz" to vector("asset_car_vitz", "ill_asset_car_compact"),
+        "car_used_mid" to vector("asset_car_mid", "ill_asset_car_mid"),
+        "car_probox" to vector("asset_car_probox", "ill_asset_car_mid"),
+        "car_sedan_used" to vector("asset_car_sedan", "ill_asset_car_sedan"),
+        "car_new" to vector("asset_car_new", "ill_asset_car_new"),
+        // Houses — universal + Kenya
+        "apartment_studio" to vector("asset_house_studio", "ill_asset_house_studio"),
+        "bedsitter_rongai" to vector("asset_bedsitter", "ill_asset_house_studio"),
+        "apartment_1br" to vector("asset_house_apartment", "ill_asset_house_apartment"),
+        "apartment_kasarani" to vector("asset_apartment_kasarani", "ill_asset_house_apartment"),
+        "house_suburban" to vector("asset_house_suburban", "ill_asset_house_suburban"),
+        "house_thika" to vector("asset_house_thika", "ill_asset_house_suburban"),
+        "house_family" to vector("asset_house_family", "ill_asset_house_luxury"),
+        "house_karen" to vector("asset_house_karen", "ill_asset_house_luxury"),
+        // Country exclusives
+        "jp_tokyo_micro" to vector("asset_jp_micro", "ill_asset_house_studio"),
+        "gb_london_flat" to vector("asset_gb_flat", "ill_asset_house_apartment"),
+        "us_suburban_home" to vector("asset_us_suburban", "ill_asset_house_suburban"),
+        "fr_haussmann_flat" to vector("asset_fr_haussmann", "ill_asset_house_apartment"),
+        "de_altbau_wohnung" to vector("asset_de_altbau", "ill_asset_house_apartment"),
+        "br_cobertura" to vector("asset_br_cobertura", "ill_asset_house_condo"),
+        "mx_casa_colonia" to vector("asset_mx_casa", "ill_asset_house_suburban"),
+        "ca_condo_tower" to vector("asset_ca_condo", "ill_asset_house_condo"),
+        // Heirlooms
+        "heirloom_pocket_watch" to vector("asset_heirloom_watch", "ill_asset_heirloom_watch"),
+        "heirloom_rare_gemstone" to vector("asset_heirloom_gem", "ill_asset_heirloom_gem"),
+        "heirloom_ancient_manuscript" to vector("asset_heirloom_scroll", "ill_asset_heirloom_scroll"),
+        "heirloom_ivory_comb" to vector("asset_heirloom_comb", "ill_asset_heirloom_comb"),
+        "heirloom_gold_signet" to vector("asset_heirloom_ring", "ill_asset_heirloom_ring")
     )
 
     private val achievementIllustrations: Map<AchievementCategory, IllustrationRef> = mapOf(
@@ -64,9 +105,17 @@ object IllustrationCatalog {
     fun getIllustrationForAsset(assetType: AssetType): IllustrationRef =
         assetTypeIllustrations[assetType] ?: defaultAsset
 
-    fun getIllustrationForCatalogAsset(catalogId: String): IllustrationRef {
-        val catalog = AssetCatalog.findById(catalogId)
-        return if (catalog != null) getIllustrationForAsset(catalog.type) else defaultAsset
+    fun getIllustrationForCatalogAsset(catalogId: String): IllustrationRef =
+        catalogAssetIllustrations[catalogId]
+            ?: AssetCatalog.findById(catalogId)?.type?.let(::getIllustrationForAsset)
+            ?: defaultAsset
+
+    fun getIllustrationForOwnedAsset(asset: Asset): IllustrationRef {
+        asset.catalogId?.let { return getIllustrationForCatalogAsset(it) }
+        AssetCatalog.items.find { catalog ->
+            catalog.type == asset.type && catalog.name == asset.name
+        }?.let { return getIllustrationForCatalogAsset(it.id) }
+        return getIllustrationForAsset(asset.type)
     }
 
     fun getIllustrationForAchievementCategory(category: AchievementCategory): IllustrationRef =
@@ -77,5 +126,5 @@ object IllustrationCatalog {
         JobPool.jobs.map { job -> job.id to getIllustrationForJob(job.id) }
 
     fun allCatalogAssetIllustrations(): List<Pair<String, IllustrationRef>> =
-        AssetCatalog.items.map { item -> item.id to getIllustrationForAsset(item.type) }
+        AssetCatalog.items.map { item -> item.id to getIllustrationForCatalogAsset(item.id) }
 }

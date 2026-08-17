@@ -60,6 +60,7 @@ class FinanceEngine @Inject constructor() {
 
         val asset = Asset(
             id = UUID.randomUUID().toString(),
+            catalogId = catalogItem.id,
             type = catalogItem.type,
             name = catalogItem.name,
             purchasePrice = purchasePrice,
@@ -226,6 +227,7 @@ class FinanceEngine @Inject constructor() {
         val baseValue = EconomyScaler.scaleAmount(catalogItem.purchasePrice, character.countryCode)
         val heirloom = Asset(
             id = UUID.randomUUID().toString(),
+            catalogId = catalogItem.id,
             type = AssetType.HEIRLOOM,
             name = catalogItem.name,
             purchasePrice = baseValue,

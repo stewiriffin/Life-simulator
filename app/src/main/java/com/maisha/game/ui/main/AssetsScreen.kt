@@ -1024,7 +1024,7 @@ private fun OwnedAssetCard(
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 IllustrationImage(
-                    ref = IllustrationCatalog.getIllustrationForAsset(asset.type),
+                    ref = IllustrationCatalog.getIllustrationForOwnedAsset(asset),
                     size = 52.dp,
                     contentDescription = asset.name
                 )
@@ -1234,7 +1234,7 @@ private fun ShopAssetCard(
             verticalAlignment = Alignment.CenterVertically
         ) {
             IllustrationImage(
-                ref = IllustrationCatalog.getIllustrationForAsset(item.type),
+                ref = IllustrationCatalog.getIllustrationForCatalogAsset(item.id),
                 size = 52.dp,
                 contentDescription = item.name
             )

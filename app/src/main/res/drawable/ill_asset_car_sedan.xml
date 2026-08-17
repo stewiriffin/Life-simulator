@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Sedan with trunk -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="48dp"
+    android:height="48dp"
+    android:viewportWidth="48"
+    android:viewportHeight="48">
+    <path android:fillColor="#1A8A8A" android:pathData="M6,32 L42,32 L38,24 L34,18 L14,18 L10,24 Z" />
+    <path android:fillColor="#152238" android:pathData="M16,20 L32,20 L30,18 L18,18 Z" />
+    <path android:fillColor="#F4B942" android:pathData="M12,32 m-4,0 a4,4 0 1,1 8,0 a4,4 0 1,1 -8,0" />
+    <path android:fillColor="#F4B942" android:pathData="M36,32 m-4,0 a4,4 0 1,1 8,0 a4,4 0 1,1 -8,0" />
+</vector>

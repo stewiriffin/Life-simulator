@@ -20,6 +20,8 @@ enum class AssetType {
 @Serializable
 data class Asset(
     val id: String,
+    /** [com.maisha.game.data.AssetCatalog] id when bought or granted; used for per-item art. */
+    val catalogId: String? = null,
     val type: AssetType,
     val name: String,
     val purchasePrice: Int,

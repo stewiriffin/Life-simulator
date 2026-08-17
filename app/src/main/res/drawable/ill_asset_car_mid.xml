@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Mid-size van / probox -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="48dp"
+    android:height="48dp"
+    android:viewportWidth="48"
+    android:viewportHeight="48">
+    <path android:fillColor="#1A8A8A" android:pathData="M6,32 L42,32 L40,18 L8,18 Z" />
+    <path android:fillColor="#152238" android:pathData="M12,20 L36,20 L36,18 L12,18 Z" />
+    <path android:fillColor="#152238" android:pathData="M14,22 L18,22 L18,30 L14,30 Z" />
+    <path android:fillColor="#152238" android:pathData="M30,22 L34,22 L34,30 L30,30 Z" />
+    <path android:fillColor="#F4B942" android:pathData="M12,32 m-4,0 a4,4 0 1,1 8,0 a4,4 0 1,1 -8,0" />
+    <path android:fillColor="#F4B942" android:pathData="M36,32 m-4,0 a4,4 0 1,1 8,0 a4,4 0 1,1 -8,0" />
+</vector>
