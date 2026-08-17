@@ -19,6 +19,16 @@ enum class StudyEffort {
     HARD
 }
 
+/** Secondary-school extracurricular — one active club while enrolled. */
+@Serializable
+enum class SchoolClub {
+    DEBATE,
+    FOOTBALL,
+    DRAMA,
+    CODING,
+    MUSIC
+}
+
 @Serializable
 enum class ExamType {
     KCPE,
@@ -54,5 +64,7 @@ data class EducationState(
     val kcpePassed: Boolean? = null,
     val kcseGrade: String? = null,
     /** Applied on the next grade advance during Age Up. */
-    val plannedStudyEffort: StudyEffort = StudyEffort.NORMAL
+    val plannedStudyEffort: StudyEffort = StudyEffort.NORMAL,
+    /** Active extracurricular while in upper primary or secondary. */
+    val schoolClub: SchoolClub? = null
 )

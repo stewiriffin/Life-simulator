@@ -179,7 +179,8 @@ fun LifeSummaryScreen(
                 MemorialHeader(
                     character = character,
                     deathCauseLabel = uiState.deathCauseLabel,
-                    deathFlavorText = uiState.deathFlavorText
+                    deathFlavorText = uiState.deathFlavorText,
+                    lifeArchetypeLabel = uiState.lifeArchetypeLabel
                 )
             }
 
@@ -505,7 +506,8 @@ private fun SharePreviewDialog(
 private fun MemorialHeader(
     character: Character,
     deathCauseLabel: String,
-    deathFlavorText: String
+    deathFlavorText: String,
+    lifeArchetypeLabel: String = ""
 ) {
     val deathYear = character.birthYear + character.age
     val stage = ageStageFor(character.age)
@@ -596,6 +598,16 @@ private fun MemorialHeader(
                             color = MaterialTheme.colorScheme.onPrimary.copy(alpha = 0.8f),
                             textAlign = TextAlign.Center,
                             modifier = Modifier.padding(top = 4.dp)
+                        )
+                    }
+                    if (lifeArchetypeLabel.isNotBlank()) {
+                        Text(
+                            text = lifeArchetypeLabel,
+                            style = MaterialTheme.typography.labelLarge,
+                            color = GoldAccent,
+                            fontWeight = FontWeight.SemiBold,
+                            textAlign = TextAlign.Center,
+                            modifier = Modifier.padding(top = 8.dp)
                         )
                     }
                 }

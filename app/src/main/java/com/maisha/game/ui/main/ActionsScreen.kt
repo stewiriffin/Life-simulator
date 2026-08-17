@@ -46,6 +46,7 @@ import com.maisha.game.data.model.HealthCondition
 import com.maisha.game.data.model.HustleType
 import com.maisha.game.data.model.LifestyleOption
 import com.maisha.game.data.model.PetSpecies
+import com.maisha.game.data.model.PrisonActivity
 import com.maisha.game.data.model.SchoolStage
 import com.maisha.game.data.model.SkillType
 import com.maisha.game.data.local.OnboardingTips
@@ -141,6 +142,7 @@ fun ActionsScreen(
     donationTiers: List<Int>,
     onPerformLeisure: (LeisureActivity) -> Unit,
     onPerformStudySession: () -> Unit = {},
+    onPerformPrisonActivity: (PrisonActivity) -> Unit = {},
     onActionMessageDismissed: () -> Unit,
     onDismissLeisureTip: () -> Unit = {},
     modifier: Modifier = Modifier
@@ -225,11 +227,12 @@ fun ActionsScreen(
     )
     val crimeStatus = CrimeStatusMapper.map(character.criminalRecord)
 
+    val showPrisonActions = incarcerated && character.alive
     val hasCare = untreated.isNotEmpty() || showLifestyleActions || showLeisureActions || showStudySession
     val hasEarn = showSideHustleActions || showSocialMediaActions || showSkillActions
     val hasGrow = showSkillActions || showBucketList || showAdoptPetActions || showSocialMediaActions || showStudySession
     val hasLive = showDrivingTest || showPhilanthropy || showImmigrationOffice || showLeisureActions
-    val hasRisk = showCrimeActions || incarcerated || awaitingTrial
+    val hasRisk = showCrimeActions || incarcerated || awaitingTrial || showPrisonActions
     val hasContent = hasCare || hasEarn || hasGrow || hasLive || hasRisk
     val leisureActivities = remember(character.age, character.criminalRecord) {
         leisureEngine.activitiesFor(character)
@@ -251,6 +254,7 @@ fun ActionsScreen(
 
     val defaultCategory = when {
         untreated.isNotEmpty() -> ActionCategory.CARE
+        incarcerated -> ActionCategory.RISK
         character.age < 18 -> ActionCategory.LIVE
         else -> ActionCategory.ALL
     }
@@ -344,6 +348,19 @@ fun ActionsScreen(
                 if (show(ActionCategory.RISK) && crimeStatus.kind != CrimeStatusKind.CLEAR) {
                     item {
                         CrimeStatusCard(statusKind = crimeStatus.kind, yearsRemaining = crimeStatus.yearsRemaining)
+                    }
+                }
+
+                if (show(ActionCategory.RISK) && showPrisonActions) {
+                    item { SectionHeader(title = stringResource(R.string.section_prison)) }
+                    items(PrisonActivity.entries.toList(), key = { it.name }) { activity ->
+                        ActionCard(
+                            icon = AppIcons.Health,
+                            title = prisonActivityTitle(activity),
+                            description = prisonActivityDescription(activity),
+                            accent = ActionCardAccent.CARE,
+                            onClick = { onPerformPrisonActivity(activity) }
+                        )
                     }
                 }
 
@@ -1447,6 +1464,22 @@ private fun adoptPetDescription(species: PetSpecies): String = when (species) {
     PetSpecies.BIRD -> stringResource(R.string.pet_adopt_bird_desc)
     PetSpecies.FISH -> stringResource(R.string.pet_adopt_fish_desc)
     PetSpecies.EXOTIC -> stringResource(R.string.pet_adopt_exotic_desc)
+}
+
+@Composable
+private fun prisonActivityTitle(activity: PrisonActivity): String = when (activity) {
+    PrisonActivity.WORK_DETAIL -> stringResource(R.string.prison_work_title)
+    PrisonActivity.LIBRARY -> stringResource(R.string.prison_library_title)
+    PrisonActivity.EXERCISE -> stringResource(R.string.prison_exercise_title)
+    PrisonActivity.GOOD_BEHAVIOR -> stringResource(R.string.prison_good_behavior_title)
+}
+
+@Composable
+private fun prisonActivityDescription(activity: PrisonActivity): String = when (activity) {
+    PrisonActivity.WORK_DETAIL -> stringResource(R.string.prison_work_desc)
+    PrisonActivity.LIBRARY -> stringResource(R.string.prison_library_desc)
+    PrisonActivity.EXERCISE -> stringResource(R.string.prison_exercise_desc)
+    PrisonActivity.GOOD_BEHAVIOR -> stringResource(R.string.prison_good_behavior_desc)
 }
 
 @Composable

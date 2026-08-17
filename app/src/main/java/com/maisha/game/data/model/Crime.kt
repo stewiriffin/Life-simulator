@@ -45,3 +45,12 @@ enum class LawyerTier {
     AVERAGE,
     EXPENSIVE
 }
+
+/** Voluntary activities while [CriminalRecord.currentlyIncarcerated]. */
+@Serializable
+enum class PrisonActivity {
+    WORK_DETAIL,
+    LIBRARY,
+    EXERCISE,
+    GOOD_BEHAVIOR
+}

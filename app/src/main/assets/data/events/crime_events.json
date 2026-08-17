@@ -4,13 +4,38 @@
       "id": "prison_gang_recruitment",
       "minAge": 16,
       "maxAge": 70,
-      "text": "A hardened inmate approaches you in the yard and asks whether you want protection — at a price.",
+      "text": "A hardened inmate approaches you in the yard and asks whether you want protection \u2014 at a price.",
       "weight": 5,
-      "tags": ["prison", "requires_incarcerated"],
+      "tags": [
+        "prison",
+        "requires_incarcerated"
+      ],
       "choices": [
-        { "label": "Join the group", "statEffects": { "happiness": -4, "health": -3 }, "paroleEffect": -2, "resultText": "You gained protection but made enemies of rivals." },
-        { "label": "Politely refuse", "statEffects": { "happiness": -2 }, "paroleEffect": 1, "resultText": "They backed off — for now." },
-        { "label": "Report it to a guard", "statEffects": { "happiness": 1 }, "paroleEffect": 2, "resultText": "The warden noted your cooperation." }
+        {
+          "label": "Join the group",
+          "statEffects": {
+            "happiness": -4,
+            "health": -3
+          },
+          "paroleEffect": -2,
+          "resultText": "You gained protection but made enemies of rivals."
+        },
+        {
+          "label": "Politely refuse",
+          "statEffects": {
+            "happiness": -2
+          },
+          "paroleEffect": 1,
+          "resultText": "They backed off \u2014 for now."
+        },
+        {
+          "label": "Report it to a guard",
+          "statEffects": {
+            "happiness": 1
+          },
+          "paroleEffect": 2,
+          "resultText": "The warden noted your cooperation."
+        }
       ]
     },
     {
@@ -19,11 +44,36 @@
       "maxAge": 70,
       "text": "Guards announce a surprise cell search. You notice something questionable tucked under a bunk nearby.",
       "weight": 5,
-      "tags": ["prison", "requires_incarcerated"],
+      "tags": [
+        "prison",
+        "requires_incarcerated"
+      ],
       "choices": [
-        { "label": "Stay silent", "statEffects": { "happiness": -3 }, "paroleEffect": -1, "resultText": "The search passed without incident — this time." },
-        { "label": "Speak up honestly", "statEffects": { "happiness": 2 }, "paroleEffect": 2, "resultText": "The guards thanked you for cooperating." },
-        { "label": "Hide contraband for a cellmate", "statEffects": { "happiness": -6, "health": -2 }, "paroleEffect": -3, "resultText": "You were caught holding the goods." }
+        {
+          "label": "Stay silent",
+          "statEffects": {
+            "happiness": -3
+          },
+          "paroleEffect": -1,
+          "resultText": "The search passed without incident \u2014 this time."
+        },
+        {
+          "label": "Speak up honestly",
+          "statEffects": {
+            "happiness": 2
+          },
+          "paroleEffect": 2,
+          "resultText": "The guards thanked you for cooperating."
+        },
+        {
+          "label": "Hide contraband for a cellmate",
+          "statEffects": {
+            "happiness": -6,
+            "health": -2
+          },
+          "paroleEffect": -3,
+          "resultText": "You were caught holding the goods."
+        }
       ]
     },
     {
@@ -32,10 +82,27 @@
       "maxAge": 70,
       "text": "The prison librarian offers you a quiet shift sorting books and tutoring inmates who want to read.",
       "weight": 4,
-      "tags": ["prison", "requires_incarcerated"],
+      "tags": [
+        "prison",
+        "requires_incarcerated"
+      ],
       "choices": [
-        { "label": "Volunteer for library duty", "statEffects": { "happiness": 5, "smarts": 2 }, "paroleEffect": 3, "resultText": "The warden noted your good behavior." },
-        { "label": "Decline and rest", "statEffects": { "happiness": 1 }, "resultText": "You spent the afternoon on your bunk." }
+        {
+          "label": "Volunteer for library duty",
+          "statEffects": {
+            "happiness": 5,
+            "smarts": 2
+          },
+          "paroleEffect": 3,
+          "resultText": "The warden noted your good behavior."
+        },
+        {
+          "label": "Decline and rest",
+          "statEffects": {
+            "happiness": 1
+          },
+          "resultText": "You spent the afternoon on your bunk."
+        }
       ]
     },
     {
@@ -44,11 +111,36 @@
       "maxAge": 70,
       "text": "Tension boils over in the yard and someone shoves you during an argument over food rations.",
       "weight": 4,
-      "tags": ["prison", "requires_incarcerated"],
+      "tags": [
+        "prison",
+        "requires_incarcerated"
+      ],
       "choices": [
-        { "label": "Walk away", "statEffects": { "happiness": -2 }, "paroleEffect": 2, "resultText": "You kept your record clean." },
-        { "label": "Fight back", "statEffects": { "happiness": -5, "health": -8 }, "paroleEffect": -3, "resultText": "Both of you landed in solitary." },
-        { "label": "Call for a guard", "statEffects": { "happiness": -1 }, "paroleEffect": 1, "resultText": "Order was restored quickly." }
+        {
+          "label": "Walk away",
+          "statEffects": {
+            "happiness": -2
+          },
+          "paroleEffect": 2,
+          "resultText": "You kept your record clean."
+        },
+        {
+          "label": "Fight back",
+          "statEffects": {
+            "happiness": -5,
+            "health": -8
+          },
+          "paroleEffect": -3,
+          "resultText": "Both of you landed in solitary."
+        },
+        {
+          "label": "Call for a guard",
+          "statEffects": {
+            "happiness": -1
+          },
+          "paroleEffect": 1,
+          "resultText": "Order was restored quickly."
+        }
       ]
     },
     {
@@ -57,10 +149,257 @@
       "maxAge": 80,
       "text": "A family member travels a long distance to visit you through the glass partition.",
       "weight": 3,
-      "tags": ["prison", "requires_incarcerated"],
+      "tags": [
+        "prison",
+        "requires_incarcerated"
+      ],
       "choices": [
-        { "label": "Promise to do better", "statEffects": { "happiness": 8 }, "paroleEffect": 2, "resultText": "Their eyes welled up with hope." },
-        { "label": "Stay guarded and quiet", "statEffects": { "happiness": 2 }, "resultText": "The visit was awkward but meaningful." }
+        {
+          "label": "Promise to do better",
+          "statEffects": {
+            "happiness": 8
+          },
+          "paroleEffect": 2,
+          "resultText": "Their eyes welled up with hope."
+        },
+        {
+          "label": "Stay guarded and quiet",
+          "statEffects": {
+            "happiness": 2
+          },
+          "resultText": "The visit was awkward but meaningful."
+        }
+      ]
+    },
+    {
+      "id": "prison_letter_home",
+      "minAge": 16,
+      "maxAge": 80,
+      "text": "You write a long letter home from prison.",
+      "weight": 4,
+      "tags": [
+        "prison",
+        "requires_incarcerated"
+      ],
+      "choices": [
+        {
+          "label": "Send it",
+          "statEffects": {
+            "happiness": 4
+          },
+          "paroleEffect": 1,
+          "resultText": "It helped you feel connected."
+        },
+        {
+          "label": "Tear it up",
+          "statEffects": {
+            "happiness": -3
+          },
+          "resultText": "Some feelings are hard to share."
+        }
+      ]
+    },
+    {
+      "id": "prison_routine_2",
+      "minAge": 16,
+      "maxAge": 80,
+      "text": "Prison routine event #2.",
+      "weight": 3,
+      "tags": [
+        "prison",
+        "requires_incarcerated"
+      ],
+      "choices": [
+        {
+          "label": "Keep calm",
+          "statEffects": {
+            "happiness": -1
+          },
+          "paroleEffect": 1,
+          "resultText": "Another day survived."
+        },
+        {
+          "label": "Lash out",
+          "statEffects": {
+            "happiness": -6
+          },
+          "paroleEffect": -1,
+          "resultText": "Solitary reflection followed."
+        }
+      ]
+    },
+    {
+      "id": "prison_routine_3",
+      "minAge": 16,
+      "maxAge": 80,
+      "text": "Prison routine event #3.",
+      "weight": 3,
+      "tags": [
+        "prison",
+        "requires_incarcerated"
+      ],
+      "choices": [
+        {
+          "label": "Keep calm",
+          "statEffects": {
+            "happiness": -1
+          },
+          "paroleEffect": 1,
+          "resultText": "Another day survived."
+        },
+        {
+          "label": "Lash out",
+          "statEffects": {
+            "happiness": -6
+          },
+          "paroleEffect": -1,
+          "resultText": "Solitary reflection followed."
+        }
+      ]
+    },
+    {
+      "id": "prison_routine_4",
+      "minAge": 16,
+      "maxAge": 80,
+      "text": "Prison routine event #4.",
+      "weight": 3,
+      "tags": [
+        "prison",
+        "requires_incarcerated"
+      ],
+      "choices": [
+        {
+          "label": "Keep calm",
+          "statEffects": {
+            "happiness": -1
+          },
+          "paroleEffect": 1,
+          "resultText": "Another day survived."
+        },
+        {
+          "label": "Lash out",
+          "statEffects": {
+            "happiness": -6
+          },
+          "paroleEffect": -1,
+          "resultText": "Solitary reflection followed."
+        }
+      ]
+    },
+    {
+      "id": "prison_routine_5",
+      "minAge": 16,
+      "maxAge": 80,
+      "text": "Prison routine event #5.",
+      "weight": 3,
+      "tags": [
+        "prison",
+        "requires_incarcerated"
+      ],
+      "choices": [
+        {
+          "label": "Keep calm",
+          "statEffects": {
+            "happiness": -1
+          },
+          "paroleEffect": 1,
+          "resultText": "Another day survived."
+        },
+        {
+          "label": "Lash out",
+          "statEffects": {
+            "happiness": -6
+          },
+          "paroleEffect": -1,
+          "resultText": "Solitary reflection followed."
+        }
+      ]
+    },
+    {
+      "id": "prison_routine_6",
+      "minAge": 16,
+      "maxAge": 80,
+      "text": "Prison routine event #6.",
+      "weight": 3,
+      "tags": [
+        "prison",
+        "requires_incarcerated"
+      ],
+      "choices": [
+        {
+          "label": "Keep calm",
+          "statEffects": {
+            "happiness": -1
+          },
+          "paroleEffect": 1,
+          "resultText": "Another day survived."
+        },
+        {
+          "label": "Lash out",
+          "statEffects": {
+            "happiness": -6
+          },
+          "paroleEffect": -1,
+          "resultText": "Solitary reflection followed."
+        }
+      ]
+    },
+    {
+      "id": "prison_routine_7",
+      "minAge": 16,
+      "maxAge": 80,
+      "text": "Prison routine event #7.",
+      "weight": 3,
+      "tags": [
+        "prison",
+        "requires_incarcerated"
+      ],
+      "choices": [
+        {
+          "label": "Keep calm",
+          "statEffects": {
+            "happiness": -1
+          },
+          "paroleEffect": 1,
+          "resultText": "Another day survived."
+        },
+        {
+          "label": "Lash out",
+          "statEffects": {
+            "happiness": -6
+          },
+          "paroleEffect": -1,
+          "resultText": "Solitary reflection followed."
+        }
+      ]
+    },
+    {
+      "id": "prison_routine_8",
+      "minAge": 16,
+      "maxAge": 80,
+      "text": "Prison routine event #8.",
+      "weight": 3,
+      "tags": [
+        "prison",
+        "requires_incarcerated"
+      ],
+      "choices": [
+        {
+          "label": "Keep calm",
+          "statEffects": {
+            "happiness": -1
+          },
+          "paroleEffect": 1,
+          "resultText": "Another day survived."
+        },
+        {
+          "label": "Lash out",
+          "statEffects": {
+            "happiness": -6
+          },
+          "paroleEffect": -1,
+          "resultText": "Solitary reflection followed."
+        }
       ]
     }
   ]

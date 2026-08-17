@@ -1,11 +1,14 @@
 // app/src/main/java/com/maisha/game/domain/CrimeEngine.kt
 package com.maisha.game.domain
 
+import com.maisha.game.data.EconomyScaler
 import com.maisha.game.data.model.Character
 import com.maisha.game.data.model.CrimeType
 import com.maisha.game.data.model.CriminalRecord
 import com.maisha.game.data.model.LawyerTier
+import com.maisha.game.data.model.PrisonActivity
 import com.maisha.game.util.clampStat
+import com.maisha.game.util.formatMoney
 import javax.inject.Inject
 import javax.inject.Singleton
 import kotlin.math.pow
@@ -21,6 +24,11 @@ sealed class TrialResult {
     data class Sentenced(val character: Character, val sentenceYears: Int) : TrialResult()
     data class Acquitted(val character: Character) : TrialResult()
     data object Ineligible : TrialResult()
+}
+
+sealed class PrisonActivityResult {
+    data class Success(val character: Character) : PrisonActivityResult()
+    data object Ineligible : PrisonActivityResult()
 }
 
 @Singleton
@@ -258,6 +266,54 @@ class CrimeEngine @Inject constructor() {
     fun paroleChance(record: CriminalRecord): Float =
         (PAROLE_BASE_CHANCE + record.paroleBonus * PAROLE_BONUS_PER_POINT).coerceAtMost(PAROLE_MAX_CHANCE)
 
+    fun performPrisonActivity(character: Character, activity: PrisonActivity): PrisonActivityResult {
+        if (!character.alive || !character.criminalRecord.currentlyIncarcerated) {
+            return PrisonActivityResult.Ineligible
+        }
+        val updated = when (activity) {
+            PrisonActivity.WORK_DETAIL -> {
+                val pay = EconomyScaler.scaleAmount(PRISON_WORK_PAY_KENYA, character.countryCode)
+                character.copy(
+                    stats = character.stats.copy(
+                        money = character.stats.money + pay,
+                        happiness = clampStat(character.stats.happiness + 2)
+                    ),
+                    eventLog = EventLogCap.prepend(
+                        character.eventLog,
+                        "You worked prison detail and earned ${formatMoney(pay, character.countryCode)}."
+                    )
+                )
+            }
+            PrisonActivity.LIBRARY -> character.copy(
+                stats = character.stats.copy(
+                    smarts = clampStat(character.stats.smarts + 2),
+                    happiness = clampStat(character.stats.happiness + 1)
+                ),
+                eventLog = EventLogCap.prepend(character.eventLog, "You read in the prison library.")
+            )
+            PrisonActivity.EXERCISE -> character.copy(
+                stats = character.stats.copy(
+                    health = clampStat(character.stats.health + 3),
+                    happiness = clampStat(character.stats.happiness + 1)
+                ),
+                eventLog = EventLogCap.prepend(character.eventLog, "You exercised in the yard.")
+            )
+            PrisonActivity.GOOD_BEHAVIOR -> character.copy(
+                criminalRecord = character.criminalRecord.copy(
+                    paroleBonus = character.criminalRecord.paroleBonus + 1
+                ),
+                stats = character.stats.copy(
+                    happiness = clampStat(character.stats.happiness - 1)
+                ),
+                eventLog = EventLogCap.prepend(
+                    character.eventLog,
+                    "You kept your head down and earned good behavior credit."
+                )
+            )
+        }
+        return PrisonActivityResult.Success(updated)
+    }
+
     private fun releaseFromPrison(character: Character, logMessage: String): Character {
         val record = character.criminalRecord
         return character.copy(
@@ -406,5 +462,6 @@ class CrimeEngine @Inject constructor() {
         private const val PAROLE_BASE_CHANCE = 0.12f
         private const val PAROLE_BONUS_PER_POINT = 0.04f
         private const val PAROLE_MAX_CHANCE = 0.50f
+        private const val PRISON_WORK_PAY_KENYA = 1_500
     }
 }

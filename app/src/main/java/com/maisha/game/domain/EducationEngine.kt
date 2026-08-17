@@ -9,6 +9,7 @@ import com.maisha.game.data.model.EventChoice
 import com.maisha.game.data.model.ExamResult
 import com.maisha.game.data.model.ExamType
 import com.maisha.game.data.model.LifeEvent
+import com.maisha.game.data.model.SchoolClub
 import com.maisha.game.data.model.SchoolStage
 import com.maisha.game.data.model.StudyEffort
 import com.maisha.game.data.model.VisaType
@@ -147,8 +148,64 @@ class EducationEngine @Inject constructor(
                 currentGrade = if (incrementGrade) education.currentGrade + 1 else education.currentGrade,
                 gpa = newGpa
             )
+        ).let { applySchoolClubYear(it) }
+    }
+
+    fun isSchoolClubEligible(character: Character): Boolean {
+        if (!character.alive || character.criminalRecord.currentlyIncarcerated) return false
+        val education = character.education
+        if (education.expelled || education.droppedOutFrom != null) return false
+        if (character.age !in SCHOOL_CLUB_MIN_AGE..SCHOOL_CLUB_MAX_AGE) return false
+        return education.stage == SchoolStage.SECONDARY ||
+            (education.stage == SchoolStage.PRIMARY && education.currentGrade >= 6)
+    }
+
+    fun joinSchoolClub(character: Character, club: SchoolClub): Character {
+        if (!isSchoolClubEligible(character)) return character
+        if (club == SchoolClub.FOOTBALL && character.stats.health < FOOTBALL_MIN_HEALTH) {
+            return character
+        }
+        if (club == SchoolClub.DEBATE && character.education.gpa < DEBATE_MIN_GPA && character.education.gpa > 0f) {
+            return character
+        }
+        return character.copy(
+            education = character.education.copy(schoolClub = club),
+            eventLog = EventLogCap.prepend(
+                character.eventLog,
+                "You joined the ${club.name.lowercase().replace('_', ' ')} club at school."
+            )
         )
     }
+
+    fun applySchoolClubYear(character: Character): Character {
+        val club = character.education.schoolClub ?: return character
+        if (!isSchoolClubEligible(character)) {
+            return character.copy(education = character.education.copy(schoolClub = null))
+        }
+        val (happiness, health, smarts, gpaDelta) = when (club) {
+            SchoolClub.DEBATE -> Quad(2, 0, 3, 0.08f)
+            SchoolClub.FOOTBALL -> Quad(4, 3, 0, 0.03f)
+            SchoolClub.DRAMA -> Quad(5, 0, 1, 0.04f)
+            SchoolClub.CODING -> Quad(1, 0, 4, 0.06f)
+            SchoolClub.MUSIC -> Quad(4, 0, 2, 0.05f)
+        }
+        return character.copy(
+            stats = character.stats.copy(
+                happiness = clampStat(character.stats.happiness + happiness),
+                health = clampStat(character.stats.health + health),
+                smarts = clampStat(character.stats.smarts + smarts)
+            ),
+            education = character.education.copy(
+                gpa = if (character.education.gpa > 0f) {
+                    clampGpa(character.education.gpa + gpaDelta)
+                } else {
+                    character.education.gpa
+                }
+            )
+        )
+    }
+
+    private data class Quad(val happiness: Int, val health: Int, val smarts: Int, val gpa: Float)
 
     /** Increments university year or graduates when [UNIVERSITY_YEARS] completed. Bills domestic tuition. */
     fun advanceUniversityYear(character: Character): Character {
@@ -630,5 +687,10 @@ class EducationEngine @Inject constructor(
             "Oakwood High",
             "Greenfield Secondary"
         )
+
+        const val SCHOOL_CLUB_MIN_AGE = 12
+        const val SCHOOL_CLUB_MAX_AGE = 17
+        private const val FOOTBALL_MIN_HEALTH = 45
+        private const val DEBATE_MIN_GPA = 1.8f
     }
 }

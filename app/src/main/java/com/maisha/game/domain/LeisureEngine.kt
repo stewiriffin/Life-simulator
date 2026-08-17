@@ -34,7 +34,13 @@ enum class LeisureActivity {
     /** Senior: community club meetup. */
     COMMUNITY_CLUB,
     /** Senior: memoir / life writing. */
-    MEMOIR_WRITING
+    MEMOIR_WRITING,
+    /** Mind & body: library reading. */
+    LIBRARY_VISIT,
+    /** Mind & body: meditation / calm. */
+    MEDITATION,
+    /** Mind & body: annual health checkup. */
+    ANNUAL_CHECKUP
 }
 
 sealed class LeisureResult {
@@ -78,6 +84,9 @@ class LeisureEngine @Inject constructor() {
             LeisureActivity.GRANDKIDS_DAY,
             LeisureActivity.COMMUNITY_CLUB,
             LeisureActivity.MEMOIR_WRITING -> age >= SENIOR_LEISURE_MIN_AGE
+            LeisureActivity.LIBRARY_VISIT -> age >= MIND_BODY_MIN_AGE
+            LeisureActivity.MEDITATION -> age >= MIND_BODY_MIN_AGE
+            LeisureActivity.ANNUAL_CHECKUP -> age >= CHECKUP_MIN_AGE
         }
     }
 
@@ -128,6 +137,9 @@ class LeisureEngine @Inject constructor() {
         LeisureActivity.GRANDKIDS_DAY -> GRANDKIDS_COST_KENYA
         LeisureActivity.COMMUNITY_CLUB -> COMMUNITY_CLUB_COST_KENYA
         LeisureActivity.MEMOIR_WRITING -> MEMOIR_COST_KENYA
+        LeisureActivity.LIBRARY_VISIT -> LIBRARY_COST_KENYA
+        LeisureActivity.MEDITATION -> 0
+        LeisureActivity.ANNUAL_CHECKUP -> CHECKUP_COST_KENYA
     }
 
     private fun deltas(
@@ -156,6 +168,9 @@ class LeisureEngine @Inject constructor() {
         LeisureActivity.GRANDKIDS_DAY -> Quad(11, 2, 0, -fee)
         LeisureActivity.COMMUNITY_CLUB -> Quad(6, 3, 1, -fee)
         LeisureActivity.MEMOIR_WRITING -> Quad(5, 0, 4, -fee)
+        LeisureActivity.LIBRARY_VISIT -> Quad(3, 0, 4, -fee)
+        LeisureActivity.MEDITATION -> Quad(4, 2, 0, 0)
+        LeisureActivity.ANNUAL_CHECKUP -> Quad(0, 6, 0, -fee)
     }
 
     private fun logLine(activity: LeisureActivity, fee: Int, countryCode: String): String {
@@ -181,6 +196,9 @@ class LeisureEngine @Inject constructor() {
             LeisureActivity.GRANDKIDS_DAY -> "You spent the day with grandchildren."
             LeisureActivity.COMMUNITY_CLUB -> "You joined a community club meetup ($money)."
             LeisureActivity.MEMOIR_WRITING -> "You worked on your life story ($money)."
+            LeisureActivity.LIBRARY_VISIT -> "You spent time reading at the library ($money)."
+            LeisureActivity.MEDITATION -> "You meditated and cleared your mind."
+            LeisureActivity.ANNUAL_CHECKUP -> "You got an annual checkup ($money)."
         }
     }
 
@@ -227,5 +245,9 @@ class LeisureEngine @Inject constructor() {
         const val GRANDKIDS_COST_KENYA = 2_000
         const val COMMUNITY_CLUB_COST_KENYA = 1_500
         const val MEMOIR_COST_KENYA = 3_000
+        const val LIBRARY_COST_KENYA = 500
+        const val CHECKUP_COST_KENYA = 4_000
+        const val MIND_BODY_MIN_AGE = 8
+        const val CHECKUP_MIN_AGE = 14
     }
 }

@@ -21,10 +21,11 @@ import com.maisha.game.data.model.RelationType
 import com.maisha.game.data.model.relationshipTierFor
 import com.maisha.game.data.model.RelationshipTier
 import com.maisha.game.domain.AchievementEngine
-import com.maisha.game.domain.LegacyEngine
+import com.maisha.game.domain.LifeArchetypeEngine
 import com.maisha.game.domain.DeathCause
 import com.maisha.game.domain.FinanceEngine
 import com.maisha.game.domain.GameEngine
+import com.maisha.game.domain.LegacyEngine
 import com.maisha.game.domain.MortalityEngine
 import com.maisha.game.ui.main.EducationFormatter
 import com.maisha.game.ui.share.ShareAchievementBadge
@@ -55,6 +56,7 @@ data class LifeSummaryUiState(
     val eventHighlights: List<String> = emptyList(),
     val showSecondWindButton: Boolean = false,
     val secondWindMessage: String? = null,
+    val lifeArchetypeLabel: String = "",
     val navigateToSlotPicker: Boolean = false,
     val showRewardedAd: Boolean = false,
     val showAchievementsCarryOverTip: Boolean = false,
@@ -135,6 +137,11 @@ class LifeSummaryViewModel @Inject constructor(
                                 person.relation == RelationType.CHILD
                             },
                             eventHighlights = highlights,
+                            lifeArchetypeLabel = context.getString(
+                                stringResForArchetype(
+                                    LifeArchetypeEngine.resolveTitleKey(character, netWorth)
+                                )
+                            ),
                             showSecondWindButton = sessionAdTracker.canShowSecondWindOffer(),
                             showAchievementsCarryOverTip = showAchievementsTip,
                             shareCardData = buildShareCardData(
@@ -451,5 +458,19 @@ class LifeSummaryViewModel @Inject constructor(
         MetaBonusRepository.STAT_SMARTS -> context.getString(R.string.second_wind_bonus_smarts)
         MetaBonusRepository.STAT_LOOKS -> context.getString(R.string.second_wind_bonus_looks)
         else -> context.getString(R.string.second_wind_bonus_random)
+    }
+
+    private fun stringResForArchetype(key: String): Int = when (key) {
+        "archetype_scholar" -> R.string.archetype_scholar
+        "archetype_builder" -> R.string.archetype_builder
+        "archetype_public_servant" -> R.string.archetype_public_servant
+        "archetype_globetrotter" -> R.string.archetype_globetrotter
+        "archetype_patriarch" -> R.string.archetype_patriarch
+        "archetype_artist" -> R.string.archetype_artist
+        "archetype_athlete" -> R.string.archetype_athlete
+        "archetype_reformed" -> R.string.archetype_reformed
+        "archetype_model_citizen" -> R.string.archetype_model_citizen
+        "archetype_elder" -> R.string.archetype_elder
+        else -> R.string.archetype_everyday
     }
 }

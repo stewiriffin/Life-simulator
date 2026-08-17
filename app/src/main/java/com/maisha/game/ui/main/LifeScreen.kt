@@ -148,6 +148,9 @@ fun LifeScreen(
     businessInvestmentTiers: List<Int>,
     onSetWorkEffort: (com.maisha.game.data.model.WorkEffort) -> Unit,
     onSetStudyEffort: (com.maisha.game.data.model.StudyEffort) -> Unit,
+    onJoinSchoolClub: (com.maisha.game.data.model.SchoolClub) -> Unit,
+    onStartCareerTrack: (com.maisha.game.data.model.CareerTrack) -> Unit,
+    onPracticeCareerTrack: () -> Unit,
     onCareerMessageDismissed: () -> Unit,
     onPurchaseAsset: (String) -> Unit,
     onSellAsset: (String) -> Unit,
@@ -188,6 +191,7 @@ fun LifeScreen(
     donationTiers: List<Int>,
     onPerformLeisure: (com.maisha.game.domain.LeisureActivity) -> Unit,
     onPerformStudySession: () -> Unit = {},
+    onPerformPrisonActivity: (com.maisha.game.data.model.PrisonActivity) -> Unit = {},
     onActionMessageDismissed: () -> Unit,
     onLifePulseMessageDismissed: () -> Unit,
     onYearRecapDismissed: () -> Unit,
@@ -396,6 +400,9 @@ fun LifeScreen(
                 onPassTaxPolicy = onPassTaxPolicy,
                 onSetWorkEffort = onSetWorkEffort,
                 onSetStudyEffort = onSetStudyEffort,
+                onJoinSchoolClub = onJoinSchoolClub,
+                onStartCareerTrack = onStartCareerTrack,
+                onPracticeCareerTrack = onPracticeCareerTrack,
                 onCareerMessageDismissed = onCareerMessageDismissed,
                 modifier = Modifier.padding(innerPadding)
             )
@@ -444,6 +451,7 @@ fun LifeScreen(
                 donationTiers = donationTiers,
                 onPerformLeisure = onPerformLeisure,
                 onPerformStudySession = onPerformStudySession,
+                onPerformPrisonActivity = onPerformPrisonActivity,
                 onActionMessageDismissed = onActionMessageDismissed,
                 onDismissLeisureTip = onDismissLeisureTip,
                 modifier = Modifier.padding(innerPadding)

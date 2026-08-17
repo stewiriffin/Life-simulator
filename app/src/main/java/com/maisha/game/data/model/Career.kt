@@ -45,7 +45,12 @@ data class CareerState(
     /** True during a year the character is on active deployment (hazard pay + combat risk). */
     val isDeployed: Boolean = false,
     /** If true, the next [com.maisha.game.domain.CareerEngine.workYear] will be a deployment. */
-    val pendingDeployment: Boolean = false
+    val pendingDeployment: Boolean = false,
+    val careerTrack: CareerTrack = CareerTrack.NONE,
+    /** 0 = entry, 3 = top tier within the track. */
+    val trackLevel: Int = 0,
+    /** Practice progress toward the next [trackLevel]; resets on level-up. */
+    val trackProgress: Int = 0
 )
 
 @Serializable
@@ -53,6 +58,14 @@ enum class WorkEffort {
     COAST,
     NORMAL,
     GRIND
+}
+
+/** Long-form career ladder parallel to regular jobs (entertainment / pro sports). */
+@Serializable
+enum class CareerTrack {
+    NONE,
+    ENTERTAINMENT,
+    PRO_SPORTS
 }
 
 @Serializable

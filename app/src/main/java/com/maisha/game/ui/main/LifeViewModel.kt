@@ -30,12 +30,17 @@ import com.maisha.game.data.model.Person
 import com.maisha.game.data.model.RelationshipDecayNotice
 import com.maisha.game.data.model.RelationshipTier
 import com.maisha.game.data.model.SchoolStage
+import com.maisha.game.data.model.CareerTrack
+import com.maisha.game.data.model.PrisonActivity
+import com.maisha.game.data.model.SchoolClub
 import com.maisha.game.data.model.StudyEffort
 import com.maisha.game.data.model.Stats
 import com.maisha.game.domain.AdoptPetResult
 import com.maisha.game.domain.AgeUpResult
 import com.maisha.game.domain.AchievementEngine
 import com.maisha.game.domain.CareerEngine
+import com.maisha.game.domain.CareerTrackPracticeResult
+import com.maisha.game.domain.PrisonActivityResult
 import com.maisha.game.domain.CareerResult
 import com.maisha.game.domain.CrimeResult
 import com.maisha.game.domain.DoctorResult
@@ -863,6 +868,99 @@ class LifeViewModel @Inject constructor(
                 StudySessionResult.Ineligible -> {
                     _uiState.update {
                         it.copy(actionMessage = context.getString(R.string.msg_study_session_ineligible))
+                    }
+                }
+            }
+        }
+    }
+
+    fun onJoinSchoolClub(club: SchoolClub) {
+        val character = _uiState.value.character ?: return
+        if (!character.alive) return
+        viewModelScope.launch {
+            val updated = gameEngine.joinSchoolClub(character, club)
+            if (updated.education.schoolClub == club) {
+                persist(updated)
+                _uiState.update {
+                    it.copy(
+                        character = updated,
+                        careerMessage = context.getString(R.string.msg_club_joined)
+                    )
+                }
+            } else {
+                _uiState.update {
+                    it.copy(careerMessage = context.getString(R.string.msg_club_join_failed))
+                }
+            }
+        }
+    }
+
+    fun onStartCareerTrack(track: CareerTrack) {
+        val character = _uiState.value.character ?: return
+        if (!character.alive) return
+        viewModelScope.launch {
+            val updated = gameEngine.startCareerTrack(character, track)
+            if (updated.career.careerTrack == track) {
+                persist(updated)
+                _uiState.update {
+                    it.copy(
+                        character = updated,
+                        careerMessage = context.getString(R.string.msg_track_started)
+                    )
+                }
+            } else {
+                _uiState.update {
+                    it.copy(careerMessage = context.getString(R.string.msg_track_start_failed))
+                }
+            }
+        }
+    }
+
+    fun onPracticeCareerTrack() {
+        val character = _uiState.value.character ?: return
+        if (!character.alive) return
+        viewModelScope.launch {
+            when (val result = gameEngine.practiceCareerTrack(character)) {
+                is CareerTrackPracticeResult.Success -> {
+                    persist(result.character)
+                    _uiState.update {
+                        it.copy(
+                            character = result.character,
+                            careerMessage = context.getString(R.string.msg_track_practice_success)
+                        )
+                    }
+                }
+                CareerTrackPracticeResult.MaxLevel -> {
+                    _uiState.update {
+                        it.copy(careerMessage = context.getString(R.string.msg_track_max_level))
+                    }
+                }
+                CareerTrackPracticeResult.Ineligible -> {
+                    _uiState.update {
+                        it.copy(careerMessage = context.getString(R.string.msg_track_practice_ineligible))
+                    }
+                }
+            }
+        }
+    }
+
+    fun onPerformPrisonActivity(activity: PrisonActivity) {
+        val character = _uiState.value.character ?: return
+        if (!character.alive) return
+        viewModelScope.launch {
+            when (val result = gameEngine.performPrisonActivity(character, activity)) {
+                is PrisonActivityResult.Success -> {
+                    persist(result.character)
+                    _uiState.update {
+                        it.copy(
+                            character = result.character,
+                            actionMessage = context.getString(R.string.msg_prison_activity_success)
+                        )
+                    }
+                }
+                PrisonActivityResult.Ineligible -> {
+                    _uiState.update {
+                        it.copy(actionMessage = context.getString(R.string.msg_prison_activity_ineligible))
                     }
                 }
             }

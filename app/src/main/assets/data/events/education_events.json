@@ -6,16 +6,25 @@
       "maxAge": 7,
       "text": "Your first day of primary school. You clutch a new exercise book while a parent adjusts your uniform outside the school gate.",
       "weight": 10,
-      "tags": ["one_time", "education", "milestone"],
+      "tags": [
+        "one_time",
+        "education",
+        "milestone"
+      ],
       "choices": [
         {
           "label": "Wave goodbye bravely",
-          "statEffects": { "happiness": 3, "smarts": 2 },
+          "statEffects": {
+            "happiness": 3,
+            "smarts": 2
+          },
           "resultText": "You walked into class with your head held high."
         },
         {
           "label": "Cry and hold a parent's hand",
-          "statEffects": { "happiness": -2 },
+          "statEffects": {
+            "happiness": -2
+          },
           "resultText": "They stayed a few minutes until you settled in."
         }
       ]
@@ -26,22 +35,32 @@
       "maxAge": 14,
       "text": "Older pupils mock your accent in the playground. A crowd gathers while you stand frozen.",
       "weight": 6,
-      "tags": ["education"],
+      "tags": [
+        "education"
+      ],
       "choices": [
         {
           "label": "Tell a teacher",
-          "statEffects": { "happiness": 2, "smarts": 1 },
+          "statEffects": {
+            "happiness": 2,
+            "smarts": 1
+          },
           "resultText": "The teacher intervened. The bullies were warned."
         },
         {
           "label": "Ask your sibling for backup",
-          "statEffects": { "happiness": 1 },
+          "statEffects": {
+            "happiness": 1
+          },
           "siblingRelationshipEffect": 5,
           "resultText": "Your sibling stood up for you. You felt less alone."
         },
         {
           "label": "Fight back",
-          "statEffects": { "happiness": -3, "health": -2 },
+          "statEffects": {
+            "happiness": -3,
+            "health": -2
+          },
           "siblingRelationshipEffect": -3,
           "resultText": "A scuffle broke out. Everyone got in trouble."
         }
@@ -53,17 +72,25 @@
       "maxAge": 17,
       "text": "During a class test, your deskmate slides their answer sheet toward you and whispers an offer.",
       "weight": 5,
-      "tags": ["education"],
+      "tags": [
+        "education"
+      ],
       "choices": [
         {
           "label": "Copy the answers",
-          "statEffects": { "happiness": 2, "smarts": -2 },
+          "statEffects": {
+            "happiness": 2,
+            "smarts": -2
+          },
           "gpaEffect": -0.3,
           "resultText": "You passed the test but felt guilty. The teacher almost caught you."
         },
         {
           "label": "Refuse and focus on your own paper",
-          "statEffects": { "smarts": 2, "happiness": 1 },
+          "statEffects": {
+            "smarts": 2,
+            "happiness": 1
+          },
           "gpaEffect": 0.1,
           "resultText": "You did your best honestly. It felt right."
         }
@@ -74,18 +101,28 @@
       "minAge": 14,
       "maxAge": 15,
       "restrictedToCountry": "KE",
-      "text": "After KCPE, your family debates where you should attend secondary school — a nearby day school or a boarding school upcountry.",
+      "text": "After KCPE, your family debates where you should attend secondary school \u2014 a nearby day school or a boarding school upcountry.",
       "weight": 9,
-      "tags": ["one_time", "education", "milestone"],
+      "tags": [
+        "one_time",
+        "education",
+        "milestone"
+      ],
       "choices": [
         {
           "label": "Day scholar near home",
-          "statEffects": { "happiness": 4, "money": 10 },
+          "statEffects": {
+            "happiness": 4,
+            "money": 10
+          },
           "resultText": "You commute daily by {transportMode}. A parent packs lunch every morning."
         },
         {
           "label": "Boarding school upcountry",
-          "statEffects": { "smarts": 3, "happiness": -1 },
+          "statEffects": {
+            "smarts": 3,
+            "happiness": -1
+          },
           "gpaEffect": 0.15,
           "resultText": "Term one was lonely, but the library was excellent."
         }
@@ -95,18 +132,28 @@
       "id": "choose_secondary_school_world",
       "minAge": 14,
       "maxAge": 15,
-      "text": "After your {secondaryExam} results, your family debates where you should attend secondary school — a nearby day school or a boarding school farther away.",
+      "text": "After your {secondaryExam} results, your family debates where you should attend secondary school \u2014 a nearby day school or a boarding school farther away.",
       "weight": 9,
-      "tags": ["one_time", "education", "milestone"],
+      "tags": [
+        "one_time",
+        "education",
+        "milestone"
+      ],
       "choices": [
         {
           "label": "Day scholar near home",
-          "statEffects": { "happiness": 4, "money": 10 },
+          "statEffects": {
+            "happiness": 4,
+            "money": 10
+          },
           "resultText": "You commute daily by {transportMode}. Home-cooked lunch every morning."
         },
         {
           "label": "Boarding school away from home",
-          "statEffects": { "smarts": 3, "happiness": -1 },
+          "statEffects": {
+            "smarts": 3,
+            "happiness": -1
+          },
           "gpaEffect": 0.15,
           "resultText": "Term one was lonely, but the library was excellent."
         }
@@ -118,16 +165,23 @@
       "maxAge": 16,
       "text": "Inter-house sports day! The whole school gathers on the dusty field for races and cheers.",
       "weight": 4,
-      "tags": ["education"],
+      "tags": [
+        "education"
+      ],
       "choices": [
         {
           "label": "Run the 100m race",
-          "statEffects": { "health": 4, "happiness": 5 },
+          "statEffects": {
+            "health": 4,
+            "happiness": 5
+          },
           "resultText": "You came third but the crowd cheered your effort."
         },
         {
           "label": "Cheer from the sidelines",
-          "statEffects": { "happiness": 2 },
+          "statEffects": {
+            "happiness": 2
+          },
           "resultText": "You painted your face in house colours and shouted yourself hoarse."
         }
       ]
@@ -138,21 +192,30 @@
       "maxAge": 17,
       "text": "Class representative elections are announced. Nominations open at the front of the classroom.",
       "weight": 5,
-      "tags": ["education"],
+      "tags": [
+        "education"
+      ],
       "choices": [
         {
           "label": "Run for class rep",
-          "statEffects": { "happiness": 3, "smarts": 2 },
+          "statEffects": {
+            "happiness": 3,
+            "smarts": 2
+          },
           "resultText": "You gave a speech and won by a handful of votes."
         },
         {
           "label": "Campaign for a friend",
-          "statEffects": { "happiness": 2 },
+          "statEffects": {
+            "happiness": 2
+          },
           "resultText": "Your friend won. They owe you a soda."
         },
         {
           "label": "Stay out of politics",
-          "statEffects": { "happiness": 1 },
+          "statEffects": {
+            "happiness": 1
+          },
           "resultText": "You avoided drama and focused on homework."
         }
       ]
@@ -163,16 +226,24 @@
       "maxAge": 17,
       "text": "You notice someone in your class laughing at a joke you made. Your heart beats a little faster.",
       "weight": 4,
-      "tags": ["education", "one_time"],
+      "tags": [
+        "education",
+        "one_time"
+      ],
       "choices": [
         {
           "label": "Daydream about them",
-          "statEffects": { "happiness": 5 },
+          "statEffects": {
+            "happiness": 5
+          },
           "resultText": "You floated through the week on a cloud of butterflies."
         },
         {
           "label": "Focus on your studies",
-          "statEffects": { "smarts": 2, "happiness": -1 },
+          "statEffects": {
+            "smarts": 2,
+            "happiness": -1
+          },
           "gpaEffect": 0.1,
           "resultText": "Books before feelings. Wise, if a little boring."
         }
@@ -184,21 +255,32 @@
       "maxAge": 17,
       "text": "A new school year begins. How are you approaching your studies this year?",
       "weight": 6,
-      "tags": ["education", "study_effort"],
+      "tags": [
+        "education",
+        "study_effort"
+      ],
       "choices": [
         {
           "label": "Coast through (Slack)",
-          "statEffects": { "happiness": 3 },
+          "statEffects": {
+            "happiness": 3
+          },
           "resultText": "You spent more time on the pitch than in the library."
         },
         {
           "label": "Keep a steady pace (Normal)",
-          "statEffects": { "smarts": 1, "happiness": 1 },
+          "statEffects": {
+            "smarts": 1,
+            "happiness": 1
+          },
           "resultText": "You balanced homework and play reasonably well."
         },
         {
           "label": "Grind hard (Hard)",
-          "statEffects": { "smarts": 2, "happiness": -1 },
+          "statEffects": {
+            "smarts": 2,
+            "happiness": -1
+          },
           "resultText": "Late nights at your desk. Your notebooks are full."
         }
       ]
@@ -209,21 +291,32 @@
       "maxAge": 17,
       "text": "{secondaryExam} season looms. The revision timetable is pinned to the classroom wall.",
       "weight": 7,
-      "tags": ["education", "study_effort"],
+      "tags": [
+        "education",
+        "study_effort"
+      ],
       "choices": [
         {
           "label": "Slack off and hope for the best",
-          "statEffects": { "happiness": 4 },
+          "statEffects": {
+            "happiness": 4
+          },
           "resultText": "You winged it. Not your finest academic hour."
         },
         {
           "label": "Study normally",
-          "statEffects": { "smarts": 2 },
+          "statEffects": {
+            "smarts": 2
+          },
           "resultText": "Consistent revision paid off modestly."
         },
         {
           "label": "Grind every night",
-          "statEffects": { "smarts": 3, "happiness": -2, "health": -1 },
+          "statEffects": {
+            "smarts": 3,
+            "happiness": -2,
+            "health": -1
+          },
           "resultText": "You sacrificed sleep for past papers. Worth it, probably."
         }
       ]
@@ -234,21 +327,32 @@
       "maxAge": 19,
       "text": "A university careers fair visits your school. Booths line the hall for Law, Medicine, Engineering, and more.",
       "weight": 8,
-      "tags": ["one_time", "education"],
+      "tags": [
+        "one_time",
+        "education"
+      ],
       "choices": [
         {
           "label": "Explore the Medicine booth",
-          "statEffects": { "smarts": 2, "happiness": 2 },
+          "statEffects": {
+            "smarts": 2,
+            "happiness": 2
+          },
           "resultText": "You pictured yourself in a white coat someday."
         },
         {
           "label": "Explore the Law booth",
-          "statEffects": { "smarts": 2, "happiness": 1 },
+          "statEffects": {
+            "smarts": 2,
+            "happiness": 1
+          },
           "resultText": "Courtroom dramas suddenly felt within reach."
         },
         {
           "label": "Skip the fair",
-          "statEffects": { "happiness": -1 },
+          "statEffects": {
+            "happiness": -1
+          },
           "resultText": "You hung out behind the hall instead."
         }
       ]
@@ -259,17 +363,24 @@
       "maxAge": 17,
       "text": "As a senior student, you are asked to help maintain order during lunch break.",
       "weight": 3,
-      "tags": ["education"],
+      "tags": [
+        "education"
+      ],
       "choices": [
         {
           "label": "Enforce the rules strictly",
-          "statEffects": { "smarts": 1, "happiness": -1 },
+          "statEffects": {
+            "smarts": 1,
+            "happiness": -1
+          },
           "gpaEffect": 0.05,
           "resultText": "Some students grumbled, but the teachers approved."
         },
         {
           "label": "Let small things slide",
-          "statEffects": { "happiness": 3 },
+          "statEffects": {
+            "happiness": 3
+          },
           "resultText": "You gained popularity for being fair and relaxed."
         }
       ]
@@ -280,17 +391,24 @@
       "maxAge": 16,
       "text": "You discover the school library has novels beyond the syllabus. The librarian shushes you as you enter.",
       "weight": 4,
-      "tags": ["education"],
+      "tags": [
+        "education"
+      ],
       "choices": [
         {
           "label": "Read voraciously",
-          "statEffects": { "smarts": 4, "happiness": 3 },
+          "statEffects": {
+            "smarts": 4,
+            "happiness": 3
+          },
           "gpaEffect": 0.1,
           "resultText": "Stories expanded your vocabulary and imagination."
         },
         {
           "label": "Borrow one book only",
-          "statEffects": { "smarts": 2 },
+          "statEffects": {
+            "smarts": 2
+          },
           "resultText": "A small habit formed. One book became two."
         }
       ]
@@ -301,17 +419,25 @@
       "maxAge": 18,
       "text": "A teacher catches you with hidden notes during a {secondaryExam} practice paper. The whole class goes quiet as you are marched to the office.",
       "weight": 4,
-      "tags": ["education", "one_time"],
+      "tags": [
+        "education",
+        "one_time"
+      ],
       "choices": [
         {
           "label": "Accept the consequences",
-          "statEffects": { "happiness": -10, "smarts": -3 },
+          "statEffects": {
+            "happiness": -10,
+            "smarts": -3
+          },
           "triggersExpulsion": true,
-          "resultText": "The school expelled you. Your parents were called in — it was a long, painful day."
+          "resultText": "The school expelled you. Your parents were called in \u2014 it was a long, painful day."
         },
         {
           "label": "Beg for one more chance",
-          "statEffects": { "happiness": -6 },
+          "statEffects": {
+            "happiness": -6
+          },
           "gpaEffect": -0.5,
           "resultText": "You were suspended for a term instead. The shame followed you back to class."
         }
@@ -323,17 +449,24 @@
       "maxAge": 17,
       "text": "A hallway argument with another pupil turns into a shove that knocks a teacher aside. Staff say they cannot tolerate this anymore.",
       "weight": 3,
-      "tags": ["education"],
+      "tags": [
+        "education"
+      ],
       "choices": [
         {
           "label": "Apologize publicly",
-          "statEffects": { "happiness": -5 },
+          "statEffects": {
+            "happiness": -5
+          },
           "familyRelationshipEffect": -5,
           "resultText": "You read a statement at assembly. Some classmates forgave you; others did not."
         },
         {
           "label": "Refuse to back down",
-          "statEffects": { "happiness": -8, "health": -2 },
+          "statEffects": {
+            "happiness": -8,
+            "health": -2
+          },
           "triggersExpulsion": true,
           "resultText": "The head teacher expelled you on the spot. Your parents were furious."
         }
@@ -345,16 +478,24 @@
       "maxAge": 18,
       "text": "Security footage shows you damaging school property after hours. The administration says this crosses a line.",
       "weight": 3,
-      "tags": ["education", "one_time"],
+      "tags": [
+        "education",
+        "one_time"
+      ],
       "choices": [
         {
           "label": "Pay for repairs and apologize",
-          "statEffects": { "money": -15000, "happiness": -4 },
-          "resultText": "You drained your savings to fix what you broke. You kept your place — barely."
+          "statEffects": {
+            "money": -15000,
+            "happiness": -4
+          },
+          "resultText": "You drained your savings to fix what you broke. You kept your place \u2014 barely."
         },
         {
           "label": "Deny everything",
-          "statEffects": { "happiness": -3 },
+          "statEffects": {
+            "happiness": -3
+          },
           "triggersExpulsion": true,
           "resultText": "Nobody believed you. Expulsion papers arrived the next morning."
         }
@@ -366,17 +507,26 @@
       "maxAge": 24,
       "text": "Your university professor runs your final project through a plagiarism checker. It comes back 90% copied. You are summoned to a disciplinary hearing.",
       "weight": 3,
-      "tags": ["education", "one_time"],
+      "tags": [
+        "education",
+        "one_time"
+      ],
       "choices": [
         {
           "label": "Confess and beg for mercy",
-          "statEffects": { "happiness": -6, "smarts": -2 },
+          "statEffects": {
+            "happiness": -6,
+            "smarts": -2
+          },
           "gpaEffect": -1.0,
           "resultText": "You were given a zero for the course and placed on academic probation, but allowed to stay."
         },
         {
           "label": "Deny it completely",
-          "statEffects": { "happiness": -8, "smarts": -1 },
+          "statEffects": {
+            "happiness": -8,
+            "smarts": -1
+          },
           "triggersExpulsion": true,
           "resultText": "The committee found your denial insulting. You were immediately expelled from the university."
         }
@@ -388,16 +538,24 @@
       "maxAge": 17,
       "text": "The school bullies corner you in the changing rooms. They have pushed you too far this time.",
       "weight": 4,
-      "tags": ["education", "one_time"],
+      "tags": [
+        "education",
+        "one_time"
+      ],
       "choices": [
         {
           "label": "Walk away and report them",
-          "statEffects": { "happiness": 2 },
+          "statEffects": {
+            "happiness": 2
+          },
           "resultText": "You walked away. The administration finally took action against them."
         },
         {
           "label": "Fight back with a weapon",
-          "statEffects": { "happiness": -5, "health": -2 },
+          "statEffects": {
+            "happiness": -5,
+            "health": -2
+          },
           "triggersExpulsion": true,
           "resultText": "You severely injured one of them. The school had zero tolerance for weapons and expelled you."
         }
@@ -409,17 +567,27 @@
       "maxAge": 22,
       "text": "One of your videos goes viral. A talent agency offers you a lucrative contract, but it requires full-time commitment, meaning you'd have to leave school.",
       "weight": 3,
-      "tags": ["education", "one_time"],
+      "tags": [
+        "education",
+        "one_time"
+      ],
       "choices": [
         {
           "label": "Sign the contract and drop out",
-          "statEffects": { "money": 50000, "happiness": 5, "smarts": -1 },
+          "statEffects": {
+            "money": 50000,
+            "happiness": 5,
+            "smarts": -1
+          },
           "triggersDropout": true,
           "resultText": "You dropped out to chase fame. The money is great, but your parents are worried."
         },
         {
           "label": "Decline and stay in school",
-          "statEffects": { "smarts": 2, "happiness": -2 },
+          "statEffects": {
+            "smarts": 2,
+            "happiness": -2
+          },
           "gpaEffect": 0.1,
           "resultText": "You prioritized your education. The viral fame faded quickly."
         }
@@ -431,20 +599,450 @@
       "maxAge": 20,
       "text": "Money is tight at home. You notice your family struggling to pay for basic needs while you spend your days studying.",
       "weight": 4,
-      "tags": ["education", "one_time"],
+      "tags": [
+        "education",
+        "one_time"
+      ],
       "choices": [
         {
           "label": "Drop out and find a job",
-          "statEffects": { "happiness": -3, "smarts": -1 },
+          "statEffects": {
+            "happiness": -3,
+            "smarts": -1
+          },
           "triggersDropout": true,
           "familyRelationshipEffect": 5,
           "resultText": "You left school to help support the family. They were grateful, but it was a tough sacrifice."
         },
         {
           "label": "Keep studying and hope for the best",
-          "statEffects": { "smarts": 2, "happiness": -4 },
+          "statEffects": {
+            "smarts": 2,
+            "happiness": -4
+          },
           "gpaEffect": 0.1,
           "resultText": "You stayed in school. The guilt weighed heavily on you, but you kept your grades up."
+        }
+      ]
+    },
+    {
+      "id": "teen_prom_invite",
+      "minAge": 15,
+      "maxAge": 18,
+      "text": "Prom season is here. Someone asks you to go with them.",
+      "weight": 4,
+      "tags": [
+        "education",
+        "teen"
+      ],
+      "choices": [
+        {
+          "label": "Go and have fun",
+          "statEffects": {
+            "happiness": 8
+          },
+          "resultText": "You danced the night away."
+        },
+        {
+          "label": "Stay home and study",
+          "statEffects": {
+            "happiness": -2,
+            "smarts": 2
+          },
+          "gpaEffect": 0.1,
+          "resultText": "You chose books over the dance floor."
+        }
+      ]
+    },
+    {
+      "id": "teen_school_beat_2",
+      "minAge": 14,
+      "maxAge": 17,
+      "text": "A school year moment #2: clubs, exams, or friends pull you in different directions.",
+      "weight": 3,
+      "tags": [
+        "education",
+        "teen"
+      ],
+      "choices": [
+        {
+          "label": "Lean in",
+          "statEffects": {
+            "happiness": 3,
+            "smarts": 1
+          },
+          "resultText": "You grew from the experience."
+        },
+        {
+          "label": "Play it safe",
+          "statEffects": {
+            "happiness": -1
+          },
+          "resultText": "You kept a low profile."
+        }
+      ]
+    },
+    {
+      "id": "teen_school_beat_3",
+      "minAge": 15,
+      "maxAge": 17,
+      "text": "A school year moment #3: clubs, exams, or friends pull you in different directions.",
+      "weight": 3,
+      "tags": [
+        "education",
+        "teen"
+      ],
+      "choices": [
+        {
+          "label": "Lean in",
+          "statEffects": {
+            "happiness": 3,
+            "smarts": 1
+          },
+          "resultText": "You grew from the experience."
+        },
+        {
+          "label": "Play it safe",
+          "statEffects": {
+            "happiness": -1
+          },
+          "resultText": "You kept a low profile."
+        }
+      ]
+    },
+    {
+      "id": "teen_school_beat_4",
+      "minAge": 16,
+      "maxAge": 17,
+      "text": "A school year moment #4: clubs, exams, or friends pull you in different directions.",
+      "weight": 3,
+      "tags": [
+        "education",
+        "teen"
+      ],
+      "choices": [
+        {
+          "label": "Lean in",
+          "statEffects": {
+            "happiness": 3,
+            "smarts": 1
+          },
+          "resultText": "You grew from the experience."
+        },
+        {
+          "label": "Play it safe",
+          "statEffects": {
+            "happiness": -1
+          },
+          "resultText": "You kept a low profile."
+        }
+      ]
+    },
+    {
+      "id": "teen_school_beat_5",
+      "minAge": 12,
+      "maxAge": 17,
+      "text": "A school year moment #5: clubs, exams, or friends pull you in different directions.",
+      "weight": 3,
+      "tags": [
+        "education",
+        "teen"
+      ],
+      "choices": [
+        {
+          "label": "Lean in",
+          "statEffects": {
+            "happiness": 3,
+            "smarts": 1
+          },
+          "resultText": "You grew from the experience."
+        },
+        {
+          "label": "Play it safe",
+          "statEffects": {
+            "happiness": -1
+          },
+          "resultText": "You kept a low profile."
+        }
+      ]
+    },
+    {
+      "id": "teen_school_beat_6",
+      "minAge": 13,
+      "maxAge": 17,
+      "text": "A school year moment #6: clubs, exams, or friends pull you in different directions.",
+      "weight": 3,
+      "tags": [
+        "education",
+        "teen"
+      ],
+      "choices": [
+        {
+          "label": "Lean in",
+          "statEffects": {
+            "happiness": 3,
+            "smarts": 1
+          },
+          "resultText": "You grew from the experience."
+        },
+        {
+          "label": "Play it safe",
+          "statEffects": {
+            "happiness": -1
+          },
+          "resultText": "You kept a low profile."
+        }
+      ]
+    },
+    {
+      "id": "teen_school_beat_7",
+      "minAge": 14,
+      "maxAge": 17,
+      "text": "A school year moment #7: clubs, exams, or friends pull you in different directions.",
+      "weight": 3,
+      "tags": [
+        "education",
+        "teen"
+      ],
+      "choices": [
+        {
+          "label": "Lean in",
+          "statEffects": {
+            "happiness": 3,
+            "smarts": 1
+          },
+          "resultText": "You grew from the experience."
+        },
+        {
+          "label": "Play it safe",
+          "statEffects": {
+            "happiness": -1
+          },
+          "resultText": "You kept a low profile."
+        }
+      ]
+    },
+    {
+      "id": "teen_school_beat_8",
+      "minAge": 15,
+      "maxAge": 17,
+      "text": "A school year moment #8: clubs, exams, or friends pull you in different directions.",
+      "weight": 3,
+      "tags": [
+        "education",
+        "teen"
+      ],
+      "choices": [
+        {
+          "label": "Lean in",
+          "statEffects": {
+            "happiness": 3,
+            "smarts": 1
+          },
+          "resultText": "You grew from the experience."
+        },
+        {
+          "label": "Play it safe",
+          "statEffects": {
+            "happiness": -1
+          },
+          "resultText": "You kept a low profile."
+        }
+      ]
+    },
+    {
+      "id": "teen_school_beat_9",
+      "minAge": 16,
+      "maxAge": 17,
+      "text": "A school year moment #9: clubs, exams, or friends pull you in different directions.",
+      "weight": 3,
+      "tags": [
+        "education",
+        "teen"
+      ],
+      "choices": [
+        {
+          "label": "Lean in",
+          "statEffects": {
+            "happiness": 3,
+            "smarts": 1
+          },
+          "resultText": "You grew from the experience."
+        },
+        {
+          "label": "Play it safe",
+          "statEffects": {
+            "happiness": -1
+          },
+          "resultText": "You kept a low profile."
+        }
+      ]
+    },
+    {
+      "id": "teen_school_beat_10",
+      "minAge": 12,
+      "maxAge": 17,
+      "text": "A school year moment #10: clubs, exams, or friends pull you in different directions.",
+      "weight": 3,
+      "tags": [
+        "education",
+        "teen"
+      ],
+      "choices": [
+        {
+          "label": "Lean in",
+          "statEffects": {
+            "happiness": 3,
+            "smarts": 1
+          },
+          "resultText": "You grew from the experience."
+        },
+        {
+          "label": "Play it safe",
+          "statEffects": {
+            "happiness": -1
+          },
+          "resultText": "You kept a low profile."
+        }
+      ]
+    },
+    {
+      "id": "teen_school_beat_11",
+      "minAge": 13,
+      "maxAge": 17,
+      "text": "A school year moment #11: clubs, exams, or friends pull you in different directions.",
+      "weight": 3,
+      "tags": [
+        "education",
+        "teen"
+      ],
+      "choices": [
+        {
+          "label": "Lean in",
+          "statEffects": {
+            "happiness": 3,
+            "smarts": 1
+          },
+          "resultText": "You grew from the experience."
+        },
+        {
+          "label": "Play it safe",
+          "statEffects": {
+            "happiness": -1
+          },
+          "resultText": "You kept a low profile."
+        }
+      ]
+    },
+    {
+      "id": "teen_school_beat_12",
+      "minAge": 14,
+      "maxAge": 17,
+      "text": "A school year moment #12: clubs, exams, or friends pull you in different directions.",
+      "weight": 3,
+      "tags": [
+        "education",
+        "teen"
+      ],
+      "choices": [
+        {
+          "label": "Lean in",
+          "statEffects": {
+            "happiness": 3,
+            "smarts": 1
+          },
+          "resultText": "You grew from the experience."
+        },
+        {
+          "label": "Play it safe",
+          "statEffects": {
+            "happiness": -1
+          },
+          "resultText": "You kept a low profile."
+        }
+      ]
+    },
+    {
+      "id": "teen_school_beat_13",
+      "minAge": 15,
+      "maxAge": 17,
+      "text": "A school year moment #13: clubs, exams, or friends pull you in different directions.",
+      "weight": 3,
+      "tags": [
+        "education",
+        "teen"
+      ],
+      "choices": [
+        {
+          "label": "Lean in",
+          "statEffects": {
+            "happiness": 3,
+            "smarts": 1
+          },
+          "resultText": "You grew from the experience."
+        },
+        {
+          "label": "Play it safe",
+          "statEffects": {
+            "happiness": -1
+          },
+          "resultText": "You kept a low profile."
+        }
+      ]
+    },
+    {
+      "id": "teen_school_beat_14",
+      "minAge": 16,
+      "maxAge": 17,
+      "text": "A school year moment #14: clubs, exams, or friends pull you in different directions.",
+      "weight": 3,
+      "tags": [
+        "education",
+        "teen"
+      ],
+      "choices": [
+        {
+          "label": "Lean in",
+          "statEffects": {
+            "happiness": 3,
+            "smarts": 1
+          },
+          "resultText": "You grew from the experience."
+        },
+        {
+          "label": "Play it safe",
+          "statEffects": {
+            "happiness": -1
+          },
+          "resultText": "You kept a low profile."
+        }
+      ]
+    },
+    {
+      "id": "teen_school_beat_15",
+      "minAge": 12,
+      "maxAge": 17,
+      "text": "A school year moment #15: clubs, exams, or friends pull you in different directions.",
+      "weight": 3,
+      "tags": [
+        "education",
+        "teen"
+      ],
+      "choices": [
+        {
+          "label": "Lean in",
+          "statEffects": {
+            "happiness": 3,
+            "smarts": 1
+          },
+          "resultText": "You grew from the experience."
+        },
+        {
+          "label": "Play it safe",
+          "statEffects": {
+            "happiness": -1
+          },
+          "resultText": "You kept a low profile."
         }
       ]
     }

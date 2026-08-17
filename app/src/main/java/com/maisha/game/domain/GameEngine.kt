@@ -740,6 +740,20 @@ class GameEngine @Inject constructor(
         return StudySessionResult.Success(updated)
     }
 
+    fun joinSchoolClub(character: Character, club: com.maisha.game.data.model.SchoolClub): Character =
+        educationEngine.joinSchoolClub(character, club)
+
+    fun startCareerTrack(character: Character, track: com.maisha.game.data.model.CareerTrack): Character =
+        careerEngine.startCareerTrack(character, track)
+
+    fun practiceCareerTrack(character: Character): CareerTrackPracticeResult =
+        careerEngine.practiceCareerTrack(character)
+
+    fun performPrisonActivity(
+        character: Character,
+        activity: com.maisha.game.data.model.PrisonActivity
+    ): PrisonActivityResult = crimeEngine.performPrisonActivity(character, activity)
+
     fun updateWill(character: Character, will: Map<String, Int>?): Character {
         if (will == null) {
             return character.copy(will = null)
@@ -954,9 +968,11 @@ class GameEngine @Inject constructor(
     }
 
     private fun processCareerProgression(character: Character): Character {
-        if (character.career.isRetired) return character
-        if (character.career.currentJob == null) return character
-        return careerEngine.workYear(character, character.career.plannedWorkEffort)
+        val afterWork = when {
+            character.career.isRetired || character.career.currentJob == null -> character
+            else -> careerEngine.workYear(character, character.career.plannedWorkEffort)
+        }
+        return careerEngine.tickCareerTrackYear(afterWork)
     }
 
     private fun processFinanceProgression(character: Character): Character {

@@ -5,12 +5,14 @@ import com.maisha.game.data.CountryCatalog
 import com.maisha.game.data.EconomyScaler
 import com.maisha.game.data.JobPool
 import com.maisha.game.data.model.AssetType
+import com.maisha.game.data.model.CareerTrack
 import com.maisha.game.data.model.CareerState
 import com.maisha.game.data.model.Character
 import com.maisha.game.data.model.EventChoice
 import com.maisha.game.data.model.HustleType
 import com.maisha.game.data.model.Job
 import com.maisha.game.data.model.LifeEvent
+import com.maisha.game.data.model.SchoolClub
 import com.maisha.game.data.model.SchoolStage
 import com.maisha.game.data.model.VisaType
 import com.maisha.game.data.model.WorkEffort
@@ -41,6 +43,12 @@ enum class SideHustleFailure {
     PREREQUISITES_NOT_MET,
     ALREADY_DONE_THIS_YEAR,
     INELIGIBLE
+}
+
+sealed class CareerTrackPracticeResult {
+    data class Success(val character: Character) : CareerTrackPracticeResult()
+    data object Ineligible : CareerTrackPracticeResult()
+    data object MaxLevel : CareerTrackPracticeResult()
 }
 
 @Singleton
@@ -715,6 +723,131 @@ class CareerEngine @Inject constructor(
         HustleType.RESELLING -> "reselling"
     }
 
+    fun canStartCareerTrack(character: Character, track: CareerTrack): Boolean {
+        if (!character.alive || character.criminalRecord.currentlyIncarcerated) return false
+        if (character.career.careerTrack != CareerTrack.NONE) return false
+        if (character.age < MIN_TRACK_AGE) return false
+        return when (track) {
+            CareerTrack.ENTERTAINMENT -> true
+            CareerTrack.PRO_SPORTS -> character.education.schoolClub == SchoolClub.FOOTBALL ||
+                character.stats.health >= PRO_SPORTS_MIN_HEALTH
+            CareerTrack.NONE -> false
+        }
+    }
+
+    fun startCareerTrack(character: Character, track: CareerTrack): Character {
+        if (!canStartCareerTrack(character, track)) return character
+        val label = when (track) {
+            CareerTrack.ENTERTAINMENT -> "entertainment"
+            CareerTrack.PRO_SPORTS -> "pro sports"
+            CareerTrack.NONE -> return character
+        }
+        return character.copy(
+            career = character.career.copy(
+                careerTrack = track,
+                trackLevel = 0,
+                trackProgress = 0
+            ),
+            eventLog = EventLogCap.prepend(
+                character.eventLog,
+                "You started pursuing a $label career."
+            )
+        )
+    }
+
+    fun practiceCareerTrack(character: Character): CareerTrackPracticeResult {
+        val track = character.career.careerTrack
+        if (track == CareerTrack.NONE || !character.alive) {
+            return CareerTrackPracticeResult.Ineligible
+        }
+        if (character.career.trackLevel >= MAX_TRACK_LEVEL) {
+            return CareerTrackPracticeResult.MaxLevel
+        }
+        val progressGain = TRACK_PRACTICE_GAIN + Random.nextInt(0, 6)
+        val happinessDelta = if (track == CareerTrack.PRO_SPORTS) -2 else -1
+        var updated = character.copy(
+            stats = character.stats.copy(
+                happiness = clampStat(character.stats.happiness + happinessDelta),
+                smarts = if (track == CareerTrack.ENTERTAINMENT) {
+                    clampStat(character.stats.smarts + 1)
+                } else {
+                    character.stats.smarts
+                },
+                health = if (track == CareerTrack.PRO_SPORTS) {
+                    clampStat(character.stats.health + 1)
+                } else {
+                    character.stats.health
+                }
+            )
+        )
+        var newProgress = updated.career.trackProgress + progressGain
+        var newLevel = updated.career.trackLevel
+        if (newProgress >= TRACK_LEVEL_THRESHOLD) {
+            newProgress = 0
+            newLevel = (newLevel + 1).coerceAtMost(MAX_TRACK_LEVEL)
+            updated = updated.copy(
+                eventLog = EventLogCap.prepend(
+                    updated.eventLog,
+                    trackLevelUpMessage(track, newLevel)
+                )
+            )
+            if (track == CareerTrack.ENTERTAINMENT && newLevel >= 2 && !updated.socialMedia.hasAccount) {
+                updated = updated.copy(
+                    socialMedia = updated.socialMedia.copy(hasAccount = true, followers = 500)
+                )
+            }
+        }
+        updated = updated.copy(
+            career = updated.career.copy(
+                trackProgress = newProgress,
+                trackLevel = newLevel
+            )
+        )
+        return CareerTrackPracticeResult.Success(updated)
+    }
+
+    fun tickCareerTrackYear(character: Character): Character {
+        val track = character.career.careerTrack
+        if (track == CareerTrack.NONE || character.career.trackLevel >= MAX_TRACK_LEVEL) {
+            return character
+        }
+        var newProgress = character.career.trackProgress + TRACK_PASSIVE_GAIN
+        var newLevel = character.career.trackLevel
+        var updated = character
+        if (newProgress >= TRACK_LEVEL_THRESHOLD) {
+            newProgress = 0
+            newLevel = (newLevel + 1).coerceAtMost(MAX_TRACK_LEVEL)
+            updated = updated.copy(
+                eventLog = EventLogCap.prepend(
+                    updated.eventLog,
+                    trackLevelUpMessage(track, newLevel)
+                )
+            )
+        }
+        return updated.copy(
+            career = updated.career.copy(
+                trackProgress = newProgress,
+                trackLevel = newLevel
+            )
+        )
+    }
+
+    private fun trackLevelUpMessage(track: CareerTrack, level: Int): String = when (track) {
+        CareerTrack.ENTERTAINMENT -> when (level) {
+            1 -> "You booked your first paid local gig."
+            2 -> "Regional promoters started noticing your act."
+            3 -> "You signed with a label — you're a rising star."
+            else -> "Your entertainment career advanced."
+        }
+        CareerTrack.PRO_SPORTS -> when (level) {
+            1 -> "You made a semi-pro squad."
+            2 -> "A pro team offered you a contract."
+            3 -> "You're a star athlete with national buzz."
+            else -> "Your sports career advanced."
+        }
+        CareerTrack.NONE -> "Your career track advanced."
+    }
+
     companion object {
         const val CAREER_SYSTEM_TAG = "career_system"
         const val PROMOTION_EVENT_ID = "career_promotion_system"
@@ -751,5 +884,11 @@ class CareerEngine @Inject constructor(
         private const val SIDE_HUSTLE_HEALTH_MIN = 1
         private const val SIDE_HUSTLE_HEALTH_MAX = 3
         const val SIDE_HUSTLE_BURNOUT_MULTIPLIER = 2f
+        const val MIN_TRACK_AGE = 16
+        private const val PRO_SPORTS_MIN_HEALTH = 55
+        private const val TRACK_PRACTICE_GAIN = 18
+        private const val TRACK_PASSIVE_GAIN = 8
+        private const val TRACK_LEVEL_THRESHOLD = 100
+        private const val MAX_TRACK_LEVEL = 3
     }
 }

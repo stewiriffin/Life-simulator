@@ -64,10 +64,13 @@ import com.maisha.game.data.model.Job
 import com.maisha.game.data.model.PoliticalOffice
 import com.maisha.game.data.model.SchoolStage
 import com.maisha.game.data.model.TaxPolicyType
+import com.maisha.game.data.model.CareerTrack
+import com.maisha.game.data.model.SchoolClub
 import com.maisha.game.data.model.StudyEffort
 import com.maisha.game.data.model.WorkEffort
 import com.maisha.game.domain.BusinessEngine
 import com.maisha.game.domain.CareerEngine
+import com.maisha.game.domain.EducationEngine
 import com.maisha.game.domain.HealthEngine
 import com.maisha.game.domain.PoliticsEngine
 import com.maisha.game.domain.RelocationEngine
@@ -132,6 +135,9 @@ fun CareerScreen(
     onPassTaxPolicy: (TaxPolicyType) -> Unit,
     onSetWorkEffort: (com.maisha.game.data.model.WorkEffort) -> Unit,
     onSetStudyEffort: (StudyEffort) -> Unit,
+    onJoinSchoolClub: (SchoolClub) -> Unit,
+    onStartCareerTrack: (CareerTrack) -> Unit,
+    onPracticeCareerTrack: () -> Unit,
     onCareerMessageDismissed: () -> Unit,
     modifier: Modifier = Modifier
 ) {
@@ -418,6 +424,25 @@ fun CareerScreen(
                         countryCode = character.countryCode,
                         onDropOut = { dropOutConfirm.request(Unit) },
                         onSetStudyEffort = onSetStudyEffort
+                    )
+                }
+                item(
+                    key = "school_club",
+                    contentType = CareerListContentType.Education
+                ) {
+                    SchoolClubSectionCard(
+                        character = character,
+                        onJoinSchoolClub = onJoinSchoolClub
+                    )
+                }
+                item(
+                    key = "career_track",
+                    contentType = CareerListContentType.Education
+                ) {
+                    CareerTrackSectionCard(
+                        character = character,
+                        onStartCareerTrack = onStartCareerTrack,
+                        onPracticeCareerTrack = onPracticeCareerTrack
                     )
                 }
             }
@@ -1014,6 +1039,146 @@ private fun EducationSectionCard(
             }
         }
     }
+}
+
+@Composable
+private fun SchoolClubSectionCard(
+    character: Character,
+    onJoinSchoolClub: (SchoolClub) -> Unit
+) {
+    val eligible = character.age in EducationEngine.SCHOOL_CLUB_MIN_AGE..EducationEngine.SCHOOL_CLUB_MAX_AGE &&
+        !character.education.expelled &&
+        character.education.droppedOutFrom == null &&
+        (character.education.stage == SchoolStage.SECONDARY ||
+            (character.education.stage == SchoolStage.PRIMARY && character.education.currentGrade >= 6))
+    if (!eligible) return
+
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        shape = MaishaRadius.cardShape,
+        colors = CardDefaults.cardColors(containerColor = Color.White)
+    ) {
+        Column(modifier = Modifier.padding(14.dp)) {
+            Text(
+                text = stringResource(R.string.section_school_clubs),
+                style = MaterialTheme.typography.labelMedium,
+                color = GoldAccent
+            )
+            character.education.schoolClub?.let { active ->
+                Spacer(modifier = Modifier.height(6.dp))
+                Text(
+                    text = stringResource(R.string.format_active_club, schoolClubLabel(active)),
+                    style = MaterialTheme.typography.bodyMedium
+                )
+            }
+            Spacer(modifier = Modifier.height(8.dp))
+            Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(6.dp)
+                ) {
+                    listOf(SchoolClub.DEBATE, SchoolClub.FOOTBALL, SchoolClub.DRAMA).forEach { club ->
+                        FilterChip(
+                            selected = character.education.schoolClub == club,
+                            onClick = { onJoinSchoolClub(club) },
+                            label = { Text(schoolClubLabel(club), maxLines = 1) },
+                            modifier = Modifier.weight(1f)
+                        )
+                    }
+                }
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(6.dp)
+                ) {
+                    listOf(SchoolClub.CODING, SchoolClub.MUSIC).forEach { club ->
+                        FilterChip(
+                            selected = character.education.schoolClub == club,
+                            onClick = { onJoinSchoolClub(club) },
+                            label = { Text(schoolClubLabel(club), maxLines = 1) },
+                            modifier = Modifier.weight(1f)
+                        )
+                    }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun schoolClubLabel(club: SchoolClub): String = when (club) {
+    SchoolClub.DEBATE -> stringResource(R.string.club_debate)
+    SchoolClub.FOOTBALL -> stringResource(R.string.club_football)
+    SchoolClub.DRAMA -> stringResource(R.string.club_drama)
+    SchoolClub.CODING -> stringResource(R.string.club_coding)
+    SchoolClub.MUSIC -> stringResource(R.string.club_music)
+}
+
+@Composable
+private fun CareerTrackSectionCard(
+    character: Character,
+    onStartCareerTrack: (CareerTrack) -> Unit,
+    onPracticeCareerTrack: () -> Unit
+) {
+    if (character.age < CareerEngine.MIN_TRACK_AGE) return
+
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        shape = MaishaRadius.cardShape,
+        colors = CardDefaults.cardColors(containerColor = Color.White)
+    ) {
+        Column(modifier = Modifier.padding(14.dp)) {
+            Text(
+                text = stringResource(R.string.section_career_tracks),
+                style = MaterialTheme.typography.labelMedium,
+                color = GoldAccent
+            )
+            Spacer(modifier = Modifier.height(6.dp))
+            when (character.career.careerTrack) {
+                CareerTrack.NONE -> {
+                    Text(
+                        text = stringResource(R.string.career_track_pick_hint),
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                    Spacer(modifier = Modifier.height(8.dp))
+                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                        OutlinedButton(onClick = { onStartCareerTrack(CareerTrack.ENTERTAINMENT) }) {
+                            Text(stringResource(R.string.track_entertainment))
+                        }
+                        OutlinedButton(onClick = { onStartCareerTrack(CareerTrack.PRO_SPORTS) }) {
+                            Text(stringResource(R.string.track_pro_sports))
+                        }
+                    }
+                }
+                else -> {
+                    Text(
+                        text = stringResource(
+                            R.string.format_track_progress,
+                            careerTrackLabel(character.career.careerTrack),
+                            character.career.trackLevel,
+                            character.career.trackProgress
+                        ),
+                        style = MaterialTheme.typography.bodyMedium
+                    )
+                    Spacer(modifier = Modifier.height(8.dp))
+                    Button(
+                        onClick = onPracticeCareerTrack,
+                        modifier = Modifier.fillMaxWidth(),
+                        shape = RoundedCornerShape(12.dp)
+                    ) {
+                        Text(stringResource(R.string.btn_practice_track))
+                    }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun careerTrackLabel(track: CareerTrack): String = when (track) {
+    CareerTrack.ENTERTAINMENT -> stringResource(R.string.track_entertainment)
+    CareerTrack.PRO_SPORTS -> stringResource(R.string.track_pro_sports)
+    CareerTrack.NONE -> ""
 }
 
 @Composable

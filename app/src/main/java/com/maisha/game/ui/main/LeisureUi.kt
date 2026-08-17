@@ -23,6 +23,9 @@ fun leisureTitle(activity: LeisureActivity): String = when (activity) {
     LeisureActivity.GRANDKIDS_DAY -> stringResource(R.string.leisure_grandkids_day_title)
     LeisureActivity.COMMUNITY_CLUB -> stringResource(R.string.leisure_community_club_title)
     LeisureActivity.MEMOIR_WRITING -> stringResource(R.string.leisure_memoir_title)
+    LeisureActivity.LIBRARY_VISIT -> stringResource(R.string.leisure_library_title)
+    LeisureActivity.MEDITATION -> stringResource(R.string.leisure_meditation_title)
+    LeisureActivity.ANNUAL_CHECKUP -> stringResource(R.string.leisure_checkup_title)
 }
 
 @Composable
@@ -43,6 +46,9 @@ fun leisureDescription(activity: LeisureActivity): String = when (activity) {
     LeisureActivity.GRANDKIDS_DAY -> stringResource(R.string.leisure_grandkids_day_desc)
     LeisureActivity.COMMUNITY_CLUB -> stringResource(R.string.leisure_community_club_desc)
     LeisureActivity.MEMOIR_WRITING -> stringResource(R.string.leisure_memoir_desc)
+    LeisureActivity.LIBRARY_VISIT -> stringResource(R.string.leisure_library_desc)
+    LeisureActivity.MEDITATION -> stringResource(R.string.leisure_meditation_desc)
+    LeisureActivity.ANNUAL_CHECKUP -> stringResource(R.string.leisure_checkup_desc)
 }
 
 @Composable
@@ -63,6 +69,9 @@ fun leisureEffectLabel(activity: LeisureActivity): String = when (activity) {
     LeisureActivity.GRANDKIDS_DAY -> stringResource(R.string.leisure_effect_grandkids)
     LeisureActivity.COMMUNITY_CLUB -> stringResource(R.string.leisure_effect_community)
     LeisureActivity.MEMOIR_WRITING -> stringResource(R.string.leisure_effect_memoir)
+    LeisureActivity.LIBRARY_VISIT -> stringResource(R.string.leisure_effect_library)
+    LeisureActivity.MEDITATION -> stringResource(R.string.leisure_effect_meditation)
+    LeisureActivity.ANNUAL_CHECKUP -> stringResource(R.string.leisure_effect_checkup)
 }
 
 fun leisureMessageRes(activity: LeisureActivity): Int = when (activity) {
@@ -82,4 +91,7 @@ fun leisureMessageRes(activity: LeisureActivity): Int = when (activity) {
     LeisureActivity.GRANDKIDS_DAY -> R.string.msg_leisure_grandkids
     LeisureActivity.COMMUNITY_CLUB -> R.string.msg_leisure_community_club
     LeisureActivity.MEMOIR_WRITING -> R.string.msg_leisure_memoir
+    LeisureActivity.LIBRARY_VISIT -> R.string.msg_leisure_library
+    LeisureActivity.MEDITATION -> R.string.msg_leisure_meditation
+    LeisureActivity.ANNUAL_CHECKUP -> R.string.msg_leisure_checkup
 }
