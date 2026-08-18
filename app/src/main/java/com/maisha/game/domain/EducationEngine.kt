@@ -136,11 +136,23 @@ class EducationEngine @Inject constructor(
         val gpaDelta = EffortResolver.studyGpaDelta(studyChoice)
         val smartsDelta = EffortResolver.studySmartsDelta(studyChoice)
         val happinessDelta = EffortResolver.studyHappinessDelta(studyChoice)
+        val healthStudyPenalty = when (studyChoice) {
+            StudyEffort.HARD -> if (character.stats.health < 45) -2 else -1
+            StudyEffort.NORMAL -> 0
+            StudyEffort.SLACK -> 0
+        }
+        val effectiveSmartsDelta = if (character.stats.happiness < 35) {
+            (smartsDelta - 1).coerceAtLeast(0)
+        } else {
+            smartsDelta
+        }
+        val effectiveGpaDelta = if (character.stats.health < 35) gpaDelta - 0.08f else gpaDelta
 
-        val newGpa = clampGpa(education.gpa + gpaDelta)
+        val newGpa = clampGpa(education.gpa + effectiveGpaDelta)
         val newStats = character.stats.copy(
-            smarts = clampStat(character.stats.smarts + smartsDelta),
-            happiness = clampStat(character.stats.happiness + happinessDelta)
+            smarts = clampStat(character.stats.smarts + effectiveSmartsDelta),
+            happiness = clampStat(character.stats.happiness + happinessDelta),
+            health = clampStat(character.stats.health + healthStudyPenalty)
         )
 
         return character.copy(
@@ -272,6 +284,8 @@ class EducationEngine @Inject constructor(
         val score = (
             education.gpa * 15f +
                 character.stats.smarts * 0.5f +
+                character.stats.happiness * 0.08f +
+                character.stats.health * 0.06f +
                 randomFactor
             ).coerceIn(0f, 100f)
 
@@ -381,7 +395,9 @@ class EducationEngine @Inject constructor(
     /** True when KCSE letter grade maps to at least [UNIVERSITY_MIN_POINTS]. */
     fun isEligibleForUniversity(character: Character): Boolean {
         val grade = character.education.kcseGrade ?: return false
-        return gradeToPoints(grade) >= UNIVERSITY_MIN_POINTS
+        if (gradeToPoints(grade) < UNIVERSITY_MIN_POINTS) return false
+        if (character.stats.smarts < UNIVERSITY_MIN_SMARTS) return false
+        return character.stats.happiness >= UNIVERSITY_MIN_HAPPINESS
     }
 
     /** Primary exit exam due: final primary grade, age threshold, not yet passed. Country-agnostic; display localized via [ExamNames]. */
@@ -534,6 +550,14 @@ class EducationEngine @Inject constructor(
 
         if (examType == ExamType.KCSE && result.passed && isEligibleForUniversity(character)) {
             UniversityMajor.entries.forEach { major ->
+                val majorEligible = when (major) {
+                    UniversityMajor.MEDICINE -> character.stats.smarts >= MAJOR_MEDICINE_MIN_SMARTS &&
+                        character.stats.health >= MAJOR_MEDICINE_MIN_HEALTH
+                    UniversityMajor.LAW -> character.stats.smarts >= MAJOR_LAW_MIN_SMARTS
+                    UniversityMajor.NURSING -> character.stats.health >= MAJOR_NURSING_MIN_HEALTH
+                    else -> true
+                }
+                if (!majorEligible) return@forEach
                 choices += EventChoice(
                     label = "Apply for ${major.courseLabel} at university",
                     statEffects = mapOf(
@@ -647,6 +671,12 @@ class EducationEngine @Inject constructor(
         private const val KCPE_PASS_SCORE = 50f
         private const val KCSE_PASS_SCORE = 45f
         private const val UNIVERSITY_MIN_POINTS = 7 // C+ equivalent
+        private const val UNIVERSITY_MIN_SMARTS = 45
+        private const val UNIVERSITY_MIN_HAPPINESS = 35
+        private const val MAJOR_MEDICINE_MIN_SMARTS = 75
+        private const val MAJOR_MEDICINE_MIN_HEALTH = 55
+        private const val MAJOR_LAW_MIN_SMARTS = 68
+        private const val MAJOR_NURSING_MIN_HEALTH = 50
         private const val DOMESTIC_TUITION_KENYA = 80_000
         /** International students pay this multiplier on local tuition. */
         const val INTERNATIONAL_STUDENT_MULTIPLIER = 3.5

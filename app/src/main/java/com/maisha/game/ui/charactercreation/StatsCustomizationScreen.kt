@@ -1,6 +1,7 @@
 package com.maisha.game.ui.charactercreation
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -131,6 +132,18 @@ fun StatsCustomizationScreen(
 
         Spacer(modifier = Modifier.height(20.dp))
 
+        StatImpactCard(
+            title = "Why stats matter",
+            lines = listOf(
+                "Health: illness risk, sports access, work stamina, treatment success",
+                "Happiness: friendships, dating success, study focus, yearly stress",
+                "Smarts: exams, university access, jobs, promotions, licenses",
+                "Looks: dating success, social outcomes, job interview edge"
+            )
+        )
+
+        Spacer(modifier = Modifier.height(20.dp))
+
         Button(
             onClick = onStartLife,
             enabled = !uiState.isSaving,
@@ -143,6 +156,34 @@ fun StatsCustomizationScreen(
             Text(
                 text = if (uiState.isSaving) stringResource(R.string.btn_starting) else stringResource(R.string.btn_start_life),
                 fontWeight = FontWeight.Bold
+            )
+        }
+    }
+}
+
+@Composable
+private fun StatImpactCard(
+    title: String,
+    lines: List<String>
+) {
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .border(1.dp, GoldAccent.copy(alpha = 0.35f), RoundedCornerShape(16.dp))
+            .padding(16.dp),
+        verticalArrangement = Arrangement.spacedBy(8.dp)
+    ) {
+        Text(
+            text = title,
+            style = MaterialTheme.typography.titleSmall,
+            color = InkPrimary,
+            fontWeight = FontWeight.Bold
+        )
+        lines.forEach { line ->
+            Text(
+                text = line,
+                style = MaterialTheme.typography.bodySmall,
+                color = InkPrimary.copy(alpha = 0.78f)
             )
         }
     }

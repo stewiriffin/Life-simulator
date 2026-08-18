@@ -184,6 +184,8 @@ class GameEngine @Inject constructor(
         } else if (incarceratedAtYearStart) {
             updatedCharacter to rollEvents(updatedCharacter, triggeredEventIds).toAgeUpResult()
         } else {
+            resolveStatPressureEvent(updatedCharacter)
+                ?: 
             resolveCareerEvent(updatedCharacter)
                 ?: resolveExamEvent(updatedCharacter)
                 ?: (updatedCharacter to rollEvents(updatedCharacter, triggeredEventIds).toAgeUpResult())
@@ -1011,6 +1013,109 @@ class GameEngine @Inject constructor(
         }
         updated = financeEngine.applyCostOfLiving(updated)
         return updated
+    }
+
+    private fun resolveStatPressureEvent(character: Character): Pair<Character, AgeUpResult>? {
+        val stats = character.stats
+        return when {
+            stats.health < 30 -> {
+                character to AgeUpResult.SingleEvent(
+                    LifeEvent(
+                        id = "stat_health_warning_${character.age}",
+                        minAge = character.age,
+                        maxAge = character.age,
+                        text = "Your poor health is starting to affect daily life. Even simple tasks feel heavier this year.",
+                        choices = listOf(
+                            EventChoice(
+                                label = "Rest and recover",
+                                statEffects = mapOf("health" to 6, "happiness" to 1),
+                                resultText = "You slow down and let your body recover."
+                            ),
+                            EventChoice(
+                                label = "Push through anyway",
+                                statEffects = mapOf("health" to -4, "happiness" to -2),
+                                performanceEffect = -4,
+                                resultText = "You force yourself onward, but your body pays for it."
+                            )
+                        ),
+                        tags = listOf("stats_system", "one_time")
+                    )
+                )
+            }
+            stats.happiness < 30 -> {
+                character to AgeUpResult.SingleEvent(
+                    LifeEvent(
+                        id = "stat_happiness_warning_${character.age}",
+                        minAge = character.age,
+                        maxAge = character.age,
+                        text = "Your low mood colors everything this year. Relationships and motivation both feel harder to maintain.",
+                        choices = listOf(
+                            EventChoice(
+                                label = "Reach out to someone",
+                                statEffects = mapOf("happiness" to 5),
+                                familyRelationshipEffect = 5,
+                                resultText = "Talking helps more than you expected."
+                            ),
+                            EventChoice(
+                                label = "Bottle it up",
+                                statEffects = mapOf("happiness" to -3, "health" to -2),
+                                resultText = "You keep it to yourself and feel even heavier."
+                            )
+                        ),
+                        tags = listOf("stats_system", "one_time")
+                    )
+                )
+            }
+            stats.smarts >= 85 && character.education.stage == SchoolStage.SECONDARY -> {
+                character to AgeUpResult.SingleEvent(
+                    LifeEvent(
+                        id = "stat_smarts_opportunity_${character.age}",
+                        minAge = character.age,
+                        maxAge = character.age,
+                        text = "Teachers notice how sharp you are and suggest extra academic opportunities.",
+                        choices = listOf(
+                            EventChoice(
+                                label = "Take the challenge",
+                                statEffects = mapOf("smarts" to 3, "happiness" to -1),
+                                gpaEffect = 0.15f,
+                                resultText = "The extra pressure is real, but you grow from it."
+                            ),
+                            EventChoice(
+                                label = "Stay balanced",
+                                statEffects = mapOf("happiness" to 3),
+                                resultText = "You pass on the pressure and protect your peace."
+                            )
+                        ),
+                        tags = listOf("stats_system", "one_time")
+                    )
+                )
+            }
+            stats.looks >= 85 && character.age >= 16 -> {
+                character to AgeUpResult.SingleEvent(
+                    LifeEvent(
+                        id = "stat_looks_opportunity_${character.age}",
+                        minAge = character.age,
+                        maxAge = character.age,
+                        text = "Your looks attract extra attention this year, opening a few social doors.",
+                        choices = listOf(
+                            EventChoice(
+                                label = "Lean into it",
+                                statEffects = mapOf("happiness" to 4),
+                                followerEffect = 150,
+                                resultText = "The attention boosts your confidence and your profile."
+                            ),
+                            EventChoice(
+                                label = "Keep a low profile",
+                                statEffects = mapOf("smarts" to 1),
+                                resultText = "You stay grounded and avoid the noise."
+                            )
+                        ),
+                        tags = listOf("stats_system", "one_time")
+                    )
+                )
+            }
+            else -> null
+        }
     }
 
     private fun resolveCareerEvent(character: Character): Pair<Character, AgeUpResult>? {

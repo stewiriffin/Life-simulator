@@ -224,7 +224,7 @@ class CareerEngine @Inject constructor(
     fun workYear(character: Character, effort: WorkEffort): Character {
         val job = character.career.currentJob ?: return character
 
-        val performanceDelta = EffortResolver.workYearPerformanceDelta(effort)
+        val performanceDelta = EffortResolver.workYearPerformanceDelta(effort) + workPerformanceModifier(character)
         val happinessDelta = EffortResolver.workYearHappinessDelta(effort)
 
         val deployed = job.isMilitary && character.career.pendingDeployment
@@ -378,7 +378,7 @@ class CareerEngine @Inject constructor(
     fun applyWorkEffort(character: Character, effort: WorkEffort): Character {
         val job = character.career.currentJob ?: return character
 
-        val performanceDelta = EffortResolver.workEventPerformanceDelta(effort)
+        val performanceDelta = EffortResolver.workEventPerformanceDelta(effort) + workPerformanceModifier(character)
         val happinessDelta = EffortResolver.workEventHappinessDelta(effort)
         val newPerformance = clampPerformanceScore(job.performanceScore + performanceDelta)
         val updatedStats = character.stats.copy(
@@ -638,6 +638,8 @@ class CareerEngine @Inject constructor(
     private fun calculateHireChance(character: Character): Float {
         val smartsFactor = character.stats.smarts / 100f * 0.35f
         val gpaFactor = (character.education.gpa / 4f).coerceIn(0f, 1f) * 0.25f
+        val looksFactor = character.stats.looks / 100f * LOOKS_HIRE_WEIGHT
+        val healthFactor = character.stats.health / 100f * HEALTH_HIRE_WEIGHT
         val recordPenalty = criminalRecordHirePenalty(character)
         val cultureShockPenalty = if (isCultureShockActive(character)) {
             CULTURE_SHOCK_HIRE_PENALTY
@@ -645,7 +647,7 @@ class CareerEngine @Inject constructor(
             0f
         }
         val base = 0.35f
-        return (base + smartsFactor + gpaFactor - recordPenalty - cultureShockPenalty)
+        return (base + smartsFactor + gpaFactor + looksFactor + healthFactor - recordPenalty - cultureShockPenalty)
             .coerceIn(0.1f, 0.95f)
     }
 
@@ -702,6 +704,17 @@ class CareerEngine @Inject constructor(
             1f
         }
         return healthEngine.applyWorkEffortStress(character, effort, burnoutMultiplier)
+    }
+
+    private fun workPerformanceModifier(character: Character): Int {
+        var modifier = 0
+        if (character.stats.smarts >= 75) modifier += 3
+        if (character.stats.happiness >= 70) modifier += 2
+        if (character.stats.health >= 70) modifier += 2
+        if (character.stats.happiness < 35) modifier -= 4
+        if (character.stats.health < 35) modifier -= 4
+        if (character.stats.smarts < 35) modifier -= 3
+        return modifier
     }
 
     private fun calculateSideHustlePayout(
@@ -960,6 +973,8 @@ class CareerEngine @Inject constructor(
         private const val DOWNSIZING_CHANCE = 0.04f
         private const val DOWNSIZING_HAPPINESS_PENALTY = 15
         private const val CRIMINAL_RECORD_HIRE_PENALTY = 0.15f
+        private const val LOOKS_HIRE_WEIGHT = 0.08f
+        private const val HEALTH_HIRE_WEIGHT = 0.07f
         const val CULTURE_SHOCK_YEARS = 3
         const val CULTURE_SHOCK_HIRE_PENALTY = 0.10f
         private const val MIN_SIDE_HUSTLE_AGE = 16

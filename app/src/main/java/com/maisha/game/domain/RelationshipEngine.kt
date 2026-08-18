@@ -432,6 +432,14 @@ class RelationshipEngine @Inject constructor(
         }
         val fee = firstDateCost(character)
         if (character.stats.money < fee) return StartDatingResult.InsufficientFunds
+        val acceptanceChance = (
+            DATING_BASE_ACCEPT_CHANCE +
+                character.stats.looks / 100f * DATING_LOOKS_WEIGHT +
+                character.stats.happiness / 100f * DATING_HAPPINESS_WEIGHT
+            ).coerceIn(0.20f, 0.92f)
+        if (Random.nextFloat() > acceptanceChance) {
+            return StartDatingResult.Ineligible
+        }
         val partner = prospect.copy(
             relation = RelationType.SPOUSE,
             dateOfPartnership = character.age,
@@ -514,7 +522,12 @@ class RelationshipEngine @Inject constructor(
             stats = character.stats.copy(money = character.stats.money - cost),
             lifestyle = character.lifestyle.copy(socializedThisYear = true)
         )
-        if (Random.nextFloat() >= SEEK_FRIEND_SUCCESS_CHANCE) {
+        val successChance = (
+            SEEK_FRIEND_SUCCESS_CHANCE +
+                character.stats.happiness / 100f * SEEK_FRIEND_HAPPINESS_WEIGHT +
+                character.stats.looks / 100f * SEEK_FRIEND_LOOKS_WEIGHT
+        ).coerceIn(0.20f, 0.90f)
+        if (Random.nextFloat() >= successChance) {
             updated = updated.copy(
                 eventLog = EventLogCap.prepend(
                     updated.eventLog,
@@ -705,7 +718,7 @@ class RelationshipEngine @Inject constructor(
             return character to ProposalResult.Rejected
         }
 
-        val accepted = Random.nextFloat() < proposalAcceptChance(partner.relationshipLevel)
+        val accepted = Random.nextFloat() < proposalAcceptChance(partner, character)
         return if (accepted) {
             val marriedPartner = partner.copy(
                 isMarried = true,
@@ -1583,6 +1596,13 @@ class RelationshipEngine @Inject constructor(
         return (0.5f + (relationshipLevel - PROPOSAL_THRESHOLD) * 0.02f).coerceIn(0.5f, 0.95f)
     }
 
+    private fun proposalAcceptChance(partner: Person, character: Character): Float {
+        val relationshipFactor = 0.5f + (partner.relationshipLevel - PROPOSAL_THRESHOLD) * 0.02f
+        val happinessFactor = character.stats.happiness / 100f * 0.10f
+        val wealthStabilityFactor = if (character.stats.money >= COMFORTABLE_NET_WORTH_THRESHOLD) 0.05f else 0f
+        return (relationshipFactor + happinessFactor + wealthStabilityFactor).coerceIn(0.45f, 0.97f)
+    }
+
     private fun List<Person>.replaceAt(index: Int, person: Person): List<Person> =
         toMutableList().apply { this[index] = person }
 
@@ -1657,6 +1677,11 @@ class RelationshipEngine @Inject constructor(
         private const val SCHOOL_FRIEND_CHANCE = 0.10f
         private const val WORK_FRIEND_CHANCE = 0.07f
         private const val SEEK_FRIEND_SUCCESS_CHANCE = 0.55f
+        private const val SEEK_FRIEND_HAPPINESS_WEIGHT = 0.18f
+        private const val SEEK_FRIEND_LOOKS_WEIGHT = 0.10f
+        private const val DATING_BASE_ACCEPT_CHANCE = 0.40f
+        private const val DATING_LOOKS_WEIGHT = 0.25f
+        private const val DATING_HAPPINESS_WEIGHT = 0.15f
         private const val BREAKUP_HAPPINESS_PENALTY = 10
         private const val DIVORCE_HAPPINESS_PENALTY = 20
         private const val ASK_MONEY_SUCCESS_CHANCE = 0.7f

@@ -36,7 +36,7 @@ class HealthEngine @Inject constructor() {
         if (character.activeConditions.any { !it.treated }) {
             return null
         }
-        val chance = illnessChance(character.stats.health)
+        val chance = illnessChance(character.stats.health, character.stats.happiness)
         if (Random.nextFloat() >= chance) return null
 
         val severity = when {
@@ -145,7 +145,9 @@ class HealthEngine @Inject constructor() {
         val successChance = treatmentSuccessChance(
             condition.severity,
             usePrivateCare,
-            character.lifestyle.hasHealthInsurance
+            character.lifestyle.hasHealthInsurance,
+            character.stats.smarts,
+            character.stats.health
         )
         val afterPayment = character.copy(
             stats = character.stats.copy(money = character.stats.money - cost)
@@ -455,9 +457,10 @@ class HealthEngine @Inject constructor() {
             job.title.contains("Surgeon", ignoreCase = true)
     }
 
-    private fun illnessChance(health: Int): Float {
+    private fun illnessChance(health: Int, happiness: Int): Float {
         val normalized = (100 - health).coerceIn(0, 100) / 100f
-        return (BASE_ILLNESS_CHANCE + normalized * 0.22f).coerceIn(0.02f, 0.28f)
+        val moodPenalty = ((50 - happiness).coerceAtLeast(0) / 100f) * LOW_HAPPINESS_ILLNESS_BONUS
+        return (BASE_ILLNESS_CHANCE + normalized * 0.22f + moodPenalty).coerceIn(0.02f, 0.34f)
     }
 
     private fun severityDrain(severity: Int): Int = when (severity) {
@@ -493,14 +496,19 @@ class HealthEngine @Inject constructor() {
     private fun treatmentSuccessChance(
         severity: Int,
         privateCare: Boolean,
-        insured: Boolean
+        insured: Boolean,
+        smarts: Int,
+        health: Int
     ): Float {
         val base = when (severity) {
             1 -> if (privateCare) 0.93f else 0.60f
             2 -> if (privateCare) 0.86f else 0.45f
             else -> if (privateCare) 0.78f else 0.32f
         }
-        return if (insured) (base + 0.08f).coerceAtMost(0.98f) else base
+        val insuranceBoost = if (insured) 0.08f else 0f
+        val smartsBoost = (smarts / 100f) * 0.06f
+        val resilienceBoost = (health / 100f) * 0.04f
+        return (base + insuranceBoost + smartsBoost + resilienceBoost).coerceAtMost(0.98f)
     }
 
     private fun illnessName(severity: Int): String {
@@ -524,6 +532,7 @@ class HealthEngine @Inject constructor() {
         private const val DEPLOYMENT_INJURY_HEALTH_HIT = 12
         private const val DEPLOYMENT_PTSD_HAPPINESS_HIT = 10
         private const val BASE_ILLNESS_CHANCE = 0.035f
+        private const val LOW_HAPPINESS_ILLNESS_BONUS = 0.10f
 
         const val GYM_YEARLY_COST = 24_000
         const val DIET_YEARLY_COST = 42_000
