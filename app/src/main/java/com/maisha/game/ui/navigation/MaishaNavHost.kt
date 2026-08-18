@@ -191,9 +191,7 @@ fun MaishaNavHost(
 
             LaunchedEffect(uiState.navigateToStatsPicker) {
                 if (uiState.navigateToStatsPicker) {
-                    navController.navigate(Routes.statsPicker(slotId)) {
-                        popUpTo(Routes.characterCreation(slotId)) { inclusive = true }
-                    }
+                    navController.navigate(Routes.statsPicker(slotId))
                     viewModel.onStatsPickerNavigationHandled()
                 }
             }
