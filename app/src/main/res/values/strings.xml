@@ -918,7 +918,7 @@
     <string name="avatar_picker_subtitle">Pick how you appear in Maisha</string>
     <string name="stats_picker_step">Step 3 of 3</string>
     <string name="stats_picker_title">Your stats</string>
-    <string name="stats_picker_subtitle">Tap + to boost a stat. Each starts at 40.</string>
+    <string name="stats_picker_subtitle">Tap + to boost a stat. Each starts at 40, and you have %1$d points to spend.</string>
     <string name="stats_points_remaining">%1$d points left</string>
     <string name="stats_points_all_used">All points spent</string>
     <string name="stats_preset_balanced">Balanced</string>

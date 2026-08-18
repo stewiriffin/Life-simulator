@@ -62,7 +62,7 @@ import kotlin.random.Random
 
 private const val MIN_STAT = 40
 private const val MAX_STAT = 100
-private const val EXTRA_BUDGET = 240
+private const val EXTRA_BUDGET = 140
 private const val CREATION_STEPS = 3
 
 private enum class StatField(val type: StatType, val hintRes: Int) {
@@ -89,10 +89,10 @@ private enum class StatField(val type: StatType, val hintRes: Int) {
 private data class StatPreset(val labelRes: Int, val health: Int, val happiness: Int, val smarts: Int, val looks: Int)
 
 private val STAT_PRESETS = listOf(
-    StatPreset(R.string.stats_preset_balanced, 70, 70, 70, 70),
-    StatPreset(R.string.stats_preset_brainy, 55, 60, 100, 65),
-    StatPreset(R.string.stats_preset_fit, 100, 65, 55, 60),
-    StatPreset(R.string.stats_preset_charming, 60, 75, 55, 90)
+    StatPreset(R.string.stats_preset_balanced, 75, 75, 75, 75),
+    StatPreset(R.string.stats_preset_brainy, 60, 65, 95, 80),
+    StatPreset(R.string.stats_preset_fit, 95, 70, 55, 80),
+    StatPreset(R.string.stats_preset_charming, 65, 85, 60, 90)
 )
 
 @Composable
@@ -160,7 +160,7 @@ fun StatsCustomizationScreen(
                 textAlign = TextAlign.Center
             )
             Text(
-                text = stringResource(R.string.stats_picker_subtitle),
+                text = stringResource(R.string.stats_picker_subtitle, EXTRA_BUDGET),
                 style = MaterialTheme.typography.bodyMedium,
                 color = InkPrimary.copy(alpha = 0.65f),
                 textAlign = TextAlign.Center
