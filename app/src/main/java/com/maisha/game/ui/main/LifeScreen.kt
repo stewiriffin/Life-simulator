@@ -763,7 +763,7 @@ private fun LifeHeroHeader(
                     age = character.age,
                     expression = expression,
                     forPlayerCharacter = true,
-                    seed = character.name
+                    seed = "${character.gender.name}-${character.name}"
                 )
             }
 
@@ -1013,7 +1013,8 @@ private fun CharacterHeader(
             age = character.age,
             expression = expression,
             forPlayerCharacter = true,
-            seed = character.name
+            // Include gender in the dice seed so the face changes when gender changes.
+            seed = "${character.gender.name}-${character.name}"
         )
 
         Column(modifier = Modifier.weight(1f)) {

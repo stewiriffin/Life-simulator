@@ -75,12 +75,12 @@ fun AvatarPickerScreen(
     gender: Gender,
     isSaving: Boolean,
     onAvatarChange: (AvatarConfig) -> Unit,
-    onStartLife: () -> Unit
+    onContinueToStats: () -> Unit
 ) {
-    // DiceBear faces need a stable "seed" for the base identity. We inject `gender`
-    // so changing gender on the previous page actually changes the face.
+    // DiceBear faces need a stable seed so the face reacts to gender + the limited appearance controls
+    // this page exposes (skin tone, facial hair, eyewear).
     val diceSeed = remember(avatarConfig, gender) {
-        "${gender.name}-${DiceBearAvatarUrl.seedFromConfig(avatarConfig)}"
+        "${gender.name}-skin${avatarConfig.skinTone}-beard${avatarConfig.facialHair?.name ?: "none"}-glasses${avatarConfig.eyewear?.name ?: "none"}"
     }
     val previewAge = 0 // newborn face (matching CharacterCreation start age)
     Column(
@@ -157,7 +157,7 @@ fun AvatarPickerScreen(
         Spacer(modifier = Modifier.height(24.dp))
 
         Button(
-            onClick = onStartLife,
+            onClick = onContinueToStats,
             enabled = !isSaving,
             modifier = Modifier
                 .fillMaxWidth()
@@ -166,7 +166,7 @@ fun AvatarPickerScreen(
             colors = ButtonDefaults.buttonColors(containerColor = GoldAccent, contentColor = NavyDeep)
         ) {
             Text(
-                text = if (isSaving) stringResource(R.string.btn_starting) else stringResource(R.string.btn_start_life),
+                text = if (isSaving) stringResource(R.string.btn_starting) else "Customize stats",
                 fontWeight = FontWeight.Bold
             )
         }

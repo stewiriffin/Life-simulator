@@ -34,9 +34,18 @@ data class CharacterCreationUiState(
     val selectedCountryCode: String = "US",
     val countrySearchQuery: String = "",
     val avatarConfig: AvatarConfig = AvatarConfig.random(),
+    val selectedStats: Stats = Stats(
+        health = Random.nextInt(40, 71),
+        happiness = Random.nextInt(40, 71),
+        smarts = Random.nextInt(40, 71),
+        looks = Random.nextInt(40, 71),
+        money = 0,
+        karma = 50
+    ),
     val nameError: String? = null,
     val isSaving: Boolean = false,
     val navigateToAvatarPicker: Boolean = false,
+    val navigateToStatsPicker: Boolean = false,
     val navigateToLife: Boolean = false,
     val secondWindBonusLabel: String? = null
 )
@@ -55,7 +64,10 @@ class CharacterCreationViewModel @Inject constructor(
         ?: 0
 
     private val _uiState = MutableStateFlow(
-        CharacterCreationUiState(selectedCountryCode = resolveDefaultCountryCode())
+        CharacterCreationUiState(
+            selectedCountryCode = resolveDefaultCountryCode(),
+            // keep default random stats
+        )
     )
     val uiState: StateFlow<CharacterCreationUiState> = _uiState.asStateFlow()
 
@@ -127,6 +139,26 @@ class CharacterCreationViewModel @Inject constructor(
         _uiState.update { it.copy(navigateToAvatarPicker = false) }
     }
 
+    fun onContinueToStatsPicker() {
+        _uiState.update { it.copy(navigateToStatsPicker = true) }
+    }
+
+    fun onStatsPickerNavigationHandled() {
+        _uiState.update { it.copy(navigateToStatsPicker = false) }
+    }
+
+    fun onStatsChange(stats: Stats) {
+        _uiState.update {
+            it.copy(
+                selectedStats = stats.copy(
+                    // Keep these fixed for new life creation.
+                    money = 0,
+                    karma = 50
+                )
+            )
+        }
+    }
+
     fun onStartLife() {
         val state = _uiState.value
         val trimmedName = state.name.trim()
@@ -139,13 +171,7 @@ class CharacterCreationViewModel @Inject constructor(
         viewModelScope.launch {
             _uiState.update { it.copy(isSaving = true) }
             val bonusStat = metaBonusRepository.consumeSecondWindBonus()
-            val baseStats = Stats(
-                health = Random.nextInt(40, 71),
-                happiness = Random.nextInt(40, 71),
-                smarts = Random.nextInt(40, 71),
-                looks = Random.nextInt(40, 71),
-                money = 0
-            )
+            val baseStats = state.selectedStats
             val stats = applySecondWindBonus(baseStats, bonusStat)
             val character = Character(
                 name = trimmedName,

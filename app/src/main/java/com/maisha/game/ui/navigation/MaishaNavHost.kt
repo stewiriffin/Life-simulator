@@ -18,6 +18,7 @@ import com.maisha.game.ads.AdManager
 import com.maisha.game.ui.avatar.AvatarPickerScreen
 import com.maisha.game.ui.charactercreation.CharacterCreationScreen
 import com.maisha.game.ui.charactercreation.CharacterCreationViewModel
+import com.maisha.game.ui.charactercreation.StatsCustomizationScreen
 import com.maisha.game.ui.main.LifeScreen
 import com.maisha.game.ui.main.LifeViewModel
 import com.maisha.game.ui.slots.SlotPickerScreen
@@ -39,6 +40,7 @@ object Routes {
     const val SLOT_PICKER = "slot_picker"
     const val CHARACTER_CREATION = "character_creation/{slotId}"
     const val AVATAR_PICKER = "avatar_picker/{slotId}"
+    const val STATS_PICKER = "stats_picker/{slotId}"
     const val LIFE = "life/{slotId}"
     const val LIFE_SUMMARY = "life_summary/{slotId}"
     const val CHARACTER_STATS = "character_stats/{slotId}"
@@ -48,6 +50,7 @@ object Routes {
 
     fun characterCreation(slotId: Int) = "character_creation/$slotId"
     fun avatarPicker(slotId: Int) = "avatar_picker/$slotId"
+    fun statsPicker(slotId: Int) = "stats_picker/$slotId"
     fun life(slotId: Int) = "life/$slotId"
     fun lifeSummary(slotId: Int) = "life_summary/$slotId"
     fun characterStats(slotId: Int) = "character_stats/$slotId"
@@ -186,6 +189,35 @@ fun MaishaNavHost(
             val viewModel: CharacterCreationViewModel = hiltViewModel(parentEntry)
             val uiState by viewModel.uiState.collectAsStateWithLifecycle()
 
+            LaunchedEffect(uiState.navigateToStatsPicker) {
+                if (uiState.navigateToStatsPicker) {
+                    navController.navigate(Routes.statsPicker(slotId)) {
+                        popUpTo(Routes.characterCreation(slotId)) { inclusive = true }
+                    }
+                    viewModel.onStatsPickerNavigationHandled()
+                }
+            }
+
+            AvatarPickerScreen(
+                avatarConfig = uiState.avatarConfig,
+                gender = uiState.selectedGender,
+                isSaving = uiState.isSaving,
+                onAvatarChange = viewModel::onAvatarChange,
+                onContinueToStats = viewModel::onContinueToStatsPicker
+            )
+        }
+
+        composable(
+            route = Routes.STATS_PICKER,
+            arguments = listOf(slotIdArgument)
+        ) {
+            val slotId = it.arguments?.getInt("slotId") ?: 0
+            val parentEntry = remember(it) {
+                navController.getBackStackEntry(Routes.characterCreation(slotId))
+            }
+            val viewModel: CharacterCreationViewModel = hiltViewModel(parentEntry)
+            val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+
             LaunchedEffect(uiState.navigateToLife) {
                 if (uiState.navigateToLife) {
                     navController.navigate(Routes.life(slotId)) {
@@ -195,11 +227,9 @@ fun MaishaNavHost(
                 }
             }
 
-            AvatarPickerScreen(
-                avatarConfig = uiState.avatarConfig,
-                gender = uiState.selectedGender,
-                isSaving = uiState.isSaving,
-                onAvatarChange = viewModel::onAvatarChange,
+            StatsCustomizationScreen(
+                uiState = uiState,
+                onStatsChange = viewModel::onStatsChange,
                 onStartLife = viewModel::onStartLife
             )
         }
