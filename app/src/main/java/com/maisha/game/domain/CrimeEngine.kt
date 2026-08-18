@@ -31,6 +31,13 @@ sealed class PrisonActivityResult {
     data object Ineligible : PrisonActivityResult()
 }
 
+sealed class ExpungementResult {
+    data class Success(val character: Character) : ExpungementResult()
+    data class Denied(val character: Character) : ExpungementResult()
+    data object Ineligible : ExpungementResult()
+    data object InsufficientFunds : ExpungementResult()
+}
+
 @Singleton
 class CrimeEngine @Inject constructor() {
 
@@ -440,6 +447,60 @@ class CrimeEngine @Inject constructor() {
         return (base + repeatBonus).coerceAtMost(MAX_SENTENCE_YEARS)
     }
 
+    fun canRequestExpungement(character: Character): Boolean {
+        val record = character.criminalRecord
+        if (!record.hasRecord || record.recordExpunged) return false
+        if (record.currentlyIncarcerated || record.awaitingTrial) return false
+        val cleanYears = record.lastArrestAge?.let { character.age - it } ?: 0
+        return cleanYears >= EXPUNGEMENT_MIN_CLEAN_YEARS
+    }
+
+    fun expungementFee(character: Character): Int =
+        com.maisha.game.data.EconomyScaler.scaleAmount(EXPUNGEMENT_FEE_KENYA, character.countryCode)
+
+    /** Clears criminal record for hiring after years clean and legal fees. */
+    fun requestExpungement(character: Character): ExpungementResult {
+        if (!canRequestExpungement(character)) return ExpungementResult.Ineligible
+        val fee = expungementFee(character)
+        if (character.stats.money < fee) return ExpungementResult.InsufficientFunds
+
+        val approved = character.stats.karma >= EXPUNGEMENT_MIN_KARMA &&
+            Random.nextFloat() < expungementApprovalChance(character)
+        if (!approved) {
+            return ExpungementResult.Denied(
+                character.copy(
+                    stats = character.stats.copy(money = character.stats.money - fee),
+                    eventLog = EventLogCap.prepend(
+                        character.eventLog,
+                        "Your expungement petition was denied " +
+                            "(${com.maisha.game.util.formatMoney(fee, character.countryCode)} in legal fees)."
+                    )
+                )
+            )
+        }
+
+        return ExpungementResult.Success(
+            character.copy(
+                stats = character.stats.copy(money = character.stats.money - fee),
+                criminalRecord = character.criminalRecord.copy(
+                    hasRecord = false,
+                    recordExpunged = true
+                ),
+                eventLog = EventLogCap.prepend(
+                    character.eventLog,
+                    "Your criminal record was expunged. A fresh start at last."
+                )
+            )
+        )
+    }
+
+    private fun expungementApprovalChance(character: Character): Float {
+        val cleanYears = character.criminalRecord.lastArrestAge?.let { character.age - it } ?: 0
+        val yearsBonus = (cleanYears - EXPUNGEMENT_MIN_CLEAN_YEARS).coerceAtLeast(0) * 0.04f
+        val karmaBonus = (character.stats.karma - 50).coerceAtLeast(0) / 100f * 0.2f
+        return (EXPUNGEMENT_BASE_CHANCE + yearsBonus + karmaBonus).coerceIn(0.35f, 0.92f)
+    }
+
     companion object {
         const val MIN_CRIME_AGE = 14
         const val REQUIRES_INCARCERATED_TAG = "requires_incarcerated"
@@ -463,5 +524,9 @@ class CrimeEngine @Inject constructor() {
         private const val PAROLE_BONUS_PER_POINT = 0.04f
         private const val PAROLE_MAX_CHANCE = 0.50f
         private const val PRISON_WORK_PAY_KENYA = 1_500
+        private const val EXPUNGEMENT_FEE_KENYA = 55_000
+        private const val EXPUNGEMENT_MIN_CLEAN_YEARS = 7
+        private const val EXPUNGEMENT_MIN_KARMA = 40
+        private const val EXPUNGEMENT_BASE_CHANCE = 0.55f
     }
 }

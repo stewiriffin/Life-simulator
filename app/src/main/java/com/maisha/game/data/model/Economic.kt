@@ -31,3 +31,14 @@ data class InvestmentPortfolio(
     /** Last applied return percentage, e.g. -30 to +40. */
     val lastReturnPercent: Int = 0
 )
+
+/** Risk profile for the fictional stock portfolio on [Character]. */
+@Serializable
+enum class PortfolioStrategy {
+    /** Lower volatility, smaller upside. */
+    CONSERVATIVE,
+    /** Default balanced market exposure. */
+    BALANCED,
+    /** Higher volatility, larger upside. */
+    AGGRESSIVE
+}

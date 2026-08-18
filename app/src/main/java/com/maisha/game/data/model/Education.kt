@@ -29,6 +29,17 @@ enum class SchoolClub {
     MUSIC
 }
 
+/** University majors offered after secondary exams. */
+@Serializable
+enum class UniversityMajor(val courseLabel: String) {
+    LAW("Law"),
+    MEDICINE("Medicine"),
+    COMPUTER_SCIENCE("Computer Science"),
+    BUSINESS("Business"),
+    ENGINEERING("Engineering"),
+    NURSING("Nursing")
+}
+
 @Serializable
 enum class ExamType {
     KCPE,

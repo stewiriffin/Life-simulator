@@ -101,6 +101,7 @@ fun AssetsScreen(
     onPurchaseAsset: (String) -> Unit,
     onSellAsset: (String) -> Unit,
     onRepairAsset: (String) -> Unit,
+    onRenovateAsset: (String) -> Unit,
     onRentOutProperty: (String) -> Unit,
     onEvictTenant: (String) -> Unit,
     onSaveWill: (Map<String, Int>?) -> Unit,
@@ -110,12 +111,14 @@ fun AssetsScreen(
     onDepositSavings: (Int) -> Unit,
     onWithdrawSavings: (Int) -> Unit,
     onSetLivingStandard: (com.maisha.game.data.model.LivingStandard) -> Unit,
+    onSetPortfolioStrategy: (com.maisha.game.data.model.PortfolioStrategy) -> Unit,
     onAssetsMessageDismissed: () -> Unit,
     onDismissAssetsMarketsTip: () -> Unit = {},
     modifier: Modifier = Modifier
 ) {
     val pendingPurchase = rememberConfirmableAction<CatalogAsset>()
     val pendingRepair = rememberConfirmableAction<Asset>()
+    val pendingRenovate = rememberConfirmableAction<Asset>()
     val pendingRentOut = rememberConfirmableAction<Asset>()
     val pendingEvict = rememberConfirmableAction<Asset>()
     val pendingInvest = rememberConfirmableAction<Int>()
@@ -205,6 +208,27 @@ fun AssetsScreen(
                 formatMoney(financeEngine.calculateRepairCost(asset, character.countryCode), character.countryCode)
             ),
             confirmLabel = stringResource(R.string.btn_repair),
+            severity = ConfirmSeverity.NEUTRAL,
+            onConfirm = onConfirm,
+            onDismiss = onDismiss
+        )
+    }
+
+    ConfirmableActionHost(
+        state = pendingRenovate,
+        onConfirmed = { asset -> onRenovateAsset(asset.id) }
+    ) { asset, onConfirm, onDismiss ->
+        val nextLevel = asset.renovationLevel + 1
+        val cost = financeEngine.calculateRenovationCost(asset, character.countryCode)
+        ConfirmActionDialog(
+            title = stringResource(R.string.dialog_renovate_asset_title),
+            description = stringResource(
+                R.string.dialog_renovate_asset_body,
+                asset.name,
+                nextLevel,
+                formatMoney(cost, character.countryCode)
+            ),
+            confirmLabel = stringResource(R.string.btn_renovate),
             severity = ConfirmSeverity.NEUTRAL,
             onConfirm = onConfirm,
             onDismiss = onDismiss
@@ -391,10 +415,12 @@ fun AssetsScreen(
                         portfolioValue = character.investmentPortfolioValue,
                         lastReturnPercent = character.lastPortfolioReturnPercent,
                         countryCode = character.countryCode,
+                        currentStrategy = character.lifestyle.portfolioStrategy,
                         canDeposit = character.stats.money > 0 && character.alive,
                         canWithdraw = character.investmentPortfolioValue > 0 && character.alive,
                         onDeposit = { showInvestDialog = true },
-                        onWithdraw = { showWithdrawDialog = true }
+                        onWithdraw = { showWithdrawDialog = true },
+                        onSetStrategy = onSetPortfolioStrategy
                     )
                 }
             }
@@ -452,9 +478,11 @@ fun AssetsScreen(
                             countryCode = character.countryCode,
                             currentGeneration = character.generationNumber,
                             repairCost = financeEngine.calculateRepairCost(asset, character.countryCode),
+                            renovationCost = financeEngine.calculateRenovationCost(asset, character.countryCode),
                             yearlyYield = financeEngine.estimateYearlyRent(asset),
                             onSell = { onSellAsset(asset.id) },
                             onRepair = { pendingRepair.request(asset) },
+                            onRenovate = { pendingRenovate.request(asset) },
                             onRentOut = { pendingRentOut.request(asset) },
                             onEvict = { pendingEvict.request(asset) }
                         )
@@ -730,10 +758,12 @@ private fun InvestmentPortfolioCard(
     portfolioValue: Int,
     lastReturnPercent: Int,
     countryCode: String,
+    currentStrategy: com.maisha.game.data.model.PortfolioStrategy,
     canDeposit: Boolean,
     canWithdraw: Boolean,
     onDeposit: () -> Unit,
-    onWithdraw: () -> Unit
+    onWithdraw: () -> Unit,
+    onSetStrategy: (com.maisha.game.data.model.PortfolioStrategy) -> Unit
 ) {
     val returnColor = when {
         lastReturnPercent > 0 -> SuccessGreen
@@ -796,6 +826,36 @@ private fun InvestmentPortfolioCard(
                     shape = MaishaRadius.buttonShape
                 ) {
                     Text(stringResource(R.string.btn_withdraw))
+                }
+            }
+            Text(
+                text = stringResource(R.string.section_portfolio_strategy),
+                style = MaterialTheme.typography.labelMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(6.dp)
+            ) {
+                com.maisha.game.data.model.PortfolioStrategy.entries.forEach { strategy ->
+                    val selected = strategy == currentStrategy
+                    FilterChip(
+                        selected = selected,
+                        onClick = { if (!selected) onSetStrategy(strategy) },
+                        label = {
+                            Text(
+                                when (strategy) {
+                                    com.maisha.game.data.model.PortfolioStrategy.CONSERVATIVE ->
+                                        stringResource(R.string.portfolio_conservative)
+                                    com.maisha.game.data.model.PortfolioStrategy.BALANCED ->
+                                        stringResource(R.string.portfolio_balanced)
+                                    com.maisha.game.data.model.PortfolioStrategy.AGGRESSIVE ->
+                                        stringResource(R.string.portfolio_aggressive)
+                                },
+                                style = MaterialTheme.typography.labelSmall
+                            )
+                        }
+                    )
                 }
             }
         }
@@ -989,9 +1049,11 @@ private fun OwnedAssetCard(
     countryCode: String,
     currentGeneration: Int,
     repairCost: Int,
+    renovationCost: Int,
     yearlyYield: Int,
     onSell: () -> Unit,
     onRepair: () -> Unit,
+    onRenovate: () -> Unit,
     onRentOut: () -> Unit,
     onEvict: () -> Unit
 ) {
@@ -1128,6 +1190,26 @@ private fun OwnedAssetCard(
                             text = stringResource(
                                 R.string.btn_repair_with_cost,
                                 formatMoney(repairCost, countryCode)
+                            )
+                        )
+                    }
+                    Spacer(modifier = Modifier.height(8.dp))
+                }
+
+                if (asset.type == AssetType.HOUSE &&
+                    !asset.isHeirloom &&
+                    asset.condition >= FinanceEngine.RENOVATE_MIN_CONDITION &&
+                    asset.renovationLevel < 3
+                ) {
+                    OutlinedButton(
+                        onClick = onRenovate,
+                        modifier = Modifier.fillMaxWidth(),
+                        shape = MaishaRadius.buttonShape
+                    ) {
+                        Text(
+                            text = stringResource(
+                                R.string.btn_renovate_with_cost,
+                                formatMoney(renovationCost, countryCode)
                             )
                         )
                     }

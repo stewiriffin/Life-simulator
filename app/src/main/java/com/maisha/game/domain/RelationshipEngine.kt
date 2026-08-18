@@ -59,6 +59,13 @@ sealed class HaveChildResult {
     data object InsufficientFunds : HaveChildResult()
 }
 
+sealed class AdoptChildResult {
+    data class Success(val character: Character) : AdoptChildResult()
+    data object TooYoung : AdoptChildResult()
+    data object InsufficientFunds : AdoptChildResult()
+    data object Ineligible : AdoptChildResult()
+}
+
 sealed class BreakUpResult {
     data class Success(val character: Character, val wasMarried: Boolean, val settlement: Int) : BreakUpResult()
     data object NotPartner : BreakUpResult()
@@ -455,8 +462,14 @@ class RelationshipEngine @Inject constructor(
     fun childHospitalCost(character: Character): Int =
         EconomyScaler.scaleAmount(CHILD_HOSPITAL_COST_KENYA, character.countryCode)
 
-    fun divorceSettlementCost(character: Character): Int =
-        EconomyScaler.scaleAmount(DIVORCE_SETTLEMENT_KENYA, character.countryCode)
+    fun divorceSettlementCost(character: Character, partner: Person? = null): Int {
+        val base = EconomyScaler.scaleAmount(DIVORCE_SETTLEMENT_KENYA, character.countryCode)
+        return if (partner?.prenupSigned == true) {
+            (base * PRENUP_SETTLEMENT_FRACTION).roundToInt()
+        } else {
+            base
+        }
+    }
 
     fun dateNightCost(character: Character): Int =
         EconomyScaler.scaleRelationshipCost(DATE_NIGHT_COST_KENYA, character.countryCode, character.age)
@@ -676,7 +689,11 @@ class RelationshipEngine @Inject constructor(
      * Marriage proposal to a dating partner. Requires relationship ≥ [PROPOSAL_THRESHOLD];
      * acceptance chance scales with level.
      */
-    fun proposeMarriage(character: Character, personId: String): Pair<Character, ProposalResult> {
+    fun proposeMarriage(
+        character: Character,
+        personId: String,
+        signPrenup: Boolean = false
+    ): Pair<Character, ProposalResult> {
         val memberIndex = character.family.indexOfFirst { it.id == personId }
         if (memberIndex == -1) return character to ProposalResult.Rejected
 
@@ -692,6 +709,7 @@ class RelationshipEngine @Inject constructor(
         return if (accepted) {
             val marriedPartner = partner.copy(
                 isMarried = true,
+                prenupSigned = signPrenup,
                 milestones = RelationshipMilestoneCap.trim(
                     partner.milestones + RelationshipMilestone.fromKind(
                         age = character.age,
@@ -700,10 +718,15 @@ class RelationshipEngine @Inject constructor(
                     )
                 )
             ).coerceRelationship()
+            val prenupNote = if (signPrenup) " A prenuptial agreement was signed." else ""
             val updated = character.copy(
                 family = character.family.replaceAt(memberIndex, marriedPartner),
                 stats = character.stats.copy(
                     happiness = clampStat(character.stats.happiness + 10)
+                ),
+                eventLog = EventLogCap.prepend(
+                    character.eventLog,
+                    "Married ${partner.name} at age ${character.age}.$prenupNote"
                 )
             )
             updated to ProposalResult.Accepted(updated)
@@ -729,7 +752,7 @@ class RelationshipEngine @Inject constructor(
         val wasMarried = partner.isMarried
         val happinessPenalty = if (wasMarried) DIVORCE_HAPPINESS_PENALTY else BREAKUP_HAPPINESS_PENALTY
         val settlement = if (wasMarried) {
-            divorceSettlementCost(character).coerceAtMost(character.stats.money)
+            divorceSettlementCost(character, partner).coerceAtMost(character.stats.money)
         } else {
             0
         }
@@ -803,6 +826,62 @@ class RelationshipEngine @Inject constructor(
             )
         )
     }
+
+    /**
+     * Adopt a child (single or married). Requires age 25+ and an agency fee.
+     */
+    fun adoptChild(character: Character): AdoptChildResult {
+        if (!character.alive ||
+            character.criminalRecord.currentlyIncarcerated ||
+            character.criminalRecord.awaitingTrial
+        ) {
+            return AdoptChildResult.Ineligible
+        }
+        if (character.age < MIN_ADOPT_AGE) return AdoptChildResult.TooYoung
+
+        val fee = adoptionAgencyCost(character)
+        if (character.stats.money < fee) return AdoptChildResult.InsufficientFunds
+
+        val gender = if (Random.nextBoolean()) Gender.MALE else Gender.FEMALE
+        val childAge = Random.nextInt(MIN_ADOPTED_CHILD_AGE, MAX_ADOPTED_CHILD_AGE + 1)
+        val childName = NamePool.randomFullName(gender, character.countryCode)
+        val child = Person(
+            id = UUID.randomUUID().toString(),
+            name = childName,
+            relation = RelationType.CHILD,
+            gender = gender,
+            age = childAge,
+            relationshipLevel = 55,
+            stats = Stats(
+                health = Random.nextInt(55, 86),
+                happiness = Random.nextInt(45, 76)
+            ),
+            avatarConfig = FamilyGenerator.inheritAvatarConfig(
+                character.avatarConfig,
+                character.avatarConfig
+            ),
+            countryCode = character.countryCode,
+            isAdopted = true
+        )
+        return AdoptChildResult.Success(
+            character.copy(
+                family = character.family + child,
+                stats = character.stats.copy(
+                    money = character.stats.money - fee,
+                    happiness = clampStat(character.stats.happiness + 8),
+                    karma = clampStat(character.stats.karma + 3)
+                ),
+                eventLog = EventLogCap.prepend(
+                    character.eventLog,
+                    "Adopted $childName, age $childAge " +
+                        "(${formatMoney(fee, character.countryCode)} agency fees)."
+                )
+            )
+        )
+    }
+
+    fun adoptionAgencyCost(character: Character): Int =
+        EconomyScaler.scaleAmount(ADOPTION_FEE_KENYA, character.countryCode)
 
     private fun mixedHeritageChildName(
         gender: Gender,
@@ -1587,6 +1666,11 @@ class RelationshipEngine @Inject constructor(
         const val FIRST_DATE_COST_KENYA = 2_000
         const val CHILD_HOSPITAL_COST_KENYA = 25_000
         const val DIVORCE_SETTLEMENT_KENYA = 40_000
+        private const val PRENUP_SETTLEMENT_FRACTION = 0.25f
+        const val ADOPTION_FEE_KENYA = 75_000
+        const val MIN_ADOPT_AGE = 25
+        private const val MIN_ADOPTED_CHILD_AGE = 2
+        private const val MAX_ADOPTED_CHILD_AGE = 8
         const val DATE_NIGHT_COST_KENYA = 8_000
         const val SEEK_FRIEND_COST_KENYA = 5_000
         const val PET_FEED_COST_KENYA = 1_500

@@ -9,6 +9,7 @@ import com.maisha.game.data.model.AssetType
 import com.maisha.game.data.model.Character
 import com.maisha.game.data.model.EconomicClimate
 import com.maisha.game.data.model.EconomicState
+import com.maisha.game.data.model.PortfolioStrategy
 import com.maisha.game.data.model.PoliticalOffice
 import com.maisha.game.data.model.RelationType
 import com.maisha.game.data.model.TaxPolicyType
@@ -18,6 +19,7 @@ import com.maisha.game.util.clampCondition
 import com.maisha.game.util.clampStat
 import javax.inject.Inject
 import javax.inject.Singleton
+import kotlin.math.roundToInt
 import kotlin.random.Random
 
 sealed class PurchaseResult {
@@ -29,6 +31,13 @@ sealed class RepairResult {
     data class Success(val character: Character) : RepairResult()
     data object InsufficientFunds : RepairResult()
     data object AssetNotFound : RepairResult()
+}
+
+sealed class RenovateResult {
+    data class Success(val character: Character) : RenovateResult()
+    data object InsufficientFunds : RenovateResult()
+    data object AssetNotFound : RenovateResult()
+    data object NotEligible : RenovateResult()
 }
 
 data class EconomicShiftResult(
@@ -654,11 +663,76 @@ class FinanceEngine @Inject constructor() {
         if (character.investmentPortfolioValue <= 0) {
             return character.copy(lastPortfolioReturnPercent = 0)
         }
-        val returnPercent = Random.nextInt(
-            PORTFOLIO_RETURN_MIN_PERCENT,
-            PORTFOLIO_RETURN_MAX_PERCENT + 1
-        )
+        val (minReturn, maxReturn) = portfolioReturnRange(character.lifestyle.portfolioStrategy)
+        val returnPercent = Random.nextInt(minReturn, maxReturn + 1)
         return applyPortfolioReturn(character, returnPercent, logMarketMove = true)
+    }
+
+    fun setPortfolioStrategy(character: Character, strategy: PortfolioStrategy): Character {
+        if (character.lifestyle.portfolioStrategy == strategy) return character
+        val label = when (strategy) {
+            PortfolioStrategy.CONSERVATIVE -> "conservative"
+            PortfolioStrategy.BALANCED -> "balanced"
+            PortfolioStrategy.AGGRESSIVE -> "aggressive"
+        }
+        return character.copy(
+            lifestyle = character.lifestyle.copy(portfolioStrategy = strategy),
+            eventLog = EventLogCap.prepend(
+                character.eventLog,
+                "You switched your portfolio to a $label strategy."
+            )
+        )
+    }
+
+    private fun portfolioReturnRange(strategy: PortfolioStrategy): Pair<Int, Int> = when (strategy) {
+        PortfolioStrategy.CONSERVATIVE -> -15 to 20
+        PortfolioStrategy.BALANCED -> PORTFOLIO_RETURN_MIN_PERCENT to PORTFOLIO_RETURN_MAX_PERCENT
+        PortfolioStrategy.AGGRESSIVE -> -45 to 55
+    }
+
+    /** Upgrades a house beyond repair — adds [Asset.renovationLevel] and boosts value. */
+    fun renovateAsset(character: Character, assetId: String): RenovateResult {
+        val index = character.assets.indexOfFirst { it.id == assetId }
+        if (index == -1) return RenovateResult.AssetNotFound
+
+        val asset = character.assets[index]
+        if (asset.type != AssetType.HOUSE || asset.isHeirloom) return RenovateResult.NotEligible
+        if (asset.condition < RENOVATE_MIN_CONDITION || asset.renovationLevel >= MAX_RENOVATION_LEVEL) {
+            return RenovateResult.NotEligible
+        }
+
+        val cost = calculateRenovationCost(asset, character.countryCode)
+        if (character.stats.money < cost) return RenovateResult.InsufficientFunds
+
+        val newLevel = asset.renovationLevel + 1
+        val valueBoost = (asset.currentValue * RENOVATION_VALUE_BOOST).roundToInt()
+        val renovated = recalculateValue(
+            asset.copy(
+                renovationLevel = newLevel,
+                condition = 100,
+                currentValue = asset.currentValue + valueBoost,
+                purchasePrice = asset.purchasePrice + (cost / 2)
+            ),
+            character.economicState.marketModifier
+        )
+        val updatedAssets = character.assets.toMutableList().apply { this[index] = renovated }
+        return RenovateResult.Success(
+            character.copy(
+                stats = character.stats.copy(money = character.stats.money - cost),
+                assets = updatedAssets,
+                eventLog = EventLogCap.prepend(
+                    character.eventLog,
+                    "Renovated ${asset.name} (level $newLevel) for ${formatMoney(cost, character.countryCode)}."
+                )
+            )
+        )
+    }
+
+    fun calculateRenovationCost(asset: Asset, countryCode: String): Int {
+        val tierMultiplier = 1f + asset.renovationLevel * 0.35f
+        val raw = (asset.purchasePrice * RENOVATION_BASE_RATE * tierMultiplier).toInt()
+            .coerceAtLeast(MIN_RENOVATION_COST)
+        return EconomyScaler.scaleAmount(raw, countryCode)
     }
 
     /**
@@ -813,7 +887,8 @@ class FinanceEngine @Inject constructor() {
         val conditionFactor = asset.condition / 100f
         val value = when (asset.type) {
             AssetType.HOUSE -> {
-                val marketAdjusted = asset.purchasePrice * conditionFactor * marketModifier
+                val renovationBonus = 1f + asset.renovationLevel * RENOVATION_VALUE_MULTIPLIER_PER_LEVEL
+                val marketAdjusted = asset.purchasePrice * conditionFactor * marketModifier * renovationBonus
                 val appreciation = if (Random.nextFloat() < REAL_ESTATE_APPRECIATION_CHANCE) {
                     asset.purchasePrice * Random.nextFloat() * MAX_ANNUAL_APPRECIATION_RATE
                 } else {
@@ -984,6 +1059,12 @@ class FinanceEngine @Inject constructor() {
         const val REPAIR_UI_THRESHOLD = 70
         private const val REPAIR_BASE_RATE = 0.18f
         private const val MIN_REPAIR_COST = 3_000
+        const val RENOVATE_MIN_CONDITION = 80
+        private const val MAX_RENOVATION_LEVEL = 3
+        private const val RENOVATION_BASE_RATE = 0.22f
+        private const val RENOVATION_VALUE_BOOST = 0.15f
+        private const val RENOVATION_VALUE_MULTIPLIER_PER_LEVEL = 0.08f
+        private const val MIN_RENOVATION_COST = 8_000
         private const val BOOM_CHANCE = 0.12f
         private const val BUST_CHANCE = 0.10f
         const val BOOM_MARKET_MODIFIER = 1.12f

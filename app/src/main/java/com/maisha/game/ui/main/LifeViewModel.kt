@@ -69,6 +69,13 @@ import com.maisha.game.domain.RetirementResult
 import com.maisha.game.domain.SideHustleFailure
 import com.maisha.game.domain.SideHustleResult
 import com.maisha.game.domain.BucketAdoptResult
+import com.maisha.game.domain.AdoptChildResult
+import com.maisha.game.domain.ExpungementResult
+import com.maisha.game.domain.PartTimeJobResult
+import com.maisha.game.domain.RenovateResult
+import com.maisha.game.domain.WeeklyChallengeEngine
+import com.maisha.game.data.model.PartTimeJob
+import com.maisha.game.data.model.PortfolioStrategy
 import com.maisha.game.domain.BusinessFailure
 import com.maisha.game.domain.BusinessResult
 import com.maisha.game.domain.SkillFailure
@@ -153,6 +160,7 @@ class LifeViewModel @Inject constructor(
     private val careerEngine: CareerEngine,
     private val financeEngine: FinanceEngine,
     private val yearQuestEngine: YearQuestEngine,
+    private val weeklyChallengeEngine: WeeklyChallengeEngine,
     private val adFrequencyController: AdFrequencyController,
     private val notificationScheduler: NotificationScheduler
 ) : ViewModel() {
@@ -1043,6 +1051,138 @@ class LifeViewModel @Inject constructor(
         }
     }
 
+    fun onAdoptChild() {
+        val character = _uiState.value.character ?: return
+        if (!character.alive) return
+        viewModelScope.launch {
+            when (val result = gameEngine.adoptChild(character)) {
+                is AdoptChildResult.Success -> {
+                    persist(result.character)
+                    processMidLifeAchievements(result.character)
+                    checkWeeklyChallengeRibbons(result.character)
+                    _uiState.update {
+                        it.copy(
+                            character = result.character,
+                            actionMessage = context.getString(R.string.msg_adopt_success),
+                            netWorth = financeEngine.calculateNetWorth(result.character)
+                        )
+                    }
+                }
+                AdoptChildResult.TooYoung -> {
+                    _uiState.update { it.copy(actionMessage = context.getString(R.string.msg_adopt_too_young)) }
+                }
+                AdoptChildResult.InsufficientFunds -> {
+                    _uiState.update { it.copy(actionMessage = context.getString(R.string.msg_adopt_funds)) }
+                }
+                AdoptChildResult.Ineligible -> Unit
+            }
+        }
+    }
+
+    fun onWorkPartTime(job: PartTimeJob) {
+        val character = _uiState.value.character ?: return
+        if (!character.alive) return
+        viewModelScope.launch {
+            when (val result = gameEngine.workPartTime(character, job)) {
+                is PartTimeJobResult.Success -> {
+                    persist(result.character)
+                    checkWeeklyChallengeRibbons(result.character)
+                    _uiState.update {
+                        it.copy(
+                            character = result.character,
+                            actionMessage = context.getString(
+                                R.string.msg_part_time_success,
+                                formatMoney(result.payout, result.character.countryCode)
+                            ),
+                            netWorth = financeEngine.calculateNetWorth(result.character)
+                        )
+                    }
+                }
+                PartTimeJobResult.AlreadyWorked -> {
+                    _uiState.update {
+                        it.copy(actionMessage = context.getString(R.string.msg_part_time_already))
+                    }
+                }
+                PartTimeJobResult.Ineligible -> Unit
+            }
+        }
+    }
+
+    fun onRequestExpungement() {
+        val character = _uiState.value.character ?: return
+        if (!character.alive) return
+        viewModelScope.launch {
+            when (val result = gameEngine.requestExpungement(character)) {
+                is ExpungementResult.Success -> {
+                    persist(result.character)
+                    processMidLifeAchievements(result.character)
+                    checkWeeklyChallengeRibbons(result.character)
+                    _uiState.update {
+                        it.copy(
+                            character = result.character,
+                            actionMessage = context.getString(R.string.msg_expunge_success)
+                        )
+                    }
+                }
+                is ExpungementResult.Denied -> {
+                    persist(result.character)
+                    _uiState.update {
+                        it.copy(
+                            character = result.character,
+                            actionMessage = context.getString(R.string.msg_expunge_denied)
+                        )
+                    }
+                }
+                ExpungementResult.Ineligible -> {
+                    _uiState.update {
+                        it.copy(actionMessage = context.getString(R.string.msg_expunge_ineligible))
+                    }
+                }
+                ExpungementResult.InsufficientFunds -> {
+                    _uiState.update { it.copy(actionMessage = context.getString(R.string.msg_purchase_insufficient)) }
+                }
+            }
+        }
+    }
+
+    fun onRenovateAsset(assetId: String) {
+        val character = _uiState.value.character ?: return
+        if (!character.alive) return
+        viewModelScope.launch {
+            when (val result = gameEngine.renovateAsset(character, assetId)) {
+                is RenovateResult.Success -> {
+                    persist(result.character)
+                    processMidLifeAchievements(result.character)
+                    checkWeeklyChallengeRibbons(result.character)
+                    _uiState.update {
+                        it.copy(
+                            character = result.character,
+                            assetsMessage = context.getString(R.string.msg_renovate_success),
+                            netWorth = financeEngine.calculateNetWorth(result.character)
+                        )
+                    }
+                }
+                RenovateResult.InsufficientFunds -> {
+                    _uiState.update { it.copy(assetsMessage = context.getString(R.string.msg_purchase_insufficient)) }
+                }
+                RenovateResult.NotEligible -> {
+                    _uiState.update { it.copy(assetsMessage = context.getString(R.string.msg_renovate_ineligible)) }
+                }
+                RenovateResult.AssetNotFound -> Unit
+            }
+        }
+    }
+
+    fun onSetPortfolioStrategy(strategy: PortfolioStrategy) {
+        val character = _uiState.value.character ?: return
+        if (!character.alive) return
+        viewModelScope.launch {
+            val updated = gameEngine.setPortfolioStrategy(character, strategy)
+            persist(updated)
+            _uiState.update { it.copy(character = updated) }
+        }
+    }
+
     fun onRepairAsset(assetId: String) {
         val character = _uiState.value.character ?: return
         if (!character.alive) return
@@ -1308,12 +1448,12 @@ class LifeViewModel @Inject constructor(
         }
     }
 
-    fun onPropose(personId: String) {
+    fun onPropose(personId: String, signPrenup: Boolean = false) {
         val character = _uiState.value.character ?: return
         if (!character.alive) return
 
         viewModelScope.launch {
-            val (updatedCharacter, result) = gameEngine.proposeMarriage(character, personId)
+            val (updatedCharacter, result) = gameEngine.proposeMarriage(character, personId, signPrenup)
             val message = when (result) {
                 is ProposalResult.Accepted -> context.getString(R.string.msg_proposal_accepted)
                 ProposalResult.Rejected -> context.getString(R.string.msg_proposal_rejected)
@@ -2262,6 +2402,36 @@ class LifeViewModel @Inject constructor(
         characterRepository.saveGame(slotId, character, triggeredEventIds)
         if (!suppressQuestRefresh) {
             refreshYearQuestProgress(character)
+        }
+        checkWeeklyChallengeRibbons(character)
+    }
+
+    private suspend fun checkWeeklyChallengeRibbons(character: Character) {
+        if (!character.alive) return
+        val challenge = weeklyChallengeEngine.currentChallenge()
+        if (!weeklyChallengeEngine.isComplete(character, challenge)) return
+        val earned = settingsRepository.getEarnedRibbonsSnapshot()
+        if (challenge.ribbonKey in earned) return
+        settingsRepository.awardRibbon(challenge.ribbonKey)
+        val ribbonLabel = context.getString(
+            when (challenge.ribbonKey) {
+                "ribbon_healer" -> R.string.ribbon_healer
+                "ribbon_counsel" -> R.string.ribbon_counsel
+                "ribbon_guardian" -> R.string.ribbon_guardian
+                "ribbon_architect" -> R.string.ribbon_architect
+                "ribbon_redemption" -> R.string.ribbon_redemption
+                "ribbon_valedictorian" -> R.string.ribbon_valedictorian
+                "ribbon_hustler" -> R.string.ribbon_hustler
+                else -> R.string.ribbon_investor
+            }
+        )
+        _uiState.update {
+            it.copy(
+                lifePulseMessage = context.getString(
+                    R.string.msg_weekly_challenge_complete,
+                    ribbonLabel
+                )
+            )
         }
     }
 

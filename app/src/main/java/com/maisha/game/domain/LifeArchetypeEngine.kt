@@ -41,8 +41,12 @@ object LifeArchetypeEngine {
         when (character.career.careerTrack) {
             CareerTrack.ENTERTAINMENT -> bump("archetype_artist", 30 + character.career.trackLevel * 10)
             CareerTrack.PRO_SPORTS -> bump("archetype_athlete", 30 + character.career.trackLevel * 10)
+            CareerTrack.MEDICAL -> bump("archetype_healer", 35 + character.career.trackLevel * 10)
+            CareerTrack.LEGAL -> bump("archetype_counsel", 35 + character.career.trackLevel * 10)
             CareerTrack.NONE -> Unit
         }
+
+        if (character.criminalRecord.recordExpunged) bump("archetype_reformed", 25)
 
         if (character.socialMedia.followers >= 50_000) bump("archetype_artist", 20)
         if (character.criminalRecord.timesArrested >= 2) bump("archetype_reformed", 15)

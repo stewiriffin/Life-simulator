@@ -23,6 +23,7 @@ import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.FilterChip
+import androidx.compose.material3.FilterChipDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -38,10 +39,13 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.maisha.game.R
+import com.maisha.game.data.model.Gender
+import com.maisha.game.data.model.Expression
 import com.maisha.game.data.model.AvatarConfig
 import com.maisha.game.data.model.EyewearStyle
 import com.maisha.game.data.model.FacialHairStyle
 import com.maisha.game.ui.theme.GoldAccent
+import com.maisha.game.ui.theme.InkPrimary
 import com.maisha.game.ui.theme.NavyDeep
 import com.maisha.game.ui.theme.TealPrimary
 
@@ -57,18 +61,33 @@ private val outfitSwatches = listOf(
     Color(0xFF7E57C2), Color(0xFF4CAF50), Color(0xFFCE93D8), Color(0xFF455A64)
 )
 
+private enum class AvatarStep(val title: String) {
+    FACE("Face"),
+    TONE("Tone & Hair"),
+    OUTFIT("Outfit"),
+    DETAILS("Details"),
+    ACCESSORY("Accessory")
+}
+
 @Composable
 fun AvatarPickerScreen(
     avatarConfig: AvatarConfig,
+    gender: Gender,
     isSaving: Boolean,
     onAvatarChange: (AvatarConfig) -> Unit,
     onStartLife: () -> Unit
 ) {
-    var previewAge by remember { mutableIntStateOf(18) }
-
+    // DiceBear faces need a stable "seed" for the base identity. We inject `gender`
+    // so changing gender on the previous page actually changes the face.
+    val diceSeed = remember(avatarConfig, gender) {
+        "${gender.name}-${DiceBearAvatarUrl.seedFromConfig(avatarConfig)}"
+    }
+    val previewAge = 0 // newborn face (matching CharacterCreation start age)
     Column(
         modifier = Modifier
             .fillMaxSize()
+            // Ensure readable contrast even if the previous screen used a strong background.
+            .background(Color.White)
             .verticalScroll(rememberScrollState())
             .padding(horizontal = 20.dp, vertical = 24.dp),
         horizontalAlignment = Alignment.CenterHorizontally
@@ -76,12 +95,13 @@ fun AvatarPickerScreen(
         Text(
             text = stringResource(R.string.avatar_picker_title),
             style = MaterialTheme.typography.headlineSmall,
-            fontWeight = FontWeight.Bold
+            fontWeight = FontWeight.Bold,
+            color = InkPrimary
         )
         Text(
             text = stringResource(R.string.avatar_picker_subtitle),
             style = MaterialTheme.typography.bodyMedium,
-            color = MaterialTheme.colorScheme.onSurfaceVariant
+            color = InkPrimary.copy(alpha = 0.7f)
         )
 
         Spacer(modifier = Modifier.height(20.dp))
@@ -89,7 +109,7 @@ fun AvatarPickerScreen(
         Card(
             modifier = Modifier.fillMaxWidth(),
             shape = RoundedCornerShape(20.dp),
-            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant)
+            colors = CardDefaults.cardColors(containerColor = Color.White)
         ) {
             Box(
                 modifier = Modifier
@@ -97,69 +117,23 @@ fun AvatarPickerScreen(
                     .padding(24.dp),
                 contentAlignment = Alignment.Center
             ) {
-                AvatarImage(config = avatarConfig, size = 120.dp, age = previewAge)
+                AvatarImage(
+                    config = avatarConfig,
+                    size = 160.dp,
+                    age = previewAge,
+                    useDiceBear = true,
+                    seed = diceSeed
+                )
             }
         }
 
-        Spacer(modifier = Modifier.height(12.dp))
-        Text(
-            text = stringResource(R.string.avatar_age_preview),
-            style = MaterialTheme.typography.titleSmall,
-            fontWeight = FontWeight.SemiBold
-        )
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(6.dp)
-        ) {
-            listOf(1 to R.string.age_stage_baby, 8 to R.string.age_stage_child, 15 to R.string.age_stage_teen, 30 to R.string.age_stage_adult, 65 to R.string.age_stage_senior)
-                .forEach { (age, labelRes) ->
-                    FilterChip(
-                        selected = previewAge == age,
-                        onClick = { previewAge = age },
-                        label = { Text(stringResource(labelRes)) }
-                    )
-                }
-        }
-
         Spacer(modifier = Modifier.height(20.dp))
-
         SwatchRow(
             label = stringResource(R.string.avatar_skin_tone),
             count = AvatarConfig.SKIN_TONE_COUNT,
             selected = avatarConfig.skinTone,
             colors = skinSwatches,
             onSelect = { onAvatarChange(avatarConfig.copy(skinTone = it)) }
-        )
-        Spacer(modifier = Modifier.height(12.dp))
-        HairStyleRow(
-            label = stringResource(R.string.avatar_hair_style),
-            avatarConfig = avatarConfig,
-            previewAge = previewAge,
-            onSelect = { onAvatarChange(avatarConfig.copy(hairStyle = it)) }
-        )
-        Spacer(modifier = Modifier.height(12.dp))
-        SwatchRow(
-            label = stringResource(R.string.avatar_hair_color),
-            count = AvatarConfig.HAIR_COLOR_COUNT,
-            selected = avatarConfig.hairColor,
-            colors = hairSwatches,
-            onSelect = { onAvatarChange(avatarConfig.copy(hairColor = it)) }
-        )
-        Spacer(modifier = Modifier.height(12.dp))
-        SwatchRow(
-            label = stringResource(R.string.avatar_outfit_color),
-            count = AvatarConfig.OUTFIT_COLOR_COUNT,
-            selected = avatarConfig.outfitColor,
-            colors = outfitSwatches,
-            onSelect = { onAvatarChange(avatarConfig.copy(outfitColor = it)) }
-        )
-        Spacer(modifier = Modifier.height(12.dp))
-        OptionalFeatureRow(
-            label = stringResource(R.string.avatar_facial_feature),
-            noneLabel = stringResource(R.string.avatar_none),
-            count = AvatarConfig.FACIAL_FEATURE_COUNT,
-            selected = avatarConfig.facialFeature,
-            onSelect = { onAvatarChange(avatarConfig.copy(facialFeature = it)) }
         )
         Spacer(modifier = Modifier.height(12.dp))
         OptionalEnumRow(
@@ -178,14 +152,6 @@ fun AvatarPickerScreen(
             selected = avatarConfig.eyewear,
             labelFor = { eyewearLabel(it) },
             onSelect = { onAvatarChange(avatarConfig.copy(eyewear = it)) }
-        )
-        Spacer(modifier = Modifier.height(12.dp))
-        OptionalFeatureRow(
-            label = stringResource(R.string.avatar_accessory),
-            noneLabel = stringResource(R.string.avatar_none),
-            count = AvatarConfig.ACCESSORY_COUNT,
-            selected = avatarConfig.accessoryId,
-            onSelect = { onAvatarChange(avatarConfig.copy(accessoryId = it)) }
         )
 
         Spacer(modifier = Modifier.height(24.dp))
@@ -215,7 +181,12 @@ private fun HairStyleRow(
     onSelect: (Int) -> Unit
 ) {
     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-        Text(text = label, style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.SemiBold)
+        Text(
+            text = label,
+            style = MaterialTheme.typography.titleSmall,
+            fontWeight = FontWeight.SemiBold,
+            color = InkPrimary
+        )
         Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
             repeat(AvatarConfig.HAIR_STYLE_COUNT) { index ->
                 val selected = index == avatarConfig.hairStyle
@@ -228,19 +199,29 @@ private fun HairStyleRow(
                             color = if (selected) GoldAccent else MaterialTheme.colorScheme.outline.copy(alpha = 0.4f),
                             shape = CircleShape
                         )
-                        .background(MaterialTheme.colorScheme.surface)
+                        .background(Color.White)
                         .clickable { onSelect(index) },
                     contentAlignment = Alignment.Center
                 ) {
                     AvatarImage(
                         config = avatarConfig.copy(hairStyle = index),
                         size = 34.dp,
-                        age = previewAge.coerceAtLeast(8)
+                        age = previewAge.coerceAtLeast(8),
+                        expression = Expression.NEUTRAL,
+                        useDiceBear = true
                     )
                 }
             }
         }
     }
+}
+
+private fun expressionEmoji(expression: Expression): String = when (expression) {
+    Expression.NEUTRAL -> "🙂"
+    Expression.HAPPY -> "😄"
+    Expression.SAD -> "🙁"
+    Expression.ANGRY -> "😠"
+    Expression.SURPRISED -> "😮"
 }
 
 @Composable
@@ -253,7 +234,12 @@ private fun <T> OptionalEnumRow(
     onSelect: (T?) -> Unit
 ) {
     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-        Text(text = label, style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.SemiBold)
+        Text(
+            text = label,
+            style = MaterialTheme.typography.titleSmall,
+            fontWeight = FontWeight.SemiBold,
+            color = InkPrimary
+        )
         Row(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.spacedBy(8.dp)
@@ -261,13 +247,25 @@ private fun <T> OptionalEnumRow(
             FilterChip(
                 selected = selected == null,
                 onClick = { onSelect(null) },
-                label = { Text(noneLabel) }
+                label = { Text(noneLabel, color = InkPrimary) },
+                colors = FilterChipDefaults.filterChipColors(
+                    containerColor = Color.White,
+                    labelColor = InkPrimary.copy(alpha = 0.75f),
+                    selectedContainerColor = GoldAccent.copy(alpha = 0.18f),
+                    selectedLabelColor = InkPrimary
+                )
             )
             options.forEach { option ->
                 FilterChip(
                     selected = selected == option,
                     onClick = { onSelect(option) },
-                    label = { Text(labelFor(option)) }
+                    label = { Text(labelFor(option), color = InkPrimary) },
+                    colors = FilterChipDefaults.filterChipColors(
+                        containerColor = Color.White,
+                        labelColor = InkPrimary.copy(alpha = 0.75f),
+                        selectedContainerColor = GoldAccent.copy(alpha = 0.18f),
+                        selectedLabelColor = InkPrimary
+                    )
                 )
             }
         }
@@ -298,18 +296,35 @@ private fun OptionalFeatureRow(
     onSelect: (Int?) -> Unit
 ) {
     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-        Text(text = label, style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.SemiBold)
+        Text(
+            text = label,
+            style = MaterialTheme.typography.titleSmall,
+            fontWeight = FontWeight.SemiBold,
+            color = InkPrimary
+        )
         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
             FilterChip(
                 selected = selected == null,
                 onClick = { onSelect(null) },
-                label = { Text(noneLabel) }
+                label = { Text(noneLabel, color = InkPrimary) },
+                colors = FilterChipDefaults.filterChipColors(
+                    containerColor = Color.White,
+                    labelColor = InkPrimary.copy(alpha = 0.75f),
+                    selectedContainerColor = GoldAccent.copy(alpha = 0.18f),
+                    selectedLabelColor = InkPrimary
+                )
             )
             repeat(count) { index ->
                 FilterChip(
                     selected = selected == index,
                     onClick = { onSelect(index) },
-                    label = { Text("${index + 1}") }
+                    label = { Text("${index + 1}", color = InkPrimary) },
+                    colors = FilterChipDefaults.filterChipColors(
+                        containerColor = Color.White,
+                        labelColor = InkPrimary.copy(alpha = 0.75f),
+                        selectedContainerColor = GoldAccent.copy(alpha = 0.18f),
+                        selectedLabelColor = InkPrimary
+                    )
                 )
             }
         }
@@ -325,7 +340,12 @@ private fun SwatchRow(
     onSelect: (Int) -> Unit
 ) {
     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-        Text(text = label, style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.SemiBold)
+        Text(
+            text = label,
+            style = MaterialTheme.typography.titleSmall,
+            fontWeight = FontWeight.SemiBold,
+            color = InkPrimary
+        )
         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
             repeat(count) { index ->
                 val swatchColor = colors?.getOrNull(index) ?: TealPrimary.copy(alpha = 0.4f + index * 0.15f)

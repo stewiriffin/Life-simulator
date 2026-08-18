@@ -197,6 +197,7 @@ fun MaishaNavHost(
 
             AvatarPickerScreen(
                 avatarConfig = uiState.avatarConfig,
+                gender = uiState.selectedGender,
                 isSaving = uiState.isSaving,
                 onAvatarChange = viewModel::onAvatarChange,
                 onStartLife = viewModel::onStartLife
@@ -253,6 +254,7 @@ fun MaishaNavHost(
                 onDismissDatingProspects = viewModel::onDismissDatingProspects,
                 onStartDating = viewModel::onStartDating,
                 onPropose = viewModel::onPropose,
+                onProposeWithPrenup = { id -> viewModel.onPropose(id, signPrenup = true) },
                 onBreakUp = viewModel::onBreakUp,
                 onHaveChild = viewModel::onHaveChild,
                 onRelationshipMessageDismissed = viewModel::onRelationshipMessageDismissed,
@@ -275,6 +277,7 @@ fun MaishaNavHost(
                 onPurchaseAsset = viewModel::onPurchaseAsset,
                 onSellAsset = viewModel::onSellAsset,
                 onRepairAsset = viewModel::onRepairAsset,
+                onRenovateAsset = viewModel::onRenovateAsset,
                 onRentOutProperty = viewModel::onRentOutProperty,
                 onEvictTenant = viewModel::onEvictTenant,
                 onSaveWill = viewModel::onSaveWill,
@@ -284,6 +287,7 @@ fun MaishaNavHost(
                 onDepositSavings = viewModel::onDepositSavings,
                 onWithdrawSavings = viewModel::onWithdrawSavings,
                 onSetLivingStandard = viewModel::onSetLivingStandard,
+                onSetPortfolioStrategy = viewModel::onSetPortfolioStrategy,
                 onAssetsMessageDismissed = viewModel::onAssetsMessageDismissed,
                 onAttemptCrime = viewModel::onAttemptCrime,
                 onGoToTrial = viewModel::onGoToTrial,
@@ -312,6 +316,9 @@ fun MaishaNavHost(
                 onPerformLeisure = viewModel::onPerformLeisure,
                 onPerformStudySession = viewModel::onPerformStudySession,
                 onPerformPrisonActivity = viewModel::onPerformPrisonActivity,
+                onAdoptChild = viewModel::onAdoptChild,
+                onRequestExpungement = viewModel::onRequestExpungement,
+                onWorkPartTime = viewModel::onWorkPartTime,
                 onActionMessageDismissed = viewModel::onActionMessageDismissed,
                 onLifePulseMessageDismissed = viewModel::onLifePulseMessageDismissed,
                 onYearRecapDismissed = viewModel::onYearRecapDismissed,

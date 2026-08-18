@@ -1401,6 +1401,90 @@
     <string name="archetype_model_citizen">The Model Citizen</string>
     <string name="archetype_elder">The Elder</string>
     <string name="archetype_everyday">The Everyday Life</string>
+    <string name="archetype_healer">The Healer</string>
+    <string name="archetype_counsel">The Counsel</string>
+
+    <!-- Wave 3 — career tracks -->
+    <string name="track_medical">Medical</string>
+    <string name="track_legal">Legal</string>
+
+    <!-- Wave 3 — family & legal -->
+    <string name="btn_propose_with_prenup">Propose with prenup</string>
+    <string name="btn_adopt_child">Adopt a child</string>
+    <string name="dialog_adopt_child_title">Adopt a child?</string>
+    <string name="dialog_adopt_child_body">Agency fees apply. You can adopt whether single or married.</string>
+    <string name="msg_adopt_success">You welcomed an adopted child into your family.</string>
+    <string name="msg_adopt_too_young">You must be at least 25 to adopt.</string>
+    <string name="msg_adopt_funds">Not enough cash for adoption fees.</string>
+
+    <!-- Wave 3 — teen jobs -->
+    <string name="section_teen_jobs">Teen jobs</string>
+    <string name="part_time_retail">Retail shift</string>
+    <string name="part_time_fast_food">Fast-food shift</string>
+    <string name="part_time_babysitting">Babysitting</string>
+    <string name="part_time_tutoring">Tutoring</string>
+    <string name="msg_part_time_success">Shift complete — you earned %1$s.</string>
+    <string name="msg_part_time_already">You already worked a part-time job this year.</string>
+
+    <!-- Wave 3 — assets -->
+    <string name="btn_renovate">Renovate</string>
+    <string name="btn_renovate_with_cost">Renovate (%1$s)</string>
+    <string name="dialog_renovate_asset_title">Renovate property?</string>
+    <string name="dialog_renovate_asset_body">Upgrade %1$s to renovation level %2$d for %3$s.</string>
+    <string name="msg_renovate_success">Renovation complete — property value increased.</string>
+    <string name="msg_renovate_ineligible">This property cannot be renovated right now.</string>
+    <string name="section_portfolio_strategy">Portfolio strategy</string>
+    <string name="portfolio_conservative">Conservative</string>
+    <string name="portfolio_balanced">Balanced</string>
+    <string name="portfolio_aggressive">Aggressive</string>
+
+    <!-- Wave 3 — expungement -->
+    <string name="btn_request_expungement">Petition expungement</string>
+    <string name="dialog_expunge_title">Expunge criminal record?</string>
+    <string name="dialog_expunge_body">Legal fees: %1$s. Requires 7+ years since last arrest.</string>
+    <string name="msg_expunge_success">Your record was expunged.</string>
+    <string name="msg_expunge_denied">Your petition was denied.</string>
+    <string name="msg_expunge_ineligible">You are not eligible to expunge yet.</string>
+
+    <!-- Wave 3 — weekly challenges & ribbons -->
+    <string name="section_weekly_challenge">Weekly challenge</string>
+    <string name="msg_weekly_challenge_complete">Weekly challenge complete! Ribbon earned: %1$s</string>
+    <string name="challenge_medical_title">Residency Rush</string>
+    <string name="challenge_medical_desc">Reach medical career track level 2.</string>
+    <string name="challenge_legal_title">Partner Track</string>
+    <string name="challenge_legal_desc">Reach legal career track level 2.</string>
+    <string name="challenge_adopt_title">Guardian Angel</string>
+    <string name="challenge_adopt_desc">Adopt a child.</string>
+    <string name="challenge_renovate_title">Home Improver</string>
+    <string name="challenge_renovate_desc">Renovate a house at least once.</string>
+    <string name="challenge_expunge_title">Clean Slate</string>
+    <string name="challenge_expunge_desc">Expunge your criminal record.</string>
+    <string name="challenge_scholar_title">Honor Roll</string>
+    <string name="challenge_scholar_desc">Graduate university with GPA 3.5+.</string>
+    <string name="challenge_teen_job_title">Teen Hustler</string>
+    <string name="challenge_teen_job_desc">Work a teen part-time job.</string>
+    <string name="challenge_portfolio_title">Market Maven</string>
+    <string name="challenge_portfolio_desc">Build a portfolio worth 100k+.</string>
+    <string name="ribbon_healer">Healer</string>
+    <string name="ribbon_counsel">Counsel</string>
+    <string name="ribbon_guardian">Guardian</string>
+    <string name="ribbon_architect">Architect</string>
+    <string name="ribbon_redemption">Redemption</string>
+    <string name="ribbon_valedictorian">Valedictorian</string>
+    <string name="ribbon_hustler">Hustler</string>
+    <string name="ribbon_investor">Investor</string>
+
+    <!-- Wave 3 achievements -->
+    <string name="achievement_healer_title">Healer</string>
+    <string name="achievement_healer_description">Reach level 2 on the medical career track.</string>
+    <string name="achievement_legal_eagle_title">Legal Eagle</string>
+    <string name="achievement_legal_eagle_description">Reach level 2 on the legal career track.</string>
+    <string name="achievement_adoptive_hero_title">Adoptive Hero</string>
+    <string name="achievement_adoptive_hero_description">Adopt a child into your family.</string>
+    <string name="achievement_fresh_start_title">Fresh Start</string>
+    <string name="achievement_fresh_start_description">Expunge your criminal record.</string>
+    <string name="achievement_property_flipper_title">Property Flipper</string>
+    <string name="achievement_property_flipper_description">Renovate a house to level 2 or higher.</string>
 
     <!-- Format strings -->
     <string name="format_age">Age %d</string>

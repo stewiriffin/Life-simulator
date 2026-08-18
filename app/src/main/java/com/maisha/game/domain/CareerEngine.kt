@@ -10,6 +10,7 @@ import com.maisha.game.data.model.CareerState
 import com.maisha.game.data.model.Character
 import com.maisha.game.data.model.EventChoice
 import com.maisha.game.data.model.HustleType
+import com.maisha.game.data.model.PartTimeJob
 import com.maisha.game.data.model.Job
 import com.maisha.game.data.model.LifeEvent
 import com.maisha.game.data.model.SchoolClub
@@ -49,6 +50,12 @@ sealed class CareerTrackPracticeResult {
     data class Success(val character: Character) : CareerTrackPracticeResult()
     data object Ineligible : CareerTrackPracticeResult()
     data object MaxLevel : CareerTrackPracticeResult()
+}
+
+sealed class PartTimeJobResult {
+    data class Success(val character: Character, val payout: Int) : PartTimeJobResult()
+    data object Ineligible : PartTimeJobResult()
+    data object AlreadyWorked : PartTimeJobResult()
 }
 
 @Singleton
@@ -643,6 +650,7 @@ class CareerEngine @Inject constructor(
     }
 
     private fun criminalRecordHirePenalty(character: Character): Float {
+        if (character.criminalRecord.recordExpunged) return 0f
         if (!character.criminalRecord.hasRecord) return 0f
         val cleanYears = character.criminalRecord.lastArrestAge?.let { character.age - it } ?: 0
         val multiplier = when {
@@ -731,6 +739,10 @@ class CareerEngine @Inject constructor(
             CareerTrack.ENTERTAINMENT -> true
             CareerTrack.PRO_SPORTS -> character.education.schoolClub == SchoolClub.FOOTBALL ||
                 character.stats.health >= PRO_SPORTS_MIN_HEALTH
+            CareerTrack.MEDICAL -> character.education.courseOfStudy == "Medicine" ||
+                character.stats.smarts >= MEDICAL_MIN_SMARTS
+            CareerTrack.LEGAL -> character.education.courseOfStudy == "Law" ||
+                character.stats.smarts >= LEGAL_MIN_SMARTS
             CareerTrack.NONE -> false
         }
     }
@@ -740,6 +752,8 @@ class CareerEngine @Inject constructor(
         val label = when (track) {
             CareerTrack.ENTERTAINMENT -> "entertainment"
             CareerTrack.PRO_SPORTS -> "pro sports"
+            CareerTrack.MEDICAL -> "medical"
+            CareerTrack.LEGAL -> "legal"
             CareerTrack.NONE -> return character
         }
         return character.copy(
@@ -764,19 +778,23 @@ class CareerEngine @Inject constructor(
             return CareerTrackPracticeResult.MaxLevel
         }
         val progressGain = TRACK_PRACTICE_GAIN + Random.nextInt(0, 6)
-        val happinessDelta = if (track == CareerTrack.PRO_SPORTS) -2 else -1
+        val happinessDelta = when (track) {
+            CareerTrack.PRO_SPORTS -> -2
+            CareerTrack.MEDICAL, CareerTrack.LEGAL -> -2
+            else -> -1
+        }
         var updated = character.copy(
             stats = character.stats.copy(
                 happiness = clampStat(character.stats.happiness + happinessDelta),
-                smarts = if (track == CareerTrack.ENTERTAINMENT) {
-                    clampStat(character.stats.smarts + 1)
-                } else {
-                    character.stats.smarts
+                smarts = when (track) {
+                    CareerTrack.ENTERTAINMENT, CareerTrack.MEDICAL, CareerTrack.LEGAL ->
+                        clampStat(character.stats.smarts + 1)
+                    else -> character.stats.smarts
                 },
-                health = if (track == CareerTrack.PRO_SPORTS) {
-                    clampStat(character.stats.health + 1)
-                } else {
-                    character.stats.health
+                health = when (track) {
+                    CareerTrack.PRO_SPORTS, CareerTrack.MEDICAL ->
+                        clampStat(character.stats.health + 1)
+                    else -> character.stats.health
                 }
             )
         )
@@ -845,7 +863,73 @@ class CareerEngine @Inject constructor(
             3 -> "You're a star athlete with national buzz."
             else -> "Your sports career advanced."
         }
+        CareerTrack.MEDICAL -> when (level) {
+            1 -> "You completed clinical rotations."
+            2 -> "You earned your medical license."
+            3 -> "You're a respected specialist in your field."
+            else -> "Your medical career advanced."
+        }
+        CareerTrack.LEGAL -> when (level) {
+            1 -> "You passed the bar exam."
+            2 -> "You made partner at a regional firm."
+            3 -> "You're a sought-after litigator."
+            else -> "Your legal career advanced."
+        }
         CareerTrack.NONE -> "Your career track advanced."
+    }
+
+    /** Teen after-school job (once per year, ages 14–17). */
+    fun workPartTime(character: Character, job: PartTimeJob): PartTimeJobResult {
+        if (!character.alive || character.criminalRecord.currentlyIncarcerated) {
+            return PartTimeJobResult.Ineligible
+        }
+        if (character.age !in MIN_PART_TIME_AGE..MAX_PART_TIME_AGE) {
+            return PartTimeJobResult.Ineligible
+        }
+        if (character.career.partTimeWorkedThisYear) return PartTimeJobResult.AlreadyWorked
+
+        val spec = partTimeSpec(job)
+        val smartsBonus = if (job == PartTimeJob.TUTORING) {
+            0.85f + character.stats.smarts / 100f * 0.3f
+        } else {
+            1f
+        }
+        val payout = EconomyScaler.scaleAmount(
+            (Random.nextInt(spec.minPayout, spec.maxPayout + 1) * smartsBonus).roundToInt(),
+            character.countryCode
+        )
+        val happinessDelta = when (job) {
+            PartTimeJob.TUTORING -> 2
+            PartTimeJob.BABYSITTING -> 1
+            PartTimeJob.FAST_FOOD -> -1
+            PartTimeJob.RETAIL -> 0
+        }
+        val updated = character.copy(
+            stats = character.stats.copy(
+                money = character.stats.money + payout,
+                happiness = clampStat(character.stats.happiness + happinessDelta),
+                smarts = if (job == PartTimeJob.TUTORING) {
+                    clampStat(character.stats.smarts + 1)
+                } else {
+                    character.stats.smarts
+                }
+            ),
+            career = character.career.copy(partTimeWorkedThisYear = true),
+            eventLog = EventLogCap.prepend(
+                character.eventLog,
+                "You worked a ${spec.label} shift and earned ${formatMoney(payout, character.countryCode)}."
+            )
+        )
+        return PartTimeJobResult.Success(updated, payout)
+    }
+
+    private data class PartTimeSpec(val label: String, val minPayout: Int, val maxPayout: Int)
+
+    private fun partTimeSpec(job: PartTimeJob): PartTimeSpec = when (job) {
+        PartTimeJob.RETAIL -> PartTimeSpec("retail", 800, 2_200)
+        PartTimeJob.FAST_FOOD -> PartTimeSpec("fast-food", 700, 1_800)
+        PartTimeJob.BABYSITTING -> PartTimeSpec("babysitting", 1_000, 2_800)
+        PartTimeJob.TUTORING -> PartTimeSpec("tutoring", 1_500, 4_000)
     }
 
     companion object {
@@ -890,5 +974,9 @@ class CareerEngine @Inject constructor(
         private const val TRACK_PASSIVE_GAIN = 8
         private const val TRACK_LEVEL_THRESHOLD = 100
         private const val MAX_TRACK_LEVEL = 3
+        private const val MEDICAL_MIN_SMARTS = 65
+        private const val LEGAL_MIN_SMARTS = 62
+        const val MIN_PART_TIME_AGE = 14
+        const val MAX_PART_TIME_AGE = 17
     }
 }

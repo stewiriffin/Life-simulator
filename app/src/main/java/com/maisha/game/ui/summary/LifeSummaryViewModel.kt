@@ -471,6 +471,8 @@ class LifeSummaryViewModel @Inject constructor(
         "archetype_reformed" -> R.string.archetype_reformed
         "archetype_model_citizen" -> R.string.archetype_model_citizen
         "archetype_elder" -> R.string.archetype_elder
+        "archetype_healer" -> R.string.archetype_healer
+        "archetype_counsel" -> R.string.archetype_counsel
         else -> R.string.archetype_everyday
     }
 }

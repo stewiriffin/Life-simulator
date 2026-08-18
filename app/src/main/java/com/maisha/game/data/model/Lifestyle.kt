@@ -12,7 +12,8 @@ data class LifestyleState(
     val hasHealthInsurance: Boolean = false,
     val livingStandard: LivingStandard = LivingStandard.MODEST,
     /** Paid "Meet people" friend-seeking used this in-game year. */
-    val socializedThisYear: Boolean = false
+    val socializedThisYear: Boolean = false,
+    val portfolioStrategy: PortfolioStrategy = PortfolioStrategy.BALANCED
 )
 
 enum class LifestyleOption {

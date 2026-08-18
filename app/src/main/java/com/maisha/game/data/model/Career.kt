@@ -50,7 +50,9 @@ data class CareerState(
     /** 0 = entry, 3 = top tier within the track. */
     val trackLevel: Int = 0,
     /** Practice progress toward the next [trackLevel]; resets on level-up. */
-    val trackProgress: Int = 0
+    val trackProgress: Int = 0,
+    /** Teen part-time job payout claimed this in-game year. */
+    val partTimeWorkedThisYear: Boolean = false
 )
 
 @Serializable
@@ -65,7 +67,18 @@ enum class WorkEffort {
 enum class CareerTrack {
     NONE,
     ENTERTAINMENT,
-    PRO_SPORTS
+    PRO_SPORTS,
+    MEDICAL,
+    LEGAL
+}
+
+/** After-school jobs for teens (14–17). */
+@Serializable
+enum class PartTimeJob {
+    RETAIL,
+    FAST_FOOD,
+    BABYSITTING,
+    TUTORING
 }
 
 @Serializable

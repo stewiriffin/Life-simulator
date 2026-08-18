@@ -8,16 +8,10 @@ import com.maisha.game.data.model.IllustrationRef
 import com.maisha.game.data.model.ResourceType
 
 /**
- * Central map of bundled BitLife-style raster art (drawable-nodpi/img_*) and legacy vectors (ill_*).
+ * Central map of bundled BitLife-style raster art (drawable-nodpi/img_*).
  * Swap [resourceName] files to retheme without touching UI code.
  */
 object IllustrationCatalog {
-
-    private fun vector(id: String, resourceName: String) = IllustrationRef(
-        id = id,
-        resourceType = ResourceType.VECTOR_DRAWABLE,
-        resourceName = resourceName
-    )
 
     private fun raster(id: String, resourceName: String) = IllustrationRef(
         id = id,

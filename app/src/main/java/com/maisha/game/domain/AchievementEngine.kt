@@ -78,6 +78,17 @@ class AchievementEngine @Inject constructor(
             "well_rounded" -> SkillType.entries.all { type ->
                 (character.skills.find { it.type == type }?.level ?: 0) >= SkillEngine.TIER_ADEPT_MIN
             }
+            "healer" -> character.career.careerTrack == com.maisha.game.data.model.CareerTrack.MEDICAL &&
+                character.career.trackLevel >= 2
+            "legal_eagle" -> character.career.careerTrack == com.maisha.game.data.model.CareerTrack.LEGAL &&
+                character.career.trackLevel >= 2
+            "adoptive_hero" -> character.family.any {
+                it.relation == RelationType.CHILD && it.isAdopted
+            }
+            "fresh_start" -> character.criminalRecord.recordExpunged
+            "property_flipper" -> character.assets.any {
+                it.type == AssetType.HOUSE && it.renovationLevel >= 2
+            }
             else -> false
         }
 

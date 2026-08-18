@@ -29,7 +29,9 @@ data class CriminalRecord(
     /** Bad prison-event choices that disqualify parole for this sentence. */
     val negativePrisonEvents: Int = 0,
     /** Good prison-event choices that boost yearly parole roll chance. */
-    val paroleBonus: Int = 0
+    val paroleBonus: Int = 0,
+    /** Record cleared via legal expungement — hire penalty waived. */
+    val recordExpunged: Boolean = false
 )
 
 @Serializable

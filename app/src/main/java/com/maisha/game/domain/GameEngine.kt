@@ -115,7 +115,8 @@ class GameEngine @Inject constructor(
             criminalRecord = character.criminalRecord.copy(crimeAttemptsThisYear = 0),
             career = character.career.copy(
                 sideHustleDoneThisYear = false,
-                workEffortThisYear = null
+                workEffortThisYear = null,
+                partTimeWorkedThisYear = false
             )
         )
         updatedCharacter = applyAvatarVisualEvolution(updatedCharacter, previousAge)
@@ -799,8 +800,30 @@ class GameEngine @Inject constructor(
         relationshipEngine.startDating(character, prospect)
 
     /** Delegates to [RelationshipEngine.proposeMarriage]. */
-    fun proposeMarriage(character: Character, personId: String) =
-        relationshipEngine.proposeMarriage(character, personId)
+    fun proposeMarriage(character: Character, personId: String, signPrenup: Boolean = false) =
+        relationshipEngine.proposeMarriage(character, personId, signPrenup)
+
+    /** Delegates to [RelationshipEngine.adoptChild]. */
+    fun adoptChild(character: Character): AdoptChildResult =
+        relationshipEngine.adoptChild(character)
+
+    /** Delegates to [CareerEngine.workPartTime]. */
+    fun workPartTime(character: Character, job: com.maisha.game.data.model.PartTimeJob): PartTimeJobResult =
+        careerEngine.workPartTime(character, job)
+
+    /** Delegates to [FinanceEngine.renovateAsset]. */
+    fun renovateAsset(character: Character, assetId: String): RenovateResult =
+        financeEngine.renovateAsset(character, assetId)
+
+    /** Delegates to [FinanceEngine.setPortfolioStrategy]. */
+    fun setPortfolioStrategy(
+        character: Character,
+        strategy: com.maisha.game.data.model.PortfolioStrategy
+    ): Character = financeEngine.setPortfolioStrategy(character, strategy)
+
+    /** Delegates to [CrimeEngine.requestExpungement]. */
+    fun requestExpungement(character: Character): ExpungementResult =
+        crimeEngine.requestExpungement(character)
 
     /** Delegates to [RelationshipEngine.breakUpOrDivorce]. */
     fun breakUpOrDivorce(character: Character, personId: String): BreakUpResult =

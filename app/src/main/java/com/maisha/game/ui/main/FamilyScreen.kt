@@ -114,6 +114,7 @@ fun FamilyScreen(
     onDismissDatingProspects: () -> Unit,
     onStartDating: (Person) -> Unit,
     onPropose: (String) -> Unit,
+    onProposeWithPrenup: (String) -> Unit = onPropose,
     onBreakUp: (String) -> Unit,
     onHaveChild: () -> Unit,
     onRelationshipMessageDismissed: () -> Unit,
@@ -636,6 +637,7 @@ fun FamilyScreen(
                 divorceSettlementCost = divorceCost,
                 onInteraction = { type, giftTier -> onInteraction(member.id, type, giftTier) },
                 onPropose = { onPropose(member.id) },
+                onProposeWithPrenup = { onProposeWithPrenup(member.id) },
                 onBreakUp = { onBreakUp(member.id) },
                 onHaveChild = onHaveChild
             )

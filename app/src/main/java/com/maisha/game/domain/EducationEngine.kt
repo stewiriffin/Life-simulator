@@ -12,6 +12,7 @@ import com.maisha.game.data.model.LifeEvent
 import com.maisha.game.data.model.SchoolClub
 import com.maisha.game.data.model.SchoolStage
 import com.maisha.game.data.model.StudyEffort
+import com.maisha.game.data.model.UniversityMajor
 import com.maisha.game.data.model.VisaType
 import com.maisha.game.util.clampGpa
 import com.maisha.game.util.clampStat
@@ -532,24 +533,18 @@ class EducationEngine @Inject constructor(
         }
 
         if (examType == ExamType.KCSE && result.passed && isEligibleForUniversity(character)) {
-            choices += EventChoice(
-                label = "Apply for Law at university",
-                statEffects = mapOf("smarts" to 2, "happiness" to 5),
-                universityCourse = "Law",
-                resultText = "You enrolled in Law at ${universityNameFor(character.countryCode)}."
-            )
-            choices += EventChoice(
-                label = "Apply for Medicine at university",
-                statEffects = mapOf("smarts" to 3, "happiness" to 4),
-                universityCourse = "Medicine",
-                resultText = "You enrolled in Medicine at ${universityNameFor(character.countryCode)}."
-            )
-            choices += EventChoice(
-                label = "Apply for Computer Science",
-                statEffects = mapOf("smarts" to 3, "happiness" to 5),
-                universityCourse = "Computer Science",
-                resultText = "You enrolled in Computer Science at ${universityNameFor(character.countryCode)}."
-            )
+            UniversityMajor.entries.forEach { major ->
+                choices += EventChoice(
+                    label = "Apply for ${major.courseLabel} at university",
+                    statEffects = mapOf(
+                        "smarts" to if (major == UniversityMajor.MEDICINE) 3 else 2,
+                        "happiness" to 4
+                    ),
+                    universityCourse = major.courseLabel,
+                    resultText = "You enrolled in ${major.courseLabel} at " +
+                        "${universityNameFor(character.countryCode)}."
+                )
+            }
         }
 
         if (examType == ExamType.KCSE && result.passed && !isEligibleForUniversity(character)) {

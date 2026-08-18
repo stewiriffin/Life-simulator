@@ -5,6 +5,7 @@ import android.app.Activity
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.wrapContentHeight
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.key
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
@@ -27,24 +28,28 @@ fun AdaptiveBannerAd(
 
     if (activity == null) return
 
-    AndroidView(
-        modifier = modifier
-            .fillMaxWidth()
-            .wrapContentHeight(),
-        factory = { ctx ->
-            AdView(ctx).apply {
-                setAdSize(
-                    AdSize.getCurrentOrientationAnchoredAdaptiveBannerAdSize(ctx, adWidth)
-                )
-                this.adUnitId = adUnitId
-                loadAd(AdRequest.Builder().build())
+    // `AdView.adUnitId` can only be set once. If Compose recomposes, we must NOT set it again.
+    key(adUnitId) {
+        AndroidView(
+            modifier = modifier
+                .fillMaxWidth()
+                .wrapContentHeight(),
+            factory = { ctx ->
+                AdView(ctx).apply {
+                    setAdSize(
+                        AdSize.getCurrentOrientationAnchoredAdaptiveBannerAdSize(ctx, adWidth)
+                    )
+                    this.adUnitId = adUnitId
+                    loadAd(AdRequest.Builder().build())
+                }
+            },
+            update = { adView ->
+                // Only load again on update; do not mutate `adUnitId`.
+                adView.loadAd(AdRequest.Builder().build())
+            },
+            onRelease = { adView ->
+                adView.destroy()
             }
-        },
-        update = { adView ->
-            adView.adUnitId = adUnitId
-        },
-        onRelease = { adView ->
-            adView.destroy()
-        }
-    )
+        )
+    }
 }

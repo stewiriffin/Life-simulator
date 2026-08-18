@@ -29,6 +29,10 @@ class HealthEngine @Inject constructor() {
      * @return A new [HealthCondition] or null if roll fails or character already has untreated illness.
      */
     fun rollForIllness(character: Character): HealthCondition? {
+        if (character.activeConditions.any { !it.treated && !it.isChronic }) {
+            return null
+        }
+        rollForChronicIllness(character)?.let { return it }
         if (character.activeConditions.any { !it.treated }) {
             return null
         }
@@ -61,10 +65,18 @@ class HealthEngine @Inject constructor() {
      * Yearly drain from untreated conditions: reduces health and increments [HealthCondition.yearsUntreated].
      */
     fun applyUntreatedConditions(character: Character): Character {
-        val untreated = character.activeConditions.filter { !it.treated }
-        if (untreated.isEmpty()) return character
+        val draining = character.activeConditions.filter { condition ->
+            !condition.treated || (condition.isChronic && condition.treated)
+        }
+        if (draining.isEmpty()) return character
 
-        val totalDrain = untreated.sumOf { severityDrain(it.severity) }
+        val totalDrain = draining.sumOf { condition ->
+            if (condition.isChronic && condition.treated) {
+                CHRONIC_MANAGED_DRAIN
+            } else {
+                severityDrain(condition.severity)
+            }
+        }
         val updatedHealth = clampStat(character.stats.health - totalDrain)
         val updatedConditions = character.activeConditions.map { condition ->
             if (!condition.treated) {
@@ -78,6 +90,36 @@ class HealthEngine @Inject constructor() {
             activeConditions = updatedConditions
         )
     }
+
+    /**
+     * Late-life chronic illness roll (diabetes, hypertension, asthma).
+     * Chronic conditions remain after treatment but with reduced yearly drain.
+     */
+    fun rollForChronicIllness(character: Character): HealthCondition? {
+        if (character.age < CHRONIC_MIN_AGE) return null
+        if (character.activeConditions.any { it.isChronic }) return null
+        val chance = when {
+            character.age >= 55 && character.stats.health < 60 -> 0.14f
+            character.age >= 45 && character.stats.health < 70 -> 0.08f
+            character.age >= 35 -> 0.04f
+            else -> 0f
+        }
+        if (Random.nextFloat() >= chance) return null
+
+        return HealthCondition(
+            id = UUID.randomUUID().toString(),
+            name = chronicIllnessName(),
+            severity = 2,
+            isChronic = true
+        )
+    }
+
+    private fun chronicIllnessName(): String = listOf(
+        "Type 2 diabetes",
+        "Hypertension",
+        "Asthma",
+        "Arthritis"
+    ).random()
 
     /**
      * Pays for treatment of [conditionId]; deducts cost first, then rolls success by severity and care tier.
@@ -119,12 +161,17 @@ class HealthEngine @Inject constructor() {
             } else {
                 "public clinic"
             }
+            val recoveryMessage = if (condition.isChronic) {
+                "Your ${condition.name} is now managed with ongoing care at $facility."
+            } else {
+                "Recovered from ${condition.name} after treatment at $facility."
+            }
             DoctorResult.Treated(
                 afterPayment.copy(
                     activeConditions = updatedConditions,
                     eventLog = EventLogCap.prepend(
                         afterPayment.eventLog,
-                        "Recovered from ${condition.name} after treatment at $facility."
+                        recoveryMessage
                     )
                 )
             )
@@ -498,6 +545,8 @@ class HealthEngine @Inject constructor() {
         private const val DEMANDING_JOB_STRESS_HEALTH = 2
         private const val DEMANDING_JOB_STRESS_HAPPINESS = 2
         private const val WORK_EFFORT_STRESS_HEALTH = 2
+        private const val CHRONIC_MIN_AGE = 35
+        private const val CHRONIC_MANAGED_DRAIN = 1
         private const val WORK_EFFORT_STRESS_HAPPINESS = 1
 
         private val DEMANDING_JOB_IDS = setOf(

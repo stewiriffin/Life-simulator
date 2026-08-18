@@ -4,8 +4,7 @@ package com.maisha.game.ui.theme
 import androidx.compose.ui.graphics.Color
 
 /**
- * Palette aligned with `App design assistance.zip` (Figma Make prototype):
- * cream game loop + navy hero headers + green primary CTA.
+ * Palette aligned with the Maisha Figma prototype (cream game loop + navy hero headers + green primary CTA).
  */
 val NavyDeep = Color(0xFF0B1628)
 val NavySurface = Color(0xFF152238)

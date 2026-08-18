@@ -11,5 +11,7 @@ data class HealthCondition(
     val name: String,
     val severity: Int,
     val treated: Boolean = false,
-    val yearsUntreated: Int = 0
+    val yearsUntreated: Int = 0,
+    /** Chronic conditions stay after treatment (managed, not cured). */
+    val isChronic: Boolean = false
 )

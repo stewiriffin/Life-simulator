@@ -16,6 +16,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.Immutable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.key
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -197,27 +198,30 @@ fun AvatarImage(
     ) {
         if (useDiceBear && !forceLocal) {
             val context = LocalContext.current
-            SubcomposeAsyncImage(
-                model = ImageRequest.Builder(context)
-                    .data(url)
-                    .crossfade(true)
-                    .size(sizePx)
-                    .listener(
-                        onError = { _, _ -> forceLocal = true }
-                    )
-                    .build(),
-                contentDescription = null,
-                modifier = Modifier
-                    .fillMaxSize()
-                    .clip(CircleShape),
-                contentScale = ContentScale.Crop
-            ) {
-                when (painter.state) {
-                    is AsyncImagePainter.State.Success -> {
-                        SubcomposeAsyncImageContent()
-                    }
-                    else -> {
-                        LayeredAvatarContent(config = config, age = age, expression = expression)
+            // Force remount on URL change so DiceBear mouth/expression updates are always visible.
+            key(url) {
+                SubcomposeAsyncImage(
+                    model = ImageRequest.Builder(context)
+                        .data(url)
+                        .crossfade(true)
+                        .size(sizePx)
+                        .listener(
+                            onError = { _, _ -> forceLocal = true }
+                        )
+                        .build(),
+                    contentDescription = null,
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .clip(CircleShape),
+                    contentScale = ContentScale.Crop
+                ) {
+                    when (painter.state) {
+                        is AsyncImagePainter.State.Success -> {
+                            SubcomposeAsyncImageContent()
+                        }
+                        else -> {
+                            LayeredAvatarContent(config = config, age = age, expression = expression)
+                        }
                     }
                 }
             }

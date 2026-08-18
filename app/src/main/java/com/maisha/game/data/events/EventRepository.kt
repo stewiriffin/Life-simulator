@@ -105,7 +105,8 @@ class EventRepository private constructor(
         val midlife = loadEventsFromAsset(context, "data/events/midlife_events.json")
         val holidays = loadEventsFromAsset(context, "data/events/holiday_events.json")
         val crime = loadEventsFromAsset(context, "data/events/crime_events.json")
-        return starter + education + career + finance + relationship + general + midlife + holidays + crime
+        val wave3 = loadEventsFromAsset(context, "data/events/wave3_events.json")
+        return starter + education + career + finance + relationship + general + midlife + holidays + crime + wave3
     }
 
     private fun loadEventsFromAsset(context: Context, path: String): List<LifeEvent> {

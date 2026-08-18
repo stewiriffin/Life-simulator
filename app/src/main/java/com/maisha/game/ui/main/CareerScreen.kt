@@ -1141,12 +1141,22 @@ private fun CareerTrackSectionCard(
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                     Spacer(modifier = Modifier.height(8.dp))
-                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                        OutlinedButton(onClick = { onStartCareerTrack(CareerTrack.ENTERTAINMENT) }) {
-                            Text(stringResource(R.string.track_entertainment))
+                    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                            OutlinedButton(onClick = { onStartCareerTrack(CareerTrack.ENTERTAINMENT) }) {
+                                Text(stringResource(R.string.track_entertainment))
+                            }
+                            OutlinedButton(onClick = { onStartCareerTrack(CareerTrack.PRO_SPORTS) }) {
+                                Text(stringResource(R.string.track_pro_sports))
+                            }
                         }
-                        OutlinedButton(onClick = { onStartCareerTrack(CareerTrack.PRO_SPORTS) }) {
-                            Text(stringResource(R.string.track_pro_sports))
+                        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                            OutlinedButton(onClick = { onStartCareerTrack(CareerTrack.MEDICAL) }) {
+                                Text(stringResource(R.string.track_medical))
+                            }
+                            OutlinedButton(onClick = { onStartCareerTrack(CareerTrack.LEGAL) }) {
+                                Text(stringResource(R.string.track_legal))
+                            }
                         }
                     }
                 }
@@ -1178,6 +1188,8 @@ private fun CareerTrackSectionCard(
 private fun careerTrackLabel(track: CareerTrack): String = when (track) {
     CareerTrack.ENTERTAINMENT -> stringResource(R.string.track_entertainment)
     CareerTrack.PRO_SPORTS -> stringResource(R.string.track_pro_sports)
+    CareerTrack.MEDICAL -> stringResource(R.string.track_medical)
+    CareerTrack.LEGAL -> stringResource(R.string.track_legal)
     CareerTrack.NONE -> ""
 }
 

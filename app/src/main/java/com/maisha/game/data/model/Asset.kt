@@ -34,5 +34,7 @@ data class Asset(
     /** True when this real-estate asset is leased to a tenant. */
     val isRentedOut: Boolean = false,
     /** Tenant satisfaction 0–100 when [isRentedOut]; null when vacant. */
-    val tenantHappiness: Int? = null
+    val tenantHappiness: Int? = null,
+    /** Home upgrades (0–3): boosts value and tenant appeal. */
+    val renovationLevel: Int = 0
 )

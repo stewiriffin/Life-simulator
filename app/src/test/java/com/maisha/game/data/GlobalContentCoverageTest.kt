@@ -26,7 +26,9 @@ class GlobalContentCoverageTest {
         "data/events/finance_events.json",
         "data/events/relationship_events.json",
         "data/events/general_events.json",
-        "data/events/holiday_events.json"
+        "data/events/holiday_events.json",
+        "data/events/crime_events.json",
+        "data/events/wave3_events.json"
     )
 
     @Test

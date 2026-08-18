@@ -1,0 +1,313 @@
+{
+  "events": [
+    {
+      "id": "medical_intern_shift",
+      "minAge": 22,
+      "maxAge": 45,
+      "text": "Your first overnight shift in the hospital is brutal — a code blue and three admissions before dawn.",
+      "weight": 4,
+      "tags": ["career", "positive"],
+      "choices": [
+        {
+          "label": "Stay focused and learn",
+          "statEffects": { "smarts": 3, "health": -2, "happiness": 1 },
+          "resultText": "The attending noticed your composure under pressure."
+        },
+        {
+          "label": "Ask a senior for mentorship",
+          "statEffects": { "smarts": 2, "happiness": 3 },
+          "resultText": "They shared tricks that textbooks never cover."
+        }
+      ]
+    },
+    {
+      "id": "legal_courtroom_debut",
+      "minAge": 24,
+      "maxAge": 55,
+      "text": "You're handed your first real courtroom argument — the client is nervous and the judge is stern.",
+      "weight": 4,
+      "tags": ["career"],
+      "choices": [
+        {
+          "label": "Deliver a sharp opening",
+          "statEffects": { "smarts": 2, "happiness": 4 },
+          "resultText": "Your points landed. The client exhaled with relief."
+        },
+        {
+          "label": "Settle pragmatically",
+          "statEffects": { "happiness": 2, "karma": 2 },
+          "resultText": "Both sides walked away with something — and you kept your sanity."
+        }
+      ]
+    },
+    {
+      "id": "adoption_home_study",
+      "minAge": 25,
+      "maxAge": 55,
+      "text": "A social worker schedules a home visit to assess whether you're ready to adopt.",
+      "weight": 5,
+      "tags": ["relationship", "requires_child", "positive"],
+      "choices": [
+        {
+          "label": "Prepare the home thoughtfully",
+          "statEffects": { "happiness": 5, "karma": 3 },
+          "resultText": "The report was glowing. Your file moved to the top of the list."
+        },
+        {
+          "label": "Wing it",
+          "statEffects": { "happiness": -2 },
+          "resultText": "The visit felt awkward. You'll need to try again next year."
+        }
+      ]
+    },
+    {
+      "id": "prenup_conversation",
+      "minAge": 22,
+      "maxAge": 50,
+      "text": "Your partner brings up a prenuptial agreement before the wedding planning gets serious.",
+      "weight": 4,
+      "tags": ["relationship", "requires_spouse"],
+      "choices": [
+        {
+          "label": "Discuss it calmly",
+          "statEffects": { "happiness": 2 },
+          "resultText": "Awkward at first, but you both felt clearer about finances."
+        },
+        {
+          "label": "Take it personally",
+          "statEffects": { "happiness": -6 },
+          "resultText": "The conversation ended in a tense silence."
+        }
+      ]
+    },
+    {
+      "id": "expungement_petition",
+      "minAge": 25,
+      "maxAge": 70,
+      "text": "A lawyer offers to help you petition to expunge your old criminal record.",
+      "weight": 3,
+      "tags": ["crime", "positive"],
+      "choices": [
+        {
+          "label": "File the petition",
+          "statEffects": { "happiness": 4, "karma": 2 },
+          "resultText": "Paperwork filed. The waiting game begins."
+        },
+        {
+          "label": "Not yet",
+          "statEffects": { "happiness": -1 },
+          "resultText": "You decided to wait until you had more savings."
+        }
+      ]
+    },
+    {
+      "id": "fame_tabloid_rumor",
+      "minAge": 18,
+      "maxAge": 60,
+      "text": "A gossip blog publishes a rumor about your personal life. Your phone won't stop buzzing.",
+      "weight": 4,
+      "tags": ["social_media", "requires_social_media", "negative"],
+      "choices": [
+        {
+          "label": "Issue a calm statement",
+          "statEffects": { "happiness": -2, "karma": 2 },
+          "resultText": "The story faded faster than you feared."
+        },
+        {
+          "label": "Ignore it",
+          "statEffects": { "happiness": -4 },
+          "resultText": "The rumor spread anyway, but you kept your dignity."
+        },
+        {
+          "label": "Lean into the attention",
+          "statEffects": { "happiness": 2, "karma": -2 },
+          "resultText": "Followers spiked. Your family was not amused."
+        }
+      ]
+    },
+    {
+      "id": "chronic_diagnosis_scare",
+      "minAge": 35,
+      "maxAge": 75,
+      "text": "Routine bloodwork flags something your doctor wants to discuss in person.",
+      "weight": 5,
+      "tags": ["health", "negative"],
+      "choices": [
+        {
+          "label": "Schedule follow-up tests",
+          "statEffects": { "health": -2, "happiness": -3 },
+          "resultText": "Early detection gives you options — and a plan."
+        },
+        {
+          "label": "Delay the appointment",
+          "statEffects": { "health": -4, "happiness": -2 },
+          "resultText": "Anxiety grew while you avoided the clinic."
+        }
+      ]
+    },
+    {
+      "id": "teen_first_paycheck",
+      "minAge": 14,
+      "maxAge": 17,
+      "text": "You pick up a part-time job after school. The manager hands you your first paycheck.",
+      "weight": 6,
+      "tags": ["career", "positive"],
+      "choices": [
+        {
+          "label": "Save most of it",
+          "statEffects": { "smarts": 1, "happiness": 2 },
+          "moneyEffect": 1500,
+          "resultText": "Your savings jar finally has real weight to it."
+        },
+        {
+          "label": "Treat yourself",
+          "statEffects": { "happiness": 5 },
+          "moneyEffect": 800,
+          "resultText": "You bought something you'd wanted for months."
+        }
+      ]
+    },
+    {
+      "id": "home_renovation_inspiration",
+      "minAge": 25,
+      "maxAge": 70,
+      "text": "You watch a home makeover show and start imagining what your place could look like.",
+      "weight": 4,
+      "tags": ["finance", "positive"],
+      "choices": [
+        {
+          "label": "Sketch a renovation plan",
+          "statEffects": { "happiness": 3, "smarts": 1 },
+          "resultText": "You pinned ideas for a kitchen refresh and better lighting."
+        },
+        {
+          "label": "Drop the idea",
+          "statEffects": { "happiness": 0 },
+          "resultText": "Maybe next year when cash flow is easier."
+        }
+      ]
+    },
+    {
+      "id": "portfolio_strategy_news",
+      "minAge": 21,
+      "maxAge": 75,
+      "text": "Financial headlines debate whether investors should play it safe or chase growth this year.",
+      "weight": 4,
+      "tags": ["finance", "requires_portfolio"],
+      "choices": [
+        {
+          "label": "Rebalance toward safety",
+          "statEffects": { "happiness": 1 },
+          "resultText": "You slept better after dialing back risk."
+        },
+        {
+          "label": "Stay the course",
+          "statEffects": { "happiness": 0 },
+          "resultText": "Markets move in cycles. You kept your plan."
+        }
+      ]
+    },
+    {
+      "id": "nursing_clinical_rounds",
+      "minAge": 20,
+      "maxAge": 50,
+      "text": "During clinical rotations you comfort a frightened patient before a procedure.",
+      "weight": 4,
+      "tags": ["education", "positive"],
+      "choices": [
+        {
+          "label": "Hold their hand and explain",
+          "statEffects": { "happiness": 4, "karma": 3 },
+          "resultText": "The charge nurse thanked you for your bedside manner."
+        },
+        {
+          "label": "Focus on vitals only",
+          "statEffects": { "smarts": 2 },
+          "resultText": "You nailed the charting even if the moment felt cold."
+        }
+      ]
+    },
+    {
+      "id": "engineering_capstone",
+      "minAge": 20,
+      "maxAge": 28,
+      "text": "Your engineering capstone team demo crashes twice before the presentation.",
+      "weight": 3,
+      "tags": ["education"],
+      "choices": [
+        {
+          "label": "Debug all night",
+          "statEffects": { "smarts": 4, "health": -3, "happiness": 2 },
+          "resultText": "The prototype worked on the third try. The panel applauded."
+        },
+        {
+          "label": "Present the theory instead",
+          "statEffects": { "smarts": 2, "happiness": -1 },
+          "resultText": "You salvaged the grade with a strong slide deck."
+        }
+      ]
+    },
+    {
+      "id": "business_internship_offer",
+      "minAge": 19,
+      "maxAge": 30,
+      "text": "A local firm offers you a summer internship in their business development team.",
+      "weight": 4,
+      "tags": ["education", "career", "positive"],
+      "choices": [
+        {
+          "label": "Accept eagerly",
+          "statEffects": { "smarts": 2, "happiness": 4 },
+          "moneyEffect": 3000,
+          "resultText": "You learned more in eight weeks than a semester of lectures."
+        },
+        {
+          "label": "Decline to focus on exams",
+          "statEffects": { "smarts": 3, "happiness": -1 },
+          "resultText": "Your GPA thanked you, but your network didn't grow."
+        }
+      ]
+    },
+    {
+      "id": "prison_expungement_workshop",
+      "minAge": 21,
+      "maxAge": 70,
+      "text": "After release, a community center hosts a workshop on clearing your record and finding work.",
+      "weight": 3,
+      "tags": ["crime", "positive"],
+      "choices": [
+        {
+          "label": "Attend and take notes",
+          "statEffects": { "smarts": 2, "happiness": 3, "karma": 2 },
+          "resultText": "You left with a checklist and a little hope."
+        },
+        {
+          "label": "Skip it",
+          "statEffects": { "happiness": -1 },
+          "resultText": "Old habits felt easier than paperwork."
+        }
+      ]
+    },
+    {
+      "id": "rental_renovation_tenant",
+      "minAge": 25,
+      "maxAge": 70,
+      "text": "Tenants ask for upgraded fixtures after you renovated the kitchen.",
+      "weight": 3,
+      "tags": ["finance", "requires_rental", "positive"],
+      "choices": [
+        {
+          "label": "Invest in better appliances",
+          "statEffects": { "happiness": 2 },
+          "moneyEffect": -5000,
+          "resultText": "Rent reviews went smoothly and tenants renewed."
+        },
+        {
+          "label": "Keep rent as-is",
+          "statEffects": { "happiness": -1 },
+          "resultText": "One tenant gave notice at lease end."
+        }
+      ]
+    }
+  ]
+}

@@ -41,7 +41,11 @@ data class Person(
     val countryCode: String = "XX",
     val secondaryCountryCode: String? = null,
     val milestones: List<RelationshipMilestone> = emptyList(),
-    val interactedThisYear: Boolean = false
+    val interactedThisYear: Boolean = false,
+    /** When true, divorce settlement is reduced for this spouse. */
+    val prenupSigned: Boolean = false,
+    /** True for adopted children (vs biological). */
+    val isAdopted: Boolean = false
 ) {
     fun coerceRelationship(): Person = copy(
         relationshipLevel = clampRelationshipLevel(relationshipLevel)

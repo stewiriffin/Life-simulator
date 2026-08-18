@@ -50,6 +50,9 @@ import com.maisha.game.data.model.PrisonActivity
 import com.maisha.game.data.model.SchoolStage
 import com.maisha.game.data.model.SkillType
 import com.maisha.game.data.local.OnboardingTips
+import com.maisha.game.data.model.PartTimeJob
+import com.maisha.game.domain.CareerEngine
+import com.maisha.game.domain.CrimeEngine
 import com.maisha.game.domain.ActionFamily
 import com.maisha.game.domain.ActionQuestHints
 import com.maisha.game.domain.BucketListEngine
@@ -115,6 +118,8 @@ private sealed class PendingAction {
     data object Volunteer : PendingAction()
     data class Donate(val amount: Int) : PendingAction()
     data class Leisure(val activity: LeisureActivity) : PendingAction()
+    data object AdoptChild : PendingAction()
+    data object RequestExpungement : PendingAction()
 }
 
 @Composable
@@ -143,6 +148,9 @@ fun ActionsScreen(
     onPerformLeisure: (LeisureActivity) -> Unit,
     onPerformStudySession: () -> Unit = {},
     onPerformPrisonActivity: (PrisonActivity) -> Unit = {},
+    onAdoptChild: () -> Unit = {},
+    onRequestExpungement: () -> Unit = {},
+    onWorkPartTime: (com.maisha.game.data.model.PartTimeJob) -> Unit = {},
     onActionMessageDismissed: () -> Unit,
     onDismissLeisureTip: () -> Unit = {},
     modifier: Modifier = Modifier
@@ -193,6 +201,20 @@ fun ActionsScreen(
         character.age >= 12 &&
         !incarcerated &&
         !awaitingTrial
+    val crimeEngine = remember { CrimeEngine() }
+    val showTeenJobs = character.alive &&
+        character.age in CareerEngine.MIN_PART_TIME_AGE..CareerEngine.MAX_PART_TIME_AGE &&
+        !incarcerated &&
+        !awaitingTrial &&
+        !character.career.partTimeWorkedThisYear
+    val showAdoptChild = character.alive &&
+        character.age >= RelationshipEngine.MIN_ADOPT_AGE &&
+        !incarcerated &&
+        !awaitingTrial
+    val showExpungement = character.alive &&
+        !incarcerated &&
+        !awaitingTrial &&
+        crimeEngine.canRequestExpungement(character)
     val showStudySession = character.alive &&
         !incarcerated &&
         !awaitingTrial &&
@@ -231,7 +253,8 @@ fun ActionsScreen(
     val hasCare = untreated.isNotEmpty() || showLifestyleActions || showLeisureActions || showStudySession
     val hasEarn = showSideHustleActions || showSocialMediaActions || showSkillActions
     val hasGrow = showSkillActions || showBucketList || showAdoptPetActions || showSocialMediaActions || showStudySession
-    val hasLive = showDrivingTest || showPhilanthropy || showImmigrationOffice || showLeisureActions
+    val hasLive = showDrivingTest || showPhilanthropy || showImmigrationOffice || showLeisureActions ||
+        showTeenJobs || showAdoptChild || showExpungement
     val hasRisk = showCrimeActions || incarcerated || awaitingTrial || showPrisonActions
     val hasContent = hasCare || hasEarn || hasGrow || hasLive || hasRisk
     val leisureActivities = remember(character.age, character.criminalRecord) {
@@ -842,6 +865,56 @@ fun ActionsScreen(
                     }
                 }
 
+                if (show(ActionCategory.LIVE) && showTeenJobs) {
+                    item { SectionHeader(title = stringResource(R.string.section_teen_jobs)) }
+                    listOf(
+                        PartTimeJob.RETAIL to R.string.part_time_retail,
+                        PartTimeJob.FAST_FOOD to R.string.part_time_fast_food,
+                        PartTimeJob.BABYSITTING to R.string.part_time_babysitting,
+                        PartTimeJob.TUTORING to R.string.part_time_tutoring
+                    ).forEach { (job, labelRes) ->
+                        item(key = "part_time_${job.name}") {
+                            ActionCard(
+                                icon = AppIcons.Money,
+                                title = stringResource(labelRes),
+                                description = stringResource(R.string.section_teen_jobs),
+                                metaLabel = stringResource(R.string.meta_earn_cash),
+                                accent = ActionCardAccent.GOLD,
+                                onClick = { onWorkPartTime(job) }
+                            )
+                        }
+                    }
+                }
+
+                if (show(ActionCategory.LIVE) && showAdoptChild) {
+                    item { SectionHeader(title = stringResource(R.string.btn_adopt_child)) }
+                    item {
+                        ActionCard(
+                            icon = AppIcons.Family,
+                            title = stringResource(R.string.btn_adopt_child),
+                            description = stringResource(R.string.dialog_adopt_child_body),
+                            accent = ActionCardAccent.CARE,
+                            onClick = { pendingAction.request(PendingAction.AdoptChild) }
+                        )
+                    }
+                }
+
+                if (show(ActionCategory.LIVE) && showExpungement) {
+                    item { SectionHeader(title = stringResource(R.string.btn_request_expungement)) }
+                    item {
+                        ActionCard(
+                            icon = AppIcons.Career,
+                            title = stringResource(R.string.btn_request_expungement),
+                            description = stringResource(
+                                R.string.dialog_expunge_body,
+                                formatMoney(crimeEngine.expungementFee(character), character.countryCode)
+                            ),
+                            accent = ActionCardAccent.RISK,
+                            onClick = { pendingAction.request(PendingAction.RequestExpungement) }
+                        )
+                    }
+                }
+
                 if (show(ActionCategory.LIVE) && showImmigrationOffice) {
                     item { SectionHeader(title = stringResource(R.string.section_immigration_office)) }
                     item {
@@ -979,6 +1052,8 @@ fun ActionsScreen(
                 PendingAction.Volunteer -> onVolunteer()
                 is PendingAction.Donate -> onDonateToCharity(action.amount)
                 is PendingAction.Leisure -> onPerformLeisure(action.activity)
+                PendingAction.AdoptChild -> onAdoptChild()
+                PendingAction.RequestExpungement -> onRequestExpungement()
             }
         }
     ) { action, onConfirm, onDismiss ->
@@ -1224,6 +1299,29 @@ fun ActionsScreen(
                         onDismiss = onDismiss
                     )
                 }
+            }
+            PendingAction.AdoptChild -> {
+                ConfirmActionDialog(
+                    title = stringResource(R.string.dialog_adopt_child_title),
+                    description = stringResource(R.string.dialog_adopt_child_body),
+                    confirmLabel = stringResource(R.string.btn_adopt_child),
+                    severity = ConfirmSeverity.NEUTRAL,
+                    onConfirm = onConfirm,
+                    onDismiss = onDismiss
+                )
+            }
+            PendingAction.RequestExpungement -> {
+                ConfirmActionDialog(
+                    title = stringResource(R.string.dialog_expunge_title),
+                    description = stringResource(
+                        R.string.dialog_expunge_body,
+                        formatMoney(crimeEngine.expungementFee(character), character.countryCode)
+                    ),
+                    confirmLabel = stringResource(R.string.btn_request_expungement),
+                    severity = ConfirmSeverity.WARNING,
+                    onConfirm = onConfirm,
+                    onDismiss = onDismiss
+                )
             }
         }
     }

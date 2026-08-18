@@ -53,6 +53,7 @@ fun PersonDetailSheet(
     divorceSettlementCost: Int = 0,
     onInteraction: (InteractionType, GiftTier?) -> Unit,
     onPropose: () -> Unit,
+    onProposeWithPrenup: () -> Unit = onPropose,
     onBreakUp: () -> Unit,
     onHaveChild: () -> Unit
 ) {
@@ -554,6 +555,12 @@ fun PersonDetailSheet(
                         onClick = onPropose,
                         enabled = member.relationshipLevel >= RelationshipEngine.PROPOSAL_THRESHOLD,
                         emphasizePink = true
+                    )
+                    DetailSheetButton(
+                        text = stringResource(R.string.btn_propose_with_prenup),
+                        onClick = onProposeWithPrenup,
+                        enabled = member.relationshipLevel >= RelationshipEngine.PROPOSAL_THRESHOLD,
+                        emphasizePink = false
                     )
                 }
                 if (isMarried && member.isMarried) {

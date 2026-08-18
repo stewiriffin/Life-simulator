@@ -83,6 +83,20 @@ class SettingsRepository @Inject constructor(
         prefs[FLAG_EMOJI_FALLBACK_KEY] ?: false
     }
 
+    val earnedRibbonIds: Flow<Set<String>> = preferencesFlow().map { prefs ->
+        prefs[EARNED_RIBBONS_KEY] ?: emptySet()
+    }
+
+    suspend fun getEarnedRibbonsSnapshot(): Set<String> =
+        preferencesFlow().first()[EARNED_RIBBONS_KEY] ?: emptySet()
+
+    suspend fun awardRibbon(ribbonId: String) {
+        dataStore.edit { prefs ->
+            val current = prefs[EARNED_RIBBONS_KEY] ?: emptySet()
+            prefs[EARNED_RIBBONS_KEY] = current + ribbonId
+        }
+    }
+
     fun areSystemNotificationsEnabled(): Boolean =
         NotificationManagerCompat.from(context).areNotificationsEnabled()
 
@@ -166,6 +180,7 @@ class SettingsRepository @Inject constructor(
             prefs.remove(LAST_OPENED_KEY)
             prefs.remove(FIRST_AGE_UP_KEY)
             prefs.remove(FLAG_EMOJI_FALLBACK_KEY)
+            prefs.remove(EARNED_RIBBONS_KEY)
         }
         LocaleManager.applyLocale(LocaleManager.systemDefaultLanguage())
     }
@@ -181,5 +196,6 @@ class SettingsRepository @Inject constructor(
         private val LAST_OPENED_KEY = longPreferencesKey("last_opened_timestamp")
         private val FIRST_AGE_UP_KEY = booleanPreferencesKey("first_age_up_recorded")
         private val FLAG_EMOJI_FALLBACK_KEY = booleanPreferencesKey("flag_emoji_fallback")
+        private val EARNED_RIBBONS_KEY = stringSetPreferencesKey("earned_ribbon_ids")
     }
 }

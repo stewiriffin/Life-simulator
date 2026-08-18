@@ -238,6 +238,41 @@ object AchievementCatalog {
             descriptionRes = R.string.achievement_well_rounded_description,
             category = AchievementCategory.CAREER,
             iconName = "shuffle"
+        ),
+        Achievement(
+            id = "healer",
+            titleRes = R.string.achievement_healer_title,
+            descriptionRes = R.string.achievement_healer_description,
+            category = AchievementCategory.CAREER,
+            iconName = "medical"
+        ),
+        Achievement(
+            id = "legal_eagle",
+            titleRes = R.string.achievement_legal_eagle_title,
+            descriptionRes = R.string.achievement_legal_eagle_description,
+            category = AchievementCategory.CAREER,
+            iconName = "gavel"
+        ),
+        Achievement(
+            id = "adoptive_hero",
+            titleRes = R.string.achievement_adoptive_hero_title,
+            descriptionRes = R.string.achievement_adoptive_hero_description,
+            category = AchievementCategory.FAMILY,
+            iconName = "heart"
+        ),
+        Achievement(
+            id = "fresh_start",
+            titleRes = R.string.achievement_fresh_start_title,
+            descriptionRes = R.string.achievement_fresh_start_description,
+            category = AchievementCategory.MISCHIEF,
+            iconName = "shield"
+        ),
+        Achievement(
+            id = "property_flipper",
+            titleRes = R.string.achievement_property_flipper_title,
+            descriptionRes = R.string.achievement_property_flipper_description,
+            category = AchievementCategory.WEALTH,
+            iconName = "house"
         )
     )
 
