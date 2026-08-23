@@ -6,6 +6,9 @@ import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
+import androidx.compose.foundation.gestures.awaitEachGesture
+import androidx.compose.foundation.gestures.awaitFirstDown
+import androidx.compose.foundation.gestures.waitForUpOrCancellation
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -31,10 +34,12 @@ import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.FilterChipDefaults
 import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Slider
+import androidx.compose.material3.SliderDefaults
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -43,6 +48,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
@@ -53,12 +59,16 @@ import com.maisha.game.R
 import com.maisha.game.data.model.Stats
 import com.maisha.game.ui.components.StatBar
 import com.maisha.game.ui.components.StatType
+import com.maisha.game.ui.components.color
+import com.maisha.game.ui.components.icon
 import com.maisha.game.ui.theme.GoldAccent
 import com.maisha.game.ui.theme.InkPrimary
 import com.maisha.game.ui.theme.NavyDeep
 import com.maisha.game.ui.theme.TealPrimary
 import kotlin.math.max
+import kotlin.math.roundToInt
 import kotlin.random.Random
+import kotlinx.coroutines.delay
 
 private const val MIN_STAT = 40
 private const val MAX_STAT = 100
@@ -95,6 +105,18 @@ private val STAT_PRESETS = listOf(
     StatPreset(R.string.stats_preset_charming, 65, 85, 60, 90)
 )
 
+private fun extraUsed(stats: Stats): Int =
+    StatField.entries.sumOf { (it.read(stats) - MIN_STAT).coerceAtLeast(0) }
+
+private fun pointsRemaining(stats: Stats): Int = max(0, EXTRA_BUDGET - extraUsed(stats))
+
+private fun maxAllowedValue(field: StatField, stats: Stats): Int {
+    val otherExtra = StatField.entries
+        .filter { it != field }
+        .sumOf { (it.read(stats) - MIN_STAT).coerceAtLeast(0) }
+    return (MIN_STAT + (EXTRA_BUDGET - otherExtra)).coerceIn(MIN_STAT, MAX_STAT)
+}
+
 @Composable
 fun StatsCustomizationScreen(
     uiState: CharacterCreationUiState,
@@ -102,10 +124,9 @@ fun StatsCustomizationScreen(
     onStartLife: () -> Unit
 ) {
     val selected = uiState.selectedStats
-    val extraUsed = StatField.entries.sumOf { (it.read(selected) - MIN_STAT).coerceAtLeast(0) }
-    val pointsRemaining = max(0, EXTRA_BUDGET - extraUsed)
+    val pointsLeft = pointsRemaining(selected)
     val budgetProgress by animateFloatAsState(
-        targetValue = extraUsed.toFloat() / EXTRA_BUDGET,
+        targetValue = extraUsed(selected).toFloat() / EXTRA_BUDGET,
         animationSpec = tween(durationMillis = 350, easing = EaseOutCubic),
         label = "budgetProgress"
     )
@@ -124,17 +145,15 @@ fun StatsCustomizationScreen(
         )
     }
 
-    fun updateStat(field: StatField, delta: Int) {
-        val current = field.read(selected)
-        val next = (current + delta).coerceIn(MIN_STAT, MAX_STAT)
-        if (next == current) return
-
-        val draft = field.write(selected, next)
-        val newExtraUsed = StatField.entries.sumOf { (it.read(draft) - MIN_STAT).coerceAtLeast(0) }
-        if (newExtraUsed > EXTRA_BUDGET) return
-
+    fun setStatValue(field: StatField, targetValue: Int) {
+        val clamped = targetValue.coerceIn(MIN_STAT, maxAllowedValue(field, selected))
+        if (clamped == field.read(selected)) return
         selectedPresetRes = null
-        applyStats(draft)
+        applyStats(field.write(selected, clamped))
+    }
+
+    fun updateStat(field: StatField, delta: Int) {
+        setStatValue(field, field.read(selected) + delta)
     }
 
     Column(
@@ -169,7 +188,7 @@ fun StatsCustomizationScreen(
             Spacer(modifier = Modifier.height(20.dp))
 
             PointsBudgetCard(
-                pointsRemaining = pointsRemaining,
+                pointsRemaining = pointsLeft,
                 budgetProgress = budgetProgress
             )
 
@@ -256,11 +275,15 @@ fun StatsCustomizationScreen(
             Spacer(modifier = Modifier.height(20.dp))
 
             StatField.entries.forEach { field ->
+                val value = field.read(selected)
                 StatAdjustCard(
                     field = field,
-                    value = field.read(selected),
-                    canDecrease = field.read(selected) > MIN_STAT,
-                    canIncrease = pointsRemaining > 0 && field.read(selected) < MAX_STAT,
+                    value = value,
+                    pointsOnStat = value - MIN_STAT,
+                    maxValue = maxAllowedValue(field, selected),
+                    canDecrease = value > MIN_STAT,
+                    canIncrease = pointsLeft > 0 && value < maxAllowedValue(field, selected),
+                    onValueChange = { setStatValue(field, it) },
                     onDecrease = { updateStat(field, -1) },
                     onIncrease = { updateStat(field, +1) }
                 )
@@ -395,14 +418,19 @@ private fun PointsBudgetCard(pointsRemaining: Int, budgetProgress: Float) {
 private fun StatAdjustCard(
     field: StatField,
     value: Int,
+    pointsOnStat: Int,
+    maxValue: Int,
     canDecrease: Boolean,
     canIncrease: Boolean,
+    onValueChange: (Int) -> Unit,
     onDecrease: () -> Unit,
     onIncrease: () -> Unit
 ) {
     val label = field.type.defaultLabel()
+    val statColor = field.type.color()
     val decreaseDescription = stringResource(R.string.stats_decrease, label)
     val increaseDescription = stringResource(R.string.stats_increase, label)
+    val sliderEnabled = maxValue > MIN_STAT || value > MIN_STAT
 
     Column(
         modifier = Modifier
@@ -410,54 +438,118 @@ private fun StatAdjustCard(
             .clip(RoundedCornerShape(16.dp))
             .border(1.dp, InkPrimary.copy(alpha = 0.08f), RoundedCornerShape(16.dp))
             .background(Color.White)
-            .padding(horizontal = 14.dp, vertical = 12.dp),
-        verticalArrangement = Arrangement.spacedBy(8.dp)
+            .padding(horizontal = 14.dp, vertical = 14.dp),
+        verticalArrangement = Arrangement.spacedBy(10.dp)
     ) {
         Row(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically
         ) {
-            Column(modifier = Modifier.weight(1f)) {
+            Row(
+                modifier = Modifier.weight(1f),
+                horizontalArrangement = Arrangement.spacedBy(10.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Box(
+                    modifier = Modifier
+                        .size(36.dp)
+                        .clip(CircleShape)
+                        .background(statColor.copy(alpha = 0.14f)),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Icon(
+                        imageVector = field.type.icon(),
+                        contentDescription = null,
+                        tint = statColor,
+                        modifier = Modifier.size(18.dp)
+                    )
+                }
+                Column {
+                    Text(
+                        text = label,
+                        style = MaterialTheme.typography.titleSmall,
+                        color = InkPrimary,
+                        fontWeight = FontWeight.Bold
+                    )
+                    Text(
+                        text = stringResource(field.hintRes),
+                        style = MaterialTheme.typography.bodySmall,
+                        color = InkPrimary.copy(alpha = 0.55f)
+                    )
+                }
+            }
+            Column(horizontalAlignment = Alignment.End) {
                 Text(
-                    text = label,
-                    style = MaterialTheme.typography.titleSmall,
+                    text = value.toString(),
+                    style = MaterialTheme.typography.headlineSmall,
                     color = InkPrimary,
                     fontWeight = FontWeight.Bold
                 )
-                Text(
-                    text = stringResource(field.hintRes),
-                    style = MaterialTheme.typography.bodySmall,
-                    color = InkPrimary.copy(alpha = 0.55f)
-                )
-            }
-            Row(
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(4.dp)
-            ) {
-                StatCircleButton(
-                    icon = Icons.Filled.Remove,
-                    enabled = canDecrease,
-                    contentDescription = decreaseDescription,
-                    onClick = onDecrease
-                )
-                Text(
-                    text = value.toString(),
-                    modifier = Modifier.width(36.dp),
-                    style = MaterialTheme.typography.titleLarge,
-                    color = InkPrimary,
-                    fontWeight = FontWeight.Bold,
-                    textAlign = TextAlign.Center
-                )
-                StatCircleButton(
-                    icon = Icons.Filled.Add,
-                    enabled = canIncrease,
-                    contentDescription = increaseDescription,
-                    filled = true,
-                    onClick = onIncrease
-                )
+                if (pointsOnStat > 0) {
+                    Text(
+                        text = stringResource(R.string.stats_points_on_stat, pointsOnStat),
+                        style = MaterialTheme.typography.labelSmall,
+                        color = statColor,
+                        fontWeight = FontWeight.SemiBold
+                    )
+                }
             }
         }
+
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(4.dp)
+        ) {
+            StatRepeatButton(
+                icon = Icons.Filled.Remove,
+                enabled = canDecrease,
+                contentDescription = decreaseDescription,
+                onRepeat = onDecrease
+            )
+            Slider(
+                value = value.toFloat(),
+                onValueChange = { onValueChange(it.roundToInt()) },
+                enabled = sliderEnabled,
+                valueRange = MIN_STAT.toFloat()..maxValue.toFloat(),
+                steps = (maxValue - MIN_STAT - 1).coerceAtLeast(0),
+                modifier = Modifier.weight(1f),
+                colors = SliderDefaults.colors(
+                    thumbColor = statColor,
+                    activeTrackColor = statColor,
+                    inactiveTrackColor = statColor.copy(alpha = 0.18f),
+                    disabledThumbColor = InkPrimary.copy(alpha = 0.25f),
+                    disabledActiveTrackColor = InkPrimary.copy(alpha = 0.12f),
+                    disabledInactiveTrackColor = InkPrimary.copy(alpha = 0.08f)
+                )
+            )
+            StatRepeatButton(
+                icon = Icons.Filled.Add,
+                enabled = canIncrease,
+                contentDescription = increaseDescription,
+                filled = true,
+                accentColor = statColor,
+                onRepeat = onIncrease
+            )
+        }
+
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween
+        ) {
+            Text(
+                text = MIN_STAT.toString(),
+                style = MaterialTheme.typography.labelSmall,
+                color = InkPrimary.copy(alpha = 0.4f)
+            )
+            Text(
+                text = maxValue.toString(),
+                style = MaterialTheme.typography.labelSmall,
+                color = InkPrimary.copy(alpha = 0.4f)
+            )
+        }
+
         StatBar(
             type = field.type,
             value = value,
@@ -468,25 +560,38 @@ private fun StatAdjustCard(
 }
 
 @Composable
-private fun StatCircleButton(
+private fun StatRepeatButton(
     icon: androidx.compose.ui.graphics.vector.ImageVector,
     enabled: Boolean,
     contentDescription: String,
     filled: Boolean = false,
-    onClick: () -> Unit
+    accentColor: Color = GoldAccent,
+    onRepeat: () -> Unit
 ) {
-    IconButton(
-        onClick = onClick,
-        enabled = enabled,
+    var pressed by remember { mutableStateOf(false) }
+
+    LaunchedEffect(pressed, enabled) {
+        if (!pressed || !enabled) return@LaunchedEffect
+        onRepeat()
+        delay(320)
+        var interval = 120L
+        while (pressed && enabled) {
+            onRepeat()
+            delay(interval)
+            interval = (interval * 0.88f).toLong().coerceAtLeast(35L)
+        }
+    }
+
+    Box(
         modifier = Modifier
-            .size(40.dp)
+            .size(48.dp)
             .semantics { this.contentDescription = contentDescription }
             .clip(CircleShape)
             .border(
                 width = 1.dp,
                 color = when {
                     !enabled -> InkPrimary.copy(alpha = 0.08f)
-                    filled -> GoldAccent
+                    filled -> accentColor
                     else -> InkPrimary.copy(alpha = 0.15f)
                 },
                 shape = CircleShape
@@ -494,16 +599,30 @@ private fun StatCircleButton(
             .background(
                 when {
                     !enabled -> Color.Transparent
-                    filled -> GoldAccent.copy(alpha = 0.18f)
+                    filled -> accentColor.copy(alpha = 0.16f)
+                    pressed && enabled -> InkPrimary.copy(alpha = 0.06f)
                     else -> Color.White
                 }
             )
+            .pointerInput(enabled) {
+                if (!enabled) return@pointerInput
+                awaitEachGesture {
+                    awaitFirstDown(requireUnconsumed = false)
+                    pressed = true
+                    try {
+                        waitForUpOrCancellation()
+                    } finally {
+                        pressed = false
+                    }
+                }
+            },
+        contentAlignment = Alignment.Center
     ) {
         Icon(
             imageVector = icon,
             contentDescription = null,
             tint = if (enabled) InkPrimary else InkPrimary.copy(alpha = 0.25f),
-            modifier = Modifier.size(20.dp)
+            modifier = Modifier.size(22.dp)
         )
     }
 }
