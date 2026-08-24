@@ -26,9 +26,6 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Add
-import androidx.compose.material.icons.filled.Remove
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.FilterChip
@@ -428,6 +425,7 @@ private fun StatAdjustCard(
 ) {
     val label = field.type.defaultLabel()
     val statColor = field.type.color()
+    val statEmoji = field.type.emoji()
     val decreaseDescription = stringResource(R.string.stats_decrease, label)
     val increaseDescription = stringResource(R.string.stats_increase, label)
     val sliderEnabled = maxValue > MIN_STAT || value > MIN_STAT
@@ -458,11 +456,10 @@ private fun StatAdjustCard(
                         .background(statColor.copy(alpha = 0.14f)),
                     contentAlignment = Alignment.Center
                 ) {
-                    Icon(
-                        imageVector = field.type.icon(),
-                        contentDescription = null,
-                        tint = statColor,
-                        modifier = Modifier.size(18.dp)
+                    Text(
+                        text = statEmoji,
+                        style = MaterialTheme.typography.titleMedium,
+                        color = statColor
                     )
                 }
                 Column {
@@ -503,7 +500,7 @@ private fun StatAdjustCard(
             horizontalArrangement = Arrangement.spacedBy(4.dp)
         ) {
             StatRepeatButton(
-                icon = Icons.Filled.Remove,
+                sign = "−",
                 enabled = canDecrease,
                 contentDescription = decreaseDescription,
                 onRepeat = onDecrease
@@ -525,7 +522,7 @@ private fun StatAdjustCard(
                 )
             )
             StatRepeatButton(
-                icon = Icons.Filled.Add,
+                sign = "+",
                 enabled = canIncrease,
                 contentDescription = increaseDescription,
                 filled = true,
@@ -561,7 +558,7 @@ private fun StatAdjustCard(
 
 @Composable
 private fun StatRepeatButton(
-    icon: androidx.compose.ui.graphics.vector.ImageVector,
+    sign: String,
     enabled: Boolean,
     contentDescription: String,
     filled: Boolean = false,
@@ -618,11 +615,11 @@ private fun StatRepeatButton(
             },
         contentAlignment = Alignment.Center
     ) {
-        Icon(
-            imageVector = icon,
-            contentDescription = null,
-            tint = if (enabled) InkPrimary else InkPrimary.copy(alpha = 0.25f),
-            modifier = Modifier.size(22.dp)
+        Text(
+            text = sign,
+            style = MaterialTheme.typography.titleLarge,
+            color = if (enabled) InkPrimary else InkPrimary.copy(alpha = 0.25f),
+            fontWeight = FontWeight.Bold
         )
     }
 }
@@ -633,6 +630,15 @@ private fun StatType.defaultLabel(): String = when (this) {
     StatType.HAPPINESS -> stringResource(R.string.stat_happiness)
     StatType.SMARTS -> stringResource(R.string.stat_smarts)
     StatType.LOOKS -> stringResource(R.string.stat_looks)
+    else -> ""
+}
+
+@Composable
+private fun StatType.emoji(): String = when (this) {
+    StatType.HEALTH -> "❤️"
+    StatType.HAPPINESS -> "😊"
+    StatType.SMARTS -> "🧠"
+    StatType.LOOKS -> "✨"
     else -> ""
 }
 
