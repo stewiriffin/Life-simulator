@@ -1,0 +1,131 @@
+{
+  "events": [
+    {
+      "id": "wave4_hobby_guitar_open_mic",
+      "minAge": 14,
+      "maxAge": 70,
+      "text": "You get invited to an open-mic night. If you do well, people start asking for your number instead of your name.",
+      "weight": 4,
+      "tags": ["requires_skill_guitar_30", "positive"],
+      "choices": [
+        {
+          "label": "Play the piece you practiced most",
+          "statEffects": { "happiness": 4, "money": 900 },
+          "resultText": "You nail the rhythm and earn small tips. Someone nearby says, 'You should really be charging for this.'"
+        },
+        {
+          "label": "Try something risky and new",
+          "statEffects": { "happiness": 2, "smarts": 2 },
+          "money": 0,
+          "resultText": "It is not perfect, but it is memorable. Your confidence grows even if the crowd is split."
+        },
+        {
+          "label": "Back out at the last second",
+          "statEffects": { "happiness": -2, "karma": 1 },
+          "resultText": "You escape embarrassment, but you lose momentum. You still have the 'what if' in your head."
+        }
+      ]
+    },
+    {
+      "id": "wave4_hobby_cooking_market_taste",
+      "minAge": 14,
+      "maxAge": 70,
+      "text": "A local market stall asks if you can help with a 'taster' batch. They want something bold, not safe.",
+      "weight": 3,
+      "tags": ["requires_skill_cooking_30", "positive"],
+      "choices": [
+        {
+          "label": "Offer your signature dish",
+          "statEffects": { "happiness": 3, "looks": 2, "money": 700 },
+          "resultText": "People line up for seconds. One regular tells the stall owner you 'cook like you care about flavor.'"
+        },
+        {
+          "label": "Go cheaper and faster to avoid risk",
+          "statEffects": { "happiness": 1, "money": 350, "smarts": 1 },
+          "resultText": "The batch sells out, but it is forgettable. Still, steady work is steady progress."
+        },
+        {
+          "label": "Over-season and ignore feedback",
+          "statEffects": { "happiness": -3, "health": -2, "karma": -1 },
+          "resultText": "You get a polite complaint. The stall asks for a refund, and you feel the lesson settle in."
+        }
+      ]
+    },
+    {
+      "id": "wave4_hobby_martial_arts_sparring_day",
+      "minAge": 14,
+      "maxAge": 70,
+      "text": "A sparring day turns into more than drills. Someone challenges you to a 'friendly' match that feels anything but friendly.",
+      "weight": 4,
+      "tags": ["requires_skill_martial_arts_30", "positive"],
+      "choices": [
+        {
+          "label": "Match their intensity and learn fast",
+          "statEffects": { "health": -1, "happiness": 3, "smarts": 2 },
+          "resultText": "You survive the hard rounds and leave with new timing. The coach looks impressed."
+        },
+        {
+          "label": "Focus on defense and outlast them",
+          "statEffects": { "happiness": 2, "looks": 1 },
+          "resultText": "You avoid unnecessary damage. People respect your discipline, and your confidence stays clean."
+        },
+        {
+          "label": "Showboat for approval",
+          "statEffects": { "happiness": -1, "health": -3, "karma": -2 },
+          "resultText": "You win the moment and lose the lesson. The hype ends the second you get hurt."
+        }
+      ]
+    },
+    {
+      "id": "wave4_hobby_programming_fix_it_night",
+      "minAge": 14,
+      "maxAge": 70,
+      "text": "At a community 'fix it' night, someone brings a broken app and expects miracles in one afternoon.",
+      "weight": 4,
+      "tags": ["requires_skill_programming_30", "positive"],
+      "choices": [
+        {
+          "label": "Debug patiently and explain your steps",
+          "statEffects": { "smarts": 3, "happiness": 2, "money": 500 },
+          "resultText": "They do not just leave impressed - they remember you for future work."
+        },
+        {
+          "label": "Rush the solution and hope it holds",
+          "statEffects": { "smarts": 1, "happiness": -2, "money": 800 },
+          "resultText": "It works for a week. Then the same user comes back angry, and you learn what 'quality' costs."
+        },
+        {
+          "label": "Refuse the request to avoid drama",
+          "statEffects": { "happiness": 1, "karma": 1 },
+          "resultText": "You protect your time. The right people later notice you didn't fold under pressure."
+        }
+      ]
+    },
+    {
+      "id": "wave4_hobby_writing_submissions",
+      "minAge": 14,
+      "maxAge": 70,
+      "text": "You submit a short piece to a small publication. The wait is where your nerves start writing their own story.",
+      "weight": 3,
+      "tags": ["requires_skill_writing_30", "positive"],
+      "choices": [
+        {
+          "label": "Revise once more before sending",
+          "statEffects": { "smarts": 2, "happiness": 2, "money": 650 },
+          "resultText": "The editor responds fast. They want another draft next month."
+        },
+        {
+          "label": "Send it as-is and accept the risk",
+          "statEffects": { "happiness": 1, "karma": 1 },
+          "resultText": "The piece is 'good' rather than perfect. You still feel proud because you shipped it."
+        },
+        {
+          "label": "Delete it and pretend you never wrote",
+          "statEffects": { "happiness": -4 },
+          "resultText": "You protect your ego, but you also starve your ambition."
+        }
+      ]
+    }
+  ]
+}
+

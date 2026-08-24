@@ -1,0 +1,148 @@
+{
+  "events": [
+    {
+      "id": "wave4_love_careless_night",
+      "minAge": 18,
+      "maxAge": 60,
+      "text": "The night feels unstoppable. You can keep it sweet and responsible, or you can ignore the risks because the moment is perfect.",
+      "weight": 4,
+      "tags": ["requires_spouse", "negative"],
+      "choices": [
+        {
+          "label": "Keep it romantic and safe",
+          "statEffects": { "happiness": 6 },
+          "spouseRelationshipEffect": 10,
+          "resultText": "You protect the bond and your partner appreciates how thoughtful you are."
+        },
+        {
+          "label": "Get carried away and hope for luck",
+          "statEffects": { "happiness": -4, "health": -2, "karma": -2 },
+          "spouseRelationshipEffect": -8,
+          "triggersIllnessRoll": true,
+          "resultText": "After the fun, reality hits. Something is off, and you fear the consequences."
+        },
+        {
+          "label": "Talk about boundaries before the moment",
+          "statEffects": { "happiness": 3, "karma": 1 },
+          "spouseRelationshipEffect": 7,
+          "resultText": "The trust deepens because you treat intimacy like respect."
+        }
+      ]
+    },
+    {
+      "id": "wave4_love_try_for_baby",
+      "minAge": 18,
+      "maxAge": 55,
+      "text": "Over breakfast, your spouse says something brave: maybe it is time to grow the family.",
+      "weight": 3,
+      "tags": ["requires_married", "positive"],
+      "choices": [
+        {
+          "label": "Start trying for a baby",
+          "triggersHaveChild": true,
+          "statEffects": { "happiness": 7, "health": -1 },
+          "spouseRelationshipEffect": 10,
+          "resultText": "You commit fully to the plan. Even if it takes time, the hope feels real."
+        },
+        {
+          "label": "Wait a bit and save for stability",
+          "statEffects": { "happiness": 2, "smarts": 2, "money": -2000 },
+          "spouseRelationshipEffect": 5,
+          "resultText": "You agree on timelines and responsibilities. Peace settles back into the home."
+        },
+        {
+          "label": "If it happens, it happens",
+          "statEffects": { "happiness": 3, "karma": 1 },
+          "spouseRelationshipEffect": 3,
+          "resultText": "You keep things calm and flexible. The relationship feels lighter."
+        }
+      ]
+    },
+    {
+      "id": "wave4_love_misunderstanding",
+      "minAge": 18,
+      "maxAge": 60,
+      "text": "A small comment lands wrong. Suddenly you are both defensive, and the night turns heavy.",
+      "weight": 4,
+      "tags": ["requires_spouse", "negative"],
+      "choices": [
+        {
+          "label": "Apologize and ask what they meant",
+          "statEffects": { "happiness": 2, "health": 1, "karma": 2 },
+          "spouseRelationshipEffect": 12,
+          "resultText": "You fix the moment before it becomes a habit."
+        },
+        {
+          "label": "Assume the worst and shut them down",
+          "statEffects": { "happiness": -6, "karma": -3 },
+          "spouseRelationshipEffect": -16,
+          "resultText": "The silence becomes a weapon. The relationship stings for months."
+        },
+        {
+          "label": "Step away and cool down",
+          "statEffects": { "happiness": -2, "health": -1 },
+          "spouseRelationshipEffect": -6,
+          "resultText": "You prevent a fight, but you do not solve anything yet."
+        }
+      ]
+    },
+    {
+      "id": "wave4_love_affair_temptation",
+      "minAge": 18,
+      "maxAge": 60,
+      "text": "Someone shows interest that feels exciting. The problem is you are not single, and your choices will echo.",
+      "weight": 3,
+      "tags": ["requires_married", "negative"],
+      "choices": [
+        {
+          "label": "Resist and focus on your marriage",
+          "statEffects": { "happiness": 1, "karma": 2 },
+          "spouseRelationshipEffect": 7,
+          "resultText": "You choose stability over temptation. Your spouse notices the restraint."
+        },
+        {
+          "label": "Give in to the temptation",
+          "statEffects": { "happiness": -10, "health": -1, "karma": -8 },
+          "spouseRelationshipEffect": -25,
+          "triggersIllnessRoll": true,
+          "resultText": "It feels good for a moment, then guilt hits. The damage is immediate."
+        },
+        {
+          "label": "Flirt back just to feel powerful",
+          "statEffects": { "happiness": -2, "karma": -2 },
+          "spouseRelationshipEffect": -10,
+          "resultText": "You do not cross the biggest line, but you still break trust."
+        }
+      ]
+    },
+    {
+      "id": "wave4_love_quality_time",
+      "minAge": 18,
+      "maxAge": 60,
+      "text": "Your spouse wants connection, not gifts. You have a choice: spend money, spend time, or spend both the wrong way.",
+      "weight": 3,
+      "tags": ["requires_spouse", "positive"],
+      "choices": [
+        {
+          "label": "Cook together at home",
+          "statEffects": { "happiness": 5, "health": 1, "money": -700 },
+          "spouseRelationshipEffect": 8,
+          "resultText": "It is simple, but it is real. Your bond grows stronger."
+        },
+        {
+          "label": "Go out and splurge",
+          "statEffects": { "happiness": 7, "health": -1, "money": -2000 },
+          "spouseRelationshipEffect": 10,
+          "resultText": "The evening is perfect. The bill is not. Still, the memories matter."
+        },
+        {
+          "label": "Ignore it and stay busy",
+          "statEffects": { "happiness": -3, "health": -1 },
+          "spouseRelationshipEffect": -8,
+          "resultText": "You meant to do it later, but later never arrives."
+        }
+      ]
+    }
+  ]
+}
+

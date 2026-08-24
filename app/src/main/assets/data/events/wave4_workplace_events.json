@@ -1,0 +1,145 @@
+{
+  "events": [
+    {
+      "id": "wave4_workplace_raise_request",
+      "minAge": 18,
+      "maxAge": 65,
+      "text": "At the office, your manager hints that performance will decide next quarter's raises. Everyone is watching who speaks up first.",
+      "weight": 4,
+      "tags": ["requires_job", "positive"],
+      "choices": [
+        {
+          "label": "Ask with evidence and numbers",
+          "statEffects": { "smarts": 2, "happiness": 1, "money": 1200 },
+          "performanceEffect": 10,
+          "resultText": "You calmly connect your work to results. The manager marks you as 'ready for more'."
+        },
+        {
+          "label": "Ask indirectly with a friendly pitch",
+          "statEffects": { "happiness": 2, "money": 800 },
+          "performanceEffect": 6,
+          "resultText": "You keep it light and persuasive. It is not a promise yet, but the tone shifts in your favor."
+        },
+        {
+          "label": "Push too hard and threaten to leave",
+          "statEffects": { "happiness": -4, "karma": -2 },
+          "performanceEffect": -10,
+          "resultText": "Your message lands, but the office politics turn sour."
+        }
+      ]
+    },
+    {
+      "id": "wave4_workplace_missed_deadline",
+      "minAge": 18,
+      "maxAge": 65,
+      "text": "A project slips. Your team knows it is your area, but the client is already impatient.",
+      "weight": 4,
+      "tags": ["requires_job", "negative"],
+      "choices": [
+        {
+          "label": "Own the mistake and propose a recovery plan",
+          "statEffects": { "smarts": 2, "happiness": -1, "karma": 2 },
+          "performanceEffect": 7,
+          "resultText": "You lay out a realistic timeline and delegate the last-mile work. People start trusting you again."
+        },
+        {
+          "label": "Blame delays on others",
+          "statEffects": { "happiness": -4, "karma": -3 },
+          "performanceEffect": -12,
+          "resultText": "The room goes quiet. Your credibility drops immediately."
+        },
+        {
+          "label": "Work late to fix it now",
+          "statEffects": { "health": -2, "happiness": 0, "money": 600 },
+          "performanceEffect": 10,
+          "resultText": "You sacrifice comfort to deliver. The client gets a clean handover."
+        }
+      ]
+    },
+    {
+      "id": "wave4_workplace_team_tension",
+      "minAge": 18,
+      "maxAge": 70,
+      "text": "During a meeting, your team starts arguing about credit. The atmosphere is tense and everyone is ready to explode.",
+      "weight": 3,
+      "tags": ["requires_job", "negative"],
+      "choices": [
+        {
+          "label": "De-escalate and split responsibility clearly",
+          "statEffects": { "happiness": 2, "karma": 1 },
+          "performanceEffect": 8,
+          "resultText": "You redirect the blame into a plan. Your calm makes you look like leadership material."
+        },
+        {
+          "label": "Let it burn; stay quiet until later",
+          "statEffects": { "happiness": -1 },
+          "performanceEffect": 0,
+          "resultText": "You avoid the conflict, but you also miss the chance to build influence."
+        },
+        {
+          "label": "Publicly defend your work aggressively",
+          "statEffects": { "happiness": -3, "health": -1, "karma": -2 },
+          "performanceEffect": -6,
+          "resultText": "Your defense becomes a fight. Even if you were right, the delivery was wrong."
+        }
+      ]
+    },
+    {
+      "id": "wave4_workplace_promotion_opportunity",
+      "minAge": 20,
+      "maxAge": 70,
+      "text": "A senior role opens up. Your manager says the promotion will reward more than skill - it will reward reliability under pressure.",
+      "weight": 4,
+      "tags": ["requires_job", "positive"],
+      "choices": [
+        {
+          "label": "Volunteer for the hardest part first",
+          "statEffects": { "health": -1, "happiness": 1 },
+          "performanceEffect": 14,
+          "resultText": "You show commitment through action. Your performance score jumps instantly."
+        },
+        {
+          "label": "Prepare carefully and present a strategy",
+          "statEffects": { "smarts": 3, "happiness": 0, "money": 900 },
+          "performanceEffect": 10,
+          "resultText": "You make the role look manageable. People trust your plan."
+        },
+        {
+          "label": "Decline politely and protect your routine",
+          "statEffects": { "happiness": 2, "health": 1, "money": 300 },
+          "performanceEffect": -2,
+          "resultText": "You keep your life stable, but you lose momentum for this cycle."
+        }
+      ]
+    },
+    {
+      "id": "wave4_workplace_unexpected_recognition",
+      "minAge": 18,
+      "maxAge": 70,
+      "text": "A coworker recognizes you in front of the team. The mention is small, but the meaning is huge: 'They noticed your effort.'",
+      "weight": 3,
+      "tags": ["requires_job", "positive"],
+      "choices": [
+        {
+          "label": "Thank them and share credit",
+          "statEffects": { "happiness": 4, "karma": 2 },
+          "performanceEffect": 6,
+          "resultText": "You become known as someone people want on their side."
+        },
+        {
+          "label": "Accept it quietly and move on",
+          "statEffects": { "happiness": 1 },
+          "performanceEffect": 2,
+          "resultText": "The moment passes, but your reputation stays steady."
+        },
+        {
+          "label": "Turn it into a brag",
+          "statEffects": { "happiness": -2, "karma": -2 },
+          "performanceEffect": -6,
+          "resultText": "It feels satisfying for a second, but you lose goodwill quickly."
+        }
+      ]
+    }
+  ]
+}
+

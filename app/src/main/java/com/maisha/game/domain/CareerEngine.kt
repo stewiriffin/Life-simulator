@@ -947,6 +947,8 @@ class CareerEngine @Inject constructor(
 
     companion object {
         const val CAREER_SYSTEM_TAG = "career_system"
+        /** Event gate: only eligible when the character has a current job. */
+        const val REQUIRES_JOB_TAG = "requires_job"
         const val PROMOTION_EVENT_ID = "career_promotion_system"
         const val FIRING_EVENT_ID = "career_firing_system"
         const val DOWNSIZING_EVENT_ID = "career_downsizing_system"

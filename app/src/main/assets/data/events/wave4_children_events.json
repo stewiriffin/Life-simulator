@@ -1,0 +1,139 @@
+{
+  "events": [
+    {
+      "id": "wave4_child_toddler_tantrum",
+      "minAge": 18,
+      "maxAge": 60,
+      "text": "Your toddler has a tantrum that tests your patience. One wrong move, and the day feels ruined; one good move, and everything resets.",
+      "weight": 4,
+      "tags": ["requires_child_toddler", "negative"],
+      "choices": [
+        {
+          "label": "Stay calm and comfort them",
+          "statEffects": { "happiness": 4, "health": 0 },
+          "childRelationshipEffect": 10,
+          "resultText": "They calm down quickly. Your bond feels stronger, not weaker."
+        },
+        {
+          "label": "Set firm boundaries and distract",
+          "statEffects": { "happiness": 0, "health": -1, "karma": 1 },
+          "childRelationshipEffect": -2,
+          "resultText": "The tantrum fades. There is still friction, but you feel in control."
+        },
+        {
+          "label": "Lose patience and rush them",
+          "statEffects": { "happiness": -4, "health": -2, "karma": -2 },
+          "childRelationshipEffect": -10,
+          "resultText": "Afterwards, everyone feels tense. You regret it more than you want to admit."
+        }
+      ]
+    },
+    {
+      "id": "wave4_child_toddler_first_trust",
+      "minAge": 18,
+      "maxAge": 60,
+      "text": "You are not 'just the parent' today. Your toddler reaches for you first. It is small, but it hits deep.",
+      "weight": 3,
+      "tags": ["requires_child_toddler", "positive"],
+      "choices": [
+        {
+          "label": "Play together and laugh",
+          "statEffects": { "happiness": 6, "health": 1 },
+          "childRelationshipEffect": 12,
+          "resultText": "Your home feels warmer. The memory becomes a little anchor for the next tough day."
+        },
+        {
+          "label": "Show up but stay quiet",
+          "statEffects": { "happiness": 2 },
+          "childRelationshipEffect": 6,
+          "resultText": "You do not turn it into a big moment, but you still show love."
+        }
+      ]
+    },
+    {
+      "id": "wave4_child_primary_homework",
+      "minAge": 18,
+      "maxAge": 60,
+      "text": "Homework time becomes a negotiation. Your child either wants help, or wants to prove they do not need it.",
+      "weight": 4,
+      "tags": ["requires_child_primary", "positive"],
+      "choices": [
+        {
+          "label": "Help with their toughest problem",
+          "statEffects": { "smarts": 2, "happiness": 3 },
+          "childRelationshipEffect": 14,
+          "resultText": "They learn faster because you make it feel safe to struggle."
+        },
+        {
+          "label": "Give tips but let them try",
+          "statEffects": { "smarts": 1, "happiness": 1, "health": 0 },
+          "childRelationshipEffect": 8,
+          "resultText": "You respect their independence. They rise to the challenge."
+        },
+        {
+          "label": "Take over completely",
+          "statEffects": { "happiness": 0, "health": -1, "karma": -1 },
+          "childRelationshipEffect": -6,
+          "resultText": "The work finishes, but confidence drops. Next week will cost you more time."
+        }
+      ]
+    },
+    {
+      "id": "wave4_child_primary_teacher_note",
+      "minAge": 18,
+      "maxAge": 60,
+      "text": "A teacher sends a note: distracted, careless mistakes, and a reputation that might be forming early.",
+      "weight": 3,
+      "tags": ["requires_child_primary", "negative"],
+      "choices": [
+        {
+          "label": "Adjust routine and check in daily",
+          "statEffects": { "happiness": 1, "smarts": 1, "health": 0, "money": -500 },
+          "childRelationshipEffect": 10,
+          "resultText": "Small consistency beats big promises. The grades slowly follow."
+        },
+        {
+          "label": "Punish quickly and hope fear works",
+          "statEffects": { "happiness": -3, "health": -1, "karma": -2 },
+          "childRelationshipEffect": -12,
+          "resultText": "They comply for a week, then hide the problem instead."
+        },
+        {
+          "label": "Talk gently and ask what is wrong",
+          "statEffects": { "happiness": 2, "health": 0, "karma": 1 },
+          "childRelationshipEffect": 6,
+          "resultText": "You discover it was stress. Once named, it gets easier."
+        }
+      ]
+    },
+    {
+      "id": "wave4_child_teen_rebellion",
+      "minAge": 18,
+      "maxAge": 60,
+      "text": "Your teenager pushes back. They want freedom now, but freedom without boundaries turns into mistakes fast.",
+      "weight": 4,
+      "tags": ["requires_child_teen", "negative"],
+      "choices": [
+        {
+          "label": "Listen first, then set clear rules",
+          "statEffects": { "happiness": 1, "health": 0, "karma": 1 },
+          "childRelationshipEffect": 12,
+          "resultText": "You keep the peace and earn respect. They test you less next time."
+        },
+        {
+          "label": "Punish harshly to prove you are serious",
+          "statEffects": { "happiness": -5, "health": -2, "karma": -3 },
+          "childRelationshipEffect": -14,
+          "resultText": "They resent you. If something goes wrong later, they will hide it."
+        },
+        {
+          "label": "Ignore it and hope they grow out of it",
+          "statEffects": { "happiness": -3, "health": -1 },
+          "childRelationshipEffect": -8,
+          "resultText": "The rebellion fades in the short term, but trust weakens in the long run."
+        }
+      ]
+    }
+  ]
+}
+

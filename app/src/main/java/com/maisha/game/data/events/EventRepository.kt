@@ -106,7 +106,15 @@ class EventRepository private constructor(
         val holidays = loadEventsFromAsset(context, "data/events/holiday_events.json")
         val crime = loadEventsFromAsset(context, "data/events/crime_events.json")
         val wave3 = loadEventsFromAsset(context, "data/events/wave3_events.json")
-        return starter + education + career + finance + relationship + general + midlife + holidays + crime + wave3
+        val wave4Workplace = loadEventsFromAsset(context, "data/events/wave4_workplace_events.json")
+        val wave4Hobbies = loadEventsFromAsset(context, "data/events/wave4_hobbies_events.json")
+        val wave4SideHustles = loadEventsFromAsset(context, "data/events/wave4_side_hustle_events.json")
+        val wave4Love = loadEventsFromAsset(context, "data/events/wave4_love_sex_events.json")
+        val wave4Children = loadEventsFromAsset(context, "data/events/wave4_children_events.json")
+        val wave4Crime = loadEventsFromAsset(context, "data/events/wave4_crime_events.json")
+
+        return starter + education + career + finance + relationship + general + midlife + holidays + crime + wave3 +
+            wave4Workplace + wave4Hobbies + wave4SideHustles + wave4Love + wave4Children + wave4Crime
     }
 
     private fun loadEventsFromAsset(context: Context, path: String): List<LifeEvent> {
@@ -136,6 +144,7 @@ class EventRepository private constructor(
                 passesSkillGate(event, character) &&
                 passesBusinessGate(event, character) &&
                 passesOfficeGate(event, character) &&
+                passesCareerGate(event, character) &&
                 passesMilitaryGate(event, character) &&
                 passesVehicleGate(event, character) &&
                 passesCountryGate(event, character) &&
@@ -305,6 +314,12 @@ class EventRepository private constructor(
         if (PoliticsEngine.REQUIRES_OFFICE_TAG !in event.tags) return true
         if (character == null) return false
         return character.politics.currentOffice != null
+    }
+
+    private fun passesCareerGate(event: LifeEvent, character: Character?): Boolean {
+        if (CareerEngine.REQUIRES_JOB_TAG !in event.tags) return true
+        if (character == null) return false
+        return character.career.currentJob != null
     }
 
     private fun passesMilitaryGate(event: LifeEvent, character: Character?): Boolean {

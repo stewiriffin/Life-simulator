@@ -1,0 +1,145 @@
+{
+  "events": [
+    {
+      "id": "wave4_side_hustle_delayed_pay",
+      "minAge": 16,
+      "maxAge": 55,
+      "text": "A side gig client says your payment is 'being processed'. The excuse feels rehearsed.",
+      "weight": 3,
+      "tags": ["negative"],
+      "choices": [
+        {
+          "label": "Message politely and give one more week",
+          "statEffects": { "happiness": -1, "smarts": 1 },
+          "money": 0,
+          "resultText": "They pay eventually. Your reputation with them stays intact."
+        },
+        {
+          "label": "Escalate and demand a timeline",
+          "statEffects": { "happiness": -3, "karma": -1 },
+          "money": 1200,
+          "resultText": "You get paid faster, but you burn some goodwill."
+        },
+        {
+          "label": "Cut your losses and move on",
+          "statEffects": { "happiness": 1, "health": -1 },
+          "money": 600,
+          "resultText": "You do not lose everything, and your stress eases."
+        }
+      ]
+    },
+    {
+      "id": "wave4_side_hustle_big_break",
+      "minAge": 16,
+      "maxAge": 60,
+      "text": "A good review drops unexpectedly. Someone shares your work with friends.",
+      "weight": 4,
+      "tags": ["positive"],
+      "choices": [
+        {
+          "label": "Deliver one more 'premium' version",
+          "statEffects": { "happiness": 2, "smarts": 1, "looks": 1 },
+          "money": 2200,
+          "resultText": "You turn a small job into a chain of higher-paying repeats."
+        },
+        {
+          "label": "Stay consistent and scale slowly",
+          "statEffects": { "happiness": 1, "health": 1 },
+          "money": 1500,
+          "resultText": "You avoid burnout and still grow your income."
+        },
+        {
+          "label": "Chase the spotlight and overpromise",
+          "statEffects": { "happiness": 3, "health": -3, "karma": -1 },
+          "money": 3200,
+          "resultText": "You earn big now, but the complaints later feel worse."
+        }
+      ]
+    },
+    {
+      "id": "wave4_side_hustle_tools_cost",
+      "minAge": 18,
+      "maxAge": 65,
+      "text": "Your next level needs equipment. The problem is the shop looks expensive.",
+      "weight": 3,
+      "tags": ["negative"],
+      "choices": [
+        {
+          "label": "Buy the basic tools you can afford",
+          "statEffects": { "happiness": 1, "smarts": 1 },
+          "money": 0,
+          "resultText": "You start with less, but you still start."
+        },
+        {
+          "label": "Invest big to buy the best gear",
+          "statEffects": { "happiness": 2, "health": -1, "karma": -1 },
+          "money": -1500,
+          "resultText": "The tools pay for themselves later - if you survive the first month."
+        },
+        {
+          "label": "Borrow tools from a friend",
+          "statEffects": { "happiness": 2, "karma": 1 },
+          "money": 0,
+          "resultText": "Your friend trusts you more. You feel less alone in the grind."
+        }
+      ]
+    },
+    {
+      "id": "wave4_side_hustle_burnout_warning",
+      "minAge": 16,
+      "maxAge": 60,
+      "text": "You keep saying 'just one more shift'. Your body stops agreeing with your plans.",
+      "weight": 4,
+      "tags": ["negative"],
+      "choices": [
+        {
+          "label": "Take a real rest day",
+          "statEffects": { "happiness": 3, "health": 3 },
+          "money": -400,
+          "resultText": "It hurts to skip the cash. But your energy returns."
+        },
+        {
+          "label": "Push through to finish strong",
+          "statEffects": { "happiness": -2, "health": -5 },
+          "money": 1300,
+          "resultText": "You finish the work, but your body feels like it filed complaints."
+        },
+        {
+          "label": "Reduce scope and keep quality",
+          "statEffects": { "happiness": 1, "health": -1, "smarts": 2 },
+          "money": 900,
+          "resultText": "You deliver something better than a rushed version."
+        }
+      ]
+    },
+    {
+      "id": "wave4_side_hustle_friend_recruit",
+      "minAge": 16,
+      "maxAge": 60,
+      "text": "A friend asks to join your hustle. It could help both of you - or complicate everything.",
+      "weight": 3,
+      "tags": ["positive"],
+      "choices": [
+        {
+          "label": "Teach them and share profits",
+          "statEffects": { "happiness": 3, "karma": 2 },
+          "money": 1400,
+          "resultText": "You build trust. The extra hands make your next job easier."
+        },
+        {
+          "label": "Keep it private to protect quality",
+          "statEffects": { "happiness": 1, "health": 1, "karma": 0 },
+          "money": 1700,
+          "resultText": "You stay focused. Your work improves, even if it feels lonely."
+        },
+        {
+          "label": "Ignore the boundary and set no rules",
+          "statEffects": { "happiness": -3, "karma": -2, "health": -1 },
+          "money": 1200,
+          "resultText": "You earn something, but the trust breaks fast."
+        }
+      ]
+    }
+  ]
+}
+

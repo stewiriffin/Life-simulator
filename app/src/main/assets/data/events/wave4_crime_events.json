@@ -1,0 +1,118 @@
+{
+  "events": [
+    {
+      "id": "wave4_crime_shoplift_opportunity",
+      "minAge": 16,
+      "maxAge": 60,
+      "text": "A quiet corner in the market. The cashier is distracted. Your mind starts doing the math on risk versus reward.",
+      "weight": 4,
+      "tags": ["crime", "negative"],
+      "choices": [
+        {
+          "label": "Try a small shoplift and disappear",
+          "triggersCrime": "SHOPLIFT",
+          "statEffects": { "karma": -2, "happiness": -1 },
+          "resultText": "You act fast. Either you get away, or you find out the hard way."
+        },
+        {
+          "label": "Walk out and buy something instead",
+          "statEffects": { "happiness": 1, "karma": 2, "money": -600 },
+          "resultText": "You choose the boring path. It still feels cleaner than adrenaline."
+        },
+        {
+          "label": "Wait for a calmer moment next week",
+          "statEffects": { "happiness": 0, "karma": 0 },
+          "resultText": "You do not escalate today. The temptation stays, but you remain in control."
+        }
+      ]
+    },
+    {
+      "id": "wave4_crime_pickpocket_tension",
+      "minAge": 16,
+      "maxAge": 60,
+      "text": "In a crowded street, you feel invisible. The temptation is not the theft - it is the feeling of being able to do it.",
+      "weight": 4,
+      "tags": ["crime", "negative"],
+      "choices": [
+        {
+          "label": "Make a clean move while nobody notices",
+          "triggersCrime": "PICKPOCKET",
+          "statEffects": { "karma": -3, "happiness": -2 },
+          "resultText": "Your fingers work. Your heart beats faster once you are done."
+        },
+        {
+          "label": "Refuse it and keep your hands honest",
+          "statEffects": { "happiness": 2, "karma": 2 },
+          "resultText": "You feel relief. You keep your future open."
+        }
+      ]
+    },
+    {
+      "id": "wave4_crime_fraud_email",
+      "minAge": 18,
+      "maxAge": 65,
+      "text": "A website looks official enough. The offer is too good. Your smarter instincts notice the scam - then your greed argues back.",
+      "weight": 3,
+      "tags": ["crime", "negative"],
+      "choices": [
+        {
+          "label": "Try committing fraud in a quick scheme",
+          "triggersCrime": "FRAUD",
+          "statEffects": { "karma": -5, "smarts": 1, "happiness": -1 },
+          "resultText": "You play the role convincingly... until luck has the final word."
+        },
+        {
+          "label": "Use your knowledge to protect others",
+          "statEffects": { "happiness": 2, "karma": 3, "smarts": 1 },
+          "resultText": "You stay dangerous in a good way: your mind helps more than it harms."
+        },
+        {
+          "label": "Report it and walk away",
+          "statEffects": { "happiness": 1, "karma": 2 },
+          "resultText": "You choose stability. The temptation fades once you do the right thing."
+        }
+      ]
+    },
+    {
+      "id": "wave4_crime_double_or_nothing",
+      "minAge": 16,
+      "maxAge": 60,
+      "text": "After thinking about crime for years, you finally feel ready. The hard part is deciding whether to stop halfway.",
+      "weight": 2,
+      "tags": ["crime", "negative"],
+      "choices": [
+        {
+          "label": "Walk away and break the pattern",
+          "statEffects": { "happiness": 2, "karma": 4, "health": 1 },
+          "resultText": "You take control of your story. The future stops being a loop."
+        },
+        {
+          "label": "Commit to another attempt",
+          "statEffects": { "happiness": -2, "karma": -2 },
+          "resultText": "The adrenaline calls you again. If you get caught, you will not have excuses."
+        }
+      ]
+    },
+    {
+      "id": "wave4_crime_cleanup_after_loss",
+      "minAge": 16,
+      "maxAge": 65,
+      "text": "Something goes wrong. Not necessarily jail - just the feeling that your actions will catch up to you one way or another.",
+      "weight": 3,
+      "tags": ["crime", "positive"],
+      "choices": [
+        {
+          "label": "Make amends with honesty",
+          "statEffects": { "happiness": 3, "karma": 3 },
+          "resultText": "You stop hiding behind impulses. It makes your next decisions easier."
+        },
+        {
+          "label": "Deny it and move on fast",
+          "statEffects": { "happiness": -1, "karma": -1 },
+          "resultText": "You avoid guilt for now, but the risk stays in your future."
+        }
+      ]
+    }
+  ]
+}
+
