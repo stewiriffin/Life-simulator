@@ -352,7 +352,7 @@ Newest first:
 
 | Commit | Meaning |
 |--------|---------|
-| *(pending push)* | University majors, loans, campus jobs, internships, grad track, Career dashboard |
+| `74ec22c` | University majors, loans, campus jobs, internships, grad track, Career dashboard |
 | `c68bf45` | Detention deepen: serve hall, principal appeal, transfer hearing, rebel achievements |
 | `57bcd1e` | Misbehavior & detention: rebel activities, expulsion hearing, discipline badge |
 | `68a1124` | Clubs: rivalry matches, letter jacket, fame, scout whispers, achievements |
