@@ -1366,7 +1366,25 @@
 
     <!-- Wave 2: school clubs, career tracks, mind-body, prison, archetypes -->
     <string name="section_school_clubs">School clubs</string>
+    <string name="club_manage_hint">Join a club, practice to climb ranks, and unlock captain showcases.</string>
+    <string name="club_switch_hint">Switch clubs below (resets rank and skill).</string>
     <string name="format_active_club">Active: %1$s</string>
+    <string name="format_club_status">%1$s · %2$s</string>
+    <string name="label_club_skill">Club skill</string>
+    <string name="label_club_prestige">Club prestige</string>
+    <string name="format_club_major_event">Unlocked: %1$s</string>
+    <string name="format_club_resume">Awards %1$d · Captain years %2$d</string>
+    <string name="format_club_scholarship_hint">Est. scholarship: %1$s</string>
+    <string name="label_club_intensity">Practice intensity</string>
+    <string name="club_intensity_light">Light</string>
+    <string name="club_intensity_normal">Normal</string>
+    <string name="club_intensity_intense">Intense</string>
+    <string name="btn_club_practice">Practice / compete</string>
+    <string name="btn_club_practiced">Practiced this year</string>
+    <string name="btn_club_major_event">Enter major event</string>
+    <string name="btn_club_fundraiser">Host fundraiser</string>
+    <string name="btn_club_fundraiser_done">Fundraiser done</string>
+    <string name="btn_club_leave">Leave club</string>
     <string name="club_debate">Debate</string>
     <string name="club_football">Football</string>
     <string name="club_drama">Drama</string>
@@ -1374,6 +1392,13 @@
     <string name="club_music">Music</string>
     <string name="msg_club_joined">You joined a school club.</string>
     <string name="msg_club_join_failed">You could not join that club right now.</string>
+    <string name="msg_club_left">You left your school club.</string>
+    <string name="msg_club_activity_already_done">You already practiced with your club this year.</string>
+    <string name="msg_club_activity_ineligible">You are not in an eligible school club.</string>
+    <string name="msg_club_event_already_done">That showcase is not available right now.</string>
+    <string name="msg_club_event_ineligible">Reach Team Captain / President to unlock major events.</string>
+    <string name="msg_club_fundraiser_already_done">You already hosted a fundraiser this year.</string>
+    <string name="msg_club_fundraiser_ineligible">Only Treasurers / Starters and above can host fundraisers.</string>
     <string name="section_school_life">School life</string>
     <string name="label_school_reputation">School reputation</string>
     <string name="format_school_reputation">Reputation %1$d</string>

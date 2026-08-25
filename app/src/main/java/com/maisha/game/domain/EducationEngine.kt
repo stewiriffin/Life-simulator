@@ -8,6 +8,8 @@ import com.maisha.game.data.model.AvatarConfig
 import com.maisha.game.data.model.Character
 import com.maisha.game.data.model.EducationState
 import com.maisha.game.data.model.EventChoice
+import com.maisha.game.data.model.ClubPracticeIntensity
+import com.maisha.game.data.model.ClubRank
 import com.maisha.game.data.model.ExamKind
 import com.maisha.game.data.model.ExamPrepChoice
 import com.maisha.game.data.model.ExamResult
@@ -60,6 +62,17 @@ sealed class ExamPrepResult {
     data class Success(val character: Character, val message: String) : ExamPrepResult()
     data object Ineligible : ExamPrepResult()
     data object AlreadyDone : ExamPrepResult()
+}
+
+sealed class ClubActivityResult {
+    data class Success(
+        val character: Character,
+        val message: String,
+        val promoted: Boolean = false
+    ) : ClubActivityResult()
+    data class Dropped(val character: Character, val message: String) : ClubActivityResult()
+    data object Ineligible : ClubActivityResult()
+    data object AlreadyDone : ClubActivityResult()
 }
 
 @Singleton
@@ -237,19 +250,344 @@ class EducationEngine @Inject constructor(
         if (club == SchoolClub.DEBATE && character.education.gpa < DEBATE_MIN_GPA && character.education.gpa > 0f) {
             return character
         }
+        val sameClub = character.education.schoolClub == club
         return character.copy(
-            education = character.education.copy(schoolClub = club),
+            education = character.education.copy(
+                schoolClub = club,
+                clubRank = if (sameClub) character.education.clubRank else ClubRank.MEMBER,
+                clubSkill = if (sameClub) character.education.clubSkill else Random.nextInt(8, 18),
+                clubPrestige = if (sameClub) character.education.clubPrestige else Random.nextInt(5, 15),
+                clubActivityDoneThisYear = if (sameClub) character.education.clubActivityDoneThisYear else false,
+                clubMajorEventReady = if (sameClub) character.education.clubMajorEventReady else false,
+                clubFundraiserDoneThisYear = if (sameClub) character.education.clubFundraiserDoneThisYear else false,
+                clubResumeClub = club
+            ),
             eventLog = EventLogCap.prepend(
                 character.eventLog,
-                "You joined the ${club.name.lowercase().replace('_', ' ')} club at school."
+                if (sameClub) {
+                    "You recommitted to the ${clubDisplayName(club)}."
+                } else {
+                    "You joined the ${clubDisplayName(club)} as a ${clubRankTitle(club, ClubRank.MEMBER)}."
+                }
             )
         )
+    }
+
+    fun leaveSchoolClub(character: Character, fired: Boolean = false): Character {
+        val club = character.education.schoolClub ?: return character
+        val happinessHit = if (fired) -8 else -3
+        val repHit = if (fired) -10 else -2
+        val message = if (fired) {
+            "You were dropped from the ${clubDisplayName(club)}. Humiliating."
+        } else {
+            "You left the ${clubDisplayName(club)}."
+        }
+        return character.copy(
+            stats = character.stats.copy(
+                happiness = clampStat(character.stats.happiness + happinessHit)
+            ),
+            education = clearActiveClubMembership(
+                character.education,
+                schoolReputation = (character.education.schoolReputation + repHit).coerceIn(0, 100),
+                rememberResume = !fired || character.education.clubAwardsWon > 0
+            ),
+            eventLog = EventLogCap.prepend(character.eventLog, message)
+        )
+    }
+
+    /** Clears active membership but keeps awards / captain years for scholarships & career tracks. */
+    private fun clearActiveClubMembership(
+        education: EducationState,
+        schoolReputation: Int = education.schoolReputation,
+        rememberResume: Boolean = true
+    ): EducationState {
+        val resume = when {
+            !rememberResume -> education.clubResumeClub
+            education.schoolClub != null -> education.schoolClub
+            else -> education.clubResumeClub
+        }
+        return education.copy(
+            schoolClub = null,
+            clubRank = ClubRank.MEMBER,
+            clubSkill = 0,
+            clubPrestige = 0,
+            clubActivityDoneThisYear = false,
+            clubMajorEventReady = false,
+            clubFundraiserDoneThisYear = false,
+            clubResumeClub = resume,
+            schoolReputation = schoolReputation
+        )
+    }
+
+    fun clubRankTitle(club: SchoolClub, rank: ClubRank): String = when (club) {
+        SchoolClub.FOOTBALL -> when (rank) {
+            ClubRank.MEMBER -> "Member"
+            ClubRank.OFFICER -> "Starter"
+            ClubRank.CAPTAIN -> "Team Captain"
+        }
+        else -> when (rank) {
+            ClubRank.MEMBER -> "Member"
+            ClubRank.OFFICER -> "Treasurer"
+            ClubRank.CAPTAIN -> "President"
+        }
+    }
+
+    fun clubDisplayName(club: SchoolClub): String =
+        club.name.lowercase().replace('_', ' ') + " club"
+
+    fun clubMajorEventTitle(club: SchoolClub): String = when (club) {
+        SchoolClub.FOOTBALL -> "State Championship Match"
+        SchoolClub.DEBATE -> "National Debate Finals"
+        SchoolClub.DRAMA -> "Regional Drama Festival"
+        SchoolClub.CODING -> "National Science & Coding Fair"
+        SchoolClub.MUSIC -> "Inter-School Music Showcase"
+    }
+
+    /** Estimated scholarship cash from club awards / captain years (0 if none). */
+    fun clubScholarshipEstimate(character: Character): Int {
+        val awards = character.education.clubAwardsWon
+        val captainYears = character.education.clubYearsAsCaptain
+        if (awards <= 0 && captainYears <= 0) return 0
+        val base = 8_000 + awards * 12_000 + captainYears * 4_000
+        return EconomyScaler.scaleAmount(base, character.countryCode)
+    }
+
+    /**
+     * Practice / compete with the active club.
+     * [intensity] trades skill gain vs injury / drop risk (BitLife-style training).
+     */
+    fun performClubActivity(
+        character: Character,
+        intensity: ClubPracticeIntensity = ClubPracticeIntensity.NORMAL
+    ): ClubActivityResult {
+        if (!isSchoolClubEligible(character)) return ClubActivityResult.Ineligible
+        val club = character.education.schoolClub ?: return ClubActivityResult.Ineligible
+        if (character.education.clubActivityDoneThisYear) return ClubActivityResult.AlreadyDone
+
+        val intensityDropBonus = when (intensity) {
+            ClubPracticeIntensity.LIGHT -> -0.04f
+            ClubPracticeIntensity.NORMAL -> 0f
+            ClubPracticeIntensity.INTENSE -> 0.08f
+        }
+        val dropChance = when {
+            club == SchoolClub.FOOTBALL && character.stats.health < 40 -> 0.35f
+            character.education.clubSkill < 15 && character.education.clubRank == ClubRank.MEMBER -> 0.12f
+            character.education.plannedStudyEffort == StudyEffort.SLACK &&
+                character.education.clubSkill < 30 -> 0.18f
+            else -> 0.04f
+        } + intensityDropBonus
+        if (Random.nextFloat() < dropChance.coerceIn(0.01f, 0.55f)) {
+            val dropped = leaveSchoolClub(character, fired = true)
+            return ClubActivityResult.Dropped(dropped, "Dropped from the ${clubDisplayName(club)}.")
+        }
+
+        val skillGain = when (intensity) {
+            ClubPracticeIntensity.LIGHT -> Random.nextInt(4, 9)
+            ClubPracticeIntensity.NORMAL -> Random.nextInt(8, 16)
+            ClubPracticeIntensity.INTENSE -> Random.nextInt(14, 22)
+        } + if (character.education.plannedStudyEffort == StudyEffort.HARD) 2 else 0
+        val prestigeGain = when (intensity) {
+            ClubPracticeIntensity.LIGHT -> Random.nextInt(1, 3)
+            ClubPracticeIntensity.NORMAL -> Random.nextInt(2, 6)
+            ClubPracticeIntensity.INTENSE -> Random.nextInt(4, 9)
+        }
+        val newSkill = (character.education.clubSkill + skillGain).coerceIn(0, 100)
+        val newPrestige = (character.education.clubPrestige + prestigeGain).coerceIn(0, 100)
+        val (happiness, health, smarts) = when (club) {
+            SchoolClub.DEBATE -> Triple(2, 0, 3)
+            SchoolClub.FOOTBALL -> Triple(3, 2, 0)
+            SchoolClub.DRAMA -> Triple(4, 0, 1)
+            SchoolClub.CODING -> Triple(1, 0, 4)
+            SchoolClub.MUSIC -> Triple(3, 0, 2)
+        }
+        val intensityHappiness = when (intensity) {
+            ClubPracticeIntensity.LIGHT -> 1
+            ClubPracticeIntensity.NORMAL -> 0
+            ClubPracticeIntensity.INTENSE -> -2
+        }
+
+        // Intense football (and sometimes drama stage work) can injure you.
+        val injuryChance = when {
+            intensity != ClubPracticeIntensity.INTENSE -> 0f
+            club == SchoolClub.FOOTBALL -> 0.22f
+            club == SchoolClub.DRAMA -> 0.06f
+            else -> 0.03f
+        }
+        val injured = injuryChance > 0f && Random.nextFloat() < injuryChance
+        val injuryHealth = if (injured) -Random.nextInt(8, 16) else 0
+
+        var rank = character.education.clubRank
+        var promoted = false
+        var majorReady = character.education.clubMajorEventReady
+        if (rank == ClubRank.MEMBER && newSkill >= CLUB_OFFICER_SKILL) {
+            rank = ClubRank.OFFICER
+            promoted = true
+        } else if (rank == ClubRank.OFFICER && newSkill >= CLUB_CAPTAIN_SKILL && newPrestige >= 45) {
+            rank = ClubRank.CAPTAIN
+            promoted = true
+            majorReady = true
+        } else if (rank == ClubRank.CAPTAIN) {
+            majorReady = true
+        }
+
+        val title = clubRankTitle(club, rank)
+        val intensityLabel = when (intensity) {
+            ClubPracticeIntensity.LIGHT -> "Light practice"
+            ClubPracticeIntensity.NORMAL -> "Club practice"
+            ClubPracticeIntensity.INTENSE -> "Intense training"
+        }
+        val message = buildString {
+            append("$intensityLabel paid off (+$skillGain skill).")
+            if (promoted) append(" Promoted to $title!")
+            if (injured) append(" You picked up an injury on the way.")
+            if (rank == ClubRank.CAPTAIN && majorReady) {
+                append(" ${clubMajorEventTitle(club)} is on the calendar.")
+            }
+        }
+
+        val updated = character.copy(
+            stats = character.stats.copy(
+                happiness = clampStat(character.stats.happiness + happiness + intensityHappiness),
+                health = clampStat(character.stats.health + health + injuryHealth),
+                smarts = clampStat(character.stats.smarts + smarts)
+            ),
+            education = character.education.copy(
+                clubSkill = newSkill,
+                clubPrestige = newPrestige,
+                clubRank = rank,
+                clubActivityDoneThisYear = true,
+                clubMajorEventReady = majorReady,
+                clubResumeClub = club,
+                schoolReputation = (character.education.schoolReputation + if (promoted) 4 else 1)
+                    .coerceIn(0, 100),
+                gpa = if (club == SchoolClub.DEBATE || club == SchoolClub.CODING) {
+                    clampGpa(character.education.gpa + 0.04f)
+                } else {
+                    character.education.gpa
+                }
+            ),
+            eventLog = EventLogCap.prepend(character.eventLog, message)
+        )
+        return ClubActivityResult.Success(updated, message, promoted = promoted)
+    }
+
+    /**
+     * Captain/President showcase: championship, science fair, etc. High cash / scholarship reward.
+     */
+    fun claimClubMajorEvent(character: Character): ClubActivityResult {
+        if (!isSchoolClubEligible(character)) return ClubActivityResult.Ineligible
+        val club = character.education.schoolClub ?: return ClubActivityResult.Ineligible
+        if (character.education.clubRank != ClubRank.CAPTAIN) return ClubActivityResult.Ineligible
+        if (!character.education.clubMajorEventReady) return ClubActivityResult.AlreadyDone
+
+        val won = Random.nextFloat() < clubMajorWinChance(character)
+        val baseReward = when (club) {
+            SchoolClub.FOOTBALL -> 18_000
+            SchoolClub.CODING, SchoolClub.DEBATE -> 22_000
+            SchoolClub.DRAMA, SchoolClub.MUSIC -> 15_000
+        }
+        val reward = EconomyScaler.scaleAmount(baseReward, character.countryCode)
+        val eventName = clubMajorEventTitle(club)
+
+        return if (won) {
+            val updated = character.copy(
+                stats = character.stats.copy(
+                    money = character.stats.money + reward,
+                    happiness = clampStat(character.stats.happiness + 10),
+                    looks = clampStat(character.stats.looks + 2)
+                ),
+                education = character.education.copy(
+                    clubMajorEventReady = false,
+                    clubPrestige = (character.education.clubPrestige + 12).coerceIn(0, 100),
+                    clubSkill = (character.education.clubSkill + 5).coerceIn(0, 100),
+                    clubAwardsWon = character.education.clubAwardsWon + 1,
+                    clubResumeClub = club,
+                    schoolReputation = (character.education.schoolReputation + 10).coerceIn(0, 100),
+                    gpa = clampGpa(character.education.gpa + 0.1f)
+                ),
+                eventLog = EventLogCap.prepend(
+                    character.eventLog,
+                    "You led the ${clubDisplayName(club)} to glory at the $eventName. " +
+                        "Scholarship / prize: ${formatMoney(reward, character.countryCode)}."
+                )
+            )
+            ClubActivityResult.Success(
+                updated,
+                "Won the $eventName! ${formatMoney(reward, character.countryCode)} prize."
+            )
+        } else {
+            val updated = character.copy(
+                stats = character.stats.copy(
+                    happiness = clampStat(character.stats.happiness - 4),
+                    money = character.stats.money + reward / 5
+                ),
+                education = character.education.copy(
+                    clubMajorEventReady = false,
+                    clubPrestige = (character.education.clubPrestige + 3).coerceIn(0, 100),
+                    schoolReputation = (character.education.schoolReputation + 2).coerceIn(0, 100)
+                ),
+                eventLog = EventLogCap.prepend(
+                    character.eventLog,
+                    "The $eventName was tough. You didn't take the trophy, but you still earned a small stipend."
+                )
+            )
+            ClubActivityResult.Success(
+                updated,
+                "Competed at $eventName. Consolation stipend awarded."
+            )
+        }
+    }
+
+    /**
+     * Officer / Captain fundraiser — cash for the club and a prestige bump (once per year).
+     */
+    fun hostClubFundraiser(character: Character): ClubActivityResult {
+        if (!isSchoolClubEligible(character)) return ClubActivityResult.Ineligible
+        val club = character.education.schoolClub ?: return ClubActivityResult.Ineligible
+        if (character.education.clubRank == ClubRank.MEMBER) return ClubActivityResult.Ineligible
+        if (character.education.clubFundraiserDoneThisYear) return ClubActivityResult.AlreadyDone
+
+        val raised = EconomyScaler.scaleAmount(
+            when (character.education.clubRank) {
+                ClubRank.CAPTAIN -> Random.nextInt(4_000, 9_000)
+                ClubRank.OFFICER -> Random.nextInt(2_000, 5_000)
+                ClubRank.MEMBER -> 0
+            },
+            character.countryCode
+        )
+        val message = "Your ${clubDisplayName(club)} fundraiser raised ${formatMoney(raised, character.countryCode)}."
+        val updated = character.copy(
+            stats = character.stats.copy(
+                money = character.stats.money + raised,
+                happiness = clampStat(character.stats.happiness + 3),
+                looks = clampStat(character.stats.looks + 1)
+            ),
+            education = character.education.copy(
+                clubFundraiserDoneThisYear = true,
+                clubPrestige = (character.education.clubPrestige + 6).coerceIn(0, 100),
+                schoolReputation = (character.education.schoolReputation + 3).coerceIn(0, 100)
+            ),
+            eventLog = EventLogCap.prepend(character.eventLog, message)
+        )
+        return ClubActivityResult.Success(updated, message)
+    }
+
+    private fun clubMajorWinChance(character: Character): Float {
+        val skill = character.education.clubSkill / 100f
+        val prestige = character.education.clubPrestige / 100f
+        return (0.28f + skill * 0.4f + prestige * 0.25f).coerceIn(0.15f, 0.85f)
     }
 
     fun applySchoolClubYear(character: Character): Character {
         val club = character.education.schoolClub ?: return character
         if (!isSchoolClubEligible(character)) {
-            return character.copy(education = character.education.copy(schoolClub = null))
+            return leaveSchoolClub(character, fired = true)
+        }
+        // Passive year tick if they never practiced — small skill decay / drop risk.
+        if (!character.education.clubActivityDoneThisYear && character.education.clubSkill < 25) {
+            if (Random.nextFloat() < 0.2f) {
+                return leaveSchoolClub(character, fired = true)
+            }
         }
         val (happiness, health, smarts, gpaDelta) = when (club) {
             SchoolClub.DEBATE -> Quad(2, 0, 3, 0.08f)
@@ -258,9 +596,19 @@ class EducationEngine @Inject constructor(
             SchoolClub.CODING -> Quad(1, 0, 4, 0.06f)
             SchoolClub.MUSIC -> Quad(4, 0, 2, 0.05f)
         }
+        val rankBonus = when (character.education.clubRank) {
+            ClubRank.MEMBER -> 0
+            ClubRank.OFFICER -> 1
+            ClubRank.CAPTAIN -> 2
+        }
+        val captainYears = if (character.education.clubRank == ClubRank.CAPTAIN) {
+            character.education.clubYearsAsCaptain + 1
+        } else {
+            character.education.clubYearsAsCaptain
+        }
         return character.copy(
             stats = character.stats.copy(
-                happiness = clampStat(character.stats.happiness + happiness),
+                happiness = clampStat(character.stats.happiness + happiness + rankBonus),
                 health = clampStat(character.stats.health + health),
                 smarts = clampStat(character.stats.smarts + smarts)
             ),
@@ -269,7 +617,14 @@ class EducationEngine @Inject constructor(
                     clampGpa(character.education.gpa + gpaDelta)
                 } else {
                     character.education.gpa
-                }
+                },
+                clubSkill = (character.education.clubSkill + 2).coerceIn(0, 100),
+                clubPrestige = (character.education.clubPrestige + 1).coerceIn(0, 100),
+                clubActivityDoneThisYear = false,
+                clubFundraiserDoneThisYear = false,
+                clubYearsAsCaptain = captainYears,
+                clubResumeClub = club,
+                clubMajorEventReady = character.education.clubRank == ClubRank.CAPTAIN
             )
         )
     }
@@ -312,11 +667,10 @@ class EducationEngine @Inject constructor(
         val withEffort = applyUniversityStudyEffort(updated)
         return if (nextGrade > UNIVERSITY_YEARS) {
             withEffort.copy(
-                education = withEffort.education.copy(
+                education = clearActiveClubMembership(withEffort.education).copy(
                     stage = SchoolStage.GRADUATED,
                     currentGrade = UNIVERSITY_YEARS,
-                    schoolPeople = emptyList(),
-                    schoolClub = null
+                    schoolPeople = emptyList()
                 ),
                 eventLog = EventLogCap.prepend(
                     withEffort.eventLog,
@@ -1096,14 +1450,29 @@ class EducationEngine @Inject constructor(
             )
         }
 
-        return ensureSchoolRoster(
+        val scholarship = clubScholarshipEstimate(enrolled)
+        val withScholarship = if (scholarship > 0 && !studyAbroad) {
             enrolled.copy(
-                education = enrolled.education.copy(
+                stats = enrolled.stats.copy(
+                    money = enrolled.stats.money + scholarship,
+                    happiness = clampStat(enrolled.stats.happiness + 4)
+                ),
+                eventLog = EventLogCap.prepend(
+                    enrolled.eventLog,
+                    "Your extracurricular resume unlocked a ${formatMoney(scholarship, enrolled.countryCode)} scholarship."
+                )
+            )
+        } else {
+            enrolled
+        }
+
+        return ensureSchoolRoster(
+            withScholarship.copy(
+                education = clearActiveClubMembership(withScholarship.education).copy(
                     stage = SchoolStage.UNIVERSITY,
                     currentGrade = 1,
                     courseOfStudy = course,
                     schoolName = universityNameFor(universityCountryCode),
-                    schoolClub = null,
                     academicActionDoneThisYear = false,
                     socialActionDoneThisYear = false
                 )
@@ -1213,14 +1582,13 @@ class EducationEngine @Inject constructor(
         if (stage != SchoolStage.SECONDARY && stage != SchoolStage.UNIVERSITY) return character
 
         return character.copy(
-            education = education.copy(
+            education = clearActiveClubMembership(education).copy(
                 droppedOutFrom = stage,
                 stage = SchoolStage.NONE,
                 currentGrade = 0,
                 schoolName = null,
                 courseOfStudy = null,
                 schoolPeople = emptyList(),
-                schoolClub = null,
                 academicActionDoneThisYear = false,
                 socialActionDoneThisYear = false
             )
@@ -1233,14 +1601,13 @@ class EducationEngine @Inject constructor(
         if (education.expelled) return character
 
         return character.copy(
-            education = education.copy(
+            education = clearActiveClubMembership(education).copy(
                 expelled = true,
                 stage = SchoolStage.NONE,
                 currentGrade = 0,
                 schoolName = null,
                 courseOfStudy = null,
                 schoolPeople = emptyList(),
-                schoolClub = null,
                 pendingExams = emptyList(),
                 examStress = 0,
                 schoolReputation = (education.schoolReputation - 20).coerceIn(0, 100),
@@ -1562,17 +1929,12 @@ class EducationEngine @Inject constructor(
                 }
             }
             SchoolActivity.CLUB_PRACTICE -> {
-                val club = character.education.schoolClub
-                    ?: return SchoolActionResult.Ineligible
-                succeedAcademic(
-                    character,
-                    gpaDelta = 0.06f,
-                    smarts = if (club == SchoolClub.CODING || club == SchoolClub.DEBATE) 3 else 1,
-                    happiness = 3,
-                    reputation = 2,
-                    health = if (club == SchoolClub.FOOTBALL) 2 else 0,
-                    message = "Club practice paid off. You feel sharper in ${club.name.lowercase()}."
-                )
+                when (val result = performClubActivity(character)) {
+                    is ClubActivityResult.Success -> SchoolActionResult.Success(result.character, result.message)
+                    is ClubActivityResult.Dropped -> SchoolActionResult.Success(result.character, result.message)
+                    ClubActivityResult.AlreadyDone -> SchoolActionResult.AlreadyDone
+                    ClubActivityResult.Ineligible -> SchoolActionResult.Ineligible
+                }
             }
         }
     }
@@ -2354,6 +2716,8 @@ class EducationEngine @Inject constructor(
         const val SCHOOL_CLUB_MAX_AGE = 17
         private const val FOOTBALL_MIN_HEALTH = 45
         private const val DEBATE_MIN_GPA = 1.8f
+        private const val CLUB_OFFICER_SKILL = 40
+        private const val CLUB_CAPTAIN_SKILL = 70
         private const val CLASSMATE_COUNT = 5
         private const val TEACHER_COUNT = 3
 

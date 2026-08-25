@@ -751,6 +751,7 @@ class CareerEngine @Inject constructor(
         return when (track) {
             CareerTrack.ENTERTAINMENT -> true
             CareerTrack.PRO_SPORTS -> character.education.schoolClub == SchoolClub.FOOTBALL ||
+                character.education.clubResumeClub == SchoolClub.FOOTBALL ||
                 character.stats.health >= PRO_SPORTS_MIN_HEALTH
             CareerTrack.MEDICAL -> character.education.courseOfStudy == "Medicine" ||
                 character.stats.smarts >= MEDICAL_MIN_SMARTS

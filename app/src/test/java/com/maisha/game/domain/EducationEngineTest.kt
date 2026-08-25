@@ -1,13 +1,16 @@
 package com.maisha.game.domain
 
+import com.maisha.game.data.model.ClubRank
 import com.maisha.game.data.model.EducationState
 import com.maisha.game.data.model.ExamType
 import com.maisha.game.data.model.RelationType
+import com.maisha.game.data.model.SchoolClub
 import com.maisha.game.data.model.SchoolStage
 import com.maisha.game.data.model.Stats
 import com.maisha.game.data.model.VisaType
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
+import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
@@ -516,4 +519,296 @@ class EducationEngineTest {
         )
         assertTrue(engine.calculateExamPassChance(hard) > engine.calculateExamPassChance(slack))
     }
+
+    @Test
+    fun clubRankTitle_mapsFootballAndAcademicTitles() {
+        assertEquals("Starter", engine.clubRankTitle(SchoolClub.FOOTBALL, ClubRank.OFFICER))
+        assertEquals("Team Captain", engine.clubRankTitle(SchoolClub.FOOTBALL, ClubRank.CAPTAIN))
+        assertEquals("Treasurer", engine.clubRankTitle(SchoolClub.DEBATE, ClubRank.OFFICER))
+        assertEquals("President", engine.clubRankTitle(SchoolClub.CODING, ClubRank.CAPTAIN))
+    }
+
+    @Test
+    fun joinSchoolClub_startsAsMemberWithSkill() {
+        val student = secondaryStudent()
+        val joined = engine.joinSchoolClub(student, SchoolClub.MUSIC)
+        assertEquals(SchoolClub.MUSIC, joined.education.schoolClub)
+        assertEquals(ClubRank.MEMBER, joined.education.clubRank)
+        assertTrue(joined.education.clubSkill in 8..17)
+        assertTrue(joined.education.clubPrestige in 5..14)
+    }
+
+    @Test
+    fun performClubActivity_raisesSkillAndCanPromoteToOfficer() {
+        var character = secondaryStudent().copy(
+            education = EducationState(
+                stage = SchoolStage.SECONDARY,
+                currentGrade = 1,
+                kcpePassed = true,
+                gpa = 2.8f,
+                schoolClub = SchoolClub.DEBATE,
+                clubRank = ClubRank.MEMBER,
+                clubSkill = 35,
+                clubPrestige = 20,
+                clubActivityDoneThisYear = false
+            ),
+            stats = Stats(happiness = 50, health = 70, smarts = 70)
+        )
+        var reachedOfficer = false
+        repeat(10) {
+            character = character.copy(
+                education = character.education.copy(clubActivityDoneThisYear = false)
+            )
+            when (val result = engine.performClubActivity(character)) {
+                is ClubActivityResult.Success -> {
+                    character = result.character
+                    if (character.education.clubRank.ordinal >= ClubRank.OFFICER.ordinal) {
+                        reachedOfficer = true
+                    }
+                }
+                is ClubActivityResult.Dropped -> return@repeat
+                else -> return@repeat
+            }
+        }
+        assertTrue(character.education.clubSkill > 35 || reachedOfficer)
+        assertTrue(
+            "Expected Treasurer promotion or skill past officer threshold",
+            reachedOfficer || character.education.clubSkill >= 40
+        )
+    }
+
+    @Test
+    fun performClubActivity_promotesCaptainAndUnlocksMajorEvent() {
+        val captainTrack = secondaryStudent().copy(
+            education = EducationState(
+                stage = SchoolStage.SECONDARY,
+                currentGrade = 2,
+                kcpePassed = true,
+                gpa = 3.0f,
+                schoolClub = SchoolClub.CODING,
+                clubRank = ClubRank.OFFICER,
+                clubSkill = 68,
+                clubPrestige = 50,
+                clubActivityDoneThisYear = false
+            ),
+            stats = Stats(happiness = 60, health = 70, smarts = 80)
+        )
+        var unlocked = false
+        repeat(12) {
+            val base = captainTrack.copy(
+                education = captainTrack.education.copy(
+                    clubSkill = (68 + it * 2).coerceAtMost(95),
+                    clubPrestige = 50,
+                    clubRank = ClubRank.OFFICER,
+                    clubActivityDoneThisYear = false,
+                    clubMajorEventReady = false
+                )
+            )
+            when (val result = engine.performClubActivity(base)) {
+                is ClubActivityResult.Success -> {
+                    if (result.character.education.clubRank == ClubRank.CAPTAIN) {
+                        assertTrue(result.character.education.clubMajorEventReady)
+                        unlocked = true
+                    }
+                }
+                else -> Unit
+            }
+        }
+        assertTrue("Officer with high skill/prestige should reach President", unlocked)
+    }
+
+    @Test
+    fun claimClubMajorEvent_awardsCashWhenCaptain() {
+        val captain = secondaryStudent().copy(
+            education = EducationState(
+                stage = SchoolStage.SECONDARY,
+                currentGrade = 3,
+                kcpePassed = true,
+                gpa = 3.2f,
+                schoolClub = SchoolClub.FOOTBALL,
+                clubRank = ClubRank.CAPTAIN,
+                clubSkill = 85,
+                clubPrestige = 70,
+                clubMajorEventReady = true
+            ),
+            stats = Stats(money = 1_000, happiness = 50, health = 80)
+        )
+        val result = engine.claimClubMajorEvent(captain)
+        assertTrue(result is ClubActivityResult.Success)
+        val after = (result as ClubActivityResult.Success).character
+        assertTrue(after.stats.money > captain.stats.money)
+        assertFalse(after.education.clubMajorEventReady)
+    }
+
+    @Test
+    fun leaveSchoolClub_firedLowersHappinessAndReputation() {
+        val member = secondaryStudent().copy(
+            education = EducationState(
+                stage = SchoolStage.SECONDARY,
+                currentGrade = 1,
+                kcpePassed = true,
+                gpa = 2.5f,
+                schoolClub = SchoolClub.DRAMA,
+                clubRank = ClubRank.MEMBER,
+                clubSkill = 20,
+                clubPrestige = 10,
+                schoolReputation = 60
+            ),
+            stats = Stats(happiness = 55)
+        )
+        val fired = engine.leaveSchoolClub(member, fired = true)
+        assertNull(fired.education.schoolClub)
+        assertTrue(fired.stats.happiness < member.stats.happiness)
+        assertTrue(fired.education.schoolReputation < member.education.schoolReputation)
+        assertEquals(0, fired.education.clubSkill)
+    }
+
+    @Test
+    fun performClubActivity_alreadyDoneReturnsAlreadyDone() {
+        val student = secondaryStudent().copy(
+            education = EducationState(
+                stage = SchoolStage.SECONDARY,
+                currentGrade = 1,
+                kcpePassed = true,
+                gpa = 2.8f,
+                schoolClub = SchoolClub.MUSIC,
+                clubSkill = 40,
+                clubActivityDoneThisYear = true
+            )
+        )
+        assertEquals(ClubActivityResult.AlreadyDone, engine.performClubActivity(student))
+    }
+
+    @Test
+    fun performClubActivity_intenseGivesMoreSkillThanLight() {
+        val base = secondaryStudent().copy(
+            education = EducationState(
+                stage = SchoolStage.SECONDARY,
+                currentGrade = 1,
+                kcpePassed = true,
+                gpa = 2.8f,
+                schoolClub = SchoolClub.MUSIC,
+                clubSkill = 20,
+                clubPrestige = 20,
+                clubActivityDoneThisYear = false
+            ),
+            stats = Stats(happiness = 50, health = 80, smarts = 60)
+        )
+        var lightGain = 0
+        var intenseGain = 0
+        repeat(40) {
+            when (
+                val light = engine.performClubActivity(
+                    base,
+                    com.maisha.game.data.model.ClubPracticeIntensity.LIGHT
+                )
+            ) {
+                is ClubActivityResult.Success ->
+                    lightGain += light.character.education.clubSkill - base.education.clubSkill
+                else -> Unit
+            }
+            when (
+                val intense = engine.performClubActivity(
+                    base,
+                    com.maisha.game.data.model.ClubPracticeIntensity.INTENSE
+                )
+            ) {
+                is ClubActivityResult.Success ->
+                    intenseGain += intense.character.education.clubSkill - base.education.clubSkill
+                else -> Unit
+            }
+        }
+        assertTrue("Intense practice should outpace light on average", intenseGain > lightGain)
+    }
+
+    @Test
+    fun hostClubFundraiser_officerRaisesCash() {
+        val officer = secondaryStudent().copy(
+            education = EducationState(
+                stage = SchoolStage.SECONDARY,
+                currentGrade = 2,
+                kcpePassed = true,
+                gpa = 3.0f,
+                schoolClub = SchoolClub.DEBATE,
+                clubRank = ClubRank.OFFICER,
+                clubSkill = 50,
+                clubPrestige = 40
+            ),
+            stats = Stats(money = 500, happiness = 50)
+        )
+        val result = engine.hostClubFundraiser(officer)
+        assertTrue(result is ClubActivityResult.Success)
+        val after = (result as ClubActivityResult.Success).character
+        assertTrue(after.stats.money > officer.stats.money)
+        assertTrue(after.education.clubFundraiserDoneThisYear)
+        assertEquals(ClubActivityResult.AlreadyDone, engine.hostClubFundraiser(after))
+    }
+
+    @Test
+    fun claimClubMajorEvent_incrementsAwardsAndScholarshipEstimate() {
+        val captain = secondaryStudent().copy(
+            education = EducationState(
+                stage = SchoolStage.SECONDARY,
+                currentGrade = 3,
+                kcpePassed = true,
+                gpa = 3.2f,
+                schoolClub = SchoolClub.CODING,
+                clubRank = ClubRank.CAPTAIN,
+                clubSkill = 90,
+                clubPrestige = 80,
+                clubMajorEventReady = true,
+                clubYearsAsCaptain = 1
+            ),
+            stats = Stats(money = 1_000, happiness = 50, health = 70, smarts = 80)
+        )
+        var awards = 0
+        repeat(20) {
+            val attempt = captain.copy(
+                education = captain.education.copy(clubMajorEventReady = true, clubAwardsWon = 0)
+            )
+            when (val result = engine.claimClubMajorEvent(attempt)) {
+                is ClubActivityResult.Success -> {
+                    if (result.character.education.clubAwardsWon > 0) {
+                        awards = result.character.education.clubAwardsWon
+                        assertTrue(engine.clubScholarshipEstimate(result.character) > 0)
+                    }
+                }
+                else -> Unit
+            }
+        }
+        assertTrue("High-skill captain should win awards sometimes", awards > 0)
+    }
+
+    @Test
+    fun leaveSchoolClub_preservesAwardsOnResume() {
+        val member = secondaryStudent().copy(
+            education = EducationState(
+                stage = SchoolStage.SECONDARY,
+                currentGrade = 1,
+                kcpePassed = true,
+                gpa = 2.5f,
+                schoolClub = SchoolClub.FOOTBALL,
+                clubAwardsWon = 2,
+                clubYearsAsCaptain = 1,
+                schoolReputation = 60
+            ),
+            stats = Stats(happiness = 55, health = 70)
+        )
+        val left = engine.leaveSchoolClub(member, fired = false)
+        assertNull(left.education.schoolClub)
+        assertEquals(2, left.education.clubAwardsWon)
+        assertEquals(SchoolClub.FOOTBALL, left.education.clubResumeClub)
+        assertTrue(engine.clubScholarshipEstimate(left) > 0)
+    }
+
+    private fun secondaryStudent() = TestFixtures.character(
+        age = 15,
+        education = EducationState(
+            stage = SchoolStage.SECONDARY,
+            currentGrade = 1,
+            kcpePassed = true,
+            gpa = 2.8f
+        ),
+        stats = Stats(happiness = 50, health = 70, smarts = 60)
+    )
 }

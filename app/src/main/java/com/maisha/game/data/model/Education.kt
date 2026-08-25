@@ -29,6 +29,25 @@ enum class SchoolClub {
     MUSIC
 }
 
+/**
+ * Progression rank inside a [SchoolClub].
+ * Display titles vary by club (e.g. Starter vs Treasurer, Captain vs President).
+ */
+@Serializable
+enum class ClubRank {
+    MEMBER,
+    OFFICER,
+    CAPTAIN
+}
+
+/** How hard the player practices during a club activity this year. */
+@Serializable
+enum class ClubPracticeIntensity {
+    LIGHT,
+    NORMAL,
+    INTENSE
+}
+
 /** University majors offered after secondary exams. */
 @Serializable
 enum class UniversityMajor(val courseLabel: String) {
@@ -175,6 +194,23 @@ data class EducationState(
     val plannedStudyEffort: StudyEffort = StudyEffort.NORMAL,
     /** Active extracurricular while in upper primary or secondary. */
     val schoolClub: SchoolClub? = null,
+    val clubRank: ClubRank = ClubRank.MEMBER,
+    /** Ability / performance inside the active club (0–100). */
+    val clubSkill: Int = 0,
+    /** Standing of the club / your contribution (0–100). */
+    val clubPrestige: Int = 0,
+    /** Club practice / activity used this year. */
+    val clubActivityDoneThisYear: Boolean = false,
+    /** Captain/President unlocked a major yearly showcase event. */
+    val clubMajorEventReady: Boolean = false,
+    /** Championships / fairs won — persists after leaving school for scholarships & careers. */
+    val clubAwardsWon: Int = 0,
+    /** Years spent as Team Captain / President (cumulative). */
+    val clubYearsAsCaptain: Int = 0,
+    /** Last club remembered on the resume after membership ends. */
+    val clubResumeClub: SchoolClub? = null,
+    /** Officer+ fundraiser used this year. */
+    val clubFundraiserDoneThisYear: Boolean = false,
     val schoolPeople: List<SchoolPerson> = emptyList(),
     val schoolReputation: Int = 50,
     /** Academic school activity used this year (study group, library, project…). */

@@ -2,7 +2,7 @@
 
 > **Purpose:** Paste this document (or point an AI agent at it) at the start of any new session so the assistant understands **what Maisha is**, **what has already been built**, **what just shipped**, **what is still missing**, and **how to work in this repo without undoing progress**.
 >
-> **Last updated:** 2026-08-25 (after school-life rewrite commit `56091a4`)  
+> **Last updated:** 2026-08-25 (school clubs extracurricular depth)  
 > **Repo path:** `/home/dr-rank/Documents/Apps/Life-simulator`  
 > **Remote:** `https://github.com/stewiriffin/Life-simulator` (`origin/main`)  
 > **Package:** `com.maisha.game`
@@ -140,7 +140,7 @@ School is **not** its own bottom tab. It lives under **Career**, category **SCHO
 
 1. **Education** card — stage, GPA, study effort, drop out  
 2. **School life** card — reputation, classmates/teachers, activities  
-3. **School clubs** card — debate / football / drama / coding / music  
+3. **School clubs** card — Debate / Football / Drama / Coding / Music with ranks (Member → Treasurer/Starter → President/Team Captain), skill & prestige bars, Light/Normal/Intense practice, officer fundraisers, captain major events, awards/scholarship resume  
 4. Career tracks, jobs, business, politics elsewhere in the same screen  
 
 ---
@@ -324,6 +324,9 @@ Newest first:
 
 | Commit | Meaning |
 |--------|---------|
+| `f05d8e0` | School clubs BitLife depth: ranks, intensity, awards, fundraisers, scholarships |
+| `1633d57` | Gamified exams: prep, stress, cheat stakes |
+| `5546774` | BitLife-style school person profiles and interactions |
 | `56091a4` | School life rewrite: classmates, activities, events, Career UI |
 | `d043fa7` | Wave 4 depth events (work, love, crime, family/hobbies/hustles) |
 | `b010245` … `eaf0adf` | Stats picker UX (icons, sliders, presets, budget) |

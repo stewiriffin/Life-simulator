@@ -33,6 +33,7 @@ import com.maisha.game.data.model.SchoolStage
 import com.maisha.game.data.model.CareerTrack
 import com.maisha.game.data.model.PrisonActivity
 import com.maisha.game.data.model.SchoolClub
+import com.maisha.game.data.model.ClubPracticeIntensity
 import com.maisha.game.data.model.StudyEffort
 import com.maisha.game.data.model.Stats
 import com.maisha.game.domain.AdoptPetResult
@@ -62,9 +63,10 @@ import com.maisha.game.domain.PetCareAction
 import com.maisha.game.domain.PetCareResult
 import com.maisha.game.domain.ProposalResult
 import com.maisha.game.domain.SeekFriendshipResult
+import com.maisha.game.domain.ClubActivityResult
+import com.maisha.game.domain.ExamPrepResult
 import com.maisha.game.domain.SchoolActionResult
 import com.maisha.game.domain.SchoolInteractionResult
-import com.maisha.game.domain.ExamPrepResult
 import com.maisha.game.domain.StartDatingResult
 import com.maisha.game.domain.PurchaseResult
 import com.maisha.game.domain.RepairResult
@@ -914,6 +916,125 @@ class LifeViewModel @Inject constructor(
                 _uiState.update {
                     it.copy(careerMessage = context.getString(R.string.msg_club_join_failed))
                 }
+            }
+        }
+    }
+
+    fun onPerformClubActivity(intensity: ClubPracticeIntensity = ClubPracticeIntensity.NORMAL) {
+        val character = _uiState.value.character ?: return
+        if (!character.alive) return
+        viewModelScope.launch {
+            when (val result = gameEngine.performClubActivity(character, intensity)) {
+                is ClubActivityResult.Success -> {
+                    persist(result.character)
+                    processMidLifeAchievements(result.character)
+                    _uiState.update {
+                        it.copy(
+                            character = result.character,
+                            careerMessage = result.message,
+                            netWorth = financeEngine.calculateNetWorth(result.character),
+                            headerExpression = ExpressionResolver.resolveExpression(result.character, null)
+                        )
+                    }
+                }
+                is ClubActivityResult.Dropped -> {
+                    persist(result.character)
+                    _uiState.update {
+                        it.copy(
+                            character = result.character,
+                            careerMessage = result.message,
+                            netWorth = financeEngine.calculateNetWorth(result.character),
+                            headerExpression = ExpressionResolver.resolveExpression(result.character, null)
+                        )
+                    }
+                }
+                ClubActivityResult.AlreadyDone -> {
+                    _uiState.update {
+                        it.copy(careerMessage = context.getString(R.string.msg_club_activity_already_done))
+                    }
+                }
+                ClubActivityResult.Ineligible -> {
+                    _uiState.update {
+                        it.copy(careerMessage = context.getString(R.string.msg_club_activity_ineligible))
+                    }
+                }
+            }
+        }
+    }
+
+    fun onClaimClubMajorEvent() {
+        val character = _uiState.value.character ?: return
+        if (!character.alive) return
+        viewModelScope.launch {
+            when (val result = gameEngine.claimClubMajorEvent(character)) {
+                is ClubActivityResult.Success -> {
+                    persist(result.character)
+                    processMidLifeAchievements(result.character)
+                    _uiState.update {
+                        it.copy(
+                            character = result.character,
+                            careerMessage = result.message,
+                            netWorth = financeEngine.calculateNetWorth(result.character),
+                            headerExpression = ExpressionResolver.resolveExpression(result.character, null)
+                        )
+                    }
+                }
+                ClubActivityResult.AlreadyDone -> {
+                    _uiState.update {
+                        it.copy(careerMessage = context.getString(R.string.msg_club_event_already_done))
+                    }
+                }
+                else -> {
+                    _uiState.update {
+                        it.copy(careerMessage = context.getString(R.string.msg_club_event_ineligible))
+                    }
+                }
+            }
+        }
+    }
+
+    fun onHostClubFundraiser() {
+        val character = _uiState.value.character ?: return
+        if (!character.alive) return
+        viewModelScope.launch {
+            when (val result = gameEngine.hostClubFundraiser(character)) {
+                is ClubActivityResult.Success -> {
+                    persist(result.character)
+                    processMidLifeAchievements(result.character)
+                    _uiState.update {
+                        it.copy(
+                            character = result.character,
+                            careerMessage = result.message,
+                            netWorth = financeEngine.calculateNetWorth(result.character),
+                            headerExpression = ExpressionResolver.resolveExpression(result.character, null)
+                        )
+                    }
+                }
+                ClubActivityResult.AlreadyDone -> {
+                    _uiState.update {
+                        it.copy(careerMessage = context.getString(R.string.msg_club_fundraiser_already_done))
+                    }
+                }
+                else -> {
+                    _uiState.update {
+                        it.copy(careerMessage = context.getString(R.string.msg_club_fundraiser_ineligible))
+                    }
+                }
+            }
+        }
+    }
+
+    fun onLeaveSchoolClub() {
+        val character = _uiState.value.character ?: return
+        if (!character.alive) return
+        viewModelScope.launch {
+            val updated = gameEngine.leaveSchoolClub(character)
+            persist(updated)
+            _uiState.update {
+                it.copy(
+                    character = updated,
+                    careerMessage = context.getString(R.string.msg_club_left)
+                )
             }
         }
     }

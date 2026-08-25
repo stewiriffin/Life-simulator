@@ -9,6 +9,7 @@ import com.maisha.game.data.model.AssetType
 import com.maisha.game.data.model.AchievementProgress
 import com.maisha.game.data.model.AvatarConfig
 import com.maisha.game.data.model.Character
+import com.maisha.game.data.model.ClubPracticeIntensity
 import com.maisha.game.data.model.EventChoice
 import com.maisha.game.data.model.ExamType
 import com.maisha.game.data.model.EyewearStyle
@@ -758,6 +759,21 @@ class GameEngine @Inject constructor(
 
     fun joinSchoolClub(character: Character, club: com.maisha.game.data.model.SchoolClub): Character =
         educationEngine.joinSchoolClub(character, club)
+
+    fun performClubActivity(
+        character: Character,
+        intensity: ClubPracticeIntensity = ClubPracticeIntensity.NORMAL
+    ): ClubActivityResult =
+        educationEngine.performClubActivity(character, intensity)
+
+    fun claimClubMajorEvent(character: Character): ClubActivityResult =
+        educationEngine.claimClubMajorEvent(character)
+
+    fun hostClubFundraiser(character: Character): ClubActivityResult =
+        educationEngine.hostClubFundraiser(character)
+
+    fun leaveSchoolClub(character: Character): Character =
+        educationEngine.leaveSchoolClub(character, fired = false)
 
     fun performSchoolActivity(
         character: Character,

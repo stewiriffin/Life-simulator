@@ -71,6 +71,8 @@ import com.maisha.game.data.model.PoliticalOffice
 import com.maisha.game.data.model.SchoolStage
 import com.maisha.game.data.model.TaxPolicyType
 import com.maisha.game.data.model.CareerTrack
+import com.maisha.game.data.model.ClubPracticeIntensity
+import com.maisha.game.data.model.ClubRank
 import com.maisha.game.data.model.ExamPrepChoice
 import com.maisha.game.data.model.SchoolActivity
 import com.maisha.game.data.model.SchoolClub
@@ -151,6 +153,10 @@ fun CareerScreen(
     onSetStudyEffort: (StudyEffort) -> Unit,
     onSyncExamSchedule: () -> Unit = {},
     onJoinSchoolClub: (SchoolClub) -> Unit,
+    onPerformClubActivity: (ClubPracticeIntensity) -> Unit = {},
+    onClaimClubMajorEvent: () -> Unit = {},
+    onHostClubFundraiser: () -> Unit = {},
+    onLeaveSchoolClub: () -> Unit = {},
     onPerformSchoolActivity: (SchoolActivity, String?) -> Unit = { _, _ -> },
     onSchoolPersonInteraction: (String, SchoolPersonAction) -> Unit = { _, _ -> },
     onExamPrepChoice: (ExamPrepChoice) -> Unit = {},
@@ -463,7 +469,11 @@ fun CareerScreen(
                 ) {
                     SchoolClubSectionCard(
                         character = character,
-                        onJoinSchoolClub = onJoinSchoolClub
+                        onJoinSchoolClub = onJoinSchoolClub,
+                        onPerformClubActivity = onPerformClubActivity,
+                        onClaimClubMajorEvent = onClaimClubMajorEvent,
+                        onHostClubFundraiser = onHostClubFundraiser,
+                        onLeaveSchoolClub = onLeaveSchoolClub
                     )
                 }
                 item(
@@ -1725,7 +1735,11 @@ private fun peopleForActivity(character: Character, activity: SchoolActivity): L
 @Composable
 private fun SchoolClubSectionCard(
     character: Character,
-    onJoinSchoolClub: (SchoolClub) -> Unit
+    onJoinSchoolClub: (SchoolClub) -> Unit,
+    onPerformClubActivity: (ClubPracticeIntensity) -> Unit,
+    onClaimClubMajorEvent: () -> Unit,
+    onHostClubFundraiser: () -> Unit,
+    onLeaveSchoolClub: () -> Unit
 ) {
     val eligible = character.age in EducationEngine.SCHOOL_CLUB_MIN_AGE..EducationEngine.SCHOOL_CLUB_MAX_AGE &&
         !character.education.expelled &&
@@ -1733,6 +1747,13 @@ private fun SchoolClubSectionCard(
         (character.education.stage == SchoolStage.SECONDARY ||
             (character.education.stage == SchoolStage.PRIMARY && character.education.currentGrade >= 6))
     if (!eligible) return
+
+    val activeClub = character.education.schoolClub
+    val rankTitle = activeClub?.let {
+        schoolUiEngine.clubRankTitle(it, character.education.clubRank)
+    }
+    var intensity by remember { mutableStateOf(ClubPracticeIntensity.NORMAL) }
+    val scholarshipHint = schoolUiEngine.clubScholarshipEstimate(character)
 
     Card(
         modifier = Modifier.fillMaxWidth(),
@@ -1745,14 +1766,177 @@ private fun SchoolClubSectionCard(
                 style = MaterialTheme.typography.labelMedium,
                 color = GoldAccent
             )
-            character.education.schoolClub?.let { active ->
-                Spacer(modifier = Modifier.height(6.dp))
+            Text(
+                text = stringResource(R.string.club_manage_hint),
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.padding(top = 2.dp, bottom = 8.dp)
+            )
+
+            if (activeClub != null && rankTitle != null) {
+                Card(
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(12.dp),
+                    colors = CardDefaults.cardColors(
+                        containerColor = TealPrimary.copy(alpha = 0.08f)
+                    )
+                ) {
+                    Column(modifier = Modifier.padding(12.dp)) {
+                        Text(
+                            text = stringResource(
+                                R.string.format_club_status,
+                                schoolClubLabel(activeClub),
+                                rankTitle
+                            ),
+                            style = MaterialTheme.typography.titleSmall,
+                            fontWeight = FontWeight.SemiBold
+                        )
+                        if (character.education.clubAwardsWon > 0 ||
+                            character.education.clubYearsAsCaptain > 0
+                        ) {
+                            Spacer(modifier = Modifier.height(4.dp))
+                            Text(
+                                text = stringResource(
+                                    R.string.format_club_resume,
+                                    character.education.clubAwardsWon,
+                                    character.education.clubYearsAsCaptain
+                                ),
+                                style = MaterialTheme.typography.labelSmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
+                        if (scholarshipHint > 0) {
+                            Spacer(modifier = Modifier.height(2.dp))
+                            Text(
+                                text = stringResource(
+                                    R.string.format_club_scholarship_hint,
+                                    formatMoney(scholarshipHint, character.countryCode)
+                                ),
+                                style = MaterialTheme.typography.labelSmall,
+                                color = GoldAccent
+                            )
+                        }
+                        Spacer(modifier = Modifier.height(8.dp))
+                        StatBar(
+                            type = StatType.SMARTS,
+                            value = character.education.clubSkill,
+                            label = stringResource(R.string.label_club_skill)
+                        )
+                        Spacer(modifier = Modifier.height(6.dp))
+                        StatBar(
+                            type = StatType.HAPPINESS,
+                            value = character.education.clubPrestige,
+                            label = stringResource(R.string.label_club_prestige)
+                        )
+                        if (character.education.clubRank == ClubRank.CAPTAIN) {
+                            Spacer(modifier = Modifier.height(6.dp))
+                            Text(
+                                text = stringResource(
+                                    R.string.format_club_major_event,
+                                    schoolUiEngine.clubMajorEventTitle(activeClub)
+                                ),
+                                style = MaterialTheme.typography.labelSmall,
+                                color = GoldAccent
+                            )
+                        }
+                        Spacer(modifier = Modifier.height(10.dp))
+                        Text(
+                            text = stringResource(R.string.label_club_intensity),
+                            style = MaterialTheme.typography.labelSmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                        Spacer(modifier = Modifier.height(4.dp))
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.spacedBy(6.dp)
+                        ) {
+                            ClubPracticeIntensity.entries.forEach { option ->
+                                FilterChip(
+                                    selected = intensity == option,
+                                    onClick = { intensity = option },
+                                    enabled = !character.education.clubActivityDoneThisYear,
+                                    label = {
+                                        Text(
+                                            when (option) {
+                                                ClubPracticeIntensity.LIGHT ->
+                                                    stringResource(R.string.club_intensity_light)
+                                                ClubPracticeIntensity.NORMAL ->
+                                                    stringResource(R.string.club_intensity_normal)
+                                                ClubPracticeIntensity.INTENSE ->
+                                                    stringResource(R.string.club_intensity_intense)
+                                            },
+                                            maxLines = 1
+                                        )
+                                    },
+                                    modifier = Modifier.weight(1f)
+                                )
+                            }
+                        }
+                        Spacer(modifier = Modifier.height(8.dp))
+                        Button(
+                            onClick = { onPerformClubActivity(intensity) },
+                            enabled = !character.education.clubActivityDoneThisYear,
+                            modifier = Modifier.fillMaxWidth(),
+                            shape = RoundedCornerShape(12.dp),
+                            colors = ButtonDefaults.buttonColors(containerColor = TealPrimary)
+                        ) {
+                            Text(
+                                if (character.education.clubActivityDoneThisYear) {
+                                    stringResource(R.string.btn_club_practiced)
+                                } else {
+                                    stringResource(R.string.btn_club_practice)
+                                }
+                            )
+                        }
+                        if (character.education.clubRank.ordinal >= ClubRank.OFFICER.ordinal) {
+                            Spacer(modifier = Modifier.height(6.dp))
+                            OutlinedButton(
+                                onClick = onHostClubFundraiser,
+                                enabled = !character.education.clubFundraiserDoneThisYear,
+                                modifier = Modifier.fillMaxWidth(),
+                                shape = RoundedCornerShape(12.dp)
+                            ) {
+                                Text(
+                                    if (character.education.clubFundraiserDoneThisYear) {
+                                        stringResource(R.string.btn_club_fundraiser_done)
+                                    } else {
+                                        stringResource(R.string.btn_club_fundraiser)
+                                    }
+                                )
+                            }
+                        }
+                        if (character.education.clubMajorEventReady &&
+                            character.education.clubRank == ClubRank.CAPTAIN
+                        ) {
+                            Spacer(modifier = Modifier.height(6.dp))
+                            Button(
+                                onClick = onClaimClubMajorEvent,
+                                modifier = Modifier.fillMaxWidth(),
+                                shape = RoundedCornerShape(12.dp),
+                                colors = ButtonDefaults.buttonColors(containerColor = GoldAccent)
+                            ) {
+                                Text(stringResource(R.string.btn_club_major_event))
+                            }
+                        }
+                        Spacer(modifier = Modifier.height(6.dp))
+                        OutlinedButton(
+                            onClick = onLeaveSchoolClub,
+                            modifier = Modifier.fillMaxWidth(),
+                            shape = RoundedCornerShape(12.dp)
+                        ) {
+                            Text(stringResource(R.string.btn_club_leave))
+                        }
+                    }
+                }
+                Spacer(modifier = Modifier.height(10.dp))
                 Text(
-                    text = stringResource(R.string.format_active_club, schoolClubLabel(active)),
-                    style = MaterialTheme.typography.bodyMedium
+                    text = stringResource(R.string.club_switch_hint),
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
+                Spacer(modifier = Modifier.height(6.dp))
             }
-            Spacer(modifier = Modifier.height(8.dp))
+
             Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
                 Row(
                     modifier = Modifier.fillMaxWidth(),
