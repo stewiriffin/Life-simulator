@@ -134,6 +134,7 @@ class GameEngine @Inject constructor(
         if (incarceratedAtYearStart) {
             // Education and career progression skipped while incarcerated.
         } else {
+            updatedCharacter = educationEngine.tickSchoolYear(updatedCharacter)
             updatedCharacter = educationEngine.enrollIfEligible(updatedCharacter)
             updatedCharacter = processEducationProgression(updatedCharacter, preStage)
             updatedCharacter = processCareerProgression(updatedCharacter)
@@ -745,6 +746,15 @@ class GameEngine @Inject constructor(
 
     fun joinSchoolClub(character: Character, club: com.maisha.game.data.model.SchoolClub): Character =
         educationEngine.joinSchoolClub(character, club)
+
+    fun performSchoolActivity(
+        character: Character,
+        activity: com.maisha.game.data.model.SchoolActivity,
+        targetPersonId: String? = null
+    ): SchoolActionResult = educationEngine.performSchoolActivity(character, activity, targetPersonId)
+
+    fun availableSchoolActivities(character: Character): List<com.maisha.game.data.model.SchoolActivity> =
+        educationEngine.availableSchoolActivities(character)
 
     fun startCareerTrack(character: Character, track: com.maisha.game.data.model.CareerTrack): Character =
         careerEngine.startCareerTrack(character, track)

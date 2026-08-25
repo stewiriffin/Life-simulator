@@ -1,0 +1,254 @@
+{
+  "events": [
+    {
+      "id": "school_life_best_friend_secret",
+      "minAge": 8,
+      "maxAge": 17,
+      "text": "Your closest classmate pulls you aside after the bell and asks you to keep a secret about something that happened at home.",
+      "weight": 5,
+      "tags": ["education", "positive"],
+      "choices": [
+        {
+          "label": "Listen and keep it quiet",
+          "statEffects": { "happiness": 3, "karma": 3 },
+          "resultText": "They trust you more. At school, that kind of loyalty gets noticed."
+        },
+        {
+          "label": "Tell them to talk to a teacher",
+          "statEffects": { "smarts": 2, "karma": 2 },
+          "resultText": "You push them toward help. It feels heavy, but adult, and they don't hate you for it."
+        },
+        {
+          "label": "Gossip about it later",
+          "statEffects": { "happiness": -2, "karma": -4 },
+          "resultText": "Word spreads by lunch. Your reputation takes a hit with people who matter."
+        }
+      ]
+    },
+    {
+      "id": "school_life_group_project_freeloader",
+      "minAge": 11,
+      "maxAge": 22,
+      "text": "Your group project partner has done almost nothing. Presentation day is tomorrow and the slides are a mess.",
+      "weight": 6,
+      "tags": ["education"],
+      "choices": [
+        {
+          "label": "Stay up late and finish it yourself",
+          "statEffects": { "smarts": 3, "happiness": -2, "health": -1 },
+          "resultText": "You carry the grade. The teacher praises the work — and somehow your partner still takes credit."
+        },
+        {
+          "label": "Confront them and split the work now",
+          "statEffects": { "happiness": 1, "smarts": 1 },
+          "resultText": "It's awkward, but they scramble. The project is average and fair."
+        },
+        {
+          "label": "Tell the teacher the truth",
+          "statEffects": { "karma": 2, "happiness": -1 },
+          "resultText": "Staff intervene. You look responsible — and a little lonely at lunch for a week."
+        }
+      ]
+    },
+    {
+      "id": "school_life_teacher_favorite",
+      "minAge": 9,
+      "maxAge": 18,
+      "text": "A teacher starts calling on you more and praising your answers. Other students notice — and not all of them smile about it.",
+      "weight": 4,
+      "tags": ["education", "positive"],
+      "choices": [
+        {
+          "label": "Lean into it and ask for extra work",
+          "statEffects": { "smarts": 4, "happiness": 1 },
+          "resultText": "Your grades climb. A few classmates roll their eyes, but staff clearly respect you."
+        },
+        {
+          "label": "Downplay it so you don't get targeted",
+          "statEffects": { "happiness": 2, "karma": 1 },
+          "resultText": "You keep the peace. You still learn, just with less spotlight."
+        },
+        {
+          "label": "Use the attention to mock a rival",
+          "statEffects": { "happiness": 1, "karma": -3 },
+          "resultText": "You score a cheap laugh. The teacher looks disappointed, and so do people you like."
+        }
+      ]
+    },
+    {
+      "id": "school_life_crush_locker",
+      "minAge": 13,
+      "maxAge": 18,
+      "text": "You catch your crush laughing at something you said in class. After school they linger near your locker like they might say hello.",
+      "weight": 5,
+      "tags": ["education", "positive"],
+      "choices": [
+        {
+          "label": "Walk over and talk",
+          "statEffects": { "happiness": 5, "looks": 1 },
+          "resultText": "It's awkward for thirty seconds, then easy. School feels brighter the rest of the week."
+        },
+        {
+          "label": "Smile and keep walking",
+          "statEffects": { "happiness": 1 },
+          "resultText": "Safe. Also unfinished. You replay the moment all evening."
+        },
+        {
+          "label": "Panic and hide behind friends",
+          "statEffects": { "happiness": -1 },
+          "resultText": "Your friends tease you for days. The crush probably didn't even notice — you hope."
+        }
+      ]
+    },
+    {
+      "id": "school_life_bully_escalates",
+      "minAge": 8,
+      "maxAge": 16,
+      "text": "The school bully corners you between buildings and demands your lunch money — or worse, your dignity in front of a crowd.",
+      "weight": 5,
+      "tags": ["education", "negative"],
+      "choices": [
+        {
+          "label": "Stand your ground",
+          "statEffects": { "happiness": 2, "health": -2 },
+          "resultText": "It gets rough, but people stop laughing. Word spreads that you don't fold."
+        },
+        {
+          "label": "Walk away and tell staff",
+          "statEffects": { "smarts": 2, "karma": 2 },
+          "resultText": "Adults finally get involved. Detention for them; quiet respect for you."
+        },
+        {
+          "label": "Hand over what they want",
+          "statEffects": { "happiness": -4, "money": -200 },
+          "resultText": "It's over quickly. The shame lasts longer than the cash."
+        }
+      ]
+    },
+    {
+      "id": "school_life_detention_rumor",
+      "minAge": 12,
+      "maxAge": 18,
+      "text": "Someone starts a rumor that you got detention for cheating — even if you didn't. The hallway chatter is loud.",
+      "weight": 4,
+      "tags": ["education", "negative"],
+      "choices": [
+        {
+          "label": "Ignore it and keep your grades clean",
+          "statEffects": { "smarts": 2, "karma": 1 },
+          "resultText": "The rumor dies without fuel. Your next test score does the talking."
+        },
+        {
+          "label": "Confront the rumor-starter",
+          "statEffects": { "happiness": 1, "health": -1 },
+          "resultText": "It gets heated. Some people believe you more; some just enjoy the drama."
+        },
+        {
+          "label": "Lean into the bad-kid image",
+          "statEffects": { "happiness": 2, "karma": -2, "smarts": -1 },
+          "resultText": "You get a few laughs and lose a little staff goodwill. Reputation is a strange currency."
+        }
+      ]
+    },
+    {
+      "id": "school_life_club_showcase",
+      "minAge": 12,
+      "maxAge": 17,
+      "text": "Your school club has a showcase night. Parents, teachers, and half the student body will be watching.",
+      "weight": 4,
+      "tags": ["education", "positive"],
+      "choices": [
+        {
+          "label": "Practice hard and take a lead role",
+          "statEffects": { "happiness": 4, "smarts": 2, "looks": 1 },
+          "resultText": "You shine. A teacher suggests you keep going with this outside school."
+        },
+        {
+          "label": "Help backstage and support the team",
+          "statEffects": { "happiness": 3, "karma": 2 },
+          "resultText": "Nobody cheers your name, but the club runs smoothly because of you."
+        },
+        {
+          "label": "Skip it and hang out elsewhere",
+          "statEffects": { "happiness": 1, "karma": -1 },
+          "resultText": "You miss the night. The group notices — and so does your club advisor."
+        }
+      ]
+    },
+    {
+      "id": "school_life_exam_week_pressure",
+      "minAge": 14,
+      "maxAge": 22,
+      "text": "Exam week hits like a wall. Everyone is tired, caffeinated, and one bad night away from melting down.",
+      "weight": 6,
+      "tags": ["education"],
+      "choices": [
+        {
+          "label": "Build a study schedule and stick to it",
+          "statEffects": { "smarts": 4, "happiness": -1 },
+          "resultText": "Boring works. You walk into the hall knowing the material."
+        },
+        {
+          "label": "Cram with friends overnight",
+          "statEffects": { "smarts": 2, "happiness": 2, "health": -2 },
+          "resultText": "You learn some things and forget others. Bonding helps the stress, not the sleep."
+        },
+        {
+          "label": "Give up and wing it",
+          "statEffects": { "happiness": 1, "smarts": -2 },
+          "resultText": "Freedom feels good until the first question. Then it doesn't."
+        }
+      ]
+    },
+    {
+      "id": "school_life_new_transfer_student",
+      "minAge": 7,
+      "maxAge": 17,
+      "text": "A transfer student sits alone at lunch looking lost. A few people stare; nobody moves.",
+      "weight": 4,
+      "tags": ["education", "positive"],
+      "choices": [
+        {
+          "label": "Invite them to sit with you",
+          "statEffects": { "happiness": 3, "karma": 3 },
+          "resultText": "They smile like they haven't in weeks. School gets a little bigger for both of you."
+        },
+        {
+          "label": "Point them toward a teacher",
+          "statEffects": { "karma": 1 },
+          "resultText": "Helpful, distant. You did something — just not the hard part."
+        },
+        {
+          "label": "Pretend you didn't notice",
+          "statEffects": { "happiness": -1, "karma": -1 },
+          "resultText": "You eat in peace. The quiet still feels wrong."
+        }
+      ]
+    },
+    {
+      "id": "school_life_university_office_hours",
+      "minAge": 18,
+      "maxAge": 25,
+      "text": "A professor's office hours are open. Your assignment is confusing and the lecture notes don't fill the gap.",
+      "weight": 5,
+      "tags": ["education", "positive"],
+      "choices": [
+        {
+          "label": "Go and ask focused questions",
+          "statEffects": { "smarts": 4, "happiness": 1 },
+          "resultText": "They clarify the hard part in ten minutes. You leave feeling like a real student."
+        },
+        {
+          "label": "Email a vague cry for help",
+          "statEffects": { "smarts": 1 },
+          "resultText": "You get a polite reply pointing back to the syllabus. Progress: minimal."
+        },
+        {
+          "label": "Skip it and copy from a friend",
+          "statEffects": { "smarts": -1, "karma": -2, "happiness": 1 },
+          "resultText": "You submit something. Understanding it is a problem for future-you."
+        }
+      ]
+    }
+  ]
+}

@@ -53,6 +53,47 @@ data class ExamResult(
     val score: Float
 )
 
+/** People you meet and interact with while enrolled. */
+@Serializable
+enum class SchoolRole {
+    CLASSMATE,
+    BEST_CLASSMATE,
+    BULLY,
+    TEACHER,
+    CRUSH
+}
+
+/**
+ * A named school NPC (classmate, bully, crush, or teacher).
+ * Cleared when you leave school / graduate.
+ */
+@Serializable
+data class SchoolPerson(
+    val id: String,
+    val name: String,
+    val role: SchoolRole,
+    val gender: Gender = Gender.MALE,
+    val age: Int,
+    val relationshipLevel: Int = 50,
+    val subject: String? = null,
+    val avatarConfig: AvatarConfig = AvatarConfig.DEFAULT,
+    val interactedThisYear: Boolean = false
+)
+
+/** Player-driven school activities (one academic + one social per year). */
+@Serializable
+enum class SchoolActivity {
+    STUDY_GROUP,
+    LIBRARY_STUDY,
+    ASK_TEACHER_HELP,
+    HANG_OUT,
+    CONFRONT_BULLY,
+    SKIP_CLASS,
+    SCHOOL_DANCE,
+    CLUB_PRACTICE,
+    GROUP_PROJECT
+}
+
 /**
  * School progression for a [Character].
  *
@@ -62,6 +103,8 @@ data class ExamResult(
  * @property droppedOutFrom Stage voluntarily left (SECONDARY or UNIVERSITY); blocks re-enrollment in that tier.
  * @property kcpePassed Primary exit exam pass flag; gates secondary enrollment at age 14.
  * @property kcseGrade Letter grade string; gates university via points threshold.
+ * @property schoolPeople Classmates, teachers, bullies, and crushes while enrolled.
+ * @property schoolReputation Standing with staff and peers (0–100).
  */
 @Serializable
 data class EducationState(
@@ -77,5 +120,12 @@ data class EducationState(
     /** Applied on the next grade advance during Age Up. */
     val plannedStudyEffort: StudyEffort = StudyEffort.NORMAL,
     /** Active extracurricular while in upper primary or secondary. */
-    val schoolClub: SchoolClub? = null
+    val schoolClub: SchoolClub? = null,
+    val schoolPeople: List<SchoolPerson> = emptyList(),
+    val schoolReputation: Int = 50,
+    /** Academic school activity used this year (study group, library, project…). */
+    val academicActionDoneThisYear: Boolean = false,
+    /** Social school activity used this year (hang out, dance, confront…). */
+    val socialActionDoneThisYear: Boolean = false,
+    val detentionYears: Int = 0
 )

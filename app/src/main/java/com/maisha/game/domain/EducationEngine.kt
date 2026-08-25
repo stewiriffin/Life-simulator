@@ -3,20 +3,28 @@ package com.maisha.game.domain
 
 import com.maisha.game.data.CountryCatalog
 import com.maisha.game.data.EconomyScaler
+import com.maisha.game.data.NamePool
+import com.maisha.game.data.model.AvatarConfig
 import com.maisha.game.data.model.Character
 import com.maisha.game.data.model.EducationState
 import com.maisha.game.data.model.EventChoice
 import com.maisha.game.data.model.ExamResult
 import com.maisha.game.data.model.ExamType
+import com.maisha.game.data.model.Gender
 import com.maisha.game.data.model.LifeEvent
+import com.maisha.game.data.model.SchoolActivity
 import com.maisha.game.data.model.SchoolClub
+import com.maisha.game.data.model.SchoolPerson
+import com.maisha.game.data.model.SchoolRole
 import com.maisha.game.data.model.SchoolStage
 import com.maisha.game.data.model.StudyEffort
 import com.maisha.game.data.model.UniversityMajor
 import com.maisha.game.data.model.VisaType
 import com.maisha.game.util.clampGpa
+import com.maisha.game.util.clampRelationshipLevel
 import com.maisha.game.util.clampStat
 import com.maisha.game.util.formatMoney
+import java.util.UUID
 import javax.inject.Inject
 import javax.inject.Singleton
 import kotlin.math.roundToInt
@@ -28,6 +36,13 @@ sealed class DrivingTestResult {
     data object TooYoung : DrivingTestResult()
     data object AlreadyLicensed : DrivingTestResult()
     data object InsufficientFunds : DrivingTestResult()
+}
+
+sealed class SchoolActionResult {
+    data class Success(val character: Character, val message: String) : SchoolActionResult()
+    data object Ineligible : SchoolActionResult()
+    data object AlreadyDone : SchoolActionResult()
+    data object PersonNotFound : SchoolActionResult()
 }
 
 @Singleton
@@ -45,30 +60,44 @@ class EducationEngine @Inject constructor(
         return when {
             character.age >= PRIMARY_ENROLL_AGE &&
                 education.stage == SchoolStage.NONE -> {
-                character.copy(
+                val enrolled = character.copy(
                     education = education.copy(
                         stage = SchoolStage.PRIMARY,
                         currentGrade = 1,
                         gpa = 2.0f,
-                        schoolName = randomPrimarySchool(character.countryCode)
+                        schoolName = randomPrimarySchool(character.countryCode),
+                        schoolReputation = 50,
+                        academicActionDoneThisYear = false,
+                        socialActionDoneThisYear = false
                     )
                 )
+                ensureSchoolRoster(enrolled)
             }
 
             character.age >= SECONDARY_ENROLL_AGE &&
                 education.kcpePassed == true &&
                 education.stage == SchoolStage.PRIMARY &&
                 education.droppedOutFrom != SchoolStage.SECONDARY -> {
-                character.copy(
+                val enrolled = character.copy(
                     education = education.copy(
                         stage = SchoolStage.SECONDARY,
                         currentGrade = 1,
-                        schoolName = randomSecondarySchool(character.countryCode)
+                        schoolName = randomSecondarySchool(character.countryCode),
+                        schoolReputation = (education.schoolReputation + 5).coerceIn(0, 100),
+                        academicActionDoneThisYear = false,
+                        socialActionDoneThisYear = false
                     )
                 )
+                ensureSchoolRoster(enrolled, forceRefresh = true)
             }
 
-            else -> character
+            else -> {
+                if (isEnrolled(character) && education.schoolPeople.isEmpty()) {
+                    ensureSchoolRoster(character)
+                } else {
+                    character
+                }
+            }
         }
     }
 
@@ -253,18 +282,45 @@ class EducationEngine @Inject constructor(
         }
 
         val nextGrade = updated.education.currentGrade + 1
+        val withEffort = applyUniversityStudyEffort(updated)
         return if (nextGrade > UNIVERSITY_YEARS) {
-            updated.copy(
-                education = updated.education.copy(
+            withEffort.copy(
+                education = withEffort.education.copy(
                     stage = SchoolStage.GRADUATED,
-                    currentGrade = UNIVERSITY_YEARS
+                    currentGrade = UNIVERSITY_YEARS,
+                    schoolPeople = emptyList(),
+                    schoolClub = null
+                ),
+                eventLog = EventLogCap.prepend(
+                    withEffort.eventLog,
+                    "You graduated from university."
                 )
             )
         } else {
-            updated.copy(
-                education = updated.education.copy(currentGrade = nextGrade)
+            withEffort.copy(
+                education = withEffort.education.copy(currentGrade = nextGrade)
             )
         }
+    }
+
+    private fun applyUniversityStudyEffort(character: Character): Character {
+        val effort = character.education.plannedStudyEffort
+        val smartsDelta = EffortResolver.studySmartsDelta(effort)
+        val happinessDelta = EffortResolver.studyHappinessDelta(effort)
+        val gpaDelta = EffortResolver.studyGpaDelta(effort)
+        return character.copy(
+            stats = character.stats.copy(
+                smarts = clampStat(character.stats.smarts + smartsDelta),
+                happiness = clampStat(character.stats.happiness + happinessDelta)
+            ),
+            education = character.education.copy(
+                gpa = if (character.education.gpa > 0f) {
+                    clampGpa(character.education.gpa + gpaDelta)
+                } else {
+                    clampGpa(2.0f + gpaDelta)
+                }
+            )
+        )
     }
 
     private fun domesticUniversityTuition(character: Character): Int {
@@ -377,13 +433,19 @@ class EducationEngine @Inject constructor(
             )
         }
 
-        return enrolled.copy(
-            education = enrolled.education.copy(
-                stage = SchoolStage.UNIVERSITY,
-                currentGrade = 1,
-                courseOfStudy = course,
-                schoolName = universityNameFor(universityCountryCode)
-            )
+        return ensureSchoolRoster(
+            enrolled.copy(
+                education = enrolled.education.copy(
+                    stage = SchoolStage.UNIVERSITY,
+                    currentGrade = 1,
+                    courseOfStudy = course,
+                    schoolName = universityNameFor(universityCountryCode),
+                    schoolClub = null,
+                    academicActionDoneThisYear = false,
+                    socialActionDoneThisYear = false
+                )
+            ),
+            forceRefresh = true
         )
     }
 
@@ -493,7 +555,11 @@ class EducationEngine @Inject constructor(
                 stage = SchoolStage.NONE,
                 currentGrade = 0,
                 schoolName = null,
-                courseOfStudy = null
+                courseOfStudy = null,
+                schoolPeople = emptyList(),
+                schoolClub = null,
+                academicActionDoneThisYear = false,
+                socialActionDoneThisYear = false
             )
         )
     }
@@ -509,7 +575,12 @@ class EducationEngine @Inject constructor(
                 stage = SchoolStage.NONE,
                 currentGrade = 0,
                 schoolName = null,
-                courseOfStudy = null
+                courseOfStudy = null,
+                schoolPeople = emptyList(),
+                schoolClub = null,
+                schoolReputation = (education.schoolReputation - 20).coerceIn(0, 100),
+                academicActionDoneThisYear = false,
+                socialActionDoneThisYear = false
             )
         )
     }
@@ -519,6 +590,465 @@ class EducationEngine @Inject constructor(
         val education = character.education
         if (education.expelled) return false
         return education.stage == SchoolStage.SECONDARY || education.stage == SchoolStage.UNIVERSITY
+    }
+
+    fun isEnrolled(character: Character): Boolean {
+        val stage = character.education.stage
+        return !character.education.expelled &&
+            (stage == SchoolStage.PRIMARY ||
+                stage == SchoolStage.SECONDARY ||
+                stage == SchoolStage.UNIVERSITY)
+    }
+
+    /** Age school NPCs, decay unattended relationships, reset yearly school action flags. */
+    fun tickSchoolYear(character: Character): Character {
+        if (!isEnrolled(character)) {
+            return if (character.education.schoolPeople.isNotEmpty()) {
+                character.copy(
+                    education = character.education.copy(
+                        schoolPeople = emptyList(),
+                        academicActionDoneThisYear = false,
+                        socialActionDoneThisYear = false
+                    )
+                )
+            } else {
+                character
+            }
+        }
+        val people = character.education.schoolPeople.map { person ->
+            val aged = person.copy(age = person.age + 1)
+            if (aged.interactedThisYear) {
+                aged.copy(interactedThisYear = false)
+            } else {
+                aged.copy(
+                    relationshipLevel = clampRelationshipLevel(aged.relationshipLevel - 1)
+                )
+            }
+        }
+        return character.copy(
+            education = character.education.copy(
+                schoolPeople = people,
+                academicActionDoneThisYear = false,
+                socialActionDoneThisYear = false
+            )
+        )
+    }
+
+    fun ensureSchoolRoster(character: Character, forceRefresh: Boolean = false): Character {
+        if (!isEnrolled(character)) return character
+        if (!forceRefresh && character.education.schoolPeople.isNotEmpty()) return character
+        val people = generateSchoolRoster(character)
+        return character.copy(
+            education = character.education.copy(schoolPeople = people),
+            eventLog = EventLogCap.prepend(
+                character.eventLog,
+                "You met new people at ${character.education.schoolName ?: "school"}."
+            )
+        )
+    }
+
+    fun availableSchoolActivities(character: Character): List<SchoolActivity> {
+        if (!isEnrolled(character) || !character.alive) return emptyList()
+        if (character.criminalRecord.currentlyIncarcerated) return emptyList()
+        val list = mutableListOf(
+            SchoolActivity.LIBRARY_STUDY,
+            SchoolActivity.STUDY_GROUP,
+            SchoolActivity.GROUP_PROJECT,
+            SchoolActivity.ASK_TEACHER_HELP,
+            SchoolActivity.HANG_OUT,
+            SchoolActivity.SKIP_CLASS
+        )
+        if (character.education.schoolPeople.any { it.role == SchoolRole.BULLY }) {
+            list += SchoolActivity.CONFRONT_BULLY
+        }
+        if (character.education.stage == SchoolStage.SECONDARY &&
+            character.age in 15..18
+        ) {
+            list += SchoolActivity.SCHOOL_DANCE
+        }
+        if (character.education.schoolClub != null && isSchoolClubEligible(character)) {
+            list += SchoolActivity.CLUB_PRACTICE
+        }
+        return list
+    }
+
+    fun performSchoolActivity(
+        character: Character,
+        activity: SchoolActivity,
+        targetPersonId: String? = null
+    ): SchoolActionResult {
+        if (!isEnrolled(character) || !character.alive) return SchoolActionResult.Ineligible
+        if (character.criminalRecord.currentlyIncarcerated) return SchoolActionResult.Ineligible
+        if (activity !in availableSchoolActivities(character)) return SchoolActionResult.Ineligible
+
+        val isSocial = activity in SOCIAL_ACTIVITIES
+        if (isSocial && character.education.socialActionDoneThisYear) {
+            return SchoolActionResult.AlreadyDone
+        }
+        if (!isSocial && character.education.academicActionDoneThisYear) {
+            return SchoolActionResult.AlreadyDone
+        }
+
+        val target = targetPersonId?.let { id ->
+            character.education.schoolPeople.find { it.id == id }
+        }
+
+        return when (activity) {
+            SchoolActivity.LIBRARY_STUDY -> succeedAcademic(
+                character,
+                gpaDelta = 0.12f,
+                smarts = 3,
+                happiness = -1,
+                reputation = 1,
+                message = "You spent hours in the library and actually understood the material."
+            )
+            SchoolActivity.STUDY_GROUP -> {
+                val partner = target ?: classmates(character).randomOrNull()
+                    ?: return SchoolActionResult.PersonNotFound
+                succeedWithPerson(
+                    character = character,
+                    person = partner,
+                    academic = true,
+                    gpaDelta = 0.18f,
+                    smarts = 2,
+                    happiness = 2,
+                    relationshipDelta = 8,
+                    reputation = 2,
+                    message = "You studied with ${partner.name}. The quiz suddenly feels doable."
+                )
+            }
+            SchoolActivity.GROUP_PROJECT -> {
+                val partner = target ?: classmates(character).randomOrNull()
+                    ?: return SchoolActionResult.PersonNotFound
+                succeedWithPerson(
+                    character = character,
+                    person = partner,
+                    academic = true,
+                    gpaDelta = 0.15f,
+                    smarts = 2,
+                    happiness = 1,
+                    relationshipDelta = 6,
+                    reputation = 3,
+                    message = "Your group project with ${partner.name} impressed the teacher."
+                )
+            }
+            SchoolActivity.ASK_TEACHER_HELP -> {
+                val teacher = target?.takeIf { it.role == SchoolRole.TEACHER }
+                    ?: teachers(character).randomOrNull()
+                    ?: return SchoolActionResult.PersonNotFound
+                succeedWithPerson(
+                    character = character,
+                    person = teacher,
+                    academic = true,
+                    gpaDelta = 0.22f,
+                    smarts = 3,
+                    happiness = 1,
+                    relationshipDelta = 10,
+                    reputation = 4,
+                    message = "${teacher.name} stayed after class to help you. It clicked."
+                )
+            }
+            SchoolActivity.HANG_OUT -> {
+                val friend = target ?: classmates(character).randomOrNull()
+                    ?: return SchoolActionResult.PersonNotFound
+                succeedWithPerson(
+                    character = character,
+                    person = friend,
+                    academic = false,
+                    gpaDelta = -0.02f,
+                    smarts = 0,
+                    happiness = 5,
+                    relationshipDelta = 12,
+                    reputation = 1,
+                    message = "You hung out with ${friend.name} after school. Best part of the day."
+                )
+            }
+            SchoolActivity.CONFRONT_BULLY -> {
+                val bully = target?.takeIf { it.role == SchoolRole.BULLY }
+                    ?: character.education.schoolPeople.find { it.role == SchoolRole.BULLY }
+                    ?: return SchoolActionResult.PersonNotFound
+                val won = character.stats.health >= 55 || Random.nextFloat() < 0.45f
+                if (won) {
+                    succeedWithPerson(
+                        character = character,
+                        person = bully,
+                        academic = false,
+                        gpaDelta = 0f,
+                        smarts = 0,
+                        happiness = 4,
+                        relationshipDelta = -15,
+                        reputation = 6,
+                        message = "You stood up to ${bully.name}. Word spreads that you won't be pushed around."
+                    )
+                } else {
+                    succeedWithPerson(
+                        character = character,
+                        person = bully,
+                        academic = false,
+                        gpaDelta = -0.05f,
+                        smarts = 0,
+                        happiness = -6,
+                        relationshipDelta = -8,
+                        reputation = -4,
+                        healthDelta = -4,
+                        message = "Confronting ${bully.name} went badly. You got shoved and sent home early."
+                    )
+                }
+            }
+            SchoolActivity.SKIP_CLASS -> {
+                val caught = Random.nextFloat() < 0.35f
+                if (caught) {
+                    val updated = character.copy(
+                        stats = character.stats.copy(
+                            happiness = clampStat(character.stats.happiness - 2),
+                            health = clampStat(character.stats.health + 1)
+                        ),
+                        education = character.education.copy(
+                            gpa = clampGpa(character.education.gpa - 0.15f),
+                            schoolReputation = (character.education.schoolReputation - 8)
+                                .coerceIn(0, 100),
+                            detentionYears = character.education.detentionYears + 1,
+                            socialActionDoneThisYear = true
+                        ),
+                        eventLog = EventLogCap.prepend(
+                            character.eventLog,
+                            "You skipped class and got caught. Detention."
+                        )
+                    )
+                    SchoolActionResult.Success(updated, "Caught skipping. Detention and a lecture.")
+                } else {
+                    succeedSocial(
+                        character,
+                        gpaDelta = -0.08f,
+                        happiness = 4,
+                        reputation = -3,
+                        message = "You skipped class and got away with it — this time."
+                    )
+                }
+            }
+            SchoolActivity.SCHOOL_DANCE -> {
+                val crush = character.education.schoolPeople.find { it.role == SchoolRole.CRUSH }
+                val partner = crush ?: classmates(character).maxByOrNull { it.relationshipLevel }
+                if (partner != null) {
+                    succeedWithPerson(
+                        character = character,
+                        person = partner,
+                        academic = false,
+                        gpaDelta = 0f,
+                        smarts = 0,
+                        happiness = 8,
+                        relationshipDelta = 14,
+                        reputation = 3,
+                        message = "You danced with ${partner.name}. The night felt endless in the best way."
+                    )
+                } else {
+                    succeedSocial(
+                        character,
+                        gpaDelta = 0f,
+                        happiness = 5,
+                        reputation = 2,
+                        message = "The school dance was loud, awkward, and somehow perfect."
+                    )
+                }
+            }
+            SchoolActivity.CLUB_PRACTICE -> {
+                val club = character.education.schoolClub
+                    ?: return SchoolActionResult.Ineligible
+                succeedAcademic(
+                    character,
+                    gpaDelta = 0.06f,
+                    smarts = if (club == SchoolClub.CODING || club == SchoolClub.DEBATE) 3 else 1,
+                    happiness = 3,
+                    reputation = 2,
+                    health = if (club == SchoolClub.FOOTBALL) 2 else 0,
+                    message = "Club practice paid off. You feel sharper in ${club.name.lowercase()}."
+                )
+            }
+        }
+    }
+
+    fun classmates(character: Character): List<SchoolPerson> =
+        character.education.schoolPeople.filter {
+            it.role == SchoolRole.CLASSMATE ||
+                it.role == SchoolRole.BEST_CLASSMATE ||
+                it.role == SchoolRole.CRUSH ||
+                it.role == SchoolRole.BULLY
+        }
+
+    fun teachers(character: Character): List<SchoolPerson> =
+        character.education.schoolPeople.filter { it.role == SchoolRole.TEACHER }
+
+    private fun generateSchoolRoster(character: Character): List<SchoolPerson> {
+        val country = character.countryCode
+        val stage = character.education.stage
+        val peerAge = when (stage) {
+            SchoolStage.PRIMARY -> character.age.coerceIn(6, 13)
+            SchoolStage.SECONDARY -> character.age.coerceIn(14, 18)
+            SchoolStage.UNIVERSITY -> character.age.coerceIn(18, 24)
+            else -> character.age
+        }
+        val teacherAge = when (stage) {
+            SchoolStage.UNIVERSITY -> Random.nextInt(28, 55)
+            else -> Random.nextInt(26, 50)
+        }
+        val classmates = (1..CLASSMATE_COUNT).map {
+            buildSchoolPerson(
+                role = SchoolRole.CLASSMATE,
+                country = country,
+                age = (peerAge + Random.nextInt(-1, 2)).coerceAtLeast(6),
+                relationship = Random.nextInt(35, 65)
+            )
+        }
+        val best = buildSchoolPerson(
+            role = SchoolRole.BEST_CLASSMATE,
+            country = country,
+            age = peerAge,
+            relationship = Random.nextInt(65, 85)
+        )
+        val bully = buildSchoolPerson(
+            role = SchoolRole.BULLY,
+            country = country,
+            age = peerAge + Random.nextInt(0, 2),
+            relationship = Random.nextInt(10, 30)
+        )
+        val crush = if (character.age >= 12 && stage != SchoolStage.PRIMARY) {
+            listOf(
+                buildSchoolPerson(
+                    role = SchoolRole.CRUSH,
+                    country = country,
+                    age = peerAge,
+                    relationship = Random.nextInt(40, 60)
+                )
+            )
+        } else {
+            emptyList()
+        }
+        val subjects = when (stage) {
+            SchoolStage.UNIVERSITY -> listOf("Professor", "Advisor", "Lab Instructor")
+            SchoolStage.SECONDARY -> listOf("Math", "Science", "Literature", "History")
+            else -> listOf("Homeroom", "Math", "Reading")
+        }
+        val teacherList = subjects.take(TEACHER_COUNT).map { subject ->
+            buildSchoolPerson(
+                role = SchoolRole.TEACHER,
+                country = country,
+                age = teacherAge + Random.nextInt(-3, 4),
+                relationship = Random.nextInt(40, 70),
+                subject = subject
+            )
+        }
+        return classmates + best + bully + crush + teacherList
+    }
+
+    private fun buildSchoolPerson(
+        role: SchoolRole,
+        country: String,
+        age: Int,
+        relationship: Int,
+        subject: String? = null
+    ): SchoolPerson {
+        val gender = if (Random.nextBoolean()) Gender.MALE else Gender.FEMALE
+        return SchoolPerson(
+            id = UUID.randomUUID().toString(),
+            name = NamePool.randomFullName(gender, country),
+            role = role,
+            gender = gender,
+            age = age,
+            relationshipLevel = relationship,
+            subject = subject,
+            avatarConfig = AvatarConfig.random()
+        )
+    }
+
+    private fun succeedAcademic(
+        character: Character,
+        gpaDelta: Float,
+        smarts: Int,
+        happiness: Int,
+        reputation: Int,
+        message: String,
+        health: Int = 0
+    ): SchoolActionResult {
+        val updated = character.copy(
+            stats = character.stats.copy(
+                smarts = clampStat(character.stats.smarts + smarts),
+                happiness = clampStat(character.stats.happiness + happiness),
+                health = clampStat(character.stats.health + health)
+            ),
+            education = character.education.copy(
+                gpa = clampGpa(character.education.gpa + gpaDelta),
+                schoolReputation = (character.education.schoolReputation + reputation)
+                    .coerceIn(0, 100),
+                academicActionDoneThisYear = true
+            ),
+            eventLog = EventLogCap.prepend(character.eventLog, message)
+        )
+        return SchoolActionResult.Success(updated, message)
+    }
+
+    private fun succeedSocial(
+        character: Character,
+        gpaDelta: Float,
+        happiness: Int,
+        reputation: Int,
+        message: String
+    ): SchoolActionResult {
+        val updated = character.copy(
+            stats = character.stats.copy(
+                happiness = clampStat(character.stats.happiness + happiness)
+            ),
+            education = character.education.copy(
+                gpa = clampGpa(character.education.gpa + gpaDelta),
+                schoolReputation = (character.education.schoolReputation + reputation)
+                    .coerceIn(0, 100),
+                socialActionDoneThisYear = true
+            ),
+            eventLog = EventLogCap.prepend(character.eventLog, message)
+        )
+        return SchoolActionResult.Success(updated, message)
+    }
+
+    private fun succeedWithPerson(
+        character: Character,
+        person: SchoolPerson,
+        academic: Boolean,
+        gpaDelta: Float,
+        smarts: Int,
+        happiness: Int,
+        relationshipDelta: Int,
+        reputation: Int,
+        message: String,
+        healthDelta: Int = 0
+    ): SchoolActionResult {
+        val updatedPeople = character.education.schoolPeople.map { p ->
+            if (p.id == person.id) {
+                p.copy(
+                    relationshipLevel = clampRelationshipLevel(
+                        p.relationshipLevel + relationshipDelta
+                    ),
+                    interactedThisYear = true
+                )
+            } else {
+                p
+            }
+        }
+        val updated = character.copy(
+            stats = character.stats.copy(
+                smarts = clampStat(character.stats.smarts + smarts),
+                happiness = clampStat(character.stats.happiness + happiness),
+                health = clampStat(character.stats.health + healthDelta)
+            ),
+            education = character.education.copy(
+                schoolPeople = updatedPeople,
+                gpa = clampGpa(character.education.gpa + gpaDelta),
+                schoolReputation = (character.education.schoolReputation + reputation)
+                    .coerceIn(0, 100),
+                academicActionDoneThisYear = character.education.academicActionDoneThisYear || academic,
+                socialActionDoneThisYear = character.education.socialActionDoneThisYear || !academic
+            ),
+            eventLog = EventLogCap.prepend(character.eventLog, message)
+        )
+        return SchoolActionResult.Success(updated, message)
     }
 
     private fun buildExamChoices(
@@ -717,5 +1247,14 @@ class EducationEngine @Inject constructor(
         const val SCHOOL_CLUB_MAX_AGE = 17
         private const val FOOTBALL_MIN_HEALTH = 45
         private const val DEBATE_MIN_GPA = 1.8f
+        private const val CLASSMATE_COUNT = 5
+        private const val TEACHER_COUNT = 3
+
+        private val SOCIAL_ACTIVITIES = setOf(
+            SchoolActivity.HANG_OUT,
+            SchoolActivity.CONFRONT_BULLY,
+            SchoolActivity.SKIP_CLASS,
+            SchoolActivity.SCHOOL_DANCE
+        )
     }
 }

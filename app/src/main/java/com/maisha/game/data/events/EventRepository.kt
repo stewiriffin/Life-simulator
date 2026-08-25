@@ -112,9 +112,10 @@ class EventRepository private constructor(
         val wave4Love = loadEventsFromAsset(context, "data/events/wave4_love_sex_events.json")
         val wave4Children = loadEventsFromAsset(context, "data/events/wave4_children_events.json")
         val wave4Crime = loadEventsFromAsset(context, "data/events/wave4_crime_events.json")
+        val schoolLife = loadEventsFromAsset(context, "data/events/school_life_events.json")
 
         return starter + education + career + finance + relationship + general + midlife + holidays + crime + wave3 +
-            wave4Workplace + wave4Hobbies + wave4SideHustles + wave4Love + wave4Children + wave4Crime
+            wave4Workplace + wave4Hobbies + wave4SideHustles + wave4Love + wave4Children + wave4Crime + schoolLife
     }
 
     private fun loadEventsFromAsset(context: Context, path: String): List<LifeEvent> {

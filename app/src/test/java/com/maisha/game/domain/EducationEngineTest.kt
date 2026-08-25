@@ -327,4 +327,68 @@ class EducationEngineTest {
         val updated = engine.setPlannedStudyEffort(student, com.maisha.game.data.model.StudyEffort.HARD)
         assertEquals(com.maisha.game.data.model.StudyEffort.HARD, updated.education.plannedStudyEffort)
     }
+
+    @Test
+    fun enrollIfEligible_createsSchoolRosterWithClassmatesAndTeachers() {
+        val character = TestFixtures.character(
+            age = 6,
+            education = EducationState(stage = SchoolStage.NONE)
+        )
+        val enrolled = engine.enrollIfEligible(character)
+        assertTrue(enrolled.education.schoolPeople.isNotEmpty())
+        assertTrue(engine.classmates(enrolled).isNotEmpty())
+        assertTrue(engine.teachers(enrolled).isNotEmpty())
+    }
+
+    @Test
+    fun performSchoolActivity_libraryStudyRaisesGpaAndBlocksSecondAcademic() {
+        val character = engine.ensureSchoolRoster(
+            TestFixtures.character(
+                age = 12,
+                education = EducationState(
+                    stage = SchoolStage.PRIMARY,
+                    currentGrade = 6,
+                    gpa = 2.5f,
+                    schoolReputation = 50
+                )
+            )
+        )
+        val first = engine.performSchoolActivity(
+            character,
+            com.maisha.game.data.model.SchoolActivity.LIBRARY_STUDY
+        )
+        assertTrue(first is SchoolActionResult.Success)
+        val after = (first as SchoolActionResult.Success).character
+        assertTrue(after.education.gpa > character.education.gpa)
+        assertTrue(after.education.academicActionDoneThisYear)
+
+        val second = engine.performSchoolActivity(
+            after,
+            com.maisha.game.data.model.SchoolActivity.STUDY_GROUP
+        )
+        assertEquals(SchoolActionResult.AlreadyDone, second)
+    }
+
+    @Test
+    fun performSchoolActivity_hangOutUsesSocialSlot() {
+        val character = engine.ensureSchoolRoster(
+            TestFixtures.character(
+                age = 15,
+                education = EducationState(
+                    stage = SchoolStage.SECONDARY,
+                    currentGrade = 2,
+                    gpa = 2.8f,
+                    kcpePassed = true
+                )
+            )
+        )
+        val result = engine.performSchoolActivity(
+            character,
+            com.maisha.game.data.model.SchoolActivity.HANG_OUT
+        )
+        assertTrue(result is SchoolActionResult.Success)
+        val after = (result as SchoolActionResult.Success).character
+        assertTrue(after.education.socialActionDoneThisYear)
+        assertFalse(after.education.academicActionDoneThisYear)
+    }
 }

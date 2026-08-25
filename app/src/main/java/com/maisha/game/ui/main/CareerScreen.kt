@@ -65,7 +65,10 @@ import com.maisha.game.data.model.PoliticalOffice
 import com.maisha.game.data.model.SchoolStage
 import com.maisha.game.data.model.TaxPolicyType
 import com.maisha.game.data.model.CareerTrack
+import com.maisha.game.data.model.SchoolActivity
 import com.maisha.game.data.model.SchoolClub
+import com.maisha.game.data.model.SchoolPerson
+import com.maisha.game.data.model.SchoolRole
 import com.maisha.game.data.model.StudyEffort
 import com.maisha.game.data.model.WorkEffort
 import com.maisha.game.domain.BusinessEngine
@@ -100,6 +103,8 @@ import com.maisha.game.ui.theme.TealPrimary
 import com.maisha.game.util.formatMoney
 
 private const val MIN_RETIREMENT_AGE = 60
+
+private val schoolUiEngine by lazy { EducationEngine(RelocationEngine()) }
 
 private enum class CareerCategory { ALL, WORK, SCHOOL, BUSINESS, POLITICS }
 
@@ -136,6 +141,7 @@ fun CareerScreen(
     onSetWorkEffort: (com.maisha.game.data.model.WorkEffort) -> Unit,
     onSetStudyEffort: (StudyEffort) -> Unit,
     onJoinSchoolClub: (SchoolClub) -> Unit,
+    onPerformSchoolActivity: (SchoolActivity, String?) -> Unit = { _, _ -> },
     onStartCareerTrack: (CareerTrack) -> Unit,
     onPracticeCareerTrack: () -> Unit,
     onCareerMessageDismissed: () -> Unit,
@@ -424,6 +430,15 @@ fun CareerScreen(
                         countryCode = character.countryCode,
                         onDropOut = { dropOutConfirm.request(Unit) },
                         onSetStudyEffort = onSetStudyEffort
+                    )
+                }
+                item(
+                    key = "school_life",
+                    contentType = CareerListContentType.Education
+                ) {
+                    SchoolLifeSectionCard(
+                        character = character,
+                        onPerformSchoolActivity = onPerformSchoolActivity
                     )
                 }
                 item(
@@ -1037,6 +1052,258 @@ private fun EducationSectionCard(
                     Text(stringResource(R.string.btn_drop_out))
                 }
             }
+        }
+    }
+}
+
+@Composable
+private fun SchoolLifeSectionCard(
+    character: Character,
+    onPerformSchoolActivity: (SchoolActivity, String?) -> Unit
+) {
+    val enrolled = !character.education.expelled &&
+        (character.education.stage == SchoolStage.PRIMARY ||
+            character.education.stage == SchoolStage.SECONDARY ||
+            character.education.stage == SchoolStage.UNIVERSITY)
+    if (!enrolled) return
+
+    val available = remember(
+        character.education,
+        character.age,
+        character.alive,
+        character.criminalRecord.currentlyIncarcerated
+    ) {
+        schoolUiEngine.availableSchoolActivities(character)
+    }
+    var pendingActivity by remember { mutableStateOf<SchoolActivity?>(null) }
+    val people = character.education.schoolPeople
+
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        shape = MaishaRadius.cardShape,
+        colors = CardDefaults.cardColors(containerColor = Color.White)
+    ) {
+        Column(modifier = Modifier.padding(14.dp)) {
+            Text(
+                text = stringResource(R.string.section_school_life),
+                style = MaterialTheme.typography.labelMedium,
+                color = GoldAccent
+            )
+            Spacer(modifier = Modifier.height(6.dp))
+            Text(
+                text = stringResource(
+                    R.string.format_school_reputation,
+                    character.education.schoolReputation
+                ),
+                style = MaterialTheme.typography.bodyMedium
+            )
+            Spacer(modifier = Modifier.height(6.dp))
+            StatBar(
+                type = StatType.HAPPINESS,
+                value = character.education.schoolReputation,
+                label = stringResource(R.string.label_school_reputation)
+            )
+            Spacer(modifier = Modifier.height(8.dp))
+            Text(
+                text = when {
+                    character.education.academicActionDoneThisYear &&
+                        character.education.socialActionDoneThisYear ->
+                        stringResource(R.string.school_actions_both_done)
+                    character.education.academicActionDoneThisYear ->
+                        stringResource(R.string.school_actions_academic_done)
+                    character.education.socialActionDoneThisYear ->
+                        stringResource(R.string.school_actions_social_done)
+                    else -> stringResource(R.string.school_actions_available)
+                },
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+
+            Spacer(modifier = Modifier.height(12.dp))
+            Text(
+                text = stringResource(R.string.section_classmates),
+                style = MaterialTheme.typography.labelMedium,
+                fontWeight = FontWeight.SemiBold
+            )
+            if (people.isEmpty()) {
+                Text(
+                    text = stringResource(R.string.school_empty_people),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.padding(top = 4.dp)
+                )
+            } else {
+                Spacer(modifier = Modifier.height(6.dp))
+                Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                    people.forEach { person ->
+                        SchoolPersonRow(person = person)
+                    }
+                }
+            }
+
+            if (available.isNotEmpty()) {
+                Spacer(modifier = Modifier.height(12.dp))
+                Text(
+                    text = stringResource(R.string.section_school_activities),
+                    style = MaterialTheme.typography.labelMedium,
+                    fontWeight = FontWeight.SemiBold
+                )
+                Spacer(modifier = Modifier.height(6.dp))
+                Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                    available.forEach { activity ->
+                        val blocked = schoolActivityBlocked(character, activity)
+                        OutlinedButton(
+                            onClick = {
+                                if (schoolActivityNeedsPersonPick(activity)) {
+                                    pendingActivity = activity
+                                } else {
+                                    onPerformSchoolActivity(activity, null)
+                                }
+                            },
+                            enabled = !blocked,
+                            modifier = Modifier.fillMaxWidth(),
+                            shape = RoundedCornerShape(12.dp)
+                        ) {
+                            Text(schoolActivityLabel(activity))
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    pendingActivity?.let { activity ->
+        val candidates = peopleForActivity(character, activity)
+        AlertDialog(
+            onDismissRequest = { pendingActivity = null },
+            title = { Text(schoolActivityLabel(activity)) },
+            text = {
+                if (candidates.isEmpty()) {
+                    Text(stringResource(R.string.msg_school_person_missing))
+                } else {
+                    Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                        candidates.forEach { person ->
+                            TextButton(
+                                onClick = {
+                                    onPerformSchoolActivity(activity, person.id)
+                                    pendingActivity = null
+                                },
+                                modifier = Modifier.fillMaxWidth()
+                            ) {
+                                Text(
+                                    text = stringResource(
+                                        R.string.school_pick_person,
+                                        person.name
+                                    ),
+                                    modifier = Modifier.fillMaxWidth(),
+                                    textAlign = TextAlign.Start
+                                )
+                            }
+                        }
+                    }
+                }
+            },
+            confirmButton = {
+                TextButton(onClick = { pendingActivity = null }) {
+                    Text(stringResource(R.string.btn_cancel))
+                }
+            }
+        )
+    }
+}
+
+@Composable
+private fun SchoolPersonRow(person: SchoolPerson) {
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.SpaceBetween,
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Column(modifier = Modifier.weight(1f)) {
+            Text(
+                text = person.name,
+                style = MaterialTheme.typography.bodyMedium,
+                fontWeight = FontWeight.Medium,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis
+            )
+            Text(
+                text = buildString {
+                    append(schoolRoleLabel(person.role))
+                    person.subject?.let { append(" · ").append(it) }
+                },
+                style = MaterialTheme.typography.labelSmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+        }
+        Text(
+            text = stringResource(R.string.format_school_bond, person.relationshipLevel),
+            style = MaterialTheme.typography.labelSmall,
+            color = TealPrimary
+        )
+    }
+}
+
+@Composable
+private fun schoolRoleLabel(role: SchoolRole): String = when (role) {
+    SchoolRole.CLASSMATE -> stringResource(R.string.school_role_classmate)
+    SchoolRole.BEST_CLASSMATE -> stringResource(R.string.school_role_best)
+    SchoolRole.BULLY -> stringResource(R.string.school_role_bully)
+    SchoolRole.TEACHER -> stringResource(R.string.school_role_teacher)
+    SchoolRole.CRUSH -> stringResource(R.string.school_role_crush)
+}
+
+@Composable
+private fun schoolActivityLabel(activity: SchoolActivity): String = when (activity) {
+    SchoolActivity.STUDY_GROUP -> stringResource(R.string.school_activity_study_group)
+    SchoolActivity.LIBRARY_STUDY -> stringResource(R.string.school_activity_library)
+    SchoolActivity.ASK_TEACHER_HELP -> stringResource(R.string.school_activity_teacher_help)
+    SchoolActivity.HANG_OUT -> stringResource(R.string.school_activity_hang_out)
+    SchoolActivity.CONFRONT_BULLY -> stringResource(R.string.school_activity_confront_bully)
+    SchoolActivity.SKIP_CLASS -> stringResource(R.string.school_activity_skip_class)
+    SchoolActivity.SCHOOL_DANCE -> stringResource(R.string.school_activity_dance)
+    SchoolActivity.CLUB_PRACTICE -> stringResource(R.string.school_activity_club_practice)
+    SchoolActivity.GROUP_PROJECT -> stringResource(R.string.school_activity_group_project)
+}
+
+private fun schoolActivityNeedsPersonPick(activity: SchoolActivity): Boolean =
+    activity == SchoolActivity.STUDY_GROUP ||
+        activity == SchoolActivity.GROUP_PROJECT ||
+        activity == SchoolActivity.ASK_TEACHER_HELP ||
+        activity == SchoolActivity.HANG_OUT ||
+        activity == SchoolActivity.CONFRONT_BULLY ||
+        activity == SchoolActivity.SCHOOL_DANCE
+
+private fun schoolActivityBlocked(character: Character, activity: SchoolActivity): Boolean {
+    val social = activity == SchoolActivity.HANG_OUT ||
+        activity == SchoolActivity.CONFRONT_BULLY ||
+        activity == SchoolActivity.SKIP_CLASS ||
+        activity == SchoolActivity.SCHOOL_DANCE
+    return if (social) {
+        character.education.socialActionDoneThisYear
+    } else {
+        character.education.academicActionDoneThisYear
+    }
+}
+
+private fun peopleForActivity(character: Character, activity: SchoolActivity): List<SchoolPerson> {
+    val people = character.education.schoolPeople
+    return when (activity) {
+        SchoolActivity.ASK_TEACHER_HELP -> people.filter { it.role == SchoolRole.TEACHER }
+        SchoolActivity.CONFRONT_BULLY -> people.filter { it.role == SchoolRole.BULLY }
+        SchoolActivity.SCHOOL_DANCE -> {
+            val crush = people.filter { it.role == SchoolRole.CRUSH }
+            if (crush.isNotEmpty()) crush
+            else people.filter {
+                it.role == SchoolRole.CLASSMATE ||
+                    it.role == SchoolRole.BEST_CLASSMATE
+            }
+        }
+        else -> people.filter {
+            it.role == SchoolRole.CLASSMATE ||
+                it.role == SchoolRole.BEST_CLASSMATE ||
+                it.role == SchoolRole.CRUSH ||
+                it.role == SchoolRole.BULLY
         }
     }
 }
