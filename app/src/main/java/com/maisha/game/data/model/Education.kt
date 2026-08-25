@@ -172,7 +172,9 @@ enum class SchoolActivity {
 @Serializable
 enum class ExpulsionHearingChoice {
     MERCY,
-    DEFIANT
+    DEFIANT,
+    /** Leave for another school — keep enrolled, reset roster, start on probation. */
+    TRANSFER
 }
 
 /**
@@ -241,6 +243,10 @@ data class EducationState(
     val pendingExpulsionHearing: Boolean = false,
     /** On probation after begging for mercy at a hearing. */
     val onProbation: Boolean = false,
+    /** Served detention hall this year (clears one strike). */
+    val detentionServedThisYear: Boolean = false,
+    /** Appealed / apologized to the principal this year. */
+    val principalAppealDoneThisYear: Boolean = false,
     /** Consecutive failed school exams (year finals / national). */
     val failedExamStreak: Int = 0,
     val pendingExams: List<ExamSchedule> = emptyList(),

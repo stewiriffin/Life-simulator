@@ -55,6 +55,8 @@ class AchievementEngine @Inject constructor(
                     character.education.clubYearsAsCaptain > 0
             "club_champion" -> character.education.clubAwardsWon > 0
             "letter_jacket" -> character.education.clubLetterJacket
+            "school_rebel" -> character.education.detentionYears >= 3
+            "expelled" -> character.education.expelled
             "tied_the_knot" -> checkTiedTheKnot(character)
             "first_child" -> checkFirstChild(character)
             "growing_family" -> checkGrowingFamily(character)

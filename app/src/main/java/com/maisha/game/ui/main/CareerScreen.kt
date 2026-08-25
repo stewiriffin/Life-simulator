@@ -161,6 +161,8 @@ fun CareerScreen(
     onPerformSchoolActivity: (SchoolActivity, String?) -> Unit = { _, _ -> },
     onSchoolPersonInteraction: (String, SchoolPersonAction) -> Unit = { _, _ -> },
     onResolveExpulsionHearing: (com.maisha.game.data.model.ExpulsionHearingChoice) -> Unit = {},
+    onServeDetention: () -> Unit = {},
+    onApologizeToPrincipal: () -> Unit = {},
     onExamPrepChoice: (ExamPrepChoice) -> Unit = {},
     onStartCareerTrack: (CareerTrack) -> Unit,
     onPracticeCareerTrack: () -> Unit,
@@ -463,7 +465,9 @@ fun CareerScreen(
                         character = character,
                         onPerformSchoolActivity = onPerformSchoolActivity,
                         onSchoolPersonInteraction = onSchoolPersonInteraction,
-                        onResolveExpulsionHearing = onResolveExpulsionHearing
+                        onResolveExpulsionHearing = onResolveExpulsionHearing,
+                        onServeDetention = onServeDetention,
+                        onApologizeToPrincipal = onApologizeToPrincipal
                     )
                 }
                 item(
@@ -1283,7 +1287,9 @@ private fun SchoolLifeSectionCard(
     character: Character,
     onPerformSchoolActivity: (SchoolActivity, String?) -> Unit,
     onSchoolPersonInteraction: (String, SchoolPersonAction) -> Unit,
-    onResolveExpulsionHearing: (com.maisha.game.data.model.ExpulsionHearingChoice) -> Unit
+    onResolveExpulsionHearing: (com.maisha.game.data.model.ExpulsionHearingChoice) -> Unit,
+    onServeDetention: () -> Unit,
+    onApologizeToPrincipal: () -> Unit
 ) {
     val enrolled = !character.education.expelled &&
         (character.education.stage == SchoolStage.PRIMARY ||
@@ -1327,17 +1333,14 @@ private fun SchoolLifeSectionCard(
                     color = MaterialTheme.colorScheme.error
                 )
                 Spacer(modifier = Modifier.height(6.dp))
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(6.dp)
-                ) {
+                Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
                     Button(
                         onClick = {
                             onResolveExpulsionHearing(
                                 com.maisha.game.data.model.ExpulsionHearingChoice.MERCY
                             )
                         },
-                        modifier = Modifier.weight(1f),
+                        modifier = Modifier.fillMaxWidth(),
                         shape = RoundedCornerShape(12.dp),
                         colors = ButtonDefaults.buttonColors(containerColor = TealPrimary)
                     ) {
@@ -1346,13 +1349,71 @@ private fun SchoolLifeSectionCard(
                     OutlinedButton(
                         onClick = {
                             onResolveExpulsionHearing(
+                                com.maisha.game.data.model.ExpulsionHearingChoice.TRANSFER
+                            )
+                        },
+                        modifier = Modifier.fillMaxWidth(),
+                        shape = RoundedCornerShape(12.dp)
+                    ) {
+                        Text(stringResource(R.string.btn_hearing_transfer))
+                    }
+                    OutlinedButton(
+                        onClick = {
+                            onResolveExpulsionHearing(
                                 com.maisha.game.data.model.ExpulsionHearingChoice.DEFIANT
                             )
                         },
-                        modifier = Modifier.weight(1f),
+                        modifier = Modifier.fillMaxWidth(),
                         shape = RoundedCornerShape(12.dp)
                     ) {
                         Text(stringResource(R.string.btn_hearing_defiant))
+                    }
+                }
+            } else if (
+                character.education.detentionCountThisYear > 0 ||
+                character.education.onProbation
+            ) {
+                Spacer(modifier = Modifier.height(8.dp))
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(6.dp)
+                ) {
+                    OutlinedButton(
+                        onClick = onServeDetention,
+                        enabled = !character.education.detentionServedThisYear &&
+                            character.education.detentionCountThisYear > 0,
+                        modifier = Modifier.weight(1f),
+                        shape = RoundedCornerShape(12.dp)
+                    ) {
+                        Text(
+                            if (character.education.detentionServedThisYear) {
+                                stringResource(R.string.btn_serve_detention_done)
+                            } else {
+                                stringResource(R.string.btn_serve_detention)
+                            },
+                            maxLines = 1
+                        )
+                    }
+                    OutlinedButton(
+                        onClick = onApologizeToPrincipal,
+                        enabled = !character.education.principalAppealDoneThisYear,
+                        modifier = Modifier.weight(1f),
+                        shape = RoundedCornerShape(12.dp)
+                    ) {
+                        Text(
+                            if (character.education.principalAppealDoneThisYear) {
+                                stringResource(R.string.btn_principal_appeal_done)
+                            } else {
+                                stringResource(
+                                    R.string.btn_principal_appeal,
+                                    formatMoney(
+                                        EducationEngine.principalAppealCost(character.countryCode),
+                                        character.countryCode
+                                    )
+                                )
+                            },
+                            maxLines = 1
+                        )
                     }
                 }
             }
@@ -1761,7 +1822,11 @@ private fun DisciplineStatusBanner(character: Character) {
                     standing,
                     character.education.detentionCountThisYear,
                     schoolUiEngine.detentionHearingThreshold(character)
-                ),
+                ) + if (character.education.detentionYears > 0) {
+                    " · lifetime ${character.education.detentionYears}"
+                } else {
+                    ""
+                },
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurface
             )

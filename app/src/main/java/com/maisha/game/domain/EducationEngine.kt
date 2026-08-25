@@ -76,6 +76,13 @@ sealed class ClubActivityResult {
     data object AlreadyDone : ClubActivityResult()
 }
 
+sealed class SchoolDisciplineResult {
+    data class Success(val character: Character, val message: String) : SchoolDisciplineResult()
+    data object Ineligible : SchoolDisciplineResult()
+    data object AlreadyDone : SchoolDisciplineResult()
+    data object InsufficientFunds : SchoolDisciplineResult()
+}
+
 @Singleton
 class EducationEngine @Inject constructor(
     private val relocationEngine: RelocationEngine
@@ -429,6 +436,11 @@ class EducationEngine @Inject constructor(
                     expulsionHearingAction = ExpulsionHearingChoice.MERCY.name
                 ),
                 EventChoice(
+                    label = "Transfer schools",
+                    resultText = "You ask to leave quietly for another school.",
+                    expulsionHearingAction = ExpulsionHearingChoice.TRANSFER.name
+                ),
+                EventChoice(
                     label = "Act defiant",
                     resultText = "You refuse to apologize. The board has had enough.",
                     expulsionHearingAction = ExpulsionHearingChoice.DEFIANT.name,
@@ -465,6 +477,7 @@ class EducationEngine @Inject constructor(
                     )
                 )
             }
+            ExpulsionHearingChoice.TRANSFER -> transferAfterHearing(character)
             ExpulsionHearingChoice.DEFIANT -> {
                 val expelled = processExpulsion(
                     character.copy(
@@ -479,6 +492,124 @@ class EducationEngine @Inject constructor(
                 )
             }
         }
+    }
+
+    /** Quiet transfer: new school name, fresh roster, probation, cleared yearly detentions. */
+    private fun transferAfterHearing(character: Character): Character {
+        val newName = if (character.education.stage == SchoolStage.PRIMARY) {
+            randomPrimarySchool(character.countryCode)
+        } else {
+            randomSecondarySchool(character.countryCode)
+        }
+        val reset = character.copy(
+            stats = character.stats.copy(
+                happiness = clampStat(character.stats.happiness - 6)
+            ),
+            education = character.education.copy(
+                pendingExpulsionHearing = false,
+                onProbation = true,
+                detentionCountThisYear = 0,
+                schoolReputation = 48,
+                schoolName = newName,
+                schoolPeople = emptyList(),
+                gpa = clampGpa(character.education.gpa - 0.1f)
+            ),
+            eventLog = EventLogCap.prepend(
+                character.eventLog,
+                "You transferred to $newName to avoid expulsion. Fresh start — still on probation."
+            )
+        )
+        return ensureSchoolRoster(reset, forceRefresh = true)
+    }
+
+    /**
+     * Sit detention hall once per year — clears one strike, small reputation recovery.
+     */
+    fun serveDetention(character: Character): SchoolDisciplineResult {
+        if (!isEnrolled(character) || character.education.expelled) {
+            return SchoolDisciplineResult.Ineligible
+        }
+        if (character.education.detentionCountThisYear <= 0 &&
+            !character.education.pendingExpulsionHearing
+        ) {
+            return SchoolDisciplineResult.Ineligible
+        }
+        if (character.education.detentionServedThisYear) {
+            return SchoolDisciplineResult.AlreadyDone
+        }
+        val newCount = (character.education.detentionCountThisYear - 1).coerceAtLeast(0)
+        val clearHearing = character.education.pendingExpulsionHearing &&
+            newCount < detentionHearingThreshold(character)
+        val message = if (clearHearing) {
+            "You served detention. The principal takes the hearing off the calendar — for now."
+        } else {
+            "You sat detention hall. One strike cleared. Boring, but necessary."
+        }
+        val updated = character.copy(
+            stats = character.stats.copy(
+                happiness = clampStat(character.stats.happiness - 4),
+                smarts = clampStat(character.stats.smarts + 1)
+            ),
+            education = character.education.copy(
+                detentionCountThisYear = newCount,
+                detentionServedThisYear = true,
+                pendingExpulsionHearing = if (clearHearing) false else character.education.pendingExpulsionHearing,
+                schoolReputation = (character.education.schoolReputation + 4).coerceIn(0, 100)
+            ),
+            eventLog = EventLogCap.prepend(character.eventLog, message)
+        )
+        return SchoolDisciplineResult.Success(updated, message)
+    }
+
+    /**
+     * Apologize (or quietly bribe) the principal — can clear a strike or cool a hearing.
+     */
+    fun apologizeToPrincipal(character: Character): SchoolDisciplineResult {
+        if (!isEnrolled(character) || character.education.expelled) {
+            return SchoolDisciplineResult.Ineligible
+        }
+        if (character.education.detentionCountThisYear <= 0 &&
+            !character.education.onProbation &&
+            !character.education.pendingExpulsionHearing
+        ) {
+            return SchoolDisciplineResult.Ineligible
+        }
+        if (character.education.principalAppealDoneThisYear) {
+            return SchoolDisciplineResult.AlreadyDone
+        }
+        val cost = EconomyScaler.scaleAmount(PRINCIPAL_APPEAL_COST_KENYA, character.countryCode)
+        if (character.stats.money < cost) return SchoolDisciplineResult.InsufficientFunds
+
+        val bribeWorks = Random.nextFloat() < 0.55f + character.stats.looks / 400f
+        val newCount = if (bribeWorks) {
+            (character.education.detentionCountThisYear - 1).coerceAtLeast(0)
+        } else {
+            character.education.detentionCountThisYear
+        }
+        val clearHearing = bribeWorks &&
+            character.education.pendingExpulsionHearing &&
+            newCount < detentionHearingThreshold(character)
+        val message = if (bribeWorks) {
+            "A humble apology (and ${formatMoney(cost, character.countryCode)}) softens the principal."
+        } else {
+            "You paid ${formatMoney(cost, character.countryCode)} and apologized. The principal is unmoved — mostly."
+        }
+        val updated = character.copy(
+            stats = character.stats.copy(
+                money = character.stats.money - cost,
+                happiness = clampStat(character.stats.happiness + if (bribeWorks) 2 else -2),
+                karma = clampStat(character.stats.karma - 1)
+            ),
+            education = character.education.copy(
+                principalAppealDoneThisYear = true,
+                detentionCountThisYear = newCount,
+                pendingExpulsionHearing = if (clearHearing) false else character.education.pendingExpulsionHearing,
+                schoolReputation = (character.education.schoolReputation + if (bribeWorks) 5 else 1)
+                    .coerceIn(0, 100)
+            ),
+            eventLog = EventLogCap.prepend(character.eventLog, message)
+        )
+        return SchoolDisciplineResult.Success(updated, message)
     }
 
     /** Minimum club skill required to challenge a rival school. */
@@ -1182,23 +1313,22 @@ class EducationEngine @Inject constructor(
                             )
                         )
                     } else {
-                        working.copy(
+                        val marked = working.copy(
                             stats = working.stats.copy(
                                 karma = clampStat(working.stats.karma - 6),
-                                happiness = clampStat(working.stats.happiness - 6)
+                                happiness = clampStat(working.stats.happiness - 3)
                             ),
                             education = working.education.copy(
                                 examPrepDoneThisYear = true,
                                 examStress = (working.education.examStress + 15).coerceIn(0, 100),
-                                schoolReputation = (working.education.schoolReputation - 12)
-                                    .coerceIn(0, 100),
-                                detentionYears = working.education.detentionYears + 1,
                                 gpa = clampGpa(working.education.gpa - 0.2f)
-                            ),
-                            eventLog = EventLogCap.prepend(
-                                working.eventLog,
-                                "Caught cheating while preparing. Detention."
                             )
+                        )
+                        recordDetention(
+                            marked,
+                            reason = "Caught cheating while preparing.",
+                            reputationHit = 12,
+                            happinessHit = 3
                         )
                     }
                     ExamPrepResult.Success(
@@ -1253,14 +1383,12 @@ class EducationEngine @Inject constructor(
         val base = character.copy(
             stats = character.stats.copy(
                 karma = clampStat(character.stats.karma - 10),
-                happiness = clampStat(character.stats.happiness - 12)
+                happiness = clampStat(character.stats.happiness - 9)
             ),
             education = character.education.copy(
                 plannedCheatOnExam = false,
                 examPrepDoneThisYear = true,
                 examStress = (character.education.examStress + 25).coerceIn(0, 100),
-                schoolReputation = (character.education.schoolReputation - 18).coerceIn(0, 100),
-                detentionYears = character.education.detentionYears + 1,
                 gpa = clampGpa(character.education.gpa - 0.35f),
                 lastExamSummary = if (expel) {
                     "Caught cheating — expelled"
@@ -1269,7 +1397,16 @@ class EducationEngine @Inject constructor(
                 }
             )
         )
-        val after = if (expel) processExpulsion(base) else base
+        val after = if (expel) {
+            processExpulsion(base)
+        } else {
+            recordDetention(
+                base,
+                reason = "Caught cheating in the exam hall.",
+                reputationHit = 18,
+                happinessHit = 3
+            )
+        }
         return after.copy(
             eventLog = EventLogCap.prepend(
                 after.eventLog,
@@ -1961,6 +2098,8 @@ class EducationEngine @Inject constructor(
                 } else {
                     0
                 },
+                detentionServedThisYear = false,
+                principalAppealDoneThisYear = false,
                 // Clean year clears probation.
                 onProbation = if (
                     !character.education.pendingExpulsionHearing &&
@@ -1972,7 +2111,23 @@ class EducationEngine @Inject constructor(
                 }
             )
         )
-        return refreshExamSchedule(resolveMidtermsQuietly(withPeople))
+        val withHall = if (
+            withPeople.education.detentionCountThisYear > 0 &&
+            !character.education.detentionServedThisYear
+        ) {
+            withPeople.copy(
+                stats = withPeople.stats.copy(
+                    happiness = clampStat(withPeople.stats.happiness - 2)
+                ),
+                eventLog = EventLogCap.prepend(
+                    withPeople.eventLog,
+                    "Unresolved detention hangs over the year. Mood dips."
+                )
+            )
+        } else {
+            withPeople
+        }
+        return refreshExamSchedule(resolveMidtermsQuietly(withHall))
     }
 
     /** Quiet midterm resolution — feeds GPA/stress without a dialog. */
@@ -3192,9 +3347,12 @@ class EducationEngine @Inject constructor(
         const val SCHOOL_GIFT_BASE_COST_KENYA = 800
         const val SECRET_REVEAL_BOND = 80
         private const val ASK_OUT_MIN_AGE = 13
-        private const val DETENTION_HEARING_THRESHOLD = 3
+        const val DETENTION_HEARING_THRESHOLD = 3
         private const val DETENTION_HEARING_THRESHOLD_PROBATION = 2
         const val EXPULSION_HEARING_TAG = "expulsion_hearing"
+        private const val PRINCIPAL_APPEAL_COST_KENYA = 3_500
+        fun principalAppealCost(countryCode: String): Int =
+            EconomyScaler.scaleAmount(PRINCIPAL_APPEAL_COST_KENYA, countryCode)
 
         private val STUDENT_TRAITS = listOf(
             "Studious",

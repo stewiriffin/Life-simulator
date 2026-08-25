@@ -309,6 +309,8 @@ fun MaishaNavHost(
                 onPerformSchoolActivity = viewModel::onPerformSchoolActivity,
                 onSchoolPersonInteraction = viewModel::onSchoolPersonInteraction,
                 onResolveExpulsionHearing = viewModel::onResolveExpulsionHearing,
+                onServeDetention = viewModel::onServeDetention,
+                onApologizeToPrincipal = viewModel::onApologizeToPrincipal,
                 onExamPrepChoice = viewModel::onExamPrepChoice,
                 onStartCareerTrack = viewModel::onStartCareerTrack,
                 onPracticeCareerTrack = viewModel::onPracticeCareerTrack,

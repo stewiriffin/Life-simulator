@@ -1,5 +1,10 @@
 package com.maisha.game.domain
 
+import com.maisha.game.domain.ClubActivityResult
+import com.maisha.game.domain.ExamPrepResult
+import com.maisha.game.domain.SchoolActionResult
+import com.maisha.game.domain.SchoolDisciplineResult
+import com.maisha.game.domain.SchoolInteractionResult
 import com.maisha.game.data.model.ClubRank
 import com.maisha.game.data.model.EducationState
 import com.maisha.game.data.model.ExamType
@@ -959,6 +964,66 @@ class EducationEngineTest {
         val student = secondaryStudent()
         assertTrue(engine.availableSchoolActivities(student).contains(SchoolActivity.PULL_PRANK))
         assertTrue(engine.availableSchoolActivities(student).contains(SchoolActivity.TALK_BACK))
+    }
+
+    @Test
+    fun serveDetention_clearsOneStrike() {
+        val student = secondaryStudent().copy(
+            education = EducationState(
+                stage = SchoolStage.SECONDARY,
+                currentGrade = 1,
+                kcpePassed = true,
+                gpa = 2.5f,
+                detentionCountThisYear = 2,
+                schoolReputation = 40
+            ),
+            stats = Stats(happiness = 50, smarts = 50)
+        )
+        val result = engine.serveDetention(student)
+        assertTrue(result is SchoolDisciplineResult.Success)
+        val after = (result as SchoolDisciplineResult.Success).character
+        assertEquals(1, after.education.detentionCountThisYear)
+        assertTrue(after.education.detentionServedThisYear)
+        assertEquals(SchoolDisciplineResult.AlreadyDone, engine.serveDetention(after))
+    }
+
+    @Test
+    fun resolveExpulsionHearing_transferKeepsEnrolledOnProbation() {
+        val hearing = secondaryStudent().copy(
+            education = EducationState(
+                stage = SchoolStage.SECONDARY,
+                currentGrade = 2,
+                kcpePassed = true,
+                gpa = 2.8f,
+                detentionCountThisYear = 3,
+                pendingExpulsionHearing = true,
+                schoolName = "Old School"
+            )
+        )
+        val after = engine.resolveExpulsionHearing(
+            hearing,
+            com.maisha.game.data.model.ExpulsionHearingChoice.TRANSFER
+        )
+        assertFalse(after.education.expelled)
+        assertTrue(after.education.onProbation)
+        assertFalse(after.education.pendingExpulsionHearing)
+        assertEquals(SchoolStage.SECONDARY, after.education.stage)
+        assertTrue(after.education.schoolName != "Old School")
+    }
+
+    @Test
+    fun apologizeToPrincipal_requiresFunds() {
+        val student = secondaryStudent().copy(
+            education = EducationState(
+                stage = SchoolStage.SECONDARY,
+                currentGrade = 1,
+                kcpePassed = true,
+                gpa = 2.5f,
+                detentionCountThisYear = 1
+            ),
+            stats = Stats(money = 0, happiness = 50)
+        )
+        assertEquals(SchoolDisciplineResult.InsufficientFunds, engine.apologizeToPrincipal(student))
     }
 
     private fun secondaryStudent() = TestFixtures.character(

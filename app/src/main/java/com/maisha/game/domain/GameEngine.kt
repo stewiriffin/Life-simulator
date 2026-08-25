@@ -798,6 +798,12 @@ class GameEngine @Inject constructor(
         choice: com.maisha.game.data.model.ExpulsionHearingChoice
     ): Character = educationEngine.resolveExpulsionHearing(character, choice)
 
+    fun serveDetention(character: Character): SchoolDisciplineResult =
+        educationEngine.serveDetention(character)
+
+    fun apologizeToPrincipal(character: Character): SchoolDisciplineResult =
+        educationEngine.apologizeToPrincipal(character)
+
     fun performSchoolActivity(
         character: Character,
         activity: com.maisha.game.data.model.SchoolActivity,

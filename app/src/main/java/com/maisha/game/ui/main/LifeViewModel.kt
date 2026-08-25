@@ -64,6 +64,7 @@ import com.maisha.game.domain.PetCareResult
 import com.maisha.game.domain.ProposalResult
 import com.maisha.game.domain.SeekFriendshipResult
 import com.maisha.game.domain.ClubActivityResult
+import com.maisha.game.domain.SchoolDisciplineResult
 import com.maisha.game.domain.ExamPrepResult
 import com.maisha.game.domain.SchoolActionResult
 import com.maisha.game.domain.SchoolInteractionResult
@@ -1162,6 +1163,73 @@ class LifeViewModel @Inject constructor(
                     netWorth = financeEngine.calculateNetWorth(updated),
                     headerExpression = ExpressionResolver.resolveExpression(updated, null)
                 )
+            }
+        }
+    }
+
+    fun onServeDetention() {
+        val character = _uiState.value.character ?: return
+        if (!character.alive) return
+        viewModelScope.launch {
+            when (val result = gameEngine.serveDetention(character)) {
+                is SchoolDisciplineResult.Success -> {
+                    persist(result.character)
+                    processMidLifeAchievements(result.character)
+                    _uiState.update {
+                        it.copy(
+                            character = result.character,
+                            careerMessage = result.message,
+                            netWorth = financeEngine.calculateNetWorth(result.character),
+                            headerExpression = ExpressionResolver.resolveExpression(result.character, null)
+                        )
+                    }
+                }
+                SchoolDisciplineResult.AlreadyDone -> {
+                    _uiState.update {
+                        it.copy(careerMessage = context.getString(R.string.msg_serve_detention_already_done))
+                    }
+                }
+                else -> {
+                    _uiState.update {
+                        it.copy(careerMessage = context.getString(R.string.msg_serve_detention_ineligible))
+                    }
+                }
+            }
+        }
+    }
+
+    fun onApologizeToPrincipal() {
+        val character = _uiState.value.character ?: return
+        if (!character.alive) return
+        viewModelScope.launch {
+            when (val result = gameEngine.apologizeToPrincipal(character)) {
+                is SchoolDisciplineResult.Success -> {
+                    persist(result.character)
+                    processMidLifeAchievements(result.character)
+                    _uiState.update {
+                        it.copy(
+                            character = result.character,
+                            careerMessage = result.message,
+                            netWorth = financeEngine.calculateNetWorth(result.character),
+                            headerExpression = ExpressionResolver.resolveExpression(result.character, null)
+                        )
+                    }
+                }
+                SchoolDisciplineResult.AlreadyDone -> {
+                    _uiState.update {
+                        it.copy(careerMessage = context.getString(R.string.msg_principal_appeal_already_done))
+                    }
+                }
+                SchoolDisciplineResult.InsufficientFunds -> {
+                    _uiState.update {
+                        it.copy(careerMessage = context.getString(R.string.msg_principal_appeal_broke))
+                    }
+                }
+                else -> {
+                    _uiState.update {
+                        it.copy(careerMessage = context.getString(R.string.msg_principal_appeal_ineligible))
+                    }
+                }
             }
         }
     }

@@ -72,6 +72,20 @@ object AchievementCatalog {
             iconName = "star"
         ),
         Achievement(
+            id = "school_rebel",
+            titleRes = R.string.achievement_school_rebel_title,
+            descriptionRes = R.string.achievement_school_rebel_description,
+            category = AchievementCategory.MISCHIEF,
+            iconName = "door"
+        ),
+        Achievement(
+            id = "expelled",
+            titleRes = R.string.achievement_expelled_title,
+            descriptionRes = R.string.achievement_expelled_description,
+            category = AchievementCategory.MISCHIEF,
+            iconName = "door"
+        ),
+        Achievement(
             id = "tied_the_knot",
             titleRes = R.string.achievement_tied_the_knot_title,
             descriptionRes = R.string.achievement_tied_the_knot_description,
