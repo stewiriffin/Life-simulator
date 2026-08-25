@@ -448,7 +448,7 @@ Always confirm with the user’s latest message if the request is ambiguous.
 
 ## 16. Copy-paste short briefing (for tiny context windows)
 
-> Maisha is an Android BitLife-style life sim (Compose, Hilt, Room, pure domain engines). Worldwide 15 countries. Latest: Fame & Talent Hub (athleticism/musical talent/fame, pro sports & entertainment pathways, endorsements/paparazzi); student part-time jobs (`f0bbc8a`); career ladders (`30b316a`); university (`74ec22c`). Prefer agency/UI/systems over event spam. Commit/push/install only on request.
+> Maisha is an Android BitLife-style life sim (Compose, Hilt, Room, pure domain engines). Worldwide 15 countries. Latest: Fame & Talent Hub (`dd3170e`: athleticism/musical talent/fame, pathways, gigs, idle decay, endorsements/paparazzi); student part-time jobs (`f0bbc8a`); career ladders (`30b316a`); university (`74ec22c`). Prefer agency/UI/systems over event spam. Commit/push/install only on request.
 
 ---
 
