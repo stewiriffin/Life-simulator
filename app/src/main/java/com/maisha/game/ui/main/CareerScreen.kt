@@ -2,8 +2,10 @@
 package com.maisha.game.ui.main
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
@@ -14,6 +16,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
@@ -51,7 +54,9 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
@@ -70,6 +75,7 @@ import com.maisha.game.data.model.EducationState
 import com.maisha.game.data.model.Job
 import com.maisha.game.data.model.PoliticalOffice
 import com.maisha.game.data.model.SchoolStage
+import com.maisha.game.data.model.StudentFinance
 import com.maisha.game.data.model.TaxPolicyType
 import com.maisha.game.data.model.GraduationHonors
 import com.maisha.game.data.model.UniversityFunding
@@ -109,6 +115,7 @@ import com.maisha.game.ui.components.StatType
 import com.maisha.game.ui.components.TabPageHero
 import com.maisha.game.ui.illustrations.EmptyStateIllustration
 import com.maisha.game.ui.illustrations.EmptyStateIllustrationView
+import com.maisha.game.ui.theme.AppIcons
 import com.maisha.game.ui.theme.CoralNegative
 import com.maisha.game.ui.theme.CreamBg
 import com.maisha.game.ui.theme.GoldAccent
@@ -1082,6 +1089,7 @@ private fun RetiredStateCard(
     }
 }
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun UniversityDashboardCard(
     character: Character,
@@ -1106,32 +1114,11 @@ private fun UniversityDashboardCard(
         education.universityMajor != null
     if (!canEnroll && !inUniversity && !showLoan && !showHonors && !showGradOffer) return
 
-    val eligibleMajors = remember(character.education, character.stats, character.age) {
-        schoolUiEngine.eligibleUniversityMajors(character)
-    }
-    val lockedMajors = remember(character.education, character.stats, character.age) {
-        if (!schoolUiEngine.canEnrollInUniversity(character) &&
-            !schoolUiEngine.isEligibleForUniversity(character)
-        ) {
-            emptyList()
-        } else {
-            UniversityMajor.entries.filterNot { schoolUiEngine.isMajorEligible(character, it) }
-        }
-    }
-    var selectedMajor by remember(eligibleMajors) {
-        mutableStateOf(eligibleMajors.firstOrNull())
-    }
-    var selectedFunding by remember { mutableStateOf(UniversityFunding.LOAN) }
-    val tuition = selectedMajor?.let {
-        schoolUiEngine.tuitionForMajor(it, character.countryCode)
-    } ?: 0
-    val scholarshipChance = remember(character.education, character.stats) {
-        (schoolUiEngine.scholarshipSuccessChance(character) * 100).toInt()
-    }
+    var fundingMajor by remember { mutableStateOf<UniversityMajor?>(null) }
     val programYears = if (inUniversity) {
         schoolUiEngine.universityProgramYears(character)
     } else {
-        selectedMajor?.programYears ?: 0
+        0
     }
     val progressPercent = if (inUniversity) {
         schoolUiEngine.universityProgressPercent(character)
@@ -1329,7 +1316,7 @@ private fun UniversityDashboardCard(
                 }
             }
 
-            if (canEnroll && eligibleMajors.isNotEmpty()) {
+            if (canEnroll) {
                 Spacer(modifier = Modifier.height(10.dp))
                 Text(
                     text = stringResource(R.string.university_enroll_title),
@@ -1347,25 +1334,26 @@ private fun UniversityDashboardCard(
                     style = MaterialTheme.typography.labelSmall,
                     fontWeight = FontWeight.SemiBold
                 )
-                Spacer(modifier = Modifier.height(6.dp))
-                Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
-                    eligibleMajors.chunked(2).forEach { rowMajors ->
+                Spacer(modifier = Modifier.height(8.dp))
+                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    UniversityMajor.entries.chunked(2).forEach { rowMajors ->
                         Row(
                             modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.spacedBy(6.dp)
+                            horizontalArrangement = Arrangement.spacedBy(8.dp)
                         ) {
                             rowMajors.forEach { major ->
-                                FilterChip(
-                                    selected = selectedMajor == major,
-                                    onClick = { selectedMajor = major },
-                                    label = {
-                                        Text(
-                                            text = major.courseLabel,
-                                            maxLines = 1,
-                                            overflow = TextOverflow.Ellipsis,
-                                            style = MaterialTheme.typography.labelSmall
-                                        )
+                                val eligible = schoolUiEngine.isMajorEligible(character, major)
+                                MajorSelectionCard(
+                                    major = major,
+                                    eligible = eligible,
+                                    prerequisiteBadge = schoolUiEngine.majorPrerequisiteBadge(major),
+                                    unlockPreview = schoolUiEngine.majorCareerUnlockRoles(major),
+                                    lockHint = if (!eligible) {
+                                        schoolUiEngine.majorEligibilityHint(character, major)
+                                    } else {
+                                        null
                                     },
+                                    onClick = { fundingMajor = major },
                                     modifier = Modifier.weight(1f)
                                 )
                             }
@@ -1375,77 +1363,23 @@ private fun UniversityDashboardCard(
                         }
                     }
                 }
-                if (lockedMajors.isNotEmpty()) {
-                    Spacer(modifier = Modifier.height(6.dp))
-                    Text(
-                        text = stringResource(R.string.university_locked_majors),
-                        style = MaterialTheme.typography.labelSmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                    lockedMajors.take(3).forEach { major ->
-                        Text(
-                            text = "• ${major.courseLabel}: " +
-                                schoolUiEngine.majorEligibilityHint(character, major),
-                            style = MaterialTheme.typography.labelSmall,
-                            color = InkTertiary,
-                            modifier = Modifier.padding(top = 2.dp)
-                        )
-                    }
-                }
-                selectedMajor?.let { major ->
-                    Spacer(modifier = Modifier.height(6.dp))
-                    Text(
-                        text = stringResource(
-                            R.string.university_tuition_label,
-                            formatMoney(tuition, character.countryCode)
-                        ) + " · ${major.programYears} yr",
-                        style = MaterialTheme.typography.labelSmall,
-                        color = TealPrimary
-                    )
-                }
-                Spacer(modifier = Modifier.height(10.dp))
-                Text(
-                    text = stringResource(R.string.university_pick_funding),
-                    style = MaterialTheme.typography.labelSmall,
-                    fontWeight = FontWeight.SemiBold
-                )
-                Spacer(modifier = Modifier.height(6.dp))
-                FundingOptionRow(
-                    selected = selectedFunding == UniversityFunding.CASH,
-                    enabled = character.stats.money >= tuition && tuition > 0,
-                    label = stringResource(R.string.university_funding_cash),
-                    onClick = { selectedFunding = UniversityFunding.CASH }
-                )
-                FundingOptionRow(
-                    selected = selectedFunding == UniversityFunding.LOAN,
-                    enabled = true,
-                    label = stringResource(R.string.university_funding_loan),
-                    onClick = { selectedFunding = UniversityFunding.LOAN }
-                )
-                FundingOptionRow(
-                    selected = selectedFunding == UniversityFunding.SCHOLARSHIP,
-                    enabled = true,
-                    label = stringResource(R.string.university_funding_scholarship),
-                    supporting = stringResource(
-                        R.string.university_funding_scholarship_chance,
-                        scholarshipChance
-                    ),
-                    onClick = { selectedFunding = UniversityFunding.SCHOLARSHIP }
-                )
-                Spacer(modifier = Modifier.height(10.dp))
-                Button(
-                    onClick = {
-                        val major = selectedMajor ?: return@Button
-                        onEnrollInUniversity(major, selectedFunding)
-                    },
-                    enabled = selectedMajor != null &&
-                        (selectedFunding != UniversityFunding.CASH ||
-                            character.stats.money >= tuition),
-                    modifier = Modifier.fillMaxWidth(),
-                    shape = RoundedCornerShape(12.dp),
-                    colors = ButtonDefaults.buttonColors(containerColor = TealPrimary)
+            }
+
+            fundingMajor?.let { major ->
+                val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
+                ModalBottomSheet(
+                    onDismissRequest = { fundingMajor = null },
+                    sheetState = sheetState
                 ) {
-                    Text(stringResource(R.string.btn_enroll_university))
+                    UniversityFundingSheet(
+                        character = character,
+                        major = major,
+                        onConfirm = { funding ->
+                            onEnrollInUniversity(major, funding)
+                            fundingMajor = null
+                        },
+                        onDismiss = { fundingMajor = null }
+                    )
                 }
             }
 
@@ -1518,6 +1452,215 @@ private fun UniversityDashboardCard(
 }
 
 @Composable
+private fun MajorSelectionCard(
+    major: UniversityMajor,
+    eligible: Boolean,
+    prerequisiteBadge: String,
+    unlockPreview: String,
+    lockHint: String?,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    val shape = RoundedCornerShape(12.dp)
+    Column(
+        modifier = modifier
+            .heightIn(min = 148.dp)
+            .clip(shape)
+            .border(
+                width = 1.dp,
+                color = if (eligible) TealPrimary.copy(alpha = 0.35f) else CreamBg,
+                shape = shape
+            )
+            .background(if (eligible) Color.White else CreamBg)
+            .alpha(if (eligible) 1f else 0.72f)
+            .clickable(enabled = eligible, onClick = onClick)
+            .padding(10.dp)
+    ) {
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(6.dp)
+        ) {
+            Icon(
+                imageVector = universityMajorIcon(major),
+                contentDescription = null,
+                tint = if (eligible) TealPrimary else InkTertiary,
+                modifier = Modifier.size(20.dp)
+            )
+            Text(
+                text = universityMajorTitle(major),
+                style = MaterialTheme.typography.labelLarge,
+                fontWeight = FontWeight.SemiBold,
+                maxLines = 2,
+                overflow = TextOverflow.Ellipsis,
+                modifier = Modifier.weight(1f)
+            )
+            if (!eligible) {
+                Icon(
+                    imageVector = Icons.Filled.Lock,
+                    contentDescription = stringResource(R.string.university_major_locked),
+                    tint = InkTertiary,
+                    modifier = Modifier.size(14.dp)
+                )
+            }
+        }
+        Spacer(modifier = Modifier.height(6.dp))
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .clip(RoundedCornerShape(8.dp))
+                .background(CreamBg)
+                .padding(horizontal = 6.dp, vertical = 4.dp)
+        ) {
+            Text(
+                text = if (eligible) {
+                    prerequisiteBadge
+                } else {
+                    lockHint?.takeIf { it.isNotBlank() } ?: prerequisiteBadge
+                },
+                style = MaterialTheme.typography.labelSmall,
+                color = if (eligible) TealPrimary else CoralNegative,
+                maxLines = 3,
+                overflow = TextOverflow.Ellipsis
+            )
+        }
+        Spacer(modifier = Modifier.height(6.dp))
+        Text(
+            text = stringResource(R.string.university_major_years, major.programYears),
+            style = MaterialTheme.typography.labelSmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant
+        )
+        Text(
+            text = stringResource(R.string.university_major_unlocks, unlockPreview),
+            style = MaterialTheme.typography.labelSmall,
+            color = InkPrimary,
+            maxLines = 2,
+            overflow = TextOverflow.Ellipsis
+        )
+    }
+}
+
+@Composable
+private fun UniversityFundingSheet(
+    character: Character,
+    major: UniversityMajor,
+    onConfirm: (UniversityFunding) -> Unit,
+    onDismiss: () -> Unit
+) {
+    val tuition = remember(major, character.countryCode) {
+        schoolUiEngine.tuitionForMajor(major, character.countryCode)
+    }
+    val totalLiability = tuition * major.programYears
+    val canPayCash = character.stats.money >= tuition && tuition > 0
+    val scholarshipChance = remember(character.education, character.stats) {
+        (schoolUiEngine.scholarshipSuccessChance(character) * 100).toInt()
+    }
+    var selectedFunding by remember { mutableStateOf(UniversityFunding.LOAN) }
+
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .verticalScroll(rememberScrollState())
+            .padding(horizontal = 16.dp)
+            .padding(bottom = 28.dp)
+    ) {
+        Text(
+            text = stringResource(
+                R.string.university_funding_sheet_title,
+                universityMajorTitle(major)
+            ),
+            style = MaterialTheme.typography.titleMedium,
+            fontWeight = FontWeight.Bold
+        )
+        Spacer(modifier = Modifier.height(4.dp))
+        Text(
+            text = stringResource(
+                R.string.university_tuition_label,
+                formatMoney(tuition, character.countryCode)
+            ) + " · " + stringResource(R.string.university_major_years, major.programYears),
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant
+        )
+        Spacer(modifier = Modifier.height(6.dp))
+        Text(
+            text = stringResource(
+                R.string.university_major_unlocks,
+                schoolUiEngine.majorCareerUnlockRoles(major)
+            ),
+            style = MaterialTheme.typography.labelSmall,
+            color = TealPrimary
+        )
+        Spacer(modifier = Modifier.height(14.dp))
+        Text(
+            text = stringResource(R.string.university_pick_funding),
+            style = MaterialTheme.typography.labelMedium,
+            fontWeight = FontWeight.SemiBold
+        )
+        Spacer(modifier = Modifier.height(8.dp))
+
+        FundingOptionRow(
+            selected = selectedFunding == UniversityFunding.CASH,
+            enabled = canPayCash,
+            label = stringResource(R.string.university_funding_cash),
+            supporting = if (canPayCash) {
+                stringResource(
+                    R.string.university_funding_cash_detail,
+                    formatMoney(character.stats.money, character.countryCode),
+                    formatMoney(tuition, character.countryCode)
+                )
+            } else {
+                stringResource(R.string.university_funding_cash_short) + " · " +
+                    stringResource(
+                        R.string.university_funding_cash_detail,
+                        formatMoney(character.stats.money, character.countryCode),
+                        formatMoney(tuition, character.countryCode)
+                    )
+            },
+            onClick = { selectedFunding = UniversityFunding.CASH }
+        )
+        FundingOptionRow(
+            selected = selectedFunding == UniversityFunding.LOAN,
+            enabled = true,
+            label = stringResource(R.string.university_funding_loan),
+            supporting = stringResource(
+                R.string.university_funding_loan_detail,
+                formatMoney(totalLiability, character.countryCode),
+                major.programYears,
+                StudentFinance.LOAN_INTEREST_PERCENT_MIN,
+                StudentFinance.LOAN_INTEREST_PERCENT_MAX
+            ),
+            onClick = { selectedFunding = UniversityFunding.LOAN }
+        )
+        FundingOptionRow(
+            selected = selectedFunding == UniversityFunding.SCHOLARSHIP,
+            enabled = true,
+            label = stringResource(R.string.university_funding_scholarship),
+            supporting = stringResource(
+                R.string.university_funding_scholarship_chance,
+                scholarshipChance
+            ) + " — " + stringResource(R.string.university_funding_scholarship_detail),
+            onClick = { selectedFunding = UniversityFunding.SCHOLARSHIP }
+        )
+
+        Spacer(modifier = Modifier.height(16.dp))
+        Button(
+            onClick = { onConfirm(selectedFunding) },
+            enabled = selectedFunding != UniversityFunding.CASH || canPayCash,
+            modifier = Modifier.fillMaxWidth(),
+            shape = RoundedCornerShape(12.dp),
+            colors = ButtonDefaults.buttonColors(containerColor = TealPrimary)
+        ) {
+            Text(stringResource(R.string.university_confirm_enroll))
+        }
+        TextButton(
+            onClick = onDismiss,
+            modifier = Modifier.fillMaxWidth()
+        ) {
+            Text(stringResource(R.string.btn_cancel))
+        }
+    }
+}
+
+@Composable
 private fun FundingOptionRow(
     selected: Boolean,
     enabled: Boolean,
@@ -1528,14 +1671,25 @@ private fun FundingOptionRow(
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .alpha(if (enabled) 1f else 0.45f)
+            .clip(RoundedCornerShape(12.dp))
+            .border(
+                width = if (selected) 2.dp else 1.dp,
+                color = when {
+                    !enabled -> CreamBg
+                    selected -> TealPrimary
+                    else -> CreamBg
+                },
+                shape = RoundedCornerShape(12.dp)
+            )
+            .background(if (selected && enabled) TealPrimary.copy(alpha = 0.06f) else Color.White)
+            .alpha(if (enabled) 1f else 0.5f)
             .selectable(
                 selected = selected,
                 enabled = enabled,
                 role = Role.RadioButton,
                 onClick = onClick
             )
-            .padding(vertical = 4.dp),
+            .padding(horizontal = 10.dp, vertical = 10.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
         RadioButton(
@@ -1544,7 +1698,11 @@ private fun FundingOptionRow(
             enabled = enabled
         )
         Column(modifier = Modifier.padding(start = 4.dp)) {
-            Text(text = label, style = MaterialTheme.typography.bodyMedium)
+            Text(
+                text = label,
+                style = MaterialTheme.typography.bodyMedium,
+                fontWeight = FontWeight.SemiBold
+            )
             if (supporting != null) {
                 Text(
                     text = supporting,
@@ -1554,6 +1712,26 @@ private fun FundingOptionRow(
             }
         }
     }
+    Spacer(modifier = Modifier.height(8.dp))
+}
+
+@Composable
+private fun universityMajorTitle(major: UniversityMajor): String = when (major) {
+    UniversityMajor.COMPUTER_SCIENCE -> stringResource(R.string.major_computer_science)
+    UniversityMajor.LAW -> stringResource(R.string.major_law)
+    UniversityMajor.MEDICINE -> stringResource(R.string.major_medicine)
+    UniversityMajor.BUSINESS -> stringResource(R.string.major_business)
+    UniversityMajor.COMMUNICATIONS -> stringResource(R.string.major_arts)
+    UniversityMajor.ENGINEERING -> stringResource(R.string.major_engineering)
+    UniversityMajor.NURSING -> stringResource(R.string.major_nursing)
+}
+
+private fun universityMajorIcon(major: UniversityMajor): ImageVector = when (major) {
+    UniversityMajor.COMPUTER_SCIENCE, UniversityMajor.ENGINEERING -> AppIcons.Smarts
+    UniversityMajor.LAW -> AppIcons.Career
+    UniversityMajor.MEDICINE, UniversityMajor.NURSING -> AppIcons.Health
+    UniversityMajor.BUSINESS -> AppIcons.Money
+    UniversityMajor.COMMUNICATIONS -> AppIcons.Looks
 }
 
 @Composable
@@ -2793,128 +2971,68 @@ private fun JobsAndSideHustlesCard(
         !character.career.energyRestedThisYear &&
         character.career.energyLevel < 95
 
-    Card(
+    Column(
         modifier = Modifier.fillMaxWidth(),
-        shape = MaishaRadius.cardShape,
-        colors = CardDefaults.cardColors(containerColor = Color.White)
+        verticalArrangement = Arrangement.spacedBy(10.dp)
     ) {
-        Column(
-            modifier = Modifier.padding(16.dp),
-            verticalArrangement = Arrangement.spacedBy(10.dp)
-        ) {
+        PartTimeEnergyHeader(
+            character = character,
+            showStudentHints = showPartTime,
+            canRest = canRest,
+            onRestStudentEnergy = onRestStudentEnergy
+        )
+        if (character.career.activePartTimeJob != null) {
+            ActivePartTimeManagementCard(
+                character = character,
+                careerEngine = careerEngine,
+                onQuitPartTimeJob = onQuitPartTimeJob
+            )
+        }
+        if (showPartTime) {
             Text(
-                text = stringResource(R.string.section_jobs_side_hustles),
-                style = MaterialTheme.typography.titleSmall,
+                text = stringResource(R.string.section_part_time_marketplace),
+                style = MaterialTheme.typography.labelLarge,
                 fontWeight = FontWeight.SemiBold,
-                color = TealPrimary
+                color = InkPrimary
             )
-            Text(
-                text = stringResource(
-                    R.string.jobs_hustles_energy,
-                    character.career.energyLevel
-                ),
-                style = MaterialTheme.typography.labelMedium,
-                color = InkTertiary
-            )
-            StatBar(
-                type = StatType.HEALTH,
-                value = character.career.energyLevel,
-                modifier = Modifier.fillMaxWidth()
-            )
-            character.career.activePartTimeJob?.let { active ->
-                Text(
-                    text = stringResource(R.string.jobs_hustles_active, active.displayLabel),
-                    style = MaterialTheme.typography.bodySmall,
-                    color = LifeGreen
+            PartTimeJob.entries.forEach { job ->
+                PartTimeJobMarketCard(
+                    character = character,
+                    careerEngine = careerEngine,
+                    job = job,
+                    onApply = { onWorkPartTime(job) }
                 )
             }
-            if (showPartTime) {
-                Text(
-                    text = stringResource(R.string.jobs_hustles_balance_hint),
-                    style = MaterialTheme.typography.labelSmall,
-                    color = InkTertiary
-                )
-                Text(
-                    text = stringResource(R.string.jobs_hustles_year_end_hint),
-                    style = MaterialTheme.typography.labelSmall,
-                    color = InkTertiary
-                )
-                if (canRest) {
-                    OutlinedButton(
-                        onClick = onRestStudentEnergy,
-                        modifier = Modifier.fillMaxWidth()
-                    ) {
-                        Text(stringResource(R.string.btn_rest_energy))
-                    }
-                }
-                if (character.career.activePartTimeJob != null) {
-                    OutlinedButton(
-                        onClick = onQuitPartTimeJob,
-                        modifier = Modifier.fillMaxWidth()
-                    ) {
-                        Text(stringResource(R.string.btn_quit_part_time))
-                    }
-                }
-                PartTimeJob.entries.chunked(2).forEach { row ->
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.spacedBy(8.dp)
-                    ) {
-                        row.forEach { job ->
-                            val available = careerEngine.isPartTimeListingAvailable(character, job)
-                            val (minPay, maxPay) = careerEngine.partTimePayoutRange(
-                                job,
-                                character.countryCode
+        }
+        if (showHustles) {
+            Card(
+                modifier = Modifier.fillMaxWidth(),
+                shape = MaishaRadius.cardShape,
+                colors = CardDefaults.cardColors(containerColor = Color.White)
+            ) {
+                Column(
+                    modifier = Modifier.padding(16.dp),
+                    verticalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    Text(
+                        text = stringResource(R.string.section_side_hustles),
+                        style = MaterialTheme.typography.labelLarge,
+                        fontWeight = FontWeight.Medium,
+                        color = InkPrimary
+                    )
+                    youthHustles.forEach { type ->
+                        val available = careerEngine.isSideHustleAvailable(character, type)
+                        OutlinedButton(
+                            onClick = { onExecuteSideHustle(type) },
+                            enabled = available,
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
+                            Text(
+                                text = type.name.replace('_', ' ').lowercase()
+                                    .replaceFirstChar { it.titlecase() },
+                                style = MaterialTheme.typography.labelMedium
                             )
-                            OutlinedButton(
-                                onClick = { onWorkPartTime(job) },
-                                enabled = available,
-                                modifier = Modifier.weight(1f)
-                            ) {
-                                Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                                    Text(
-                                        text = job.displayLabel,
-                                        maxLines = 1,
-                                        overflow = TextOverflow.Ellipsis,
-                                        style = MaterialTheme.typography.labelSmall
-                                    )
-                                    Text(
-                                        text = stringResource(
-                                            R.string.part_time_payout_range,
-                                            formatMoney(minPay, character.countryCode),
-                                            formatMoney(maxPay, character.countryCode)
-                                        ),
-                                        style = MaterialTheme.typography.labelSmall,
-                                        color = InkTertiary,
-                                        maxLines = 1,
-                                        overflow = TextOverflow.Ellipsis
-                                    )
-                                }
-                            }
                         }
-                        if (row.size == 1) Spacer(modifier = Modifier.weight(1f))
-                    }
-                }
-            }
-            if (showHustles) {
-                Text(
-                    text = stringResource(R.string.section_side_hustles),
-                    style = MaterialTheme.typography.labelLarge,
-                    fontWeight = FontWeight.Medium,
-                    color = InkPrimary
-                )
-                youthHustles.forEach { type ->
-                    val available = careerEngine.isSideHustleAvailable(character, type)
-                    OutlinedButton(
-                        onClick = { onExecuteSideHustle(type) },
-                        enabled = available,
-                        modifier = Modifier.fillMaxWidth()
-                    ) {
-                        Text(
-                            text = type.name.replace('_', ' ').lowercase()
-                                .replaceFirstChar { it.titlecase() },
-                            style = MaterialTheme.typography.labelMedium
-                        )
                     }
                 }
             }
@@ -3232,6 +3350,7 @@ private fun CurrentJobCard(
 ) {
     val job = character.career.currentJob ?: return
     val resources = LocalContext.current.resources
+    val careerEngine = remember { CareerEngine(HealthEngine(), RelocationEngine()) }
     val militaryAccent = Color(0xFF556B2F)
     val cardColor = if (job.isMilitary) {
         militaryAccent.copy(alpha = 0.22f)
@@ -3246,9 +3365,11 @@ private fun CurrentJobCard(
     val performanceValue = character.career.performance.roundToInt().coerceIn(0, 100)
         .let { if (it == 50 && job.performanceScore != 50) job.performanceScore else it }
     val stressValue = character.career.stress.roundToInt().coerceIn(0, 100)
-    val bossNorm = ((character.career.bossRelationship + 100) / 2).coerceIn(0, 100)
     val company = character.career.companyName
         ?: stringResource(R.string.career_company_unknown)
+    val annualSalaryLabel = CareerFormatter.formatSalary(job, resources, character.countryCode)
+    val promoReady = careerEngine.canAskForPromotion(character)
+    val burnoutRisk = stressValue >= 80
 
     Card(
         modifier = Modifier.fillMaxWidth(),
@@ -3256,21 +3377,30 @@ private fun CurrentJobCard(
         colors = CardDefaults.cardColors(containerColor = cardColor)
     ) {
         Column(modifier = Modifier.padding(14.dp)) {
+            Text(
+                text = stringResource(R.string.section_corporate_dashboard),
+                style = MaterialTheme.typography.labelMedium,
+                color = GoldAccent
+            )
+            Spacer(modifier = Modifier.height(8.dp))
             Row(
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.spacedBy(10.dp)
             ) {
-                IllustrationImage(
-                    ref = IllustrationCatalog.getIllustrationForJob(job.id),
-                    size = 44.dp,
-                    contentDescription = job.title
-                )
-                Column(modifier = Modifier.weight(1f)) {
-                    Text(
-                        text = stringResource(R.string.label_current_job),
-                        style = MaterialTheme.typography.labelMedium,
-                        color = GoldAccent
+                Box(
+                    modifier = Modifier
+                        .size(52.dp)
+                        .clip(RoundedCornerShape(12.dp))
+                        .background(CreamBg),
+                    contentAlignment = Alignment.Center
+                ) {
+                    IllustrationImage(
+                        ref = IllustrationCatalog.getIllustrationForJob(job.id),
+                        size = 44.dp,
+                        contentDescription = job.title
                     )
+                }
+                Column(modifier = Modifier.weight(1f)) {
                     Text(
                         text = job.title,
                         style = MaterialTheme.typography.titleMedium,
@@ -3278,117 +3408,95 @@ private fun CurrentJobCard(
                         maxLines = 2,
                         overflow = TextOverflow.Ellipsis
                     )
+                    Text(
+                        text = company,
+                        style = MaterialTheme.typography.bodySmall,
+                        fontWeight = FontWeight.SemiBold,
+                        color = TealPrimary,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis
+                    )
+                    Text(
+                        text = stringResource(
+                            R.string.format_job_level_short,
+                            job.level,
+                            character.career.yearsAtCurrentJob
+                        ),
+                        style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
                 }
             }
-            Spacer(modifier = Modifier.height(6.dp))
-            Text(
-                text = company,
-                style = MaterialTheme.typography.bodyMedium,
-                fontWeight = FontWeight.SemiBold,
-                color = TealPrimary
-            )
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(top = 6.dp),
-                horizontalArrangement = Arrangement.spacedBy(8.dp),
-                verticalAlignment = Alignment.CenterVertically
+            Spacer(modifier = Modifier.height(8.dp))
+            Card(
+                shape = RoundedCornerShape(10.dp),
+                colors = CardDefaults.cardColors(
+                    containerColor = GoldAccent.copy(alpha = 0.18f)
+                ),
+                modifier = Modifier.fillMaxWidth()
             ) {
-                Card(
-                    shape = RoundedCornerShape(10.dp),
-                    colors = CardDefaults.cardColors(
-                        containerColor = GoldAccent.copy(alpha = 0.18f)
-                    )
-                ) {
-                    Text(
-                        text = CareerFormatter.formatSalary(job, resources, character.countryCode),
-                        style = MaterialTheme.typography.labelLarge,
-                        fontWeight = FontWeight.Bold,
-                        color = GoldAccent,
-                        modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp)
-                    )
-                }
                 Text(
-                    text = stringResource(
-                        R.string.format_job_level_short,
-                        job.level,
-                        character.career.yearsAtCurrentJob
-                    ),
-                    style = MaterialTheme.typography.labelSmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                    text = annualSalaryLabel,
+                    style = MaterialTheme.typography.titleSmall,
+                    fontWeight = FontWeight.Bold,
+                    color = GoldAccent,
+                    modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp)
                 )
             }
 
-            Spacer(modifier = Modifier.height(12.dp))
-            val promoReady = performanceValue >= 90 && character.career.bossRelationship > 0 &&
-                job.level < com.maisha.game.data.model.JobLadder.maxLevel(job.id)
-            val burnoutRisk = stressValue >= 80
             if (promoReady) {
+                Spacer(modifier = Modifier.height(8.dp))
                 Text(
                     text = stringResource(R.string.banner_promotion_ready),
                     style = MaterialTheme.typography.bodySmall,
                     fontWeight = FontWeight.SemiBold,
-                    color = SuccessGreen,
-                    modifier = Modifier.padding(bottom = 6.dp)
+                    color = SuccessGreen
                 )
             }
             if (burnoutRisk) {
+                Spacer(modifier = Modifier.height(6.dp))
                 Text(
                     text = stringResource(R.string.banner_burnout_risk),
                     style = MaterialTheme.typography.bodySmall,
                     fontWeight = FontWeight.SemiBold,
-                    color = CoralNegative,
-                    modifier = Modifier.padding(bottom = 6.dp)
-                )
-            }
-            Text(
-                text = stringResource(R.string.section_office_meters),
-                style = MaterialTheme.typography.labelMedium,
-                fontWeight = FontWeight.SemiBold
-            )
-            Spacer(modifier = Modifier.height(6.dp))
-            StatBar(
-                type = StatType.PERFORMANCE,
-                value = performanceValue,
-                label = stringResource(R.string.stat_performance)
-            )
-            Spacer(modifier = Modifier.height(6.dp))
-            StatBar(
-                type = StatType.HAPPINESS,
-                value = stressValue,
-                label = stringResource(R.string.stat_workplace_stress)
-            )
-            Spacer(modifier = Modifier.height(6.dp))
-            StatBar(
-                type = StatType.RELATIONSHIP,
-                value = bossNorm,
-                label = stringResource(R.string.stat_boss_relationship)
-            )
-            if (character.career.colleagueRelationships.isNotEmpty()) {
-                Spacer(modifier = Modifier.height(4.dp))
-                Text(
-                    text = stringResource(
-                        R.string.format_colleagues,
-                        character.career.colleagueRelationships.entries
-                            .sortedByDescending { it.value }
-                            .take(3)
-                            .joinToString { "${it.key} (${it.value})" }
-                    ),
-                    style = MaterialTheme.typography.labelSmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                    color = CoralNegative
                 )
             }
 
             Spacer(modifier = Modifier.height(12.dp))
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(10.dp)
+            ) {
+                OfficeMeterColumn(
+                    label = stringResource(R.string.stat_performance),
+                    value = performanceValue,
+                    barColor = performanceMeterColor(performanceValue),
+                    modifier = Modifier.weight(1f)
+                )
+                OfficeMeterColumn(
+                    label = stringResource(R.string.stat_workplace_stress),
+                    value = stressValue,
+                    barColor = stressMeterColor(stressValue),
+                    modifier = Modifier.weight(1f)
+                )
+            }
+
+            Spacer(modifier = Modifier.height(12.dp))
+            WorkplaceRelationshipsCard(character = character)
+
+            Spacer(modifier = Modifier.height(12.dp))
             Text(
-                text = stringResource(R.string.section_office_actions),
+                text = stringResource(R.string.section_career_action_board),
                 style = MaterialTheme.typography.labelMedium,
                 fontWeight = FontWeight.SemiBold
             )
             Spacer(modifier = Modifier.height(6.dp))
             OfficeActionGrid(
                 character = character,
-                onOfficeAction = onOfficeAction
+                promoReady = promoReady,
+                onOfficeAction = onOfficeAction,
+                onResign = onQuitJob
             )
 
             Spacer(modifier = Modifier.height(10.dp))
@@ -3447,18 +3555,6 @@ private fun CurrentJobCard(
                     color = GoldAccent,
                     fontWeight = FontWeight.SemiBold
                 )
-            }
-
-            Spacer(modifier = Modifier.height(12.dp))
-            OutlinedButton(
-                onClick = onQuitJob,
-                modifier = Modifier.fillMaxWidth(),
-                shape = RoundedCornerShape(12.dp),
-                enabled = character.alive
-            ) {
-                Text(stringResource(R.string.btn_quit_job))
-            }
-            if (canRetire) {
                 Spacer(modifier = Modifier.height(8.dp))
                 Button(
                     onClick = onRetire,
@@ -3477,9 +3573,185 @@ private fun CurrentJobCard(
 }
 
 @Composable
+private fun OfficeMeterColumn(
+    label: String,
+    value: Int,
+    barColor: Color,
+    modifier: Modifier = Modifier
+) {
+    Column(modifier = modifier) {
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Text(
+                text = label,
+                style = MaterialTheme.typography.labelSmall,
+                fontWeight = FontWeight.SemiBold,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+                modifier = Modifier.weight(1f)
+            )
+            Text(
+                text = "$value%",
+                style = MaterialTheme.typography.labelSmall,
+                fontWeight = FontWeight.Bold,
+                color = barColor
+            )
+        }
+        Spacer(modifier = Modifier.height(4.dp))
+        LinearProgressIndicator(
+            progress = { value / 100f },
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(10.dp)
+                .clip(RoundedCornerShape(6.dp)),
+            color = barColor,
+            trackColor = CreamBg
+        )
+    }
+}
+
+private fun performanceMeterColor(value: Int): Color = when {
+    value >= 80 -> SuccessGreen
+    value >= 50 -> TealPrimary
+    value >= 30 -> GoldAccent
+    else -> CoralNegative
+}
+
+private fun stressMeterColor(value: Int): Color = when {
+    value >= 80 -> CoralNegative
+    value >= 55 -> GoldAccent
+    else -> SuccessGreen
+}
+
+@Composable
+private fun WorkplaceRelationshipsCard(character: Character) {
+    val bossScore = character.career.bossRelationship.coerceIn(-100, 100)
+    val bossNorm = ((bossScore + 100) / 2).coerceIn(0, 100)
+    val colleagues = character.career.colleagueRelationships.entries
+        .sortedByDescending { it.value }
+        .take(4)
+
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(12.dp),
+        colors = CardDefaults.cardColors(containerColor = CreamBg)
+    ) {
+        Column(modifier = Modifier.padding(12.dp)) {
+            Text(
+                text = stringResource(R.string.section_workplace_relationships),
+                style = MaterialTheme.typography.labelMedium,
+                fontWeight = FontWeight.SemiBold,
+                color = TealPrimary
+            )
+            Spacer(modifier = Modifier.height(8.dp))
+            WorkplacePersonRow(
+                name = stringResource(R.string.label_direct_manager),
+                score = bossScore,
+                meter = bossNorm,
+                accent = relationshipStandingColor(bossScore)
+            )
+            if (colleagues.isNotEmpty()) {
+                Spacer(modifier = Modifier.height(10.dp))
+                Text(
+                    text = stringResource(R.string.label_key_coworkers),
+                    style = MaterialTheme.typography.labelSmall,
+                    fontWeight = FontWeight.SemiBold,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+                Spacer(modifier = Modifier.height(4.dp))
+                colleagues.forEach { (name, score) ->
+                    val clamped = score.coerceIn(-100, 100)
+                    WorkplacePersonRow(
+                        name = name,
+                        score = clamped,
+                        meter = ((clamped + 100) / 2).coerceIn(0, 100),
+                        accent = relationshipStandingColor(clamped)
+                    )
+                    Spacer(modifier = Modifier.height(6.dp))
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun WorkplacePersonRow(
+    name: String,
+    score: Int,
+    meter: Int,
+    accent: Color
+) {
+    Column(modifier = Modifier.fillMaxWidth()) {
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Text(
+                text = name,
+                style = MaterialTheme.typography.bodySmall,
+                fontWeight = FontWeight.SemiBold,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+                modifier = Modifier.weight(1f)
+            )
+            Text(
+                text = relationshipStandingLabel(score),
+                style = MaterialTheme.typography.labelSmall,
+                color = accent,
+                fontWeight = FontWeight.SemiBold
+            )
+        }
+        Spacer(modifier = Modifier.height(2.dp))
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(8.dp)
+        ) {
+            LinearProgressIndicator(
+                progress = { meter / 100f },
+                modifier = Modifier
+                    .weight(1f)
+                    .height(6.dp)
+                    .clip(RoundedCornerShape(4.dp)),
+                color = accent,
+                trackColor = Color.White
+            )
+            Text(
+                text = stringResource(R.string.format_relationship_score, score),
+                style = MaterialTheme.typography.labelSmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+        }
+    }
+}
+
+@Composable
+private fun relationshipStandingLabel(score: Int): String = when {
+    score >= 50 -> stringResource(R.string.relationship_standing_ally)
+    score >= 20 -> stringResource(R.string.relationship_standing_warm)
+    score >= -10 -> stringResource(R.string.relationship_standing_neutral)
+    score >= -40 -> stringResource(R.string.relationship_standing_cool)
+    else -> stringResource(R.string.relationship_standing_hostile)
+}
+
+private fun relationshipStandingColor(score: Int): Color = when {
+    score >= 50 -> SuccessGreen
+    score >= 20 -> TealPrimary
+    score >= -10 -> InkTertiary
+    score >= -40 -> GoldAccent
+    else -> CoralNegative
+}
+
+@Composable
 private fun OfficeActionGrid(
     character: Character,
-    onOfficeAction: (OfficeAction) -> Unit
+    promoReady: Boolean,
+    onOfficeAction: (OfficeAction) -> Unit,
+    onResign: () -> Unit
 ) {
     val alive = character.alive
     val workDone = character.career.officeWorkActionDoneThisYear
@@ -3487,59 +3759,71 @@ private fun OfficeActionGrid(
     val askDone = character.career.askPromotionDoneThisYear
     val networkDone = character.career.networkColleagueDoneThisYear
     val hasColleagues = character.career.colleagueRelationships.isNotEmpty()
+    val raiseOrPromoAction =
+        if (promoReady) OfficeAction.ASK_PROMOTION else OfficeAction.REQUEST_RAISE
+
+    data class BoardAction(
+        val label: String,
+        val enabled: Boolean,
+        val onClick: () -> Unit
+    )
+
     val actions = listOf(
-        Triple(
-            OfficeAction.WORK_HARDER,
-            stringResource(R.string.office_action_work_hard),
-            alive && !workDone
+        BoardAction(
+            label = stringResource(R.string.office_action_work_hard),
+            enabled = alive && !workDone,
+            onClick = { onOfficeAction(OfficeAction.WORK_HARDER) }
         ),
-        Triple(
-            OfficeAction.SLACK_OFF,
-            stringResource(R.string.office_action_slack_off),
-            alive && !workDone
+        BoardAction(
+            label = stringResource(R.string.office_action_slack_off),
+            enabled = alive && !workDone,
+            onClick = { onOfficeAction(OfficeAction.SLACK_OFF) }
         ),
-        Triple(
-            OfficeAction.KISS_UP,
-            stringResource(R.string.office_action_kiss_up),
-            alive && !kissDone
+        BoardAction(
+            label = stringResource(R.string.office_action_kiss_up),
+            enabled = alive && !kissDone,
+            onClick = { onOfficeAction(OfficeAction.KISS_UP) }
         ),
-        Triple(
-            OfficeAction.NETWORK_COLLEAGUE,
-            stringResource(R.string.office_action_network),
-            alive && !networkDone && hasColleagues
+        BoardAction(
+            label = stringResource(R.string.office_action_raise_or_promo),
+            enabled = alive && !askDone,
+            onClick = { onOfficeAction(raiseOrPromoAction) }
         ),
-        Triple(
-            OfficeAction.ASK_PROMOTION,
-            stringResource(R.string.office_action_ask_promotion),
-            alive && !askDone
+        BoardAction(
+            label = stringResource(R.string.office_action_network),
+            enabled = alive && !networkDone && hasColleagues,
+            onClick = { onOfficeAction(OfficeAction.NETWORK_COLLEAGUE) }
         ),
-        Triple(
-            OfficeAction.REQUEST_RAISE,
-            stringResource(R.string.office_action_request_raise),
-            alive && !askDone
+        BoardAction(
+            label = stringResource(R.string.office_action_search_jobs),
+            enabled = alive,
+            onClick = { onOfficeAction(OfficeAction.SEARCH_JOBS) }
         ),
-        Triple(
-            OfficeAction.SEARCH_JOBS,
-            stringResource(R.string.office_action_search_jobs),
-            alive
+        BoardAction(
+            label = stringResource(R.string.office_action_resign),
+            enabled = alive,
+            onClick = onResign
         )
     )
+
     Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
         actions.chunked(2).forEach { row ->
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.spacedBy(6.dp)
             ) {
-                row.forEach { (action, label, enabled) ->
+                row.forEach { action ->
                     OutlinedButton(
-                        onClick = { onOfficeAction(action) },
-                        enabled = enabled,
-                        modifier = Modifier.weight(1f),
+                        onClick = action.onClick,
+                        enabled = action.enabled,
+                        modifier = Modifier
+                            .weight(1f)
+                            .heightIn(min = 48.dp),
                         shape = RoundedCornerShape(10.dp),
                         contentPadding = PaddingValues(horizontal = 6.dp, vertical = 8.dp)
                     ) {
                         Text(
-                            text = label,
+                            text = action.label,
                             maxLines = 2,
                             textAlign = TextAlign.Center,
                             style = MaterialTheme.typography.labelSmall

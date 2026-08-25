@@ -58,6 +58,10 @@ data class CareerState(
     val partTimeWorkedThisYear: Boolean = false,
     /** Active student part-time role for study/work balance (cleared on Age Up after school tick). */
     val activePartTimeJob: PartTimeJob? = null,
+    /** Cash collected from the active part-time role this year (hire shift + year-end). */
+    val partTimeEarningsCollected: Int = 0,
+    /** Estimated hours committed on the active part-time role this year. */
+    val partTimeHoursWorked: Int = 0,
     /** Student energy pool (0–100); drained by shifts and hustles, recovers yearly. */
     val energyLevel: Int = 100,
     /** Mid-year rest used to recover student energy (once per year). */

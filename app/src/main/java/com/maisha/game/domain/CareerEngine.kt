@@ -2287,6 +2287,8 @@ class CareerEngine @Inject constructor(
             career = character.career.copy(
                 partTimeWorkedThisYear = true,
                 activePartTimeJob = job,
+                partTimeEarningsCollected = payout,
+                partTimeHoursWorked = partTimeHoursEstimate(job),
                 energyLevel = newEnergy,
                 stress = (character.career.stress + stressBump).coerceIn(0f, 100f)
             ),
@@ -2337,6 +2339,8 @@ class CareerEngine @Inject constructor(
                 ),
                 career = character.career.copy(
                     activePartTimeJob = null,
+                    partTimeEarningsCollected = 0,
+                    partTimeHoursWorked = 0,
                     stress = (character.career.stress - 4f).coerceIn(0f, 100f)
                 ),
                 eventLog = EventLogCap.prepend(
@@ -2391,6 +2395,9 @@ class CareerEngine @Inject constructor(
             )
             updated = updated.copy(
                 stats = updated.stats.copy(money = updated.stats.money + residual),
+                career = updated.career.copy(
+                    partTimeEarningsCollected = updated.career.partTimeEarningsCollected + residual
+                ),
                 eventLog = EventLogCap.prepend(
                     updated.eventLog,
                     "Year-end ${job.displayLabel} paycheck: ${formatMoney(residual, character.countryCode)}."
@@ -2404,9 +2411,32 @@ class CareerEngine @Inject constructor(
         return updated.copy(
             career = updated.career.copy(
                 activePartTimeJob = null,
+                partTimeEarningsCollected = 0,
+                partTimeHoursWorked = 0,
                 energyLevel = recovered
             )
         )
+    }
+
+    /** Energy drained when accepting [job] (for marketplace badges). */
+    fun partTimeEnergyCost(job: PartTimeJob): Int = partTimeSpec(job).energyCost
+
+    /** Rough weekly hours implied by the role's energy demand. */
+    fun partTimeHoursEstimate(job: PartTimeJob): Int =
+        (partTimeSpec(job).energyCost * 0.5f).roundToInt().coerceIn(6, 24)
+
+    /** Short requirement line for locked / gated listings. */
+    fun partTimeRequirementHint(character: Character, job: PartTimeJob): String {
+        if (character.age < MIN_PART_TIME_AGE) {
+            return "Requires age $MIN_PART_TIME_AGE+"
+        }
+        if (job == PartTimeJob.FREELANCE_CODER && character.stats.smarts < FREELANCE_CODER_MIN_SMARTS) {
+            return "Requires Smarts ≥$FREELANCE_CODER_MIN_SMARTS"
+        }
+        if (character.career.energyLevel < MIN_ENERGY_TO_WORK) {
+            return "Needs energy ≥$MIN_ENERGY_TO_WORK"
+        }
+        return "Age $MIN_PART_TIME_AGE+"
     }
 
     private data class PartTimeSpec(

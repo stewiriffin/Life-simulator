@@ -1376,6 +1376,33 @@ class EducationEngine @Inject constructor(
         }
     }
 
+    /** Compact prerequisite badge for major selection cards. */
+    fun majorPrerequisiteBadge(major: UniversityMajor): String = when (major) {
+        UniversityMajor.MEDICINE ->
+            "Requires Smarts ≥$MAJOR_MEDICINE_MIN_SMARTS · Health ≥$MAJOR_MEDICINE_MIN_HEALTH"
+        UniversityMajor.LAW ->
+            "Requires Smarts ≥$MAJOR_LAW_MIN_SMARTS · Reputation ≥$MAJOR_LAW_MIN_REPUTATION"
+        UniversityMajor.COMPUTER_SCIENCE, UniversityMajor.ENGINEERING ->
+            "Requires Smarts ≥$MAJOR_CS_MIN_SMARTS"
+        UniversityMajor.BUSINESS ->
+            "Requires Smarts ≥$MAJOR_BUSINESS_MIN_SMARTS · Happiness ≥$MAJOR_BUSINESS_MIN_HAPPINESS"
+        UniversityMajor.NURSING ->
+            "Requires Health ≥$MAJOR_NURSING_MIN_HEALTH"
+        UniversityMajor.COMMUNICATIONS ->
+            "Requires Smarts ≥$MAJOR_COMMS_MIN_SMARTS"
+    }
+
+    /** Career roles preview shown on major cards (comma-separated). */
+    fun majorCareerUnlockRoles(major: UniversityMajor): String = when (major) {
+        UniversityMajor.COMPUTER_SCIENCE -> "Software Engineer, CTO"
+        UniversityMajor.ENGINEERING -> "Systems Engineer, Tech Lead"
+        UniversityMajor.LAW -> "Associate Attorney, Partner"
+        UniversityMajor.MEDICINE -> "Resident Doctor, Specialist"
+        UniversityMajor.NURSING -> "Registered Nurse, Charge Nurse"
+        UniversityMajor.BUSINESS -> "Analyst, Executive"
+        UniversityMajor.COMMUNICATIONS -> "Producer, Creative Director"
+    }
+
     fun scholarshipSuccessChance(character: Character): Float {
         val gpa = character.education.gpa
         val smarts = character.stats.smarts / 100f

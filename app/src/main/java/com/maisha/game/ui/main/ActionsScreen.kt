@@ -711,101 +711,33 @@ fun ActionsScreen(
                 if ((show(ActionCategory.EARN) || show(ActionCategory.LIVE)) && showJobsAndHustles) {
                     item { SectionHeader(title = stringResource(R.string.section_jobs_side_hustles)) }
                     item(key = "jobs_hustles_energy") {
-                        Card(
-                            modifier = Modifier.fillMaxWidth(),
-                            shape = MaishaRadius.cardShape,
-                            colors = CardDefaults.cardColors(containerColor = Color.White)
-                        ) {
-                            Column(modifier = Modifier.padding(14.dp)) {
-                                Text(
-                                    text = stringResource(
-                                        R.string.jobs_hustles_energy,
-                                        character.career.energyLevel
-                                    ),
-                                    style = MaterialTheme.typography.labelLarge,
-                                    fontWeight = FontWeight.SemiBold,
-                                    color = TealPrimary
-                                )
-                                Spacer(modifier = Modifier.height(6.dp))
-                                StatBar(
-                                    type = StatType.HEALTH,
-                                    value = character.career.energyLevel,
-                                    modifier = Modifier.fillMaxWidth()
-                                )
-                                character.career.activePartTimeJob?.let { active ->
-                                    Spacer(modifier = Modifier.height(8.dp))
-                                    Text(
-                                        text = stringResource(
-                                            R.string.jobs_hustles_active,
-                                            active.displayLabel
-                                        ),
-                                        style = MaterialTheme.typography.bodySmall,
-                                        color = InkTertiary
-                                    )
-                                }
-                                if (showStudentPartTime) {
-                                    Spacer(modifier = Modifier.height(6.dp))
-                                    Text(
-                                        text = stringResource(R.string.jobs_hustles_balance_hint),
-                                        style = MaterialTheme.typography.labelSmall,
-                                        color = InkTertiary
-                                    )
-                                    Spacer(modifier = Modifier.height(4.dp))
-                                    Text(
-                                        text = stringResource(R.string.jobs_hustles_year_end_hint),
-                                        style = MaterialTheme.typography.labelSmall,
-                                        color = InkTertiary
-                                    )
-                                }
-                                val canRest = showStudentPartTime &&
-                                    !character.career.energyRestedThisYear &&
-                                    character.career.energyLevel < 95
-                                if (canRest) {
-                                    Spacer(modifier = Modifier.height(10.dp))
-                                    androidx.compose.material3.OutlinedButton(
-                                        onClick = onRestStudentEnergy,
-                                        modifier = Modifier.fillMaxWidth()
-                                    ) {
-                                        Text(stringResource(R.string.btn_rest_energy))
-                                    }
-                                }
-                                if (character.career.activePartTimeJob != null) {
-                                    Spacer(modifier = Modifier.height(8.dp))
-                                    androidx.compose.material3.OutlinedButton(
-                                        onClick = onQuitPartTimeJob,
-                                        modifier = Modifier.fillMaxWidth()
-                                    ) {
-                                        Text(stringResource(R.string.btn_quit_part_time))
-                                    }
-                                }
-                            }
+                        val canRest = showStudentPartTime &&
+                            !character.career.energyRestedThisYear &&
+                            character.career.energyLevel < 95
+                        PartTimeEnergyHeader(
+                            character = character,
+                            showStudentHints = showStudentPartTime,
+                            canRest = canRest,
+                            onRestStudentEnergy = onRestStudentEnergy
+                        )
+                    }
+                    if (character.career.activePartTimeJob != null) {
+                        item(key = "active_part_time") {
+                            ActivePartTimeManagementCard(
+                                character = character,
+                                careerEngine = careerEngine,
+                                onQuitPartTimeJob = onQuitPartTimeJob
+                            )
                         }
                     }
                     if (showStudentPartTime) {
                         PartTimeJob.entries.forEach { job ->
                             item(key = "part_time_${job.name}") {
-                                val available = careerEngine.isPartTimeListingAvailable(character, job)
-                                val (minPay, maxPay) = careerEngine.partTimePayoutRange(
-                                    job,
-                                    character.countryCode
-                                )
-                                ActionCard(
-                                    icon = AppIcons.Money,
-                                    title = partTimeJobTitle(job),
-                                    description = partTimeDemandLabel(job.demand),
-                                    metaLabel = when {
-                                        character.career.partTimeWorkedThisYear ->
-                                            stringResource(R.string.msg_part_time_already)
-                                        !available -> stringResource(R.string.msg_side_hustle_prerequisites)
-                                        else -> stringResource(
-                                            R.string.part_time_payout_range,
-                                            formatMoney(minPay, character.countryCode),
-                                            formatMoney(maxPay, character.countryCode)
-                                        )
-                                    },
-                                    enabled = available,
-                                    accent = ActionCardAccent.GOLD,
-                                    onClick = { if (available) onWorkPartTime(job) }
+                                PartTimeJobMarketCard(
+                                    character = character,
+                                    careerEngine = careerEngine,
+                                    job = job,
+                                    onApply = { onWorkPartTime(job) }
                                 )
                             }
                         }
