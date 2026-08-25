@@ -63,6 +63,7 @@ import com.maisha.game.domain.PetCareResult
 import com.maisha.game.domain.ProposalResult
 import com.maisha.game.domain.SeekFriendshipResult
 import com.maisha.game.domain.SchoolActionResult
+import com.maisha.game.domain.SchoolInteractionResult
 import com.maisha.game.domain.StartDatingResult
 import com.maisha.game.domain.PurchaseResult
 import com.maisha.game.domain.RepairResult
@@ -937,6 +938,45 @@ class LifeViewModel @Inject constructor(
                 SchoolActionResult.Ineligible -> {
                     _uiState.update {
                         it.copy(careerMessage = context.getString(R.string.msg_school_action_ineligible))
+                    }
+                }
+            }
+        }
+    }
+
+    fun onSchoolPersonInteraction(
+        personId: String,
+        action: com.maisha.game.data.model.SchoolPersonAction
+    ) {
+        val character = _uiState.value.character ?: return
+        if (!character.alive) return
+        viewModelScope.launch {
+            when (val result = gameEngine.handleSchoolPersonInteraction(character, personId, action)) {
+                is SchoolInteractionResult.Success -> {
+                    persist(result.character)
+                    processMidLifeAchievements(result.character)
+                    _uiState.update {
+                        it.copy(
+                            character = result.character,
+                            careerMessage = result.message,
+                            netWorth = financeEngine.calculateNetWorth(result.character),
+                            headerExpression = ExpressionResolver.resolveExpression(result.character, null)
+                        )
+                    }
+                }
+                SchoolInteractionResult.PersonNotFound -> {
+                    _uiState.update {
+                        it.copy(careerMessage = context.getString(R.string.msg_school_person_missing))
+                    }
+                }
+                SchoolInteractionResult.InsufficientFunds -> {
+                    _uiState.update {
+                        it.copy(careerMessage = context.getString(R.string.msg_school_gift_broke))
+                    }
+                }
+                SchoolInteractionResult.Ineligible -> {
+                    _uiState.update {
+                        it.copy(careerMessage = context.getString(R.string.msg_school_person_action_ineligible))
                     }
                 }
             }

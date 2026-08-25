@@ -2,6 +2,7 @@
 package com.maisha.game.ui.main
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
@@ -15,8 +16,10 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.selection.selectable
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Lock
 import androidx.compose.material3.AlertDialog
@@ -24,15 +27,18 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.RadioButton
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
+import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -68,6 +74,7 @@ import com.maisha.game.data.model.CareerTrack
 import com.maisha.game.data.model.SchoolActivity
 import com.maisha.game.data.model.SchoolClub
 import com.maisha.game.data.model.SchoolPerson
+import com.maisha.game.data.model.SchoolPersonAction
 import com.maisha.game.data.model.SchoolRole
 import com.maisha.game.data.model.StudyEffort
 import com.maisha.game.data.model.WorkEffort
@@ -77,6 +84,7 @@ import com.maisha.game.domain.EducationEngine
 import com.maisha.game.domain.HealthEngine
 import com.maisha.game.domain.PoliticsEngine
 import com.maisha.game.domain.RelocationEngine
+import com.maisha.game.ui.avatar.AvatarImage
 import com.maisha.game.ui.components.CategoryFilterChipRow
 import com.maisha.game.ui.components.ConfirmActionDialog
 import com.maisha.game.ui.components.ConfirmSeverity
@@ -142,6 +150,7 @@ fun CareerScreen(
     onSetStudyEffort: (StudyEffort) -> Unit,
     onJoinSchoolClub: (SchoolClub) -> Unit,
     onPerformSchoolActivity: (SchoolActivity, String?) -> Unit = { _, _ -> },
+    onSchoolPersonInteraction: (String, SchoolPersonAction) -> Unit = { _, _ -> },
     onStartCareerTrack: (CareerTrack) -> Unit,
     onPracticeCareerTrack: () -> Unit,
     onCareerMessageDismissed: () -> Unit,
@@ -438,7 +447,8 @@ fun CareerScreen(
                 ) {
                     SchoolLifeSectionCard(
                         character = character,
-                        onPerformSchoolActivity = onPerformSchoolActivity
+                        onPerformSchoolActivity = onPerformSchoolActivity,
+                        onSchoolPersonInteraction = onSchoolPersonInteraction
                     )
                 }
                 item(
@@ -1056,10 +1066,12 @@ private fun EducationSectionCard(
     }
 }
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun SchoolLifeSectionCard(
     character: Character,
-    onPerformSchoolActivity: (SchoolActivity, String?) -> Unit
+    onPerformSchoolActivity: (SchoolActivity, String?) -> Unit,
+    onSchoolPersonInteraction: (String, SchoolPersonAction) -> Unit
 ) {
     val enrolled = !character.education.expelled &&
         (character.education.stage == SchoolStage.PRIMARY ||
@@ -1076,7 +1088,9 @@ private fun SchoolLifeSectionCard(
         schoolUiEngine.availableSchoolActivities(character)
     }
     var pendingActivity by remember { mutableStateOf<SchoolActivity?>(null) }
+    var selectedPersonId by remember { mutableStateOf<String?>(null) }
     val people = character.education.schoolPeople
+    val selectedPerson = people.find { it.id == selectedPersonId }
 
     Card(
         modifier = Modifier.fillMaxWidth(),
@@ -1125,6 +1139,12 @@ private fun SchoolLifeSectionCard(
                 style = MaterialTheme.typography.labelMedium,
                 fontWeight = FontWeight.SemiBold
             )
+            Text(
+                text = stringResource(R.string.school_tap_person_hint),
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.padding(top = 2.dp, bottom = 4.dp)
+            )
             if (people.isEmpty()) {
                 Text(
                     text = stringResource(R.string.school_empty_people),
@@ -1136,7 +1156,10 @@ private fun SchoolLifeSectionCard(
                 Spacer(modifier = Modifier.height(6.dp))
                 Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
                     people.forEach { person ->
-                        SchoolPersonRow(person = person)
+                        SchoolPersonRow(
+                            person = person,
+                            onClick = { selectedPersonId = person.id }
+                        )
                     }
                 }
             }
@@ -1210,15 +1233,208 @@ private fun SchoolLifeSectionCard(
             }
         )
     }
+
+    selectedPerson?.let { person ->
+        val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
+        ModalBottomSheet(
+            onDismissRequest = { selectedPersonId = null },
+            sheetState = sheetState
+        ) {
+            SchoolPersonActionSheet(
+                character = character,
+                person = person,
+                onAction = { action ->
+                    onSchoolPersonInteraction(person.id, action)
+                    selectedPersonId = null
+                },
+                onDismiss = { selectedPersonId = null }
+            )
+        }
+    }
 }
 
 @Composable
-private fun SchoolPersonRow(person: SchoolPerson) {
+private fun SchoolPersonActionSheet(
+    character: Character,
+    person: SchoolPerson,
+    onAction: (SchoolPersonAction) -> Unit,
+    onDismiss: () -> Unit
+) {
+    val actions = remember(character, person.id, person.role, person.age) {
+        schoolUiEngine.availableSchoolPersonActions(character, person.id)
+    }
+    val giftCost = remember(character.countryCode, character.age) {
+        schoolUiEngine.schoolGiftCost(character)
+    }
+    val expression = remember(person.relationshipLevel) {
+        when {
+            person.relationshipLevel >= 65 -> com.maisha.game.data.model.Expression.HAPPY
+            person.relationshipLevel <= 35 -> com.maisha.game.data.model.Expression.SAD
+            else -> com.maisha.game.data.model.Expression.NEUTRAL
+        }
+    }
+
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .verticalScroll(rememberScrollState())
+            .padding(horizontal = 16.dp)
+            .padding(bottom = 28.dp)
+    ) {
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(12.dp)
+        ) {
+            AvatarImage(
+                config = person.avatarConfig,
+                size = 72.dp,
+                age = person.age,
+                expression = expression,
+                seed = person.id
+            )
+            Column(modifier = Modifier.weight(1f)) {
+                Text(
+                    text = person.name,
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.Bold
+                )
+                Text(
+                    text = stringResource(R.string.format_age, person.age),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+                Text(
+                    text = buildString {
+                        append(schoolRoleLabel(person.role))
+                        person.subject?.let { append(" · ").append(it) }
+                    },
+                    style = MaterialTheme.typography.labelMedium,
+                    color = TealPrimary
+                )
+            }
+        }
+
+        Spacer(modifier = Modifier.height(12.dp))
+        StatBar(
+            type = StatType.HAPPINESS,
+            value = person.relationshipLevel,
+            label = stringResource(R.string.label_school_bond)
+        )
+
+        if (person.traits.isNotEmpty()) {
+            Spacer(modifier = Modifier.height(10.dp))
+            Text(
+                text = stringResource(R.string.label_school_traits),
+                style = MaterialTheme.typography.labelMedium,
+                fontWeight = FontWeight.SemiBold
+            )
+            Text(
+                text = person.traits.joinToString(" · "),
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+        }
+
+        person.status?.let { status ->
+            Spacer(modifier = Modifier.height(8.dp))
+            Text(
+                text = stringResource(R.string.label_school_status),
+                style = MaterialTheme.typography.labelMedium,
+                fontWeight = FontWeight.SemiBold
+            )
+            Text(
+                text = status,
+                style = MaterialTheme.typography.bodyMedium
+            )
+        }
+
+        Spacer(modifier = Modifier.height(8.dp))
+        Text(
+            text = stringResource(R.string.label_school_secret),
+            style = MaterialTheme.typography.labelMedium,
+            fontWeight = FontWeight.SemiBold
+        )
+        Text(
+            text = when {
+                person.secretRevealed && !person.secret.isNullOrBlank() -> person.secret
+                person.secret.isNullOrBlank() -> stringResource(R.string.school_secret_none)
+                else -> stringResource(R.string.school_secret_locked)
+            },
+            style = MaterialTheme.typography.bodyMedium,
+            color = if (person.secretRevealed) CoralNegative else MaterialTheme.colorScheme.onSurfaceVariant
+        )
+
+        Spacer(modifier = Modifier.height(14.dp))
+        Text(
+            text = stringResource(R.string.section_school_person_actions),
+            style = MaterialTheme.typography.labelMedium,
+            color = GoldAccent
+        )
+        Spacer(modifier = Modifier.height(8.dp))
+
+        val rows = actions.chunked(2)
+        rows.forEach { rowActions ->
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                rowActions.forEach { action ->
+                    val label = when (action) {
+                        SchoolPersonAction.CHAT -> stringResource(R.string.school_action_chat)
+                        SchoolPersonAction.COMPLIMENT -> stringResource(R.string.school_action_compliment)
+                        SchoolPersonAction.INSULT -> stringResource(R.string.school_action_insult)
+                        SchoolPersonAction.ASK_OUT -> stringResource(R.string.school_action_ask_out)
+                        SchoolPersonAction.SPREAD_RUMOR -> stringResource(R.string.school_action_spread_rumor)
+                        SchoolPersonAction.BRIBE_GIFT -> stringResource(
+                            R.string.school_action_gift_cost,
+                            formatMoney(giftCost, character.countryCode)
+                        )
+                    }
+                    OutlinedButton(
+                        onClick = { onAction(action) },
+                        modifier = Modifier.weight(1f),
+                        shape = RoundedCornerShape(12.dp),
+                        enabled = action != SchoolPersonAction.BRIBE_GIFT ||
+                            character.stats.money >= giftCost
+                    ) {
+                        Text(text = label, maxLines = 2, textAlign = TextAlign.Center)
+                    }
+                }
+                if (rowActions.size == 1) {
+                    Spacer(modifier = Modifier.weight(1f))
+                }
+            }
+            Spacer(modifier = Modifier.height(8.dp))
+        }
+
+        TextButton(
+            onClick = onDismiss,
+            modifier = Modifier.fillMaxWidth()
+        ) {
+            Text(stringResource(R.string.btn_cancel))
+        }
+    }
+}
+
+@Composable
+private fun SchoolPersonRow(
+    person: SchoolPerson,
+    onClick: () -> Unit
+) {
     Row(
-        modifier = Modifier.fillMaxWidth(),
-        horizontalArrangement = Arrangement.SpaceBetween,
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable(onClick = onClick)
+            .padding(vertical = 6.dp),
+        horizontalArrangement = Arrangement.spacedBy(10.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
+        AvatarImage(
+            config = person.avatarConfig,
+            size = 40.dp,
+            age = person.age,
+            seed = person.id
+        )
         Column(modifier = Modifier.weight(1f)) {
             Text(
                 text = person.name,
@@ -1231,9 +1447,14 @@ private fun SchoolPersonRow(person: SchoolPerson) {
                 text = buildString {
                     append(schoolRoleLabel(person.role))
                     person.subject?.let { append(" · ").append(it) }
+                    if (person.traits.isNotEmpty()) {
+                        append(" · ").append(person.traits.first())
+                    }
                 },
                 style = MaterialTheme.typography.labelSmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis
             )
         }
         Text(

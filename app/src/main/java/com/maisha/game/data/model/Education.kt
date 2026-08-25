@@ -66,6 +66,11 @@ enum class SchoolRole {
 /**
  * A named school NPC (classmate, bully, crush, or teacher).
  * Cleared when you leave school / graduate.
+ *
+ * @property traits BitLife-style personality tags shown on their profile.
+ * @property secret Hidden detail revealed when bond is high enough.
+ * @property status Public gossip / role status at school.
+ * @property secretRevealed Whether the player has learned [secret].
  */
 @Serializable
 data class SchoolPerson(
@@ -77,8 +82,23 @@ data class SchoolPerson(
     val relationshipLevel: Int = 50,
     val subject: String? = null,
     val avatarConfig: AvatarConfig = AvatarConfig.DEFAULT,
-    val interactedThisYear: Boolean = false
+    val interactedThisYear: Boolean = false,
+    val traits: List<String> = emptyList(),
+    val secret: String? = null,
+    val status: String? = null,
+    val secretRevealed: Boolean = false
 )
+
+/** Direct BitLife-style interactions with a [SchoolPerson]. */
+@Serializable
+enum class SchoolPersonAction {
+    CHAT,
+    COMPLIMENT,
+    INSULT,
+    ASK_OUT,
+    SPREAD_RUMOR,
+    BRIBE_GIFT
+}
 
 /** Player-driven school activities (one academic + one social per year). */
 @Serializable

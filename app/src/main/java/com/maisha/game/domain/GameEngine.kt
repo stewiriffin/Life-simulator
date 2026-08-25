@@ -756,6 +756,14 @@ class GameEngine @Inject constructor(
     fun availableSchoolActivities(character: Character): List<com.maisha.game.data.model.SchoolActivity> =
         educationEngine.availableSchoolActivities(character)
 
+    fun handleSchoolPersonInteraction(
+        character: Character,
+        personId: String,
+        action: com.maisha.game.data.model.SchoolPersonAction
+    ): SchoolInteractionResult = educationEngine.handleSchoolPersonInteraction(character, personId, action)
+
+    fun schoolGiftCost(character: Character): Int = educationEngine.schoolGiftCost(character)
+
     fun startCareerTrack(character: Character, track: com.maisha.game.data.model.CareerTrack): Character =
         careerEngine.startCareerTrack(character, track)
 

@@ -301,6 +301,7 @@ fun MaishaNavHost(
                 onSetStudyEffort = viewModel::onSetStudyEffort,
                 onJoinSchoolClub = viewModel::onJoinSchoolClub,
                 onPerformSchoolActivity = viewModel::onPerformSchoolActivity,
+                onSchoolPersonInteraction = viewModel::onSchoolPersonInteraction,
                 onStartCareerTrack = viewModel::onStartCareerTrack,
                 onPracticeCareerTrack = viewModel::onPracticeCareerTrack,
                 onPurchaseAsset = viewModel::onPurchaseAsset,

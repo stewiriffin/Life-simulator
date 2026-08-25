@@ -15,6 +15,7 @@ import com.maisha.game.data.model.LifeEvent
 import com.maisha.game.data.model.SchoolActivity
 import com.maisha.game.data.model.SchoolClub
 import com.maisha.game.data.model.SchoolPerson
+import com.maisha.game.data.model.SchoolPersonAction
 import com.maisha.game.data.model.SchoolRole
 import com.maisha.game.data.model.SchoolStage
 import com.maisha.game.data.model.StudyEffort
@@ -43,6 +44,13 @@ sealed class SchoolActionResult {
     data object Ineligible : SchoolActionResult()
     data object AlreadyDone : SchoolActionResult()
     data object PersonNotFound : SchoolActionResult()
+}
+
+sealed class SchoolInteractionResult {
+    data class Success(val character: Character, val message: String) : SchoolInteractionResult()
+    data object Ineligible : SchoolInteractionResult()
+    data object PersonNotFound : SchoolInteractionResult()
+    data object InsufficientFunds : SchoolInteractionResult()
 }
 
 @Singleton
@@ -616,7 +624,8 @@ class EducationEngine @Inject constructor(
             }
         }
         val people = character.education.schoolPeople.map { person ->
-            val aged = person.copy(age = person.age + 1)
+            val enriched = enrichSchoolPersonIfNeeded(person)
+            val aged = enriched.copy(age = enriched.age + 1)
             if (aged.interactedThisYear) {
                 aged.copy(interactedThisYear = false)
             } else {
@@ -636,7 +645,14 @@ class EducationEngine @Inject constructor(
 
     fun ensureSchoolRoster(character: Character, forceRefresh: Boolean = false): Character {
         if (!isEnrolled(character)) return character
-        if (!forceRefresh && character.education.schoolPeople.isNotEmpty()) return character
+        if (!forceRefresh && character.education.schoolPeople.isNotEmpty()) {
+            val enriched = character.education.schoolPeople.map { enrichSchoolPersonIfNeeded(it) }
+            return if (enriched == character.education.schoolPeople) {
+                character
+            } else {
+                character.copy(education = character.education.copy(schoolPeople = enriched))
+            }
+        }
         val people = generateSchoolRoster(character)
         return character.copy(
             education = character.education.copy(schoolPeople = people),
@@ -878,6 +894,286 @@ class EducationEngine @Inject constructor(
     fun teachers(character: Character): List<SchoolPerson> =
         character.education.schoolPeople.filter { it.role == SchoolRole.TEACHER }
 
+    fun availableSchoolPersonActions(
+        character: Character,
+        personId: String
+    ): List<SchoolPersonAction> {
+        if (!isEnrolled(character) || !character.alive) return emptyList()
+        if (character.criminalRecord.currentlyIncarcerated) return emptyList()
+        val person = character.education.schoolPeople.find { it.id == personId } ?: return emptyList()
+        val actions = mutableListOf(
+            SchoolPersonAction.CHAT,
+            SchoolPersonAction.COMPLIMENT,
+            SchoolPersonAction.INSULT,
+            SchoolPersonAction.SPREAD_RUMOR,
+            SchoolPersonAction.BRIBE_GIFT
+        )
+        if (canAskOut(character, person)) {
+            actions += SchoolPersonAction.ASK_OUT
+        }
+        return actions
+    }
+
+    fun schoolGiftCost(character: Character): Int =
+        EconomyScaler.scaleRelationshipCost(SCHOOL_GIFT_BASE_COST_KENYA, character.countryCode, character.age)
+
+    /**
+     * BitLife-style one-on-one action with a school NPC.
+     * High bond (>80) can reveal their secret.
+     */
+    fun handleSchoolPersonInteraction(
+        character: Character,
+        personId: String,
+        actionType: SchoolPersonAction
+    ): SchoolInteractionResult {
+        if (!isEnrolled(character) || !character.alive) return SchoolInteractionResult.Ineligible
+        if (character.criminalRecord.currentlyIncarcerated) return SchoolInteractionResult.Ineligible
+        val person = character.education.schoolPeople.find { it.id == personId }
+            ?: return SchoolInteractionResult.PersonNotFound
+        if (actionType !in availableSchoolPersonActions(character, personId)) {
+            return SchoolInteractionResult.Ineligible
+        }
+
+        return when (actionType) {
+            SchoolPersonAction.CHAT -> applyPersonInteraction(
+                character = character,
+                person = person,
+                relationshipDelta = Random.nextInt(3, 7),
+                happinessDelta = 1,
+                reputationDelta = 0,
+                karmaDelta = 0,
+                message = "You caught up with ${person.name}. Easy conversation."
+            )
+            SchoolPersonAction.COMPLIMENT -> {
+                val awkward = character.stats.looks < 35 && character.stats.smarts < 40
+                if (awkward && Random.nextFloat() < 0.45f) {
+                    applyPersonInteraction(
+                        character = character,
+                        person = person,
+                        relationshipDelta = -4,
+                        happinessDelta = -2,
+                        reputationDelta = -1,
+                        karmaDelta = 0,
+                        message = "Your compliment to ${person.name} landed weird. Awkward silence."
+                    )
+                } else {
+                    applyPersonInteraction(
+                        character = character,
+                        person = person,
+                        relationshipDelta = Random.nextInt(6, 12),
+                        happinessDelta = 3,
+                        reputationDelta = 1,
+                        karmaDelta = 1,
+                        message = "${person.name} smiled. The compliment worked."
+                    )
+                }
+            }
+            SchoolPersonAction.INSULT -> {
+                val becomesBully = person.role != SchoolRole.BULLY &&
+                    person.role != SchoolRole.TEACHER &&
+                    Random.nextFloat() < 0.28f
+                val updatedRole = if (becomesBully) SchoolRole.BULLY else person.role
+                val status = when {
+                    becomesBully -> "Now targeting you"
+                    person.role == SchoolRole.TEACHER -> person.status ?: "Annoyed"
+                    else -> "Feuding with you"
+                }
+                applyPersonInteraction(
+                    character = character,
+                    person = person,
+                    relationshipDelta = -Random.nextInt(10, 18),
+                    happinessDelta = if (Random.nextBoolean()) 2 else -3,
+                    reputationDelta = -3,
+                    karmaDelta = -3,
+                    roleOverride = updatedRole,
+                    statusOverride = status,
+                    traitsOverride = if (becomesBully && "Bully" !in person.traits) {
+                        (person.traits + "Bully").distinct().take(3)
+                    } else {
+                        null
+                    },
+                    message = if (becomesBully) {
+                        "You insulted ${person.name}. They turn on you — school just got harder."
+                    } else {
+                        "You insulted ${person.name}. The hallway goes quiet."
+                    }
+                )
+            }
+            SchoolPersonAction.ASK_OUT -> {
+                val chance = askOutSuccessChance(character, person)
+                if (Random.nextFloat() < chance) {
+                    applyPersonInteraction(
+                        character = character,
+                        person = person,
+                        relationshipDelta = Random.nextInt(12, 20),
+                        happinessDelta = 8,
+                        reputationDelta = 2,
+                        karmaDelta = 1,
+                        roleOverride = if (person.role == SchoolRole.CLASSMATE ||
+                            person.role == SchoolRole.BEST_CLASSMATE
+                        ) {
+                            SchoolRole.CRUSH
+                        } else {
+                            null
+                        },
+                        statusOverride = "Dating you (sort of)",
+                        message = "${person.name} said yes. Your stomach does a full flip."
+                    )
+                } else {
+                    applyPersonInteraction(
+                        character = character,
+                        person = person,
+                        relationshipDelta = -Random.nextInt(6, 12),
+                        happinessDelta = -6,
+                        reputationDelta = -2,
+                        karmaDelta = 0,
+                        statusOverride = person.status ?: "Not interested",
+                        message = "${person.name} turned you down. Everyone somehow knows."
+                    )
+                }
+            }
+            SchoolPersonAction.SPREAD_RUMOR -> {
+                val caught = Random.nextFloat() < 0.32f
+                if (caught) {
+                    val updated = character.copy(
+                        stats = character.stats.copy(
+                            happiness = clampStat(character.stats.happiness - 4),
+                            karma = clampStat(character.stats.karma - 4)
+                        ),
+                        education = character.education.copy(
+                            schoolReputation = (character.education.schoolReputation - 10)
+                                .coerceIn(0, 100),
+                            detentionYears = character.education.detentionYears + 1,
+                            schoolPeople = character.education.schoolPeople.map { p ->
+                                if (p.id == person.id) {
+                                    p.copy(
+                                        relationshipLevel = clampRelationshipLevel(
+                                            p.relationshipLevel - 12
+                                        ),
+                                        status = "Knows you started a rumor",
+                                        interactedThisYear = true
+                                    )
+                                } else {
+                                    p
+                                }
+                            }
+                        ),
+                        eventLog = EventLogCap.prepend(
+                            character.eventLog,
+                            "You spread a rumor about ${person.name} and got caught. Detention."
+                        )
+                    )
+                    SchoolInteractionResult.Success(
+                        updated,
+                        "Caught spreading rumors about ${person.name}. Detention."
+                    )
+                } else {
+                    applyPersonInteraction(
+                        character = character,
+                        person = person,
+                        relationshipDelta = -8,
+                        happinessDelta = 2,
+                        reputationDelta = 1,
+                        karmaDelta = -3,
+                        statusOverride = listOf(
+                            "Subject of hallway gossip",
+                            "Rumored to be failing",
+                            "Trending for the wrong reasons"
+                        ).random(),
+                        message = "The rumor about ${person.name} sticks. Your conscience does not."
+                    )
+                }
+            }
+            SchoolPersonAction.BRIBE_GIFT -> {
+                val cost = schoolGiftCost(character)
+                if (character.stats.money < cost) return SchoolInteractionResult.InsufficientFunds
+                val spent = character.copy(
+                    stats = character.stats.copy(money = character.stats.money - cost)
+                )
+                applyPersonInteraction(
+                    character = spent,
+                    person = person,
+                    relationshipDelta = Random.nextInt(10, 18),
+                    happinessDelta = 4,
+                    reputationDelta = 1,
+                    karmaDelta = 0,
+                    message = "You gifted ${person.name} something nice (${formatMoney(cost, character.countryCode)}). Bond secured."
+                )
+            }
+        }
+    }
+
+    private fun canAskOut(character: Character, person: SchoolPerson): Boolean {
+        if (person.role == SchoolRole.TEACHER || person.role == SchoolRole.BULLY) return false
+        if (person.role != SchoolRole.CRUSH &&
+            person.role != SchoolRole.CLASSMATE &&
+            person.role != SchoolRole.BEST_CLASSMATE
+        ) {
+            return false
+        }
+        return character.age >= ASK_OUT_MIN_AGE && person.age >= ASK_OUT_MIN_AGE
+    }
+
+    private fun askOutSuccessChance(character: Character, person: SchoolPerson): Float {
+        val looksFactor = character.stats.looks / 100f
+        val bondFactor = person.relationshipLevel / 100f
+        val smartsBoost = if (person.traits.any { it == "Studious" || it == "Teacher's Pet" }) {
+            character.stats.smarts / 200f
+        } else {
+            0f
+        }
+        val crushBonus = if (person.role == SchoolRole.CRUSH) 0.12f else 0f
+        return (0.18f + looksFactor * 0.35f + bondFactor * 0.4f + smartsBoost + crushBonus)
+            .coerceIn(0.08f, 0.88f)
+    }
+
+    private fun applyPersonInteraction(
+        character: Character,
+        person: SchoolPerson,
+        relationshipDelta: Int,
+        happinessDelta: Int,
+        reputationDelta: Int,
+        karmaDelta: Int,
+        message: String,
+        roleOverride: SchoolRole? = null,
+        statusOverride: String? = null,
+        traitsOverride: List<String>? = null
+    ): SchoolInteractionResult {
+        val newBond = clampRelationshipLevel(person.relationshipLevel + relationshipDelta)
+        val revealSecret = !person.secretRevealed &&
+            !person.secret.isNullOrBlank() &&
+            newBond > SECRET_REVEAL_BOND
+        val updatedPerson = person.copy(
+            relationshipLevel = newBond,
+            interactedThisYear = true,
+            role = roleOverride ?: person.role,
+            status = statusOverride ?: person.status,
+            traits = traitsOverride ?: person.traits,
+            secretRevealed = person.secretRevealed || revealSecret
+        )
+        val fullMessage = if (revealSecret) {
+            "$message You learn their secret: ${person.secret}."
+        } else {
+            message
+        }
+        val updatedPeople = character.education.schoolPeople.map { p ->
+            if (p.id == person.id) updatedPerson else p
+        }
+        val updated = character.copy(
+            stats = character.stats.copy(
+                happiness = clampStat(character.stats.happiness + happinessDelta),
+                karma = clampStat(character.stats.karma + karmaDelta)
+            ),
+            education = character.education.copy(
+                schoolPeople = updatedPeople,
+                schoolReputation = (character.education.schoolReputation + reputationDelta)
+                    .coerceIn(0, 100)
+            ),
+            eventLog = EventLogCap.prepend(character.eventLog, fullMessage)
+        )
+        return SchoolInteractionResult.Success(updated, fullMessage)
+    }
+
     private fun generateSchoolRoster(character: Character): List<SchoolPerson> {
         val country = character.countryCode
         val stage = character.education.stage
@@ -948,6 +1244,7 @@ class EducationEngine @Inject constructor(
         subject: String? = null
     ): SchoolPerson {
         val gender = if (Random.nextBoolean()) Gender.MALE else Gender.FEMALE
+        val traits = randomTraitsFor(role)
         return SchoolPerson(
             id = UUID.randomUUID().toString(),
             name = NamePool.randomFullName(gender, country),
@@ -956,8 +1253,109 @@ class EducationEngine @Inject constructor(
             age = age,
             relationshipLevel = relationship,
             subject = subject,
-            avatarConfig = AvatarConfig.random()
+            avatarConfig = AvatarConfig.random(),
+            traits = traits,
+            secret = randomSecretFor(role, traits),
+            status = randomStatusFor(role),
+            secretRevealed = false
         )
+    }
+
+    private fun enrichSchoolPersonIfNeeded(person: SchoolPerson): SchoolPerson {
+        if (person.traits.isNotEmpty() || person.secret != null || person.status != null) {
+            return person
+        }
+        val traits = randomTraitsFor(person.role)
+        return person.copy(
+            traits = traits,
+            secret = randomSecretFor(person.role, traits),
+            status = randomStatusFor(person.role)
+        )
+    }
+
+    private fun randomTraitsFor(role: SchoolRole): List<String> {
+        val pool = when (role) {
+            SchoolRole.TEACHER -> TEACHER_TRAITS
+            SchoolRole.BULLY -> listOf("Bully", "Rebellious", "Popular", "Jock")
+            SchoolRole.CRUSH -> listOf("Popular", "Studious", "Jock", "Teacher's Pet", "Rebellious")
+            SchoolRole.BEST_CLASSMATE -> listOf("Studious", "Popular", "Teacher's Pet", "Jock")
+            SchoolRole.CLASSMATE -> STUDENT_TRAITS
+        }
+        val count = Random.nextInt(1, 3)
+        return pool.shuffled().take(count)
+    }
+
+    private fun randomSecretFor(role: SchoolRole, traits: List<String>): String? {
+        if (Random.nextFloat() < 0.18f) return null
+        val pool = when (role) {
+            SchoolRole.TEACHER -> listOf(
+                "Plays favorites and pretends not to",
+                "Grades late every weekend",
+                "Once failed the subject they teach",
+                "Has a soft spot for rebellious kids"
+            )
+            SchoolRole.BULLY -> listOf(
+                "Gets bullied at home",
+                "Cheating on exams",
+                "Skips class behind the gym",
+                "Afraid of being ignored"
+            )
+            SchoolRole.CRUSH -> listOf(
+                "Crushing on the player",
+                "Writes your name in their notebook",
+                "Practices conversations before talking to you",
+                "Jealous of your closest classmate"
+            )
+            else -> listOf(
+                "Cheating on exams",
+                "Skips class behind the gym",
+                "Crushing on the player",
+                "Hides failing grades from family",
+                "Sneaks out during lunch",
+                "Stole a test answer key once"
+            )
+        }
+        val traitLinked = when {
+            "Studious" in traits -> "Secretly terrified of getting a B"
+            "Popular" in traits -> "Cares more about followers than friends"
+            "Rebellious" in traits -> "Has a fake ID"
+            else -> null
+        }
+        return traitLinked ?: pool.random()
+    }
+
+    private fun randomStatusFor(role: SchoolRole): String? {
+        if (Random.nextFloat() < 0.25f) return null
+        return when (role) {
+            SchoolRole.TEACHER -> listOf(
+                "Department favorite",
+                "Strict on punctuality",
+                "Always on duty"
+            ).random()
+            SchoolRole.BULLY -> listOf(
+                "Hallway menace",
+                "Suspended once",
+                "Dating someone else"
+            ).random()
+            SchoolRole.CRUSH -> listOf(
+                "Class crush",
+                "Dating someone else",
+                "Single and noticed"
+            ).random()
+            SchoolRole.BEST_CLASSMATE -> listOf(
+                "Your locker neighbor",
+                "Group project legend",
+                "Always has notes"
+            ).random()
+            SchoolRole.CLASSMATE -> listOf(
+                "Class President",
+                "Dating someone else",
+                "On the honor roll",
+                "Club captain",
+                "Quiet in back row",
+                "Suspended"
+            ).random()
+        }
     }
 
     private fun succeedAcademic(
@@ -1255,6 +1653,26 @@ class EducationEngine @Inject constructor(
             SchoolActivity.CONFRONT_BULLY,
             SchoolActivity.SKIP_CLASS,
             SchoolActivity.SCHOOL_DANCE
+        )
+
+        const val SCHOOL_GIFT_BASE_COST_KENYA = 800
+        const val SECRET_REVEAL_BOND = 80
+        private const val ASK_OUT_MIN_AGE = 13
+
+        private val STUDENT_TRAITS = listOf(
+            "Studious",
+            "Bully",
+            "Jock",
+            "Popular",
+            "Rebellious",
+            "Teacher's Pet"
+        )
+        private val TEACHER_TRAITS = listOf(
+            "Strict",
+            "Inspirational",
+            "Fair",
+            "Demanding",
+            "Softie"
         )
     }
 }

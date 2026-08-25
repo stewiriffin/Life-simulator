@@ -391,4 +391,62 @@ class EducationEngineTest {
         assertTrue(after.education.socialActionDoneThisYear)
         assertFalse(after.education.academicActionDoneThisYear)
     }
+
+    @Test
+    fun ensureSchoolRoster_assignsTraitsAndSecrets() {
+        val enrolled = engine.enrollIfEligible(
+            TestFixtures.character(age = 6, education = EducationState(stage = SchoolStage.NONE))
+        )
+        assertTrue(enrolled.education.schoolPeople.isNotEmpty())
+        assertTrue(enrolled.education.schoolPeople.any { it.traits.isNotEmpty() })
+        assertTrue(enrolled.education.schoolPeople.any { !it.secret.isNullOrBlank() || it.status != null })
+    }
+
+    @Test
+    fun handleSchoolPersonInteraction_chatRaisesBond() {
+        val character = engine.ensureSchoolRoster(
+            TestFixtures.character(
+                age = 14,
+                education = EducationState(
+                    stage = SchoolStage.SECONDARY,
+                    currentGrade = 1,
+                    kcpePassed = true,
+                    gpa = 2.5f
+                )
+            )
+        )
+        val peer = engine.classmates(character).first()
+        val before = peer.relationshipLevel
+        val result = engine.handleSchoolPersonInteraction(
+            character,
+            peer.id,
+            com.maisha.game.data.model.SchoolPersonAction.CHAT
+        )
+        assertTrue(result is SchoolInteractionResult.Success)
+        val afterPerson = (result as SchoolInteractionResult.Success).character.education.schoolPeople
+            .first { it.id == peer.id }
+        assertTrue(afterPerson.relationshipLevel > before)
+    }
+
+    @Test
+    fun handleSchoolPersonInteraction_giftRequiresMoney() {
+        val character = engine.ensureSchoolRoster(
+            TestFixtures.character(
+                age = 15,
+                stats = com.maisha.game.data.model.Stats(money = 0),
+                education = EducationState(
+                    stage = SchoolStage.SECONDARY,
+                    currentGrade = 2,
+                    kcpePassed = true
+                )
+            )
+        )
+        val peer = engine.classmates(character).first()
+        val result = engine.handleSchoolPersonInteraction(
+            character,
+            peer.id,
+            com.maisha.game.data.model.SchoolPersonAction.BRIBE_GIFT
+        )
+        assertEquals(SchoolInteractionResult.InsufficientFunds, result)
+    }
 }
