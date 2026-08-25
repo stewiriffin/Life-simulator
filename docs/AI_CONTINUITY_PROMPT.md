@@ -324,7 +324,7 @@ Newest first:
 
 | Commit | Meaning |
 |--------|---------|
-| *(pending)* | Detention deepen: serve hall, principal appeal, transfer hearing, rebel achievements |
+| `c68bf45` | Detention deepen: serve hall, principal appeal, transfer hearing, rebel achievements |
 | `57bcd1e` | Misbehavior & detention: rebel activities, expulsion hearing, discipline badge |
 | `68a1124` | Clubs: rivalry matches, letter jacket, fame, scout whispers, achievements |
 | `40f57ac` | School clubs BitLife depth: ranks, intensity, awards, fundraisers, scholarships |
