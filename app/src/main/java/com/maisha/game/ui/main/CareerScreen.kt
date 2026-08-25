@@ -84,6 +84,7 @@ import com.maisha.game.data.model.SchoolPerson
 import com.maisha.game.data.model.SchoolPersonAction
 import com.maisha.game.data.model.SchoolRole
 import com.maisha.game.data.model.StudyEffort
+import com.maisha.game.data.model.TalentTraining
 import com.maisha.game.data.model.HustleType
 import com.maisha.game.data.model.OfficeAction
 import com.maisha.game.data.model.PartTimeJob
@@ -180,6 +181,10 @@ fun CareerScreen(
     onRepayStudentLoan: (Int) -> Unit = {},
     onStartCareerTrack: (CareerTrack) -> Unit,
     onPracticeCareerTrack: () -> Unit,
+    onTrainTalent: (TalentTraining) -> Unit = {},
+    onSignEndorsement: () -> Unit = {},
+    onDropEndorsement: () -> Unit = {},
+    onLeaveCareerTrack: () -> Unit = {},
     onWorkPartTime: (PartTimeJob) -> Unit = {},
     onExecuteSideHustle: (HustleType) -> Unit = {},
     onQuitPartTimeJob: () -> Unit = {},
@@ -526,6 +531,21 @@ fun CareerScreen(
                     )
                 }
                 item(
+                    key = "fame_talent_hub",
+                    contentType = CareerListContentType.Education
+                ) {
+                    FameAndTalentHubCard(
+                        character = character,
+                        careerEngine = careerEngine,
+                        onTrainTalent = onTrainTalent,
+                        onSignEndorsement = onSignEndorsement,
+                        onDropEndorsement = onDropEndorsement,
+                        onLeaveCareerTrack = onLeaveCareerTrack,
+                        onStartCareerTrack = onStartCareerTrack,
+                        onPracticeCareerTrack = onPracticeCareerTrack
+                    )
+                }
+                item(
                     key = "jobs_side_hustles",
                     contentType = CareerListContentType.Education
                 ) {
@@ -574,6 +594,23 @@ fun CareerScreen(
             }
 
             if (show(CareerCategory.WORK)) {
+                if (character.age >= 12 && !show(CareerCategory.SCHOOL)) {
+                    item(
+                        key = "fame_talent_hub_work",
+                        contentType = CareerListContentType.WorkState
+                    ) {
+                        FameAndTalentHubCard(
+                            character = character,
+                            careerEngine = careerEngine,
+                            onTrainTalent = onTrainTalent,
+                            onSignEndorsement = onSignEndorsement,
+                            onDropEndorsement = onDropEndorsement,
+                            onLeaveCareerTrack = onLeaveCareerTrack,
+                            onStartCareerTrack = onStartCareerTrack,
+                            onPracticeCareerTrack = onPracticeCareerTrack
+                        )
+                    }
+                }
                 // Avoid duplicate card when category filter is ALL (School section already shows it).
                 if (!show(CareerCategory.SCHOOL) &&
                     (careerEngine.canWorkPartTime(character) ||
@@ -2879,6 +2916,214 @@ private fun JobsAndSideHustlesCard(
                             style = MaterialTheme.typography.labelMedium
                         )
                     }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun FameAndTalentHubCard(
+    character: Character,
+    careerEngine: CareerEngine,
+    onTrainTalent: (TalentTraining) -> Unit,
+    onSignEndorsement: () -> Unit,
+    onDropEndorsement: () -> Unit,
+    onLeaveCareerTrack: () -> Unit = {},
+    onStartCareerTrack: (CareerTrack) -> Unit,
+    onPracticeCareerTrack: () -> Unit
+) {
+    if (character.age < 12) return
+    val track = character.career.careerTrack
+    val roadmap = careerEngine.pathwayRoadmap(track)
+
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        shape = MaishaRadius.cardShape,
+        colors = CardDefaults.cardColors(containerColor = Color.White)
+    ) {
+        Column(
+            modifier = Modifier.padding(16.dp),
+            verticalArrangement = Arrangement.spacedBy(10.dp)
+        ) {
+            Text(
+                text = stringResource(R.string.section_fame_talent_hub),
+                style = MaterialTheme.typography.titleSmall,
+                fontWeight = FontWeight.SemiBold,
+                color = GoldAccent
+            )
+            Text(
+                text = stringResource(R.string.fame_hub_hint),
+                style = MaterialTheme.typography.labelSmall,
+                color = InkTertiary
+            )
+            Text(
+                text = stringResource(
+                    R.string.fame_band_label,
+                    careerEngine.fameBandLabel(character.career.fame)
+                ),
+                style = MaterialTheme.typography.labelMedium,
+                color = LifeGreen
+            )
+            Text(
+                text = stringResource(R.string.fame_rating_label, character.career.fame),
+                style = MaterialTheme.typography.labelLarge,
+                fontWeight = FontWeight.SemiBold,
+                color = TealPrimary
+            )
+            StatBar(
+                type = StatType.LOOKS,
+                value = character.career.fame,
+                modifier = Modifier.fillMaxWidth()
+            )
+            Text(
+                text = stringResource(R.string.talent_athleticism, character.career.athleticism),
+                style = MaterialTheme.typography.bodySmall
+            )
+            StatBar(
+                type = StatType.HEALTH,
+                value = character.career.athleticism,
+                modifier = Modifier.fillMaxWidth()
+            )
+            Text(
+                text = stringResource(R.string.talent_musical, character.career.musicalTalent),
+                style = MaterialTheme.typography.bodySmall
+            )
+            StatBar(
+                type = StatType.SMARTS,
+                value = character.career.musicalTalent,
+                modifier = Modifier.fillMaxWidth()
+            )
+            if (track == CareerTrack.PRO_SPORTS || track == CareerTrack.ENTERTAINMENT) {
+                Text(
+                    text = stringResource(
+                        R.string.track_stage_label,
+                        careerEngine.trackStageLabel(track, character.career.trackLevel)
+                    ),
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = LifeGreen
+                )
+                if (roadmap.isNotEmpty()) {
+                    Text(
+                        text = stringResource(
+                            R.string.pathway_roadmap,
+                            roadmap.joinToString(" → ")
+                        ),
+                        style = MaterialTheme.typography.labelSmall,
+                        color = InkTertiary
+                    )
+                }
+            }
+            if (character.career.endorsementActive) {
+                Text(
+                    text = stringResource(
+                        R.string.endorsement_active,
+                        formatMoney(character.career.endorsementPayoutPerYear, character.countryCode)
+                    ),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = GoldAccent
+                )
+                OutlinedButton(
+                    onClick = onDropEndorsement,
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Text(stringResource(R.string.btn_drop_endorsement))
+                }
+            } else {
+                Text(
+                    text = stringResource(R.string.endorsement_none),
+                    style = MaterialTheme.typography.labelSmall,
+                    color = InkTertiary
+                )
+                OutlinedButton(
+                    onClick = onSignEndorsement,
+                    enabled = careerEngine.canSignEndorsement(character),
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Text(stringResource(R.string.btn_sign_endorsement))
+                }
+            }
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                OutlinedButton(
+                    onClick = { onTrainTalent(TalentTraining.GYM_SESSION) },
+                    enabled = !character.career.gymTrainedThisYear,
+                    modifier = Modifier.weight(1f)
+                ) {
+                    Text(stringResource(R.string.btn_gym_session), maxLines = 1)
+                }
+                OutlinedButton(
+                    onClick = { onTrainTalent(TalentTraining.SPORTS_DRILL) },
+                    enabled = !character.career.gymTrainedThisYear,
+                    modifier = Modifier.weight(1f)
+                ) {
+                    Text(stringResource(R.string.btn_sports_drill), maxLines = 1)
+                }
+            }
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                OutlinedButton(
+                    onClick = { onTrainTalent(TalentTraining.MUSIC_LESSON) },
+                    enabled = !character.career.musicTrainedThisYear,
+                    modifier = Modifier.weight(1f)
+                ) {
+                    Text(stringResource(R.string.btn_music_lesson), maxLines = 1)
+                }
+                OutlinedButton(
+                    onClick = { onTrainTalent(TalentTraining.STAGE_PRACTICE) },
+                    enabled = !character.career.musicTrainedThisYear,
+                    modifier = Modifier.weight(1f)
+                ) {
+                    Text(stringResource(R.string.btn_stage_practice), maxLines = 1)
+                }
+            }
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                OutlinedButton(
+                    onClick = { onTrainTalent(TalentTraining.STREET_BUSK) },
+                    enabled = !character.career.talentGigDoneThisYear,
+                    modifier = Modifier.weight(1f)
+                ) {
+                    Text(stringResource(R.string.btn_street_busk), maxLines = 1)
+                }
+                OutlinedButton(
+                    onClick = { onTrainTalent(TalentTraining.EXHIBITION_MATCH) },
+                    enabled = !character.career.talentGigDoneThisYear,
+                    modifier = Modifier.weight(1f)
+                ) {
+                    Text(stringResource(R.string.btn_exhibition_match), maxLines = 1)
+                }
+            }
+            if (track == CareerTrack.NONE &&
+                character.age >= CareerEngine.MIN_TRACK_AGE
+            ) {
+                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    OutlinedButton(onClick = { onStartCareerTrack(CareerTrack.PRO_SPORTS) }) {
+                        Text(stringResource(R.string.track_pro_sports))
+                    }
+                    OutlinedButton(onClick = { onStartCareerTrack(CareerTrack.ENTERTAINMENT) }) {
+                        Text(stringResource(R.string.track_entertainment))
+                    }
+                }
+            } else if (track == CareerTrack.PRO_SPORTS || track == CareerTrack.ENTERTAINMENT) {
+                Button(
+                    onClick = onPracticeCareerTrack,
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(12.dp)
+                ) {
+                    Text(stringResource(R.string.btn_practice_track))
+                }
+                OutlinedButton(
+                    onClick = onLeaveCareerTrack,
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Text(stringResource(R.string.btn_leave_career_track))
                 }
             }
         }

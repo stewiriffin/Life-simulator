@@ -35,14 +35,17 @@ import com.maisha.game.data.model.PrisonActivity
 import com.maisha.game.data.model.SchoolClub
 import com.maisha.game.data.model.ClubPracticeIntensity
 import com.maisha.game.data.model.StudyEffort
+import com.maisha.game.data.model.TalentTraining
 import com.maisha.game.data.model.Stats
 import com.maisha.game.domain.AdoptPetResult
 import com.maisha.game.domain.AgeUpResult
 import com.maisha.game.domain.AchievementEngine
 import com.maisha.game.domain.CareerEngine
 import com.maisha.game.domain.CareerTrackPracticeResult
+import com.maisha.game.domain.EndorsementResult
 import com.maisha.game.domain.PrisonActivityResult
 import com.maisha.game.domain.CareerResult
+import com.maisha.game.domain.TalentTrainingResult
 import com.maisha.game.domain.CrimeResult
 import com.maisha.game.domain.DoctorResult
 import com.maisha.game.domain.DynastyScore
@@ -1499,6 +1502,107 @@ class LifeViewModel @Inject constructor(
                         it.copy(careerMessage = context.getString(R.string.msg_track_practice_ineligible))
                     }
                 }
+            }
+        }
+    }
+
+    fun onTrainTalent(training: TalentTraining) {
+        val character = _uiState.value.character ?: return
+        if (!character.alive) return
+        viewModelScope.launch {
+            when (val result = gameEngine.trainTalent(character, training)) {
+                is TalentTrainingResult.Success -> {
+                    persist(result.character)
+                    _uiState.update {
+                        it.copy(
+                            character = result.character,
+                            careerMessage = result.message,
+                            actionMessage = result.message,
+                            netWorth = financeEngine.calculateNetWorth(result.character)
+                        )
+                    }
+                }
+                TalentTrainingResult.AlreadyDone -> {
+                    val message = context.getString(R.string.msg_talent_already_trained)
+                    _uiState.update {
+                        it.copy(careerMessage = message, actionMessage = message)
+                    }
+                }
+                TalentTrainingResult.CannotAfford -> {
+                    val message = context.getString(R.string.msg_talent_cannot_afford)
+                    _uiState.update {
+                        it.copy(careerMessage = message, actionMessage = message)
+                    }
+                }
+                TalentTrainingResult.Ineligible -> Unit
+            }
+        }
+    }
+
+    fun onSignEndorsement() {
+        val character = _uiState.value.character ?: return
+        if (!character.alive) return
+        viewModelScope.launch {
+            when (val result = gameEngine.signEndorsementDeal(character)) {
+                is EndorsementResult.Success -> {
+                    persist(result.character)
+                    val message = context.getString(
+                        R.string.msg_endorsement_signed,
+                        formatMoney(result.yearlyPayout, result.character.countryCode)
+                    )
+                    _uiState.update {
+                        it.copy(
+                            character = result.character,
+                            careerMessage = message,
+                            actionMessage = message,
+                            netWorth = financeEngine.calculateNetWorth(result.character)
+                        )
+                    }
+                }
+                EndorsementResult.AlreadySigned -> {
+                    val message = context.getString(R.string.msg_endorsement_already)
+                    _uiState.update {
+                        it.copy(careerMessage = message, actionMessage = message)
+                    }
+                }
+                EndorsementResult.Ineligible -> {
+                    val message = context.getString(R.string.msg_endorsement_ineligible)
+                    _uiState.update {
+                        it.copy(careerMessage = message, actionMessage = message)
+                    }
+                }
+            }
+        }
+    }
+
+    fun onDropEndorsement() {
+        val character = _uiState.value.character ?: return
+        if (!character.alive) return
+        viewModelScope.launch {
+            val updated = gameEngine.dropEndorsementDeal(character)
+            if (updated === character) return@launch
+            persist(updated)
+            val message = context.getString(R.string.msg_endorsement_dropped)
+            _uiState.update {
+                it.copy(
+                    character = updated,
+                    careerMessage = message,
+                    actionMessage = message
+                )
+            }
+        }
+    }
+
+    fun onLeaveCareerTrack() {
+        val character = _uiState.value.character ?: return
+        if (!character.alive) return
+        if (character.career.careerTrack == CareerTrack.NONE) return
+        viewModelScope.launch {
+            val updated = gameEngine.leaveCareerTrack(character)
+            persist(updated)
+            val message = context.getString(R.string.msg_left_career_track)
+            _uiState.update {
+                it.copy(character = updated, careerMessage = message)
             }
         }
     }

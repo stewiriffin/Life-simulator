@@ -73,5 +73,10 @@ data class EventChoice(
      * Office politics choice: [OfficePoliticsAction] name
      * (e.g. `CONFRONT_BOSS`, `EMBEZZLE`, `WHISTLEBLOW`).
      */
-    val officePoliticsAction: String? = null
+    val officePoliticsAction: String? = null,
+    /**
+     * Fame / paparazzi dilemma: [FameEventAction] name
+     * (e.g. `POSE_FOR_CAMERAS`, `ACCEPT_ENDORSEMENT_OFFER`).
+     */
+    val fameEventAction: String? = null
 )

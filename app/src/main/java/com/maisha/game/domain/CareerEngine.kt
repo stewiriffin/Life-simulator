@@ -8,7 +8,9 @@ import com.maisha.game.data.model.AssetType
 import com.maisha.game.data.model.CareerTrack
 import com.maisha.game.data.model.CareerState
 import com.maisha.game.data.model.Character
+import com.maisha.game.data.model.ClubRank
 import com.maisha.game.data.model.EventChoice
+import com.maisha.game.data.model.FameEventAction
 import com.maisha.game.data.model.HustleType
 import com.maisha.game.data.model.JobLadder
 import com.maisha.game.data.model.OfficeAction
@@ -19,6 +21,7 @@ import com.maisha.game.data.model.Job
 import com.maisha.game.data.model.LifeEvent
 import com.maisha.game.data.model.SchoolClub
 import com.maisha.game.data.model.SchoolStage
+import com.maisha.game.data.model.TalentTraining
 import com.maisha.game.data.model.UniversityMajor
 import com.maisha.game.data.model.VisaType
 import com.maisha.game.data.model.WorkEffort
@@ -72,6 +75,19 @@ sealed class StudentEnergyRestResult {
 sealed class QuitPartTimeResult {
     data class Success(val character: Character) : QuitPartTimeResult()
     data object Ineligible : QuitPartTimeResult()
+}
+
+sealed class TalentTrainingResult {
+    data class Success(val character: Character, val message: String) : TalentTrainingResult()
+    data object Ineligible : TalentTrainingResult()
+    data object AlreadyDone : TalentTrainingResult()
+    data object CannotAfford : TalentTrainingResult()
+}
+
+sealed class EndorsementResult {
+    data class Success(val character: Character, val yearlyPayout: Int) : EndorsementResult()
+    data object Ineligible : EndorsementResult()
+    data object AlreadySigned : EndorsementResult()
 }
 
 sealed class OfficeActionResult {
@@ -1454,10 +1470,19 @@ class CareerEngine @Inject constructor(
         if (character.career.careerTrack != CareerTrack.NONE) return false
         if (character.age < MIN_TRACK_AGE) return false
         return when (track) {
-            CareerTrack.ENTERTAINMENT -> true
-            CareerTrack.PRO_SPORTS -> character.education.schoolClub == SchoolClub.FOOTBALL ||
-                character.education.clubResumeClub == SchoolClub.FOOTBALL ||
-                character.stats.health >= PRO_SPORTS_MIN_HEALTH
+            CareerTrack.ENTERTAINMENT ->
+                character.career.musicalTalent >= ENTERTAINMENT_MIN_TALENT ||
+                    character.education.schoolClub == SchoolClub.MUSIC ||
+                    character.education.schoolClub == SchoolClub.DRAMA ||
+                    character.education.clubResumeClub == SchoolClub.MUSIC ||
+                    character.education.clubResumeClub == SchoolClub.DRAMA ||
+                    character.stats.looks >= 50
+            CareerTrack.PRO_SPORTS ->
+                character.career.athleticism >= PRO_SPORTS_MIN_ATHLETICISM ||
+                    character.education.schoolClub == SchoolClub.FOOTBALL ||
+                    character.education.clubResumeClub == SchoolClub.FOOTBALL ||
+                    character.education.clubRank == ClubRank.CAPTAIN ||
+                    character.stats.health >= PRO_SPORTS_MIN_HEALTH
             CareerTrack.MEDICAL -> character.education.universityMajor == UniversityMajor.MEDICINE ||
                 character.education.universityMajor == UniversityMajor.NURSING ||
                 character.education.courseOfStudy == "Medicine" ||
@@ -1489,16 +1514,33 @@ class CareerEngine @Inject constructor(
             CareerTrack.CORPORATE -> "corporate / banking"
             CareerTrack.NONE -> return character
         }
+        val captainBoost = character.education.clubRank == ClubRank.CAPTAIN && (
+            (track == CareerTrack.PRO_SPORTS && character.education.schoolClub == SchoolClub.FOOTBALL) ||
+                (track == CareerTrack.ENTERTAINMENT &&
+                    (character.education.schoolClub == SchoolClub.MUSIC ||
+                        character.education.schoolClub == SchoolClub.DRAMA))
+            )
+        val startFame = when (track) {
+            CareerTrack.ENTERTAINMENT, CareerTrack.PRO_SPORTS -> 8 + if (captainBoost) 6 else 0
+            else -> 0
+        }
+        val stageNote = when (track) {
+            CareerTrack.PRO_SPORTS -> if (captainBoost) {
+                "You leveraged your high-school captaincy onto the pro pathway."
+            } else {
+                "You started pursuing a pro sports career."
+            }
+            CareerTrack.ENTERTAINMENT -> "You started on the street-busking / open-mic circuit."
+            else -> "You started pursuing a $label career."
+        }
         return character.copy(
             career = character.career.copy(
                 careerTrack = track,
                 trackLevel = 0,
-                trackProgress = 0
+                trackProgress = if (captainBoost) 35 else 0,
+                fame = (character.career.fame + startFame).coerceIn(0, 100)
             ),
-            eventLog = EventLogCap.prepend(
-                character.eventLog,
-                "You started pursuing a $label career."
-            )
+            eventLog = EventLogCap.prepend(character.eventLog, stageNote)
         )
     }
 
@@ -1510,7 +1552,12 @@ class CareerEngine @Inject constructor(
         if (character.career.trackLevel >= MAX_TRACK_LEVEL) {
             return CareerTrackPracticeResult.MaxLevel
         }
-        val progressGain = TRACK_PRACTICE_GAIN + Random.nextInt(0, 6)
+        val talentBoost = when (track) {
+            CareerTrack.PRO_SPORTS -> character.career.athleticism / 18
+            CareerTrack.ENTERTAINMENT -> character.career.musicalTalent / 18
+            else -> 0
+        }
+        val progressGain = TRACK_PRACTICE_GAIN + talentBoost + Random.nextInt(0, 6)
         val happinessDelta = when (track) {
             CareerTrack.PRO_SPORTS -> -2
             CareerTrack.MEDICAL, CareerTrack.LEGAL, CareerTrack.SOFTWARE -> -2
@@ -1530,6 +1577,18 @@ class CareerEngine @Inject constructor(
                         clampStat(character.stats.health + 1)
                     else -> character.stats.health
                 }
+            ),
+            career = character.career.copy(
+                athleticism = when (track) {
+                    CareerTrack.PRO_SPORTS ->
+                        (character.career.athleticism + 2).coerceIn(0, 100)
+                    else -> character.career.athleticism
+                },
+                musicalTalent = when (track) {
+                    CareerTrack.ENTERTAINMENT ->
+                        (character.career.musicalTalent + 2).coerceIn(0, 100)
+                    else -> character.career.musicalTalent
+                }
             )
         )
         var newProgress = updated.career.trackProgress + progressGain
@@ -1537,22 +1596,13 @@ class CareerEngine @Inject constructor(
         if (newProgress >= TRACK_LEVEL_THRESHOLD) {
             newProgress = 0
             newLevel = (newLevel + 1).coerceAtMost(MAX_TRACK_LEVEL)
-            updated = updated.copy(
-                eventLog = EventLogCap.prepend(
-                    updated.eventLog,
-                    trackLevelUpMessage(track, newLevel)
-                )
-            )
-            if (track == CareerTrack.ENTERTAINMENT && newLevel >= 2 && !updated.socialMedia.hasAccount) {
-                updated = updated.copy(
-                    socialMedia = updated.socialMedia.copy(hasAccount = true, followers = 500)
-                )
-            }
+            updated = applyTrackLevelUp(updated, track, newLevel)
         }
         updated = updated.copy(
             career = updated.career.copy(
                 trackProgress = newProgress,
-                trackLevel = newLevel
+                trackLevel = newLevel,
+                fameIdleYears = 0
             )
         )
         return CareerTrackPracticeResult.Success(updated)
@@ -1569,12 +1619,7 @@ class CareerEngine @Inject constructor(
         if (newProgress >= TRACK_LEVEL_THRESHOLD) {
             newProgress = 0
             newLevel = (newLevel + 1).coerceAtMost(MAX_TRACK_LEVEL)
-            updated = updated.copy(
-                eventLog = EventLogCap.prepend(
-                    updated.eventLog,
-                    trackLevelUpMessage(track, newLevel)
-                )
-            )
+            updated = applyTrackLevelUp(updated, track, newLevel)
         }
         return updated.copy(
             career = updated.career.copy(
@@ -1584,17 +1629,583 @@ class CareerEngine @Inject constructor(
         )
     }
 
+    /** Yearly fame income, passive talent from lifestyle/clubs, idle decay, and social spikes. */
+    fun tickFameAndTalentYear(character: Character): Character {
+        var updated = character
+        var athleticism = updated.career.athleticism
+        var musical = updated.career.musicalTalent
+        var fame = updated.career.fame
+        var idleYears = updated.career.fameIdleYears
+        var log = updated.eventLog
+
+        val hadActivity = updated.career.gymTrainedThisYear ||
+            updated.career.musicTrainedThisYear ||
+            updated.career.talentGigDoneThisYear
+
+        if (updated.lifestyle.hasGymMembership) {
+            athleticism = (athleticism + 3).coerceIn(0, 100)
+        }
+        when (updated.education.schoolClub) {
+            SchoolClub.FOOTBALL -> {
+                athleticism = (athleticism + 2).coerceIn(0, 100)
+                if (updated.education.clubRank == ClubRank.CAPTAIN) {
+                    fame = (fame + 2).coerceIn(0, 100)
+                }
+            }
+            SchoolClub.MUSIC, SchoolClub.DRAMA -> {
+                musical = (musical + 2).coerceIn(0, 100)
+                if (updated.education.clubRank == ClubRank.CAPTAIN) {
+                    fame = (fame + 2).coerceIn(0, 100)
+                }
+            }
+            else -> Unit
+        }
+        when (updated.career.careerTrack) {
+            CareerTrack.PRO_SPORTS -> fame = (fame + 1 + updated.career.trackLevel).coerceIn(0, 100)
+            CareerTrack.ENTERTAINMENT -> fame = (fame + 1 + updated.career.trackLevel).coerceIn(0, 100)
+            else -> Unit
+        }
+
+        if (hadActivity ||
+            updated.career.careerTrack == CareerTrack.PRO_SPORTS ||
+            updated.career.careerTrack == CareerTrack.ENTERTAINMENT
+        ) {
+            idleYears = 0
+        } else {
+            idleYears += 1
+            if (fame >= 20 && idleYears >= 2) {
+                val decay = (2 + idleYears).coerceAtMost(8)
+                fame = (fame - decay).coerceIn(0, 100)
+                log = EventLogCap.prepend(
+                    log,
+                    "Without the spotlight, your fame faded a little this year."
+                )
+            }
+        }
+
+        var money = updated.stats.money
+        var endorsementPayout = updated.career.endorsementPayoutPerYear
+        if (updated.career.endorsementActive) {
+            // Scale deal with current fame so rising stars earn more over time.
+            val refreshed = EconomyScaler.scaleAmount(
+                15_000 + fame * 900 + updated.career.trackLevel * 12_000,
+                updated.countryCode
+            )
+            endorsementPayout = maxOf(endorsementPayout, refreshed)
+            money += endorsementPayout
+            log = EventLogCap.prepend(
+                log,
+                "Endorsement payday: ${formatMoney(endorsementPayout, updated.countryCode)}."
+            )
+        }
+
+        val followerSpike = if (fame >= 40 && updated.socialMedia.hasAccount) {
+            (fame * 40 + Random.nextInt(0, 800)).coerceAtLeast(100)
+        } else {
+            0
+        }
+        val social = if (followerSpike > 0) {
+            updated.socialMedia.copy(
+                followers = updated.socialMedia.followers + followerSpike
+            )
+        } else {
+            updated.socialMedia
+        }
+        if (followerSpike > 0) {
+            log = EventLogCap.prepend(log, "Fame buzz added $followerSpike social followers.")
+        }
+
+        return updated.copy(
+            stats = updated.stats.copy(money = money),
+            career = updated.career.copy(
+                athleticism = athleticism,
+                musicalTalent = musical,
+                fame = fame,
+                fameIdleYears = idleYears,
+                endorsementPayoutPerYear = endorsementPayout,
+                gymTrainedThisYear = false,
+                musicTrainedThisYear = false,
+                talentGigDoneThisYear = false
+            ),
+            socialMedia = social,
+            eventLog = log
+        )
+    }
+
+    fun trainTalent(character: Character, training: TalentTraining): TalentTrainingResult {
+        if (!character.alive || character.criminalRecord.currentlyIncarcerated) {
+            return TalentTrainingResult.Ineligible
+        }
+        if (character.age < MIN_TALENT_TRAINING_AGE) return TalentTrainingResult.Ineligible
+        return when (training) {
+            TalentTraining.GYM_SESSION, TalentTraining.SPORTS_DRILL -> {
+                if (character.career.gymTrainedThisYear) return TalentTrainingResult.AlreadyDone
+                val athGain = if (training == TalentTraining.SPORTS_DRILL) 10 else 8
+                val progressGain = if (
+                    training == TalentTraining.SPORTS_DRILL &&
+                    character.career.careerTrack == CareerTrack.PRO_SPORTS
+                ) {
+                    12
+                } else {
+                    0
+                }
+                val injury = training == TalentTraining.SPORTS_DRILL &&
+                    (character.stats.health < 40 || Random.nextFloat() < 0.12f)
+                val healthDelta = when {
+                    injury -> -6
+                    training == TalentTraining.SPORTS_DRILL -> 1
+                    else -> 2
+                }
+                val updated = character.copy(
+                    stats = character.stats.copy(
+                        health = clampStat(character.stats.health + healthDelta),
+                        happiness = clampStat(
+                            character.stats.happiness + if (injury) -4 else -1
+                        )
+                    ),
+                    career = character.career.copy(
+                        athleticism = (character.career.athleticism +
+                            if (injury) athGain / 2 else athGain).coerceIn(0, 100),
+                        trackProgress = (character.career.trackProgress + progressGain)
+                            .coerceAtMost(TRACK_LEVEL_THRESHOLD - 1),
+                        gymTrainedThisYear = true,
+                        fameIdleYears = 0,
+                        fame = (character.career.fame + if (athGain >= 10 && !injury) 1 else 0)
+                            .coerceIn(0, 100)
+                    ),
+                    eventLog = EventLogCap.prepend(
+                        character.eventLog,
+                        when {
+                            injury -> "Sports drills left you injured — progress slowed."
+                            training == TalentTraining.SPORTS_DRILL ->
+                                "Sports drills raised your athleticism."
+                            else -> "Gym session raised your athleticism."
+                        }
+                    )
+                )
+                TalentTrainingResult.Success(
+                    updated,
+                    when {
+                        injury -> "Injured during drills — take care of your health."
+                        training == TalentTraining.SPORTS_DRILL -> "Athleticism up from drills."
+                        else -> "Athleticism up from the gym."
+                    }
+                )
+            }
+            TalentTraining.MUSIC_LESSON, TalentTraining.STAGE_PRACTICE -> {
+                if (character.career.musicTrainedThisYear) return TalentTrainingResult.AlreadyDone
+                val lessonFee = EconomyScaler.scaleAmount(MUSIC_LESSON_FEE_KENYA, character.countryCode)
+                if (training == TalentTraining.MUSIC_LESSON && character.stats.money < lessonFee) {
+                    return TalentTrainingResult.CannotAfford
+                }
+                val talentGain = if (training == TalentTraining.STAGE_PRACTICE) 10 else 8
+                val progressGain = if (
+                    training == TalentTraining.STAGE_PRACTICE &&
+                    character.career.careerTrack == CareerTrack.ENTERTAINMENT
+                ) {
+                    12
+                } else {
+                    0
+                }
+                val cost = if (training == TalentTraining.MUSIC_LESSON) lessonFee else 0
+                val updated = character.copy(
+                    stats = character.stats.copy(
+                        money = character.stats.money - cost,
+                        happiness = clampStat(character.stats.happiness + 2),
+                        looks = clampStat(character.stats.looks + 1)
+                    ),
+                    career = character.career.copy(
+                        musicalTalent = (character.career.musicalTalent + talentGain).coerceIn(0, 100),
+                        trackProgress = (character.career.trackProgress + progressGain)
+                            .coerceAtMost(TRACK_LEVEL_THRESHOLD - 1),
+                        musicTrainedThisYear = true,
+                        fameIdleYears = 0,
+                        fame = (character.career.fame + if (talentGain >= 10) 2 else 1).coerceIn(0, 100)
+                    ),
+                    eventLog = EventLogCap.prepend(
+                        character.eventLog,
+                        if (training == TalentTraining.STAGE_PRACTICE) {
+                            "Stage practice sharpened your act."
+                        } else {
+                            "Music lesson improved your talent."
+                        }
+                    )
+                )
+                TalentTrainingResult.Success(
+                    updated,
+                    if (training == TalentTraining.STAGE_PRACTICE) "Musical talent up from stage practice."
+                    else "Musical talent up from lessons."
+                )
+            }
+            TalentTraining.STREET_BUSK -> performStreetBusk(character)
+            TalentTraining.EXHIBITION_MATCH -> performExhibitionMatch(character)
+        }
+    }
+
+    private fun performStreetBusk(character: Character): TalentTrainingResult {
+        if (character.career.talentGigDoneThisYear) return TalentTrainingResult.AlreadyDone
+        if (character.career.musicalTalent < 25 &&
+            character.career.careerTrack != CareerTrack.ENTERTAINMENT
+        ) {
+            return TalentTrainingResult.Ineligible
+        }
+        val tip = EconomyScaler.scaleAmount(
+            Random.nextInt(800, 2_500 + character.career.musicalTalent * 40),
+            character.countryCode
+        )
+        val fameGain = 2 + character.career.musicalTalent / 25
+        val updated = character.copy(
+            stats = character.stats.copy(
+                money = character.stats.money + tip,
+                happiness = clampStat(character.stats.happiness + 3)
+            ),
+            career = character.career.copy(
+                musicalTalent = (character.career.musicalTalent + 3).coerceIn(0, 100),
+                fame = (character.career.fame + fameGain).coerceIn(0, 100),
+                talentGigDoneThisYear = true,
+                fameIdleYears = 0,
+                trackProgress = if (character.career.careerTrack == CareerTrack.ENTERTAINMENT) {
+                    (character.career.trackProgress + 8).coerceAtMost(TRACK_LEVEL_THRESHOLD - 1)
+                } else {
+                    character.career.trackProgress
+                }
+            ),
+            socialMedia = if (character.socialMedia.hasAccount) {
+                character.socialMedia.copy(
+                    followers = character.socialMedia.followers + 80 + fameGain * 20
+                )
+            } else {
+                character.socialMedia
+            },
+            eventLog = EventLogCap.prepend(
+                character.eventLog,
+                "Street busking earned ${formatMoney(tip, character.countryCode)} and a little buzz."
+            )
+        )
+        return TalentTrainingResult.Success(
+            updated,
+            "Busked for ${formatMoney(tip, character.countryCode)}."
+        )
+    }
+
+    private fun performExhibitionMatch(character: Character): TalentTrainingResult {
+        if (character.career.talentGigDoneThisYear) return TalentTrainingResult.AlreadyDone
+        if (character.career.athleticism < 30 &&
+            character.career.careerTrack != CareerTrack.PRO_SPORTS
+        ) {
+            return TalentTrainingResult.Ineligible
+        }
+        val purse = EconomyScaler.scaleAmount(
+            Random.nextInt(1_200, 3_500 + character.career.athleticism * 45),
+            character.countryCode
+        )
+        val won = Random.nextFloat() < (0.45f + character.career.athleticism / 200f)
+        val fameGain = if (won) 4 + character.career.athleticism / 20 else 1
+        val updated = character.copy(
+            stats = character.stats.copy(
+                money = character.stats.money + purse,
+                health = clampStat(character.stats.health + if (won) 0 else -3),
+                happiness = clampStat(character.stats.happiness + if (won) 4 else -2)
+            ),
+            career = character.career.copy(
+                athleticism = (character.career.athleticism + if (won) 4 else 2).coerceIn(0, 100),
+                fame = (character.career.fame + fameGain).coerceIn(0, 100),
+                talentGigDoneThisYear = true,
+                fameIdleYears = 0,
+                trackProgress = if (character.career.careerTrack == CareerTrack.PRO_SPORTS) {
+                    (character.career.trackProgress + if (won) 10 else 4)
+                        .coerceAtMost(TRACK_LEVEL_THRESHOLD - 1)
+                } else {
+                    character.career.trackProgress
+                }
+            ),
+            eventLog = EventLogCap.prepend(
+                character.eventLog,
+                if (won) {
+                    "You won an exhibition match and pocketed ${formatMoney(purse, character.countryCode)}."
+                } else {
+                    "Tough exhibition match — still earned ${formatMoney(purse, character.countryCode)}."
+                }
+            )
+        )
+        return TalentTrainingResult.Success(
+            updated,
+            if (won) "Won the exhibition for ${formatMoney(purse, character.countryCode)}."
+            else "Exhibition purse: ${formatMoney(purse, character.countryCode)}."
+        )
+    }
+
+    /** Leave sports/entertainment (or other) track mid-career. */
+    fun leaveCareerTrack(character: Character): Character {
+        if (character.career.careerTrack == CareerTrack.NONE) return character
+        val label = trackStageLabel(character.career.careerTrack, character.career.trackLevel)
+        return character.copy(
+            career = character.career.copy(
+                careerTrack = CareerTrack.NONE,
+                trackLevel = 0,
+                trackProgress = 0
+            ),
+            eventLog = EventLogCap.prepend(
+                character.eventLog,
+                "You stepped away from the $label pathway."
+            )
+        )
+    }
+
+    fun fameBandLabel(fame: Int): String = when {
+        fame >= 80 -> "Global icon"
+        fame >= 60 -> "National star"
+        fame >= 40 -> "Rising name"
+        fame >= 20 -> "Local buzz"
+        fame > 0 -> "Unknown hopeful"
+        else -> "Nobody yet"
+    }
+
+    fun pathwayRoadmap(track: CareerTrack): List<String> = when (track) {
+        CareerTrack.PRO_SPORTS -> listOf(
+            "High school / prospect",
+            "Drafted pro",
+            "Team star",
+            "Retired legend"
+        )
+        CareerTrack.ENTERTAINMENT -> listOf(
+            "Street busking",
+            "Local gig circuit",
+            "Record deal",
+            "World tour"
+        )
+        else -> emptyList()
+    }
+
+    fun canSignEndorsement(character: Character): Boolean {
+        if (!character.alive || character.career.endorsementActive) return false
+        if (character.career.fame < MIN_ENDORSEMENT_FAME) return false
+        val track = character.career.careerTrack
+        return (track == CareerTrack.PRO_SPORTS || track == CareerTrack.ENTERTAINMENT) &&
+            character.career.trackLevel >= 1
+    }
+
+    fun signEndorsementDeal(character: Character): EndorsementResult {
+        if (character.career.endorsementActive) return EndorsementResult.AlreadySigned
+        if (!canSignEndorsement(character)) return EndorsementResult.Ineligible
+        val base = 15_000 + character.career.fame * 900 + character.career.trackLevel * 12_000
+        val payout = EconomyScaler.scaleAmount(base, character.countryCode)
+        val updated = character.copy(
+            career = character.career.copy(
+                endorsementActive = true,
+                endorsementPayoutPerYear = payout,
+                fame = (character.career.fame + 5).coerceIn(0, 100)
+            ),
+            eventLog = EventLogCap.prepend(
+                character.eventLog,
+                "You signed a brand endorsement worth ${formatMoney(payout, character.countryCode)}/year."
+            )
+        )
+        return EndorsementResult.Success(updated, payout)
+    }
+
+    fun dropEndorsementDeal(character: Character): Character {
+        if (!character.career.endorsementActive) return character
+        return character.copy(
+            career = character.career.copy(
+                endorsementActive = false,
+                endorsementPayoutPerYear = 0
+            ),
+            eventLog = EventLogCap.prepend(character.eventLog, "Your endorsement deal ended.")
+        )
+    }
+
+    fun buildFameEvent(character: Character): LifeEvent? {
+        if (character.career.fame < MIN_PAPARAZZI_FAME) return null
+        if (Random.nextFloat() > FAME_EVENT_CHANCE) return null
+        val canOfferEndorsement = canSignEndorsement(character)
+        val choices = mutableListOf(
+            EventChoice(
+                label = "Pose for the cameras",
+                resultText = "You leaned into the spotlight.",
+                fameEventAction = FameEventAction.POSE_FOR_CAMERAS.name,
+                followerEffect = 800,
+                statEffects = mapOf("happiness" to 2, "looks" to 1)
+            ),
+            EventChoice(
+                label = "Duck the paparazzi",
+                resultText = "You slipped out a side door.",
+                fameEventAction = FameEventAction.HIDE_FROM_PAPARAZZI.name,
+                statEffects = mapOf("happiness" to 1)
+            ),
+            EventChoice(
+                label = "Feed the scandal",
+                resultText = "The headlines went wild.",
+                fameEventAction = FameEventAction.LEAN_INTO_SCANDAL.name,
+                followerEffect = 2_500,
+                statEffects = mapOf("happiness" to -4, "karma" to -3)
+            )
+        )
+        if (canOfferEndorsement) {
+            choices.add(
+                EventChoice(
+                    label = "Take the brand deal",
+                    resultText = "A sponsor slid a contract across the table.",
+                    fameEventAction = FameEventAction.ACCEPT_ENDORSEMENT_OFFER.name
+                )
+            )
+            choices.add(
+                EventChoice(
+                    label = "Decline the deal",
+                    resultText = "You kept your image independent.",
+                    fameEventAction = FameEventAction.DECLINE_ENDORSEMENT_OFFER.name,
+                    statEffects = mapOf("karma" to 2)
+                )
+            )
+        }
+        return LifeEvent(
+            id = "fame_paparazzi_${character.age}",
+            minAge = character.age,
+            maxAge = character.age,
+            text = "Paparazzi crowd the sidewalk — your fame rating is drawing cameras and agents.",
+            choices = choices,
+            tags = listOf(CAREER_SYSTEM_TAG, FAME_SYSTEM_TAG, ONE_TIME_TAG),
+            weight = 1
+        )
+    }
+
+    fun applyFameEventAction(character: Character, action: FameEventAction): Character =
+        when (action) {
+            FameEventAction.POSE_FOR_CAMERAS -> character.copy(
+                career = character.career.copy(
+                    fame = (character.career.fame + 6).coerceIn(0, 100)
+                )
+            )
+            FameEventAction.HIDE_FROM_PAPARAZZI -> character.copy(
+                career = character.career.copy(
+                    fame = (character.career.fame - 2).coerceIn(0, 100),
+                    stress = (character.career.stress - 4f).coerceIn(0f, 100f)
+                )
+            )
+            FameEventAction.LEAN_INTO_SCANDAL -> character.copy(
+                career = character.career.copy(
+                    fame = (character.career.fame + 12).coerceIn(0, 100),
+                    stress = (character.career.stress + 10f).coerceIn(0f, 100f)
+                ),
+                socialMedia = if (character.socialMedia.hasAccount) {
+                    character.socialMedia.copy(
+                        followers = character.socialMedia.followers + 2_000
+                    )
+                } else {
+                    character.socialMedia
+                }
+            )
+            FameEventAction.ACCEPT_ENDORSEMENT_OFFER -> {
+                when (val result = signEndorsementDeal(character)) {
+                    is EndorsementResult.Success -> result.character
+                    else -> character
+                }
+            }
+            FameEventAction.DECLINE_ENDORSEMENT_OFFER -> character.copy(
+                career = character.career.copy(
+                    fame = (character.career.fame + 1).coerceIn(0, 100)
+                )
+            )
+        }
+
+    fun trackStageLabel(track: CareerTrack, level: Int): String = when (track) {
+        CareerTrack.PRO_SPORTS -> when (level) {
+            0 -> "High school / prospect"
+            1 -> "Drafted pro"
+            2 -> "Team star"
+            else -> "Retired legend"
+        }
+        CareerTrack.ENTERTAINMENT -> when (level) {
+            0 -> "Street busking"
+            1 -> "Local gig circuit"
+            2 -> "Record deal"
+            else -> "World tour"
+        }
+        CareerTrack.MEDICAL -> when (level) {
+            0 -> "Student doctor"
+            1 -> "Clinical rotations"
+            2 -> "Licensed physician"
+            else -> "Specialist"
+        }
+        CareerTrack.LEGAL -> when (level) {
+            0 -> "Law clerk"
+            1 -> "Bar-admitted"
+            2 -> "Partner track"
+            else -> "Star litigator"
+        }
+        CareerTrack.SOFTWARE -> when (level) {
+            0 -> "Junior engineer"
+            1 -> "Shipped engineer"
+            2 -> "Senior engineer"
+            else -> "Principal"
+        }
+        CareerTrack.CORPORATE -> when (level) {
+            0 -> "Analyst"
+            1 -> "Deal closer"
+            2 -> "Manager"
+            else -> "Director"
+        }
+        CareerTrack.NONE -> ""
+    }
+
+    private fun applyTrackLevelUp(character: Character, track: CareerTrack, level: Int): Character {
+        val fameGain = when (track) {
+            CareerTrack.PRO_SPORTS, CareerTrack.ENTERTAINMENT -> when (level) {
+                1 -> 14
+                2 -> 20
+                3 -> 28
+                else -> 8
+            }
+            else -> 0
+        }
+        var updated = character.copy(
+            career = character.career.copy(
+                fame = (character.career.fame + fameGain).coerceIn(0, 100)
+            ),
+            eventLog = EventLogCap.prepend(
+                character.eventLog,
+                trackLevelUpMessage(track, level)
+            )
+        )
+        if (track == CareerTrack.ENTERTAINMENT && level >= 1 && !updated.socialMedia.hasAccount) {
+            updated = updated.copy(
+                socialMedia = updated.socialMedia.copy(hasAccount = true, followers = 500)
+            )
+        }
+        if ((track == CareerTrack.ENTERTAINMENT || track == CareerTrack.PRO_SPORTS) &&
+            updated.socialMedia.hasAccount
+        ) {
+            val spike = 1_000 * level + fameGain * 80
+            updated = updated.copy(
+                socialMedia = updated.socialMedia.copy(
+                    followers = updated.socialMedia.followers + spike
+                )
+            )
+        }
+        if (track == CareerTrack.PRO_SPORTS && level >= 3) {
+            val pension = EconomyScaler.scaleAmount(80_000, updated.countryCode)
+            updated = updated.copy(
+                stats = updated.stats.copy(money = updated.stats.money + pension),
+                eventLog = EventLogCap.prepend(
+                    updated.eventLog,
+                    "Retirement from pro sports brought a ${formatMoney(pension, updated.countryCode)} send-off."
+                )
+            )
+        }
+        return updated
+    }
+
     private fun trackLevelUpMessage(track: CareerTrack, level: Int): String = when (track) {
         CareerTrack.ENTERTAINMENT -> when (level) {
-            1 -> "You booked your first paid local gig."
-            2 -> "Regional promoters started noticing your act."
-            3 -> "You signed with a label — you're a rising star."
+            1 -> "You left street busking behind — local gigs are booking you."
+            2 -> "A label offered a record deal."
+            3 -> "You're on a world tour — arenas know your name."
             else -> "Your entertainment career advanced."
         }
         CareerTrack.PRO_SPORTS -> when (level) {
-            1 -> "You made a semi-pro squad."
-            2 -> "A pro team offered you a contract."
-            3 -> "You're a star athlete with national buzz."
+            1 -> "You were drafted into a professional league."
+            2 -> "You're a team star with highlight-reel buzz."
+            3 -> "You retired as a sports legend."
             else -> "Your sports career advanced."
         }
         CareerTrack.MEDICAL -> when (level) {
@@ -1861,6 +2472,14 @@ class CareerEngine @Inject constructor(
         const val SIDE_HUSTLE_BURNOUT_MULTIPLIER = 2f
         const val MIN_TRACK_AGE = 16
         private const val PRO_SPORTS_MIN_HEALTH = 55
+        private const val PRO_SPORTS_MIN_ATHLETICISM = 40
+        private const val ENTERTAINMENT_MIN_TALENT = 35
+        const val MIN_TALENT_TRAINING_AGE = 12
+        const val MUSIC_LESSON_FEE_KENYA = 3_500
+        private const val MIN_ENDORSEMENT_FAME = 35
+        private const val MIN_PAPARAZZI_FAME = 45
+        private const val FAME_EVENT_CHANCE = 0.22f
+        const val FAME_SYSTEM_TAG = "fame_system"
         private const val TRACK_PRACTICE_GAIN = 18
         private const val TRACK_PASSIVE_GAIN = 8
         private const val TRACK_LEVEL_THRESHOLD = 100

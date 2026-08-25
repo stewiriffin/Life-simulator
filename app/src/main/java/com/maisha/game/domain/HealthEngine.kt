@@ -408,14 +408,25 @@ class HealthEngine @Inject constructor() {
         if (lifestyle.hasTherapist) {
             happinessBonus += THERAPIST_HAPPINESS_BONUS
         }
-        if (healthBonus == 0 && looksBonus == 0 && happinessBonus == 0) return character
+        if (healthBonus == 0 && looksBonus == 0 && happinessBonus == 0 &&
+            !lifestyle.hasGymMembership
+        ) {
+            return character
+        }
 
         return character.copy(
             stats = character.stats.copy(
                 health = clampStat(character.stats.health + healthBonus),
                 looks = clampStat(character.stats.looks + looksBonus),
                 happiness = clampStat(character.stats.happiness + happinessBonus)
-            )
+            ),
+            career = if (lifestyle.hasGymMembership) {
+                character.career.copy(
+                    athleticism = (character.career.athleticism + 2).coerceIn(0, 100)
+                )
+            } else {
+                character.career
+            }
         )
     }
 

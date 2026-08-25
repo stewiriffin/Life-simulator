@@ -2,13 +2,17 @@ package com.maisha.game.domain
 
 import com.maisha.game.data.JobPool
 import com.maisha.game.data.model.CareerState
+import com.maisha.game.data.model.CareerTrack
+import com.maisha.game.data.model.ClubRank
 import com.maisha.game.data.model.CriminalRecord
 import com.maisha.game.data.model.EducationState
 import com.maisha.game.data.model.HustleType
 import com.maisha.game.data.model.Job
 import com.maisha.game.data.model.PartTimeJob
+import com.maisha.game.data.model.SchoolClub
 import com.maisha.game.data.model.SchoolStage
 import com.maisha.game.data.model.Stats
+import com.maisha.game.data.model.TalentTraining
 import com.maisha.game.data.model.WorkEffort
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
@@ -562,5 +566,93 @@ class CareerEngineTest {
         assertNull(after.career.activePartTimeJob)
         assertTrue(after.stats.money > 1_000)
         assertTrue(after.career.energyLevel > 50)
+    }
+
+    @Test
+    fun trainTalent_gymRaisesAthleticism() {
+        val teen = TestFixtures.character(
+            age = 15,
+            career = CareerState(athleticism = 30)
+        )
+        val result = engine.trainTalent(teen, TalentTraining.GYM_SESSION)
+        assertTrue(result is TalentTrainingResult.Success)
+        val after = (result as TalentTrainingResult.Success).character
+        assertTrue(after.career.athleticism > 30)
+        assertTrue(after.career.gymTrainedThisYear)
+        assertTrue(engine.trainTalent(after, TalentTraining.SPORTS_DRILL) is TalentTrainingResult.AlreadyDone)
+    }
+
+    @Test
+    fun proSportsTrack_levelsRaiseFameAndStageLabels() {
+        val athlete = TestFixtures.character(
+            age = 18,
+            stats = Stats(health = 70, happiness = 60, smarts = 50, looks = 55),
+            education = EducationState(
+                stage = SchoolStage.SECONDARY,
+                schoolClub = SchoolClub.FOOTBALL,
+                clubRank = ClubRank.CAPTAIN
+            ),
+            career = CareerState(athleticism = 55)
+        )
+        val started = engine.startCareerTrack(athlete, CareerTrack.PRO_SPORTS)
+        assertEquals(CareerTrack.PRO_SPORTS, started.career.careerTrack)
+        assertTrue(started.career.fame > 0)
+        assertEquals("High school / prospect", engine.trackStageLabel(CareerTrack.PRO_SPORTS, 0))
+        assertEquals("Drafted pro", engine.trackStageLabel(CareerTrack.PRO_SPORTS, 1))
+        assertEquals("Street busking", engine.trackStageLabel(CareerTrack.ENTERTAINMENT, 0))
+    }
+
+    @Test
+    fun signEndorsement_requiresFameAndTrackLevel() {
+        val star = TestFixtures.character(
+            age = 22,
+            career = CareerState(
+                careerTrack = CareerTrack.ENTERTAINMENT,
+                trackLevel = 2,
+                fame = 50,
+                musicalTalent = 60
+            )
+        )
+        val result = engine.signEndorsementDeal(star)
+        assertTrue(result is EndorsementResult.Success)
+        val after = (result as EndorsementResult.Success).character
+        assertTrue(after.career.endorsementActive)
+        assertTrue(after.career.endorsementPayoutPerYear > 0)
+    }
+
+    @Test
+    fun streetBusk_earnsCashAndFame() {
+        val artist = TestFixtures.character(
+            age = 18,
+            stats = Stats(money = 0, happiness = 50, health = 70, smarts = 50, looks = 55),
+            career = CareerState(musicalTalent = 40, fame = 10)
+        )
+        val result = engine.trainTalent(artist, TalentTraining.STREET_BUSK)
+        assertTrue(result is TalentTrainingResult.Success)
+        val after = (result as TalentTrainingResult.Success).character
+        assertTrue(after.stats.money > 0)
+        assertTrue(after.career.fame > 10)
+        assertTrue(after.career.talentGigDoneThisYear)
+    }
+
+    @Test
+    fun leaveCareerTrack_clearsPathway() {
+        val star = TestFixtures.character(
+            career = CareerState(careerTrack = CareerTrack.PRO_SPORTS, trackLevel = 2, fame = 40)
+        )
+        val after = engine.leaveCareerTrack(star)
+        assertEquals(CareerTrack.NONE, after.career.careerTrack)
+        assertEquals(0, after.career.trackLevel)
+    }
+
+    @Test
+    fun tickFameAndTalentYear_decaysFameWhenIdle() {
+        val faded = TestFixtures.character(
+            age = 30,
+            career = CareerState(fame = 50, fameIdleYears = 2)
+        )
+        val after = engine.tickFameAndTalentYear(faded)
+        assertTrue(after.career.fame < 50)
+        assertTrue(after.career.fameIdleYears >= 3)
     }
 }

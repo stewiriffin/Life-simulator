@@ -81,7 +81,25 @@ data class CareerState(
     /** Network / coffee with a coworker used this year. */
     val networkColleagueDoneThisYear: Boolean = false,
     /** Lifetime promotions earned (ladder climbs). */
-    val promotionsEarned: Int = 0
+    val promotionsEarned: Int = 0,
+    /** Physical talent (0–100); built via gym, sports club, and drills. */
+    val athleticism: Int = 25,
+    /** Musical / performance talent (0–100); built via lessons and music/drama club. */
+    val musicalTalent: Int = 25,
+    /** Global popularity (0–100); drives paparazzi, endorsements, follower spikes. */
+    val fame: Int = 0,
+    /** Active brand endorsement while on sports/entertainment tracks. */
+    val endorsementActive: Boolean = false,
+    /** Scaled yearly endorsement paycheck while [endorsementActive]. */
+    val endorsementPayoutPerYear: Int = 0,
+    /** Gym / sports drill used this year. */
+    val gymTrainedThisYear: Boolean = false,
+    /** Music lesson / stage practice used this year. */
+    val musicTrainedThisYear: Boolean = false,
+    /** Street busk / exhibition match used this year. */
+    val talentGigDoneThisYear: Boolean = false,
+    /** Years since last fame-boosting action (training, gig, track practice). */
+    val fameIdleYears: Int = 0
 )
 
 @Serializable
@@ -135,6 +153,33 @@ enum class CareerTrack {
     LEGAL,
     SOFTWARE,
     CORPORATE
+}
+
+/** Mid-year talent training from the Fame & Talent Hub / Actions. */
+@Serializable
+enum class TalentTraining {
+    /** Gym session — raises athleticism. */
+    GYM_SESSION,
+    /** Sports drills — athleticism + track progress for athletes. */
+    SPORTS_DRILL,
+    /** Music lesson — raises musical talent. */
+    MUSIC_LESSON,
+    /** Stage / busking practice — musical talent + entertainment progress. */
+    STAGE_PRACTICE,
+    /** Paid street busking / open mic (entertainment cash + fame). */
+    STREET_BUSK,
+    /** Exhibition / amateur match (sports cash + fame). */
+    EXHIBITION_MATCH
+}
+
+/** Age-up paparazzi / fame dilemma resolutions. */
+@Serializable
+enum class FameEventAction {
+    POSE_FOR_CAMERAS,
+    HIDE_FROM_PAPARAZZI,
+    LEAN_INTO_SCANDAL,
+    ACCEPT_ENDORSEMENT_OFFER,
+    DECLINE_ENDORSEMENT_OFFER
 }
 
 /**

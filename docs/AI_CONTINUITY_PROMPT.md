@@ -2,7 +2,7 @@
 
 > **Purpose:** Paste this document (or point an AI agent at it) at the start of any new session so the assistant understands **what Maisha is**, **what has already been built**, **what just shipped**, **what is still missing**, and **how to work in this repo without undoing progress**.
 >
-> **Last updated:** 2026-08-25 (student part-time jobs & youth side hustles)  
+> **Last updated:** 2026-08-25 (fame, talent & alternative career tracks)  
 > **Repo path:** `/home/dr-rank/Documents/Apps/Life-simulator`  
 > **Remote:** `https://github.com/stewiriffin/Life-simulator` (`origin/main`)  
 > **Package:** `com.maisha.game`
@@ -142,7 +142,9 @@ School is **not** its own bottom tab. It lives under **Career**, category **SCHO
 2. **School life** card — reputation, classmates/teachers, activities  
 3. **School clubs** card — Debate / Football / Drama / Coding / Music with ranks, skill/prestige/fame bars, Light/Normal/Intense practice, rival challenges, letter jacket, officer fundraisers, captain major events, awards/scholarship resume  
 4. **Jobs & Side Hustles** card — student part-time listings (16+, secondary/uni), energy bar, rest/quit, youth hustles  
-5. Career tracks, jobs, business, politics elsewhere in the same screen  
+5. **Fame & Talent Hub** — athleticism / musical talent / fame meters, gym & music training, street busk / exhibition match gigs, idle fame decay, leave pathway, endorsements, pro athlete & entertainment pathways  
+ 
+6. Career tracks, jobs, business, politics elsewhere in the same screen  
 
 ---
 
@@ -154,7 +156,7 @@ These are the rule brains. Prefer editing the right engine instead of stuffing l
 |--------|----------------|
 | `GameEngine` | Age-up orchestration, facades into other engines |
 | `EducationEngine` | Enroll, grades, exams, university, clubs, **school roster + activities**, study effort |
-| `CareerEngine` | Jobs, performance, promotions, tracks, military, student part-time + energy, side hustles, `requires_job` gates |
+| `CareerEngine` | Jobs, performance, promotions, tracks, military, student part-time + energy, side hustles, fame/talent/endorsements, `requires_job` gates |
 | `RelationshipEngine` | Family/dating/friends/enemies, interactions, gates (`requires_spouse`, etc.) |
 | `FinanceEngine` | Money, assets, rentals, portfolio tags |
 | `CrimeEngine` | Crimes, arrest, incarceration, trial-related rules |
@@ -355,6 +357,7 @@ Newest first:
 
 | Commit | Meaning |
 |--------|---------|
+| *(uncommitted)* | Fame & Talent Hub: athleticism/musicalTalent/fame, pro athlete & music pathways, endorsements, paparazzi |
 | `f0bbc8a` | Student part-time + youth side hustles: energy, Hard-study balance, year-end pay, rest/quit, Jobs & Side Hustles UI |
 | `30b316a` | Career ladder, office politics (PIP/credit/burnout/network), Career dashboard |
 | `74ec22c` | University majors, loans, campus jobs, internships, grad track, Career dashboard |
@@ -445,7 +448,7 @@ Always confirm with the user’s latest message if the request is ambiguous.
 
 ## 16. Copy-paste short briefing (for tiny context windows)
 
-> Maisha is an Android BitLife-style life sim (Compose, Hilt, Room, pure domain engines). Worldwide 15 countries. Latest: student part-time jobs + youth side hustles (energy, study/work balance, year-end pay, Jobs & Side Hustles UI) (`f0bbc8a`); career ladders + office politics (`30b316a`); university majors/loans (`74ec22c`); school life depth. Prefer agency/UI/systems over event spam. Docs folder was cleared except this continuity prompt. Commit/push/install only on request.
+> Maisha is an Android BitLife-style life sim (Compose, Hilt, Room, pure domain engines). Worldwide 15 countries. Latest: Fame & Talent Hub (athleticism/musical talent/fame, pro sports & entertainment pathways, endorsements/paparazzi); student part-time jobs (`f0bbc8a`); career ladders (`30b316a`); university (`74ec22c`). Prefer agency/UI/systems over event spam. Commit/push/install only on request.
 
 ---
 

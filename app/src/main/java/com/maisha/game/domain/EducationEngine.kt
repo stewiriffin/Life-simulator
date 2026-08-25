@@ -1015,6 +1015,24 @@ class EducationEngine @Inject constructor(
                 smarts = clampStat(character.stats.smarts + smarts),
                 looks = clampStat(character.stats.looks + looksBonus)
             ),
+            career = character.career.copy(
+                athleticism = when (club) {
+                    SchoolClub.FOOTBALL ->
+                        (character.career.athleticism + 3 + rankBonus).coerceIn(0, 100)
+                    else -> character.career.athleticism
+                },
+                musicalTalent = when (club) {
+                    SchoolClub.MUSIC, SchoolClub.DRAMA ->
+                        (character.career.musicalTalent + 3 + rankBonus).coerceIn(0, 100)
+                    else -> character.career.musicalTalent
+                },
+                fame = when {
+                    scoutLog != null -> (character.career.fame + 4).coerceIn(0, 100)
+                    character.education.clubFame >= 50 ->
+                        (character.career.fame + 1).coerceIn(0, 100)
+                    else -> character.career.fame
+                }
+            ),
             education = character.education.copy(
                 gpa = if (character.education.gpa > 0f) {
                     clampGpa(character.education.gpa + gpaDelta)

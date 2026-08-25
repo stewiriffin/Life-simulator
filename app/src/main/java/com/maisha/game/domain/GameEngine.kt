@@ -141,6 +141,7 @@ class GameEngine @Inject constructor(
             updatedCharacter = processEducationProgression(updatedCharacter, preStage)
             updatedCharacter = careerEngine.finishStudentWorkYear(updatedCharacter)
             updatedCharacter = processCareerProgression(updatedCharacter)
+            updatedCharacter = careerEngine.tickFameAndTalentYear(updatedCharacter)
         }
 
         updatedCharacter = processFinanceProgression(updatedCharacter)
@@ -190,6 +191,7 @@ class GameEngine @Inject constructor(
         } else {
             resolveStatPressureEvent(updatedCharacter)
                 ?: resolveCareerEvent(updatedCharacter)
+                ?: resolveFameEvent(updatedCharacter)
                 ?: resolveExpulsionHearingEvent(updatedCharacter)
                 ?: resolveGraduationCareerEvent(updatedCharacter)
                 ?: resolveUniversityEnrollmentEvent(updatedCharacter)
@@ -607,6 +609,14 @@ class GameEngine @Inject constructor(
                 updatedCharacter = careerEngine.applyOfficePoliticsAction(updatedCharacter, politics)
             }
         }
+        if (choice.fameEventAction != null) {
+            val fameAction = runCatching {
+                com.maisha.game.data.model.FameEventAction.valueOf(choice.fameEventAction)
+            }.getOrNull()
+            if (fameAction != null) {
+                updatedCharacter = careerEngine.applyFameEventAction(updatedCharacter, fameAction)
+            }
+        }
 
         if (choice.triggersExpulsion && choice.expulsionHearingAction == null) {
             updatedCharacter = educationEngine.processExpulsion(updatedCharacter)
@@ -949,6 +959,20 @@ class GameEngine @Inject constructor(
 
     fun practiceCareerTrack(character: Character): CareerTrackPracticeResult =
         careerEngine.practiceCareerTrack(character)
+
+    fun trainTalent(
+        character: Character,
+        training: com.maisha.game.data.model.TalentTraining
+    ): TalentTrainingResult = careerEngine.trainTalent(character, training)
+
+    fun signEndorsementDeal(character: Character): EndorsementResult =
+        careerEngine.signEndorsementDeal(character)
+
+    fun dropEndorsementDeal(character: Character): Character =
+        careerEngine.dropEndorsementDeal(character)
+
+    fun leaveCareerTrack(character: Character): Character =
+        careerEngine.leaveCareerTrack(character)
 
     fun performPrisonActivity(
         character: Character,
@@ -1321,6 +1345,11 @@ class GameEngine @Inject constructor(
             }
             else -> null
         }
+    }
+
+    private fun resolveFameEvent(character: Character): Pair<Character, AgeUpResult>? {
+        val event = careerEngine.buildFameEvent(character) ?: return null
+        return character to AgeUpResult.SingleEvent(event)
     }
 
     private fun resolveCareerEvent(character: Character): Pair<Character, AgeUpResult>? {

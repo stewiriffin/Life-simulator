@@ -52,6 +52,7 @@ import com.maisha.game.data.model.SkillType
 import com.maisha.game.data.local.OnboardingTips
 import com.maisha.game.data.model.PartTimeDemand
 import com.maisha.game.data.model.PartTimeJob
+import com.maisha.game.data.model.TalentTraining
 import com.maisha.game.domain.CareerEngine
 import com.maisha.game.domain.CrimeEngine
 import com.maisha.game.domain.ActionFamily
@@ -154,6 +155,9 @@ fun ActionsScreen(
     onWorkPartTime: (com.maisha.game.data.model.PartTimeJob) -> Unit = {},
     onQuitPartTimeJob: () -> Unit = {},
     onRestStudentEnergy: () -> Unit = {},
+    onTrainTalent: (com.maisha.game.data.model.TalentTraining) -> Unit = {},
+    onSignEndorsement: () -> Unit = {},
+    onDropEndorsement: () -> Unit = {},
     onActionMessageDismissed: () -> Unit,
     onDismissLeisureTip: () -> Unit = {},
     modifier: Modifier = Modifier
@@ -571,6 +575,136 @@ fun ActionsScreen(
                             questHint = questHintIf(yearQuests, ActionFamily.STUDY, questHintLabel),
                             onClick = onPerformStudySession
                         )
+                    }
+                }
+
+                if ((show(ActionCategory.GROW) || show(ActionCategory.EARN)) &&
+                    character.alive &&
+                    character.age >= CareerEngine.MIN_TALENT_TRAINING_AGE &&
+                    !incarcerated &&
+                    !awaitingTrial
+                ) {
+                    item { SectionHeader(title = stringResource(R.string.section_fame_talent_hub)) }
+                    item(key = "fame_hub_summary") {
+                        Card(
+                            modifier = Modifier.fillMaxWidth(),
+                            shape = MaishaRadius.cardShape,
+                            colors = CardDefaults.cardColors(containerColor = Color.White)
+                        ) {
+                            Column(modifier = Modifier.padding(14.dp)) {
+                                Text(
+                                    text = stringResource(
+                                        R.string.fame_rating_label,
+                                        character.career.fame
+                                    ),
+                                    style = MaterialTheme.typography.labelLarge,
+                                    fontWeight = FontWeight.SemiBold,
+                                    color = TealPrimary
+                                )
+                                Spacer(modifier = Modifier.height(4.dp))
+                                Text(
+                                    text = stringResource(
+                                        R.string.talent_athleticism,
+                                        character.career.athleticism
+                                    ) + " · " + stringResource(
+                                        R.string.talent_musical,
+                                        character.career.musicalTalent
+                                    ),
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = InkTertiary
+                                )
+                                Spacer(modifier = Modifier.height(6.dp))
+                                Text(
+                                    text = stringResource(R.string.fame_hub_hint),
+                                    style = MaterialTheme.typography.labelSmall,
+                                    color = InkTertiary
+                                )
+                            }
+                        }
+                    }
+                    item(key = "talent_gym") {
+                        ActionCard(
+                            icon = AppIcons.Health,
+                            title = stringResource(R.string.btn_gym_session),
+                            description = stringResource(R.string.talent_athleticism, character.career.athleticism),
+                            metaLabel = if (character.career.gymTrainedThisYear) {
+                                stringResource(R.string.msg_talent_already_trained)
+                            } else {
+                                null
+                            },
+                            enabled = !character.career.gymTrainedThisYear,
+                            accent = ActionCardAccent.CARE,
+                            onClick = { onTrainTalent(TalentTraining.GYM_SESSION) }
+                        )
+                    }
+                    item(key = "talent_music") {
+                        ActionCard(
+                            icon = AppIcons.Looks,
+                            title = stringResource(R.string.btn_music_lesson),
+                            description = stringResource(R.string.talent_musical, character.career.musicalTalent),
+                            metaLabel = if (character.career.musicTrainedThisYear) {
+                                stringResource(R.string.msg_talent_already_trained)
+                            } else {
+                                null
+                            },
+                            enabled = !character.career.musicTrainedThisYear,
+                            accent = ActionCardAccent.GOLD,
+                            onClick = { onTrainTalent(TalentTraining.MUSIC_LESSON) }
+                        )
+                    }
+                    item(key = "talent_busk") {
+                        ActionCard(
+                            icon = AppIcons.Money,
+                            title = stringResource(R.string.btn_street_busk),
+                            description = stringResource(R.string.fame_hub_hint),
+                            enabled = !character.career.talentGigDoneThisYear,
+                            accent = ActionCardAccent.GOLD,
+                            onClick = { onTrainTalent(TalentTraining.STREET_BUSK) }
+                        )
+                    }
+                    item(key = "talent_match") {
+                        ActionCard(
+                            icon = AppIcons.Health,
+                            title = stringResource(R.string.btn_exhibition_match),
+                            description = stringResource(
+                                R.string.talent_athleticism,
+                                character.career.athleticism
+                            ),
+                            enabled = !character.career.talentGigDoneThisYear,
+                            accent = ActionCardAccent.CARE,
+                            onClick = { onTrainTalent(TalentTraining.EXHIBITION_MATCH) }
+                        )
+                    }
+                    if (careerEngine.canSignEndorsement(character) || character.career.endorsementActive) {
+                        item(key = "talent_endorsement") {
+                            ActionCard(
+                                icon = AppIcons.Money,
+                                title = if (character.career.endorsementActive) {
+                                    stringResource(R.string.btn_drop_endorsement)
+                                } else {
+                                    stringResource(R.string.btn_sign_endorsement)
+                                },
+                                description = if (character.career.endorsementActive) {
+                                    stringResource(
+                                        R.string.endorsement_active,
+                                        formatMoney(
+                                            character.career.endorsementPayoutPerYear,
+                                            character.countryCode
+                                        )
+                                    )
+                                } else {
+                                    stringResource(R.string.endorsement_none)
+                                },
+                                accent = ActionCardAccent.GOLD,
+                                onClick = {
+                                    if (character.career.endorsementActive) {
+                                        onDropEndorsement()
+                                    } else {
+                                        onSignEndorsement()
+                                    }
+                                }
+                            )
+                        }
                     }
                 }
 
