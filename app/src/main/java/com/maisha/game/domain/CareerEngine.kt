@@ -10,6 +10,9 @@ import com.maisha.game.data.model.CareerState
 import com.maisha.game.data.model.Character
 import com.maisha.game.data.model.EventChoice
 import com.maisha.game.data.model.HustleType
+import com.maisha.game.data.model.JobLadder
+import com.maisha.game.data.model.OfficeAction
+import com.maisha.game.data.model.OfficePoliticsAction
 import com.maisha.game.data.model.PartTimeJob
 import com.maisha.game.data.model.Job
 import com.maisha.game.data.model.LifeEvent
@@ -57,6 +60,13 @@ sealed class PartTimeJobResult {
     data class Success(val character: Character, val payout: Int) : PartTimeJobResult()
     data object Ineligible : PartTimeJobResult()
     data object AlreadyWorked : PartTimeJobResult()
+}
+
+sealed class OfficeActionResult {
+    data class Success(val character: Character, val message: String) : OfficeActionResult()
+    data object Ineligible : OfficeActionResult()
+    data object AlreadyDone : OfficeActionResult()
+    data class Denied(val character: Character, val message: String) : OfficeActionResult()
 }
 
 @Singleton
@@ -190,18 +200,34 @@ class CareerEngine @Inject constructor(
             )
         }
 
+        val ladderTitle = JobLadder.titleFor(
+            jobId = jobTemplate.id,
+            level = 1,
+            fallbackTitle = jobTemplate.title
+        )
         val hiredJob = jobTemplate.copy(
+            title = ladderTitle,
+            level = 1,
             baseSalary = EconomyScaler.scaleAmount(jobTemplate.baseSalary, workCountry),
             performanceScore = 50,
             isMilitary = jobTemplate.isMilitary,
             requiresDrivingLicense = jobTemplate.requiresDrivingLicense
         )
         val pendingDeployment = hiredJob.isMilitary && Random.nextFloat() < DEPLOYMENT_CHANCE
+        val seed = hiredCharacter.name.hashCode() xor hiredJob.id.hashCode()
         val updatedCareer = hiredCharacter.career.copy(
             currentJob = hiredJob,
             yearsAtCurrentJob = 0,
             isDeployed = false,
-            pendingDeployment = pendingDeployment
+            pendingDeployment = pendingDeployment,
+            companyName = JobLadder.randomCompanyName(seed),
+            performance = 50f,
+            stress = 28f,
+            bossRelationship = Random.nextInt(0, 25),
+            colleagueRelationships = JobLadder.defaultColleagues(seed),
+            officeWorkActionDoneThisYear = false,
+            kissUpDoneThisYear = false,
+            askPromotionDoneThisYear = false
         )
         return hiredCharacter.copy(career = updatedCareer) to CareerResult.Hired(hiredJob)
     }
@@ -223,12 +249,13 @@ class CareerEngine @Inject constructor(
      * [CareerState.pendingDeployment] schedules the next year's deployment for UI warning before Age Up.
      */
     fun workYear(character: Character, effort: WorkEffort): Character {
-        val job = character.career.currentJob ?: return character
+        var working = ensureWorkplaceInitialized(character)
+        val job = working.career.currentJob ?: return working
 
-        val performanceDelta = EffortResolver.workYearPerformanceDelta(effort) + workPerformanceModifier(character)
+        val performanceDelta = EffortResolver.workYearPerformanceDelta(effort) + workPerformanceModifier(working)
         val happinessDelta = EffortResolver.workYearHappinessDelta(effort)
 
-        val deployed = job.isMilitary && character.career.pendingDeployment
+        val deployed = job.isMilitary && working.career.pendingDeployment
         val annualPay = calculateAnnualSalary(job)
         val effortGross = (annualPay * effortPayMultiplier(effort)).toInt().coerceAtLeast(0)
         val payThisYear = if (deployed) {
@@ -236,38 +263,69 @@ class CareerEngine @Inject constructor(
         } else {
             effortGross
         }
-        val tax = FinanceEngine.calculateIncomeTax(payThisYear, character.countryCode)
+        val tax = FinanceEngine.calculateIncomeTax(payThisYear, working.countryCode)
         val netPay = (payThisYear - tax).coerceAtLeast(0)
-        val newPerformance = clampPerformanceScore(job.performanceScore + performanceDelta)
-        val updatedJob = job.copy(performanceScore = newPerformance)
+        val newPerformance = clampPerformance(
+            working.career.performance + performanceDelta
+        )
+        val stressDelta = when (effort) {
+            WorkEffort.COAST -> -6f
+            WorkEffort.NORMAL -> 2f
+            WorkEffort.GRIND -> 10f
+        }
+        val updatedJob = job.copy(performanceScore = newPerformance.roundToInt())
         val pendingNext = job.isMilitary && Random.nextFloat() < DEPLOYMENT_CHANCE
         var happinessDeltaTotal = happinessDelta
-        val transitStress = needsPublicTransitCommute(character, job)
+        val transitStress = needsPublicTransitCommute(working, job)
         if (transitStress) {
             happinessDeltaTotal -= PUBLIC_TRANSIT_STRESS
         }
-        val updatedStats = character.stats.copy(
-            money = character.stats.money + netPay,
-            happiness = clampStat(character.stats.happiness + happinessDeltaTotal)
+        val burnout = working.career.stress >= BURNOUT_STRESS_THRESHOLD
+        if (burnout) {
+            happinessDeltaTotal -= BURNOUT_HAPPINESS_HIT
+        }
+        val updatedStats = working.stats.copy(
+            money = working.stats.money + netPay,
+            happiness = clampStat(working.stats.happiness + happinessDeltaTotal),
+            health = if (burnout) {
+                clampStat(working.stats.health - BURNOUT_HEALTH_HIT)
+            } else {
+                working.stats.health
+            }
         )
 
         var updated = applyWorkStress(
-            character.copy(
+            working.copy(
                 stats = updatedStats,
-                career = character.career.copy(
+                career = working.career.copy(
                     currentJob = updatedJob,
-                    yearsAtCurrentJob = character.career.yearsAtCurrentJob + 1,
+                    yearsAtCurrentJob = working.career.yearsAtCurrentJob + 1,
                     workEffortThisYear = effort,
                     plannedWorkEffort = effort,
                     isDeployed = deployed,
-                    pendingDeployment = pendingNext
+                    pendingDeployment = pendingNext,
+                    performance = newPerformance,
+                    stress = clampStress(
+                        working.career.stress + stressDelta + if (burnout) 5f else 0f
+                    ),
+                    bossRelationship = clampBoss(
+                        working.career.bossRelationship + when (effort) {
+                            WorkEffort.GRIND -> 2
+                            WorkEffort.COAST -> -3
+                            WorkEffort.NORMAL -> 0
+                        }
+                    ),
+                    officeWorkActionDoneThisYear = false,
+                    kissUpDoneThisYear = false,
+                    askPromotionDoneThisYear = false,
+                    networkColleagueDoneThisYear = false
                 )
             ),
             effort
         )
         val payLog = buildString {
-            append("Paycheque: ${formatMoney(netPay, character.countryCode)} net")
-            if (tax > 0) append(" after ${formatMoney(tax, character.countryCode)} tax")
+            append("Paycheque: ${formatMoney(netPay, working.countryCode)} net")
+            if (tax > 0) append(" after ${formatMoney(tax, working.countryCode)} tax")
             append(" (${effort.name.lowercase()} effort")
             if (deployed) append(", hazard pay")
             append(").")
@@ -286,6 +344,14 @@ class CareerEngine @Inject constructor(
                 eventLog = EventLogCap.prepend(
                     updated.eventLog,
                     "Commuting without a vehicle wore you down (public transit stress)."
+                )
+            )
+        }
+        if (burnout) {
+            updated = updated.copy(
+                eventLog = EventLogCap.prepend(
+                    updated.eventLog,
+                    "Workplace burnout hit hard — health and mood took a hit."
                 )
             )
         }
@@ -381,74 +447,56 @@ class CareerEngine @Inject constructor(
 
         val performanceDelta = EffortResolver.workEventPerformanceDelta(effort) + workPerformanceModifier(character)
         val happinessDelta = EffortResolver.workEventHappinessDelta(effort)
-        val newPerformance = clampPerformanceScore(job.performanceScore + performanceDelta)
-        val updatedStats = character.stats.copy(
-            happiness = clampStat(character.stats.happiness + happinessDelta)
+        val withPerf = withPerformance(character, character.career.performance + performanceDelta)
+        val updatedStats = withPerf.stats.copy(
+            happiness = clampStat(withPerf.stats.happiness + happinessDelta)
         )
 
         return applyWorkStress(
-            character.copy(
+            withPerf.copy(
                 stats = updatedStats,
-                career = character.career.copy(
-                    currentJob = job.copy(performanceScore = newPerformance),
-                    workEffortThisYear = effort
-                )
+                career = withPerf.career.copy(workEffortThisYear = effort)
             ),
             effort
         )
     }
 
     /**
-     * Promotion check on interval years when performance ≥ threshold; bumps level and salary.
-     *
-     * @return Pair of updated character and whether promotion occurred.
+     * Promotion when performance ≥ 90 and boss standing is positive (or legacy interval path).
+     * Bumps ladder title, level, and salary.
      */
     fun evaluatePromotion(character: Character): Pair<Character, Boolean> {
         val job = character.career.currentJob ?: return character to false
-        if (character.career.yearsAtCurrentJob == 0 ||
-            character.career.yearsAtCurrentJob % PROMOTION_INTERVAL_YEARS != 0
-        ) {
-            return character to false
-        }
-        if (job.performanceScore < PROMOTION_THRESHOLD) return character to false
+        val maxLevel = JobLadder.maxLevel(job.id)
+        if (job.level >= maxLevel) return character to false
 
-        val salaryBump = 1.15 + Random.nextDouble(0.0, 0.06)
-        val promotedJob = job.copy(
-            level = job.level + 1,
-            baseSalary = (job.baseSalary * salaryBump).roundToInt(),
-            performanceScore = 55
-        )
-        return character.copy(
-            career = character.career.copy(currentJob = promotedJob)
-        ) to true
+        val perf = maxOf(character.career.performance, job.performanceScore.toFloat())
+        val strongCase = perf >= PROMOTION_OPPORTUNITY_PERFORMANCE &&
+            character.career.bossRelationship > 0 &&
+            character.career.yearsAtCurrentJob >= 1
+        val legacyInterval = character.career.yearsAtCurrentJob > 0 &&
+            character.career.yearsAtCurrentJob % PROMOTION_INTERVAL_YEARS == 0 &&
+            perf >= PROMOTION_THRESHOLD.toFloat()
+        if (!strongCase && !legacyInterval) return character to false
+
+        return promoteJob(character, resetPerformance = strongCase) to true
     }
 
-    /** Fires employee when [Job.performanceScore] falls below threshold; title moves to [CareerState.jobHistory]. */
+    /** Fires employee when performance falls below threshold; title moves to [CareerState.jobHistory]. */
     fun evaluateFiring(character: Character): Pair<Character, Boolean> {
         val job = character.career.currentJob ?: return character to false
-        if (job.performanceScore >= FIRING_THRESHOLD) return character to false
+        val perf = minOf(character.career.performance, job.performanceScore.toFloat())
+        if (perf >= FIRING_THRESHOLD.toFloat()) {
+            return character to false
+        }
 
-        return character.copy(
-            career = character.career.copy(
-                currentJob = null,
-                yearsAtCurrentJob = 0,
-                jobHistory = character.career.jobHistory + job.title
-            )
-        ) to true
+        return clearEmployment(character, job.title, happinessDelta = -12) to true
     }
 
     /** Voluntary resignation; clears [CareerState.currentJob] and appends title to history. */
     fun quitJob(character: Character): Character {
         val job = character.career.currentJob ?: return character
-        return character.copy(
-            career = character.career.copy(
-                currentJob = null,
-                yearsAtCurrentJob = 0,
-                jobHistory = character.career.jobHistory + job.title,
-                isDeployed = false,
-                pendingDeployment = false
-            )
-        )
+        return clearEmployment(character, job.title, happinessDelta = -2)
     }
 
     fun canRetire(character: Character): Boolean =
@@ -486,7 +534,18 @@ class CareerEngine @Inject constructor(
                     pensionAmount = pension,
                     currentJob = null,
                     yearsAtCurrentJob = 0,
-                    jobHistory = character.career.jobHistory + job.title
+                    jobHistory = character.career.jobHistory + job.title,
+                    isDeployed = false,
+                    pendingDeployment = false,
+                    companyName = null,
+                    performance = 50f,
+                    stress = 15f,
+                    bossRelationship = 0,
+                    colleagueRelationships = emptyMap(),
+                    officeWorkActionDoneThisYear = false,
+                    kissUpDoneThisYear = false,
+                    askPromotionDoneThisYear = false,
+                    networkColleagueDoneThisYear = false
                 ),
                 stats = character.stats.copy(
                     happiness = clampStat(character.stats.happiness + RETIREMENT_HAPPINESS_BONUS)
@@ -499,15 +558,10 @@ class CareerEngine @Inject constructor(
         )
     }
 
-    /** Event-driven delta to [Job.performanceScore], clamped 0–100. */
+    /** Event-driven delta to job performance, clamped 0–100. */
     fun applyPerformanceEffect(character: Character, delta: Int): Character {
-        val job = character.career.currentJob ?: return character
-        val newScore = clampPerformanceScore(job.performanceScore + delta)
-        return character.copy(
-            career = character.career.copy(
-                currentJob = job.copy(performanceScore = newScore)
-            )
-        )
+        if (character.career.currentJob == null) return character
+        return withPerformance(character, character.career.performance + delta)
     }
 
     /** One-time system event after [evaluatePromotion] succeeds. Assumes [character.career.currentJob] is set. */
@@ -595,24 +649,644 @@ class CareerEngine @Inject constructor(
     fun applyDownsizing(character: Character): Pair<Character, String> {
         val job = character.career.currentJob ?: return character to ""
         val title = job.title
-        val updated = character.copy(
-            career = character.career.copy(
-                currentJob = null,
-                yearsAtCurrentJob = 0,
-                jobHistory = character.career.jobHistory + title,
-                isDeployed = false,
-                pendingDeployment = false
-            ),
-            stats = character.stats.copy(
-                happiness = clampStat(character.stats.happiness - DOWNSIZING_HAPPINESS_PENALTY)
-            ),
+        val updated = clearEmployment(character, title, happinessDelta = -DOWNSIZING_HAPPINESS_PENALTY)
+        return updated.copy(
             eventLog = EventLogCap.prepend(
-                character.eventLog,
+                updated.eventLog,
                 "Laid off from $title during company downsizing."
             )
-        )
-        return updated to title
+        ) to title
     }
+
+    fun workHarder(character: Character): OfficeActionResult =
+        performOfficeAction(character, OfficeAction.WORK_HARDER)
+
+    fun slackOff(character: Character): OfficeActionResult =
+        performOfficeAction(character, OfficeAction.SLACK_OFF)
+
+    fun kissUpToBoss(character: Character): OfficeActionResult =
+        performOfficeAction(character, OfficeAction.KISS_UP)
+
+    fun askForPromotion(character: Character): OfficeActionResult =
+        performOfficeAction(character, OfficeAction.ASK_PROMOTION)
+
+    fun requestRaise(character: Character): OfficeActionResult =
+        performOfficeAction(character, OfficeAction.REQUEST_RAISE)
+
+    fun performOfficeAction(character: Character, action: OfficeAction): OfficeActionResult {
+        if (!character.alive || character.career.currentJob == null || character.career.isRetired) {
+            return OfficeActionResult.Ineligible
+        }
+        return when (action) {
+            OfficeAction.WORK_HARDER, OfficeAction.SLACK_OFF -> {
+                if (character.career.officeWorkActionDoneThisYear) {
+                    return OfficeActionResult.AlreadyDone
+                }
+                when (action) {
+                    OfficeAction.WORK_HARDER -> {
+                        val updated = withPerformance(character, character.career.performance + 12f)
+                            .let {
+                                it.copy(
+                                    stats = it.stats.copy(
+                                        happiness = clampStat(it.stats.happiness - 3),
+                                        health = clampStat(it.stats.health - 2)
+                                    ),
+                                    career = it.career.copy(
+                                        stress = clampStress(it.career.stress + 14f),
+                                        bossRelationship = clampBoss(it.career.bossRelationship + 3),
+                                        officeWorkActionDoneThisYear = true,
+                                        plannedWorkEffort = WorkEffort.GRIND
+                                    )
+                                )
+                            }
+                        val message = "You put in extra hours. Performance up, stress up."
+                        OfficeActionResult.Success(
+                            updated.copy(eventLog = EventLogCap.prepend(updated.eventLog, message)),
+                            message
+                        )
+                    }
+                    else -> {
+                        val updated = withPerformance(character, character.career.performance - 10f)
+                            .let {
+                                it.copy(
+                                    stats = it.stats.copy(
+                                        happiness = clampStat(it.stats.happiness + 4)
+                                    ),
+                                    career = it.career.copy(
+                                        stress = clampStress(it.career.stress - 12f),
+                                        bossRelationship = clampBoss(it.career.bossRelationship - 5),
+                                        officeWorkActionDoneThisYear = true,
+                                        plannedWorkEffort = WorkEffort.COAST
+                                    )
+                                )
+                            }
+                        val message = "You coasted through the week. Less stress, weaker reviews."
+                        OfficeActionResult.Success(
+                            updated.copy(eventLog = EventLogCap.prepend(updated.eventLog, message)),
+                            message
+                        )
+                    }
+                }
+            }
+            OfficeAction.KISS_UP -> {
+                if (character.career.kissUpDoneThisYear) return OfficeActionResult.AlreadyDone
+                val colleagueHit = character.career.colleagueRelationships.mapValues {
+                    (it.value - 4).coerceIn(-100, 100)
+                }
+                val updated = character.copy(
+                    career = character.career.copy(
+                        bossRelationship = clampBoss(character.career.bossRelationship + 12),
+                        colleagueRelationships = colleagueHit,
+                        stress = clampStress(character.career.stress + 3f),
+                        kissUpDoneThisYear = true
+                    ),
+                    stats = character.stats.copy(
+                        happiness = clampStat(character.stats.happiness + 1)
+                    )
+                )
+                val message = "You flattered the boss. Standing improved — coworkers noticed."
+                OfficeActionResult.Success(
+                    updated.copy(eventLog = EventLogCap.prepend(updated.eventLog, message)),
+                    message
+                )
+            }
+            OfficeAction.ASK_PROMOTION -> {
+                if (character.career.askPromotionDoneThisYear) return OfficeActionResult.AlreadyDone
+                val job = character.career.currentJob!!
+                if (job.level >= JobLadder.maxLevel(job.id)) {
+                    return OfficeActionResult.Denied(
+                        character.copy(
+                            career = character.career.copy(askPromotionDoneThisYear = true)
+                        ),
+                        "You're already at the top of this ladder."
+                    )
+                }
+                val eligible = character.career.performance >= PROMOTION_OPPORTUNITY_PERFORMANCE &&
+                    character.career.bossRelationship > 0
+                return if (eligible) {
+                    val once = promoteJob(
+                        character.copy(
+                            career = character.career.copy(askPromotionDoneThisYear = true)
+                        ),
+                        resetPerformance = true
+                    )
+                    val message =
+                        "Promotion approved — you're now ${once.career.currentJob?.title}."
+                    OfficeActionResult.Success(
+                        once.copy(eventLog = EventLogCap.prepend(once.eventLog, message)),
+                        message
+                    )
+                } else {
+                    val denied = character.copy(
+                        career = character.career.copy(
+                            askPromotionDoneThisYear = true,
+                            bossRelationship = clampBoss(character.career.bossRelationship - 4),
+                            stress = clampStress(character.career.stress + 6f)
+                        ),
+                        stats = character.stats.copy(
+                            happiness = clampStat(character.stats.happiness - 5)
+                        )
+                    )
+                    val message =
+                        "Promotion denied. Raise your performance above 90 and stay in the boss's good books."
+                    OfficeActionResult.Denied(
+                        denied.copy(eventLog = EventLogCap.prepend(denied.eventLog, message)),
+                        message
+                    )
+                }
+            }
+            OfficeAction.REQUEST_RAISE -> {
+                if (character.career.askPromotionDoneThisYear) return OfficeActionResult.AlreadyDone
+                val job = character.career.currentJob!!
+                val ok = character.career.performance >= 75f &&
+                    character.career.bossRelationship >= 15
+                return if (ok) {
+                    val bump = (job.baseSalary * (0.06 + Random.nextDouble(0.0, 0.04)))
+                        .roundToInt()
+                    val updatedJob = job.copy(baseSalary = job.baseSalary + bump)
+                    val updated = character.copy(
+                        career = character.career.copy(
+                            currentJob = updatedJob,
+                            askPromotionDoneThisYear = true,
+                            bossRelationship = clampBoss(character.career.bossRelationship + 2)
+                        ),
+                        stats = character.stats.copy(
+                            happiness = clampStat(character.stats.happiness + 6)
+                        )
+                    )
+                    val message =
+                        "Raise approved — +${formatMoney(bump, character.countryCode)} / year."
+                    OfficeActionResult.Success(
+                        updated.copy(eventLog = EventLogCap.prepend(updated.eventLog, message)),
+                        message
+                    )
+                } else {
+                    val denied = character.copy(
+                        career = character.career.copy(
+                            askPromotionDoneThisYear = true,
+                            stress = clampStress(character.career.stress + 5f)
+                        ),
+                        stats = character.stats.copy(
+                            happiness = clampStat(character.stats.happiness - 3)
+                        )
+                    )
+                    val message = "Raise denied. Build performance and boss trust first."
+                    OfficeActionResult.Denied(
+                        denied.copy(eventLog = EventLogCap.prepend(denied.eventLog, message)),
+                        message
+                    )
+                }
+            }
+            OfficeAction.SEARCH_JOBS -> {
+                val message = "You browsed openings after hours — check Job Listings below."
+                OfficeActionResult.Success(
+                    character.copy(
+                        eventLog = EventLogCap.prepend(character.eventLog, message)
+                    ),
+                    message
+                )
+            }
+            OfficeAction.NETWORK_COLLEAGUE -> {
+                if (character.career.networkColleagueDoneThisYear) {
+                    return OfficeActionResult.AlreadyDone
+                }
+                val colleagues = character.career.colleagueRelationships
+                if (colleagues.isEmpty()) return OfficeActionResult.Ineligible
+                val target = colleagues.minByOrNull { it.value }?.key
+                    ?: colleagues.keys.random()
+                val updatedMap = colleagues.toMutableMap()
+                updatedMap[target] = ((updatedMap[target] ?: 30) + 14).coerceIn(-100, 100)
+                val updated = character.copy(
+                    career = character.career.copy(
+                        colleagueRelationships = updatedMap,
+                        stress = clampStress(character.career.stress - 4f),
+                        networkColleagueDoneThisYear = true,
+                        bossRelationship = clampBoss(character.career.bossRelationship + 1)
+                    ),
+                    stats = character.stats.copy(
+                        happiness = clampStat(character.stats.happiness + 3)
+                    )
+                )
+                val message = "Coffee with $target — your standing with them improved."
+                OfficeActionResult.Success(
+                    updated.copy(eventLog = EventLogCap.prepend(updated.eventLog, message)),
+                    message
+                )
+            }
+        }
+    }
+
+    /** True when performance ≥ 90 and boss standing is positive — ready to ask. */
+    fun isPromotionReady(character: Character): Boolean {
+        val job = character.career.currentJob ?: return false
+        if (job.level >= JobLadder.maxLevel(job.id)) return false
+        val perf = maxOf(character.career.performance, job.performanceScore.toFloat())
+        return perf >= PROMOTION_OPPORTUNITY_PERFORMANCE && character.career.bossRelationship > 0
+    }
+
+    fun isBurnoutRisk(character: Character): Boolean =
+        character.career.currentJob != null &&
+            character.career.stress >= BURNOUT_STRESS_THRESHOLD
+
+    fun canAskForPromotion(character: Character): Boolean =
+        character.career.currentJob != null &&
+            !character.career.askPromotionDoneThisYear &&
+            (character.career.currentJob?.level ?: 99) <
+            JobLadder.maxLevel(character.career.currentJob!!.id)
+
+    /**
+     * Random office-politics dilemma while employed (~18% / year after firing/promotion checks).
+     */
+    fun buildOfficePoliticsEvent(character: Character): LifeEvent? {
+        if (character.career.currentJob == null || character.career.isRetired) return null
+        val perf = maxOf(
+            character.career.performance,
+            character.career.currentJob!!.performanceScore.toFloat()
+        )
+        // Low performance + cold boss → PIP is more likely than random drama.
+        if (perf < 45f && character.career.bossRelationship < 5 && Random.nextFloat() < 0.55f) {
+            return buildPipEvent(character)
+        }
+        if (Random.nextFloat() > OFFICE_POLITICS_CHANCE) return null
+        val roll = Random.nextFloat()
+        return when {
+            roll < 0.25f -> buildPassedOverEvent(character)
+            roll < 0.50f -> buildOfficeRomanceEvent(character)
+            roll < 0.72f -> buildCorporateCrimeEvent(character)
+            roll < 0.88f -> buildCreditStealEvent(character)
+            else -> buildPipEvent(character)
+        }
+    }
+
+    fun applyOfficePoliticsAction(
+        character: Character,
+        action: OfficePoliticsAction
+    ): Character {
+        val job = character.career.currentJob
+        return when (action) {
+            OfficePoliticsAction.CONFRONT_BOSS -> character.copy(
+                career = character.career.copy(
+                    bossRelationship = clampBoss(character.career.bossRelationship - 15),
+                    stress = clampStress(character.career.stress + 10f),
+                    performance = clampPerformance(character.career.performance + 2f)
+                ),
+                stats = character.stats.copy(
+                    happiness = clampStat(character.stats.happiness - 4)
+                )
+            ).let { withPerformance(it, it.career.performance) }
+            OfficePoliticsAction.ACCEPT_PASS_OVER -> character.copy(
+                career = character.career.copy(
+                    stress = clampStress(character.career.stress + 4f),
+                    bossRelationship = clampBoss(character.career.bossRelationship - 2)
+                ),
+                stats = character.stats.copy(
+                    happiness = clampStat(character.stats.happiness - 6)
+                )
+            )
+            OfficePoliticsAction.LOOK_FOR_JOB -> {
+                if (job == null) character
+                else clearEmployment(character, job.title, happinessDelta = -1).copy(
+                    eventLog = EventLogCap.prepend(
+                        character.eventLog,
+                        "You walked out to hunt for a better role."
+                    )
+                )
+            }
+            OfficePoliticsAction.ENGAGE_ROMANCE -> {
+                val name = character.career.colleagueRelationships.keys.firstOrNull() ?: "a coworker"
+                val updatedColleagues = character.career.colleagueRelationships.toMutableMap()
+                updatedColleagues[name] =
+                    ((updatedColleagues[name] ?: 40) + 20).coerceIn(-100, 100)
+                character.copy(
+                    career = character.career.copy(
+                        colleagueRelationships = updatedColleagues,
+                        stress = clampStress(character.career.stress + 8f),
+                        bossRelationship = clampBoss(character.career.bossRelationship - 3)
+                    ),
+                    stats = character.stats.copy(
+                        happiness = clampStat(character.stats.happiness + 8)
+                    )
+                )
+            }
+            OfficePoliticsAction.DECLINE_ROMANCE -> character.copy(
+                stats = character.stats.copy(
+                    happiness = clampStat(character.stats.happiness - 1)
+                ),
+                career = character.career.copy(
+                    stress = clampStress(character.career.stress - 2f)
+                )
+            )
+            OfficePoliticsAction.EMBEZZLE -> character // GameEngine routes to CrimeEngine
+            OfficePoliticsAction.WHISTLEBLOW -> character.copy(
+                career = character.career.copy(
+                    bossRelationship = clampBoss(character.career.bossRelationship - 25),
+                    stress = clampStress(character.career.stress + 15f),
+                    performance = clampPerformance(character.career.performance + 5f)
+                ),
+                stats = character.stats.copy(
+                    happiness = clampStat(character.stats.happiness - 2),
+                    karma = clampStat(character.stats.karma + 12)
+                )
+            ).let { withPerformance(it, it.career.performance) }
+            OfficePoliticsAction.STAY_SILENT -> character.copy(
+                career = character.career.copy(
+                    stress = clampStress(character.career.stress + 6f)
+                ),
+                stats = character.stats.copy(
+                    karma = clampStat(character.stats.karma - 4),
+                    happiness = clampStat(character.stats.happiness - 3)
+                )
+            )
+            OfficePoliticsAction.ACCEPT_PIP -> withPerformance(
+                character.copy(
+                    career = character.career.copy(
+                        stress = clampStress(character.career.stress + 12f),
+                        bossRelationship = clampBoss(character.career.bossRelationship + 4),
+                        plannedWorkEffort = WorkEffort.GRIND
+                    ),
+                    stats = character.stats.copy(
+                        happiness = clampStat(character.stats.happiness - 5),
+                        health = clampStat(character.stats.health - 3)
+                    )
+                ),
+                character.career.performance + 8f
+            )
+            OfficePoliticsAction.QUIT_OVER_PIP -> {
+                if (job == null) character
+                else clearEmployment(character, job.title, happinessDelta = 2).copy(
+                    eventLog = EventLogCap.prepend(
+                        character.eventLog,
+                        "You resigned rather than stay on a performance plan."
+                    )
+                )
+            }
+            OfficePoliticsAction.DEFEND_CREDIT -> {
+                val rival = character.career.colleagueRelationships.minByOrNull { it.value }?.key
+                val map = character.career.colleagueRelationships.toMutableMap()
+                if (rival != null) {
+                    map[rival] = ((map[rival] ?: 0) - 12).coerceIn(-100, 100)
+                }
+                withPerformance(
+                    character.copy(
+                        career = character.career.copy(
+                            colleagueRelationships = map,
+                            bossRelationship = clampBoss(character.career.bossRelationship + 6),
+                            stress = clampStress(character.career.stress + 5f)
+                        ),
+                        stats = character.stats.copy(
+                            happiness = clampStat(character.stats.happiness + 2)
+                        )
+                    ),
+                    character.career.performance + 4f
+                )
+            }
+            OfficePoliticsAction.LET_CREDIT_GO -> character.copy(
+                career = character.career.copy(
+                    stress = clampStress(character.career.stress + 8f),
+                    bossRelationship = clampBoss(character.career.bossRelationship - 3)
+                ),
+                stats = character.stats.copy(
+                    happiness = clampStat(character.stats.happiness - 6)
+                )
+            ).let { withPerformance(it, it.career.performance - 3f) }
+        }
+    }
+
+    private fun buildPassedOverEvent(character: Character): LifeEvent {
+        val rival = character.career.colleagueRelationships.maxByOrNull { it.value }?.key
+            ?: "a coworker"
+        return LifeEvent(
+            id = "office_passed_over_${character.age}",
+            minAge = character.age,
+            maxAge = character.age,
+            text = "The boss promotes $rival instead of you — even though your numbers looked stronger.",
+            choices = listOf(
+                EventChoice(
+                    label = "Confront the boss",
+                    resultText = "You spoke up. It got tense.",
+                    officePoliticsAction = OfficePoliticsAction.CONFRONT_BOSS.name,
+                    statEffects = mapOf("happiness" to -2)
+                ),
+                EventChoice(
+                    label = "Accept it quietly",
+                    resultText = "You swallowed it and kept working.",
+                    officePoliticsAction = OfficePoliticsAction.ACCEPT_PASS_OVER.name
+                ),
+                EventChoice(
+                    label = "Start looking for another job",
+                    resultText = "You cleared your desk and walked.",
+                    officePoliticsAction = OfficePoliticsAction.LOOK_FOR_JOB.name
+                )
+            ),
+            tags = listOf(CAREER_SYSTEM_TAG, OFFICE_POLITICS_TAG, ONE_TIME_TAG, REQUIRES_JOB_TAG),
+            weight = 9
+        )
+    }
+
+    private fun buildOfficeRomanceEvent(character: Character): LifeEvent {
+        val crush = character.career.colleagueRelationships.keys.randomOrNull() ?: "a coworker"
+        return LifeEvent(
+            id = "office_romance_${character.age}",
+            minAge = character.age,
+            maxAge = character.age,
+            text = "$crush has been lingering by your desk. Office romance could mean drama — or HR.",
+            choices = listOf(
+                EventChoice(
+                    label = "Engage — carefully",
+                    resultText = "Sparks fly. Rumors will too.",
+                    officePoliticsAction = OfficePoliticsAction.ENGAGE_ROMANCE.name,
+                    statEffects = mapOf("happiness" to 5)
+                ),
+                EventChoice(
+                    label = "Keep it professional",
+                    resultText = "You drew a clear line.",
+                    officePoliticsAction = OfficePoliticsAction.DECLINE_ROMANCE.name
+                )
+            ),
+            tags = listOf(CAREER_SYSTEM_TAG, OFFICE_POLITICS_TAG, ONE_TIME_TAG, REQUIRES_JOB_TAG),
+            weight = 8
+        )
+    }
+
+    private fun buildCorporateCrimeEvent(character: Character): LifeEvent {
+        return LifeEvent(
+            id = "office_corporate_crime_${character.age}",
+            minAge = character.age,
+            maxAge = character.age,
+            text = "You find evidence of cooked books — and a loose path to siphon funds yourself.",
+            choices = listOf(
+                EventChoice(
+                    label = "Steal company funds",
+                    resultText = "You try to skim from the accounts.",
+                    officePoliticsAction = OfficePoliticsAction.EMBEZZLE.name,
+                    triggersCrime = "FRAUD",
+                    statEffects = mapOf("karma" to -10)
+                ),
+                EventChoice(
+                    label = "Report it (whistleblow)",
+                    resultText = "You escalate to compliance. Careers may burn.",
+                    officePoliticsAction = OfficePoliticsAction.WHISTLEBLOW.name,
+                    statEffects = mapOf("karma" to 8)
+                ),
+                EventChoice(
+                    label = "Stay silent",
+                    resultText = "You pretend you saw nothing.",
+                    officePoliticsAction = OfficePoliticsAction.STAY_SILENT.name
+                )
+            ),
+            tags = listOf(CAREER_SYSTEM_TAG, OFFICE_POLITICS_TAG, ONE_TIME_TAG, REQUIRES_JOB_TAG),
+            weight = 7
+        )
+    }
+
+    private fun buildPipEvent(character: Character): LifeEvent {
+        return LifeEvent(
+            id = "office_pip_${character.age}",
+            minAge = character.age,
+            maxAge = character.age,
+            text = "HR puts you on a performance improvement plan. Sixty days to turn it around — or else.",
+            choices = listOf(
+                EventChoice(
+                    label = "Accept the PIP and grind",
+                    resultText = "You signed the plan and buried yourself in work.",
+                    officePoliticsAction = OfficePoliticsAction.ACCEPT_PIP.name,
+                    performanceEffect = 5
+                ),
+                EventChoice(
+                    label = "Quit on the spot",
+                    resultText = "You walked. Dignity intact, paycheck gone.",
+                    officePoliticsAction = OfficePoliticsAction.QUIT_OVER_PIP.name
+                )
+            ),
+            tags = listOf(CAREER_SYSTEM_TAG, OFFICE_POLITICS_TAG, ONE_TIME_TAG, REQUIRES_JOB_TAG),
+            weight = 10
+        )
+    }
+
+    private fun buildCreditStealEvent(character: Character): LifeEvent {
+        val rival = character.career.colleagueRelationships
+            .minByOrNull { it.value }?.key
+            ?: character.career.colleagueRelationships.keys.randomOrNull()
+            ?: "a coworker"
+        return LifeEvent(
+            id = "office_credit_steal_${character.age}",
+            minAge = character.age,
+            maxAge = character.age,
+            text = "$rival presents your work in the all-hands as their own. The room applauds.",
+            choices = listOf(
+                EventChoice(
+                    label = "Call it out calmly",
+                    resultText = "You set the record straight — awkwardly, but clearly.",
+                    officePoliticsAction = OfficePoliticsAction.DEFEND_CREDIT.name,
+                    performanceEffect = 3
+                ),
+                EventChoice(
+                    label = "Let it slide",
+                    resultText = "You stayed quiet. It still stings.",
+                    officePoliticsAction = OfficePoliticsAction.LET_CREDIT_GO.name,
+                    statEffects = mapOf("happiness" to -4)
+                )
+            ),
+            tags = listOf(CAREER_SYSTEM_TAG, OFFICE_POLITICS_TAG, ONE_TIME_TAG, REQUIRES_JOB_TAG),
+            weight = 8
+        )
+    }
+
+    private fun promoteJob(character: Character, resetPerformance: Boolean): Character {
+        val job = character.career.currentJob ?: return character
+        val newLevel = (job.level + 1).coerceAtMost(JobLadder.maxLevel(job.id))
+        val salaryBump = 1.15 + Random.nextDouble(0.0, 0.08)
+        val newTitle = JobLadder.titleFor(job.id, newLevel, job.title)
+        val perf = if (resetPerformance) 58f else character.career.performance
+        val promotedJob = job.copy(
+            level = newLevel,
+            title = newTitle,
+            baseSalary = (job.baseSalary * salaryBump).roundToInt(),
+            performanceScore = perf.roundToInt()
+        )
+        return character.copy(
+            career = character.career.copy(
+                currentJob = promotedJob,
+                performance = perf,
+                stress = clampStress(character.career.stress - 5f),
+                bossRelationship = clampBoss(character.career.bossRelationship + 5),
+                yearsAtCurrentJob = 0,
+                promotionsEarned = character.career.promotionsEarned + 1
+            ),
+            stats = character.stats.copy(
+                happiness = clampStat(character.stats.happiness + 8)
+            )
+        )
+    }
+
+    /** Backfill company, colleagues, and synced performance for older saves. */
+    fun ensureWorkplaceInitialized(character: Character): Character {
+        val job = character.career.currentJob ?: return character
+        var career = character.career
+        var changed = false
+        val seed = character.name.hashCode() xor job.id.hashCode()
+        if (career.companyName.isNullOrBlank()) {
+            career = career.copy(companyName = JobLadder.randomCompanyName(seed))
+            changed = true
+        }
+        if (career.colleagueRelationships.isEmpty()) {
+            career = career.copy(colleagueRelationships = JobLadder.defaultColleagues(seed))
+            changed = true
+        }
+        if (career.performance == 50f && job.performanceScore != 50) {
+            career = career.copy(performance = job.performanceScore.toFloat())
+            changed = true
+        } else if (job.performanceScore != career.performance.roundToInt()) {
+            career = career.copy(
+                currentJob = job.copy(performanceScore = career.performance.roundToInt())
+            )
+            changed = true
+        }
+        return if (!changed) character else character.copy(career = career)
+    }
+
+    private fun clearEmployment(
+        character: Character,
+        title: String,
+        happinessDelta: Int
+    ): Character = character.copy(
+        career = character.career.copy(
+            currentJob = null,
+            yearsAtCurrentJob = 0,
+            jobHistory = character.career.jobHistory + title,
+            isDeployed = false,
+            pendingDeployment = false,
+            companyName = null,
+            performance = 50f,
+            stress = 20f,
+            bossRelationship = 0,
+            colleagueRelationships = emptyMap(),
+            officeWorkActionDoneThisYear = false,
+            kissUpDoneThisYear = false,
+            askPromotionDoneThisYear = false,
+            networkColleagueDoneThisYear = false
+        ),
+        stats = character.stats.copy(
+            happiness = clampStat(character.stats.happiness + happinessDelta)
+        )
+    )
+
+    private fun withPerformance(character: Character, value: Float): Character {
+        val job = character.career.currentJob ?: return character
+        val clamped = clampPerformance(value)
+        return character.copy(
+            career = character.career.copy(
+                performance = clamped,
+                currentJob = job.copy(performanceScore = clamped.roundToInt())
+            )
+        )
+    }
+
+    private fun clampPerformance(value: Float): Float = value.coerceIn(0f, 100f)
+
+    private fun clampStress(value: Float): Float = value.coerceIn(0f, 100f)
+
+    private fun clampBoss(value: Int): Int = value.coerceIn(-100, 100)
 
     /** UI helper: job title and level, or "Unemployed". */
     fun formatCareerStatus(career: CareerState): String {
@@ -999,9 +1673,15 @@ class CareerEngine @Inject constructor(
         private const val PENSION_RATE_MIDPOINT = 0.50
         private const val RETIREMENT_HAPPINESS_BONUS = 8
         private const val PROMOTION_THRESHOLD = 65
+        private const val PROMOTION_OPPORTUNITY_PERFORMANCE = 90f
         private const val FIRING_THRESHOLD = 20
         private const val PROMOTION_INTERVAL_YEARS = 3
         private const val DOWNSIZING_CHANCE = 0.04f
+        private const val OFFICE_POLITICS_CHANCE = 0.18f
+        const val OFFICE_POLITICS_TAG = "office_politics"
+        private const val BURNOUT_STRESS_THRESHOLD = 80f
+        private const val BURNOUT_HAPPINESS_HIT = 8
+        private const val BURNOUT_HEALTH_HIT = 5
         private const val DOWNSIZING_HAPPINESS_PENALTY = 15
         private const val CRIMINAL_RECORD_HIRE_PENALTY = 0.15f
         private const val LOOKS_HIRE_WEIGHT = 0.08f

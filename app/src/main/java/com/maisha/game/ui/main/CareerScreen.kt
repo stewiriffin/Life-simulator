@@ -84,6 +84,7 @@ import com.maisha.game.data.model.SchoolPerson
 import com.maisha.game.data.model.SchoolPersonAction
 import com.maisha.game.data.model.SchoolRole
 import com.maisha.game.data.model.StudyEffort
+import com.maisha.game.data.model.OfficeAction
 import com.maisha.game.data.model.WorkEffort
 import com.maisha.game.domain.BusinessEngine
 import com.maisha.game.domain.CareerEngine
@@ -116,6 +117,7 @@ import com.maisha.game.ui.theme.NavyDeep
 import com.maisha.game.ui.theme.SuccessGreen
 import com.maisha.game.ui.theme.TealPrimary
 import com.maisha.game.util.formatMoney
+import kotlin.math.roundToInt
 
 private const val MIN_RETIREMENT_AGE = 60
 
@@ -154,6 +156,7 @@ fun CareerScreen(
     onLaunchCampaign: (PoliticalOffice, Int) -> Unit,
     onPassTaxPolicy: (TaxPolicyType) -> Unit,
     onSetWorkEffort: (com.maisha.game.data.model.WorkEffort) -> Unit,
+    onOfficeAction: (OfficeAction) -> Unit = {},
     onSetStudyEffort: (StudyEffort) -> Unit,
     onSyncExamSchedule: () -> Unit = {},
     onJoinSchoolClub: (SchoolClub) -> Unit,
@@ -574,7 +577,8 @@ fun CareerScreen(
                                 retirementPensionEstimate = retirementPensionEstimate,
                                 onQuitJob = onQuitJob,
                                 onRetire = { retireConfirm.request(Unit) },
-                                onSetWorkEffort = onSetWorkEffort
+                                onSetWorkEffort = onSetWorkEffort,
+                                onOfficeAction = onOfficeAction
                             )
                         }
                     }
@@ -2783,7 +2787,8 @@ private fun CurrentJobCard(
     retirementPensionEstimate: Int,
     onQuitJob: () -> Unit,
     onRetire: () -> Unit,
-    onSetWorkEffort: (com.maisha.game.data.model.WorkEffort) -> Unit
+    onSetWorkEffort: (com.maisha.game.data.model.WorkEffort) -> Unit,
+    onOfficeAction: (OfficeAction) -> Unit
 ) {
     val job = character.career.currentJob ?: return
     val resources = LocalContext.current.resources
@@ -2798,6 +2803,12 @@ private fun CurrentJobCard(
         WorkEffort.NORMAL -> stringResource(R.string.work_effort_outlook_normal)
         WorkEffort.GRIND -> stringResource(R.string.work_effort_outlook_grind)
     }
+    val performanceValue = character.career.performance.roundToInt().coerceIn(0, 100)
+        .let { if (it == 50 && job.performanceScore != 50) job.performanceScore else it }
+    val stressValue = character.career.stress.roundToInt().coerceIn(0, 100)
+    val bossNorm = ((character.career.bossRelationship + 100) / 2).coerceIn(0, 100)
+    val company = character.career.companyName
+        ?: stringResource(R.string.career_company_unknown)
 
     Card(
         modifier = Modifier.fillMaxWidth(),
@@ -2814,40 +2825,133 @@ private fun CurrentJobCard(
                     size = 44.dp,
                     contentDescription = job.title
                 )
-                Text(
-                    text = stringResource(R.string.label_current_job),
-                    style = MaterialTheme.typography.labelMedium,
-                    color = GoldAccent
-                )
+                Column(modifier = Modifier.weight(1f)) {
+                    Text(
+                        text = stringResource(R.string.label_current_job),
+                        style = MaterialTheme.typography.labelMedium,
+                        color = GoldAccent
+                    )
+                    Text(
+                        text = job.title,
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.Bold,
+                        maxLines = 2,
+                        overflow = TextOverflow.Ellipsis
+                    )
+                }
             }
             Spacer(modifier = Modifier.height(6.dp))
             Text(
-                text = job.title,
-                style = MaterialTheme.typography.titleMedium,
-                fontWeight = FontWeight.Bold,
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis
+                text = company,
+                style = MaterialTheme.typography.bodyMedium,
+                fontWeight = FontWeight.SemiBold,
+                color = TealPrimary
             )
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(top = 6.dp),
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Card(
+                    shape = RoundedCornerShape(10.dp),
+                    colors = CardDefaults.cardColors(
+                        containerColor = GoldAccent.copy(alpha = 0.18f)
+                    )
+                ) {
+                    Text(
+                        text = CareerFormatter.formatSalary(job, resources, character.countryCode),
+                        style = MaterialTheme.typography.labelLarge,
+                        fontWeight = FontWeight.Bold,
+                        color = GoldAccent,
+                        modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp)
+                    )
+                }
+                Text(
+                    text = stringResource(
+                        R.string.format_job_level_short,
+                        job.level,
+                        character.career.yearsAtCurrentJob
+                    ),
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
+
+            Spacer(modifier = Modifier.height(12.dp))
+            val promoReady = performanceValue >= 90 && character.career.bossRelationship > 0 &&
+                job.level < com.maisha.game.data.model.JobLadder.maxLevel(job.id)
+            val burnoutRisk = stressValue >= 80
+            if (promoReady) {
+                Text(
+                    text = stringResource(R.string.banner_promotion_ready),
+                    style = MaterialTheme.typography.bodySmall,
+                    fontWeight = FontWeight.SemiBold,
+                    color = SuccessGreen,
+                    modifier = Modifier.padding(bottom = 6.dp)
+                )
+            }
+            if (burnoutRisk) {
+                Text(
+                    text = stringResource(R.string.banner_burnout_risk),
+                    style = MaterialTheme.typography.bodySmall,
+                    fontWeight = FontWeight.SemiBold,
+                    color = CoralNegative,
+                    modifier = Modifier.padding(bottom = 6.dp)
+                )
+            }
             Text(
-                text = stringResource(
-                    R.string.format_job_level_salary,
-                    job.level,
-                    CareerFormatter.formatSalary(job, resources, character.countryCode)
-                ),
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
+                text = stringResource(R.string.section_office_meters),
+                style = MaterialTheme.typography.labelMedium,
+                fontWeight = FontWeight.SemiBold
             )
+            Spacer(modifier = Modifier.height(6.dp))
+            StatBar(
+                type = StatType.PERFORMANCE,
+                value = performanceValue,
+                label = stringResource(R.string.stat_performance)
+            )
+            Spacer(modifier = Modifier.height(6.dp))
+            StatBar(
+                type = StatType.HAPPINESS,
+                value = stressValue,
+                label = stringResource(R.string.stat_workplace_stress)
+            )
+            Spacer(modifier = Modifier.height(6.dp))
+            StatBar(
+                type = StatType.RELATIONSHIP,
+                value = bossNorm,
+                label = stringResource(R.string.stat_boss_relationship)
+            )
+            if (character.career.colleagueRelationships.isNotEmpty()) {
+                Spacer(modifier = Modifier.height(4.dp))
+                Text(
+                    text = stringResource(
+                        R.string.format_colleagues,
+                        character.career.colleagueRelationships.entries
+                            .sortedByDescending { it.value }
+                            .take(3)
+                            .joinToString { "${it.key} (${it.value})" }
+                    ),
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
+
+            Spacer(modifier = Modifier.height(12.dp))
             Text(
-                text = stringResource(
-                    R.string.format_years_at_job,
-                    character.career.yearsAtCurrentJob
-                ),
-                style = MaterialTheme.typography.labelSmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
+                text = stringResource(R.string.section_office_actions),
+                style = MaterialTheme.typography.labelMedium,
+                fontWeight = FontWeight.SemiBold
+            )
+            Spacer(modifier = Modifier.height(6.dp))
+            OfficeActionGrid(
+                character = character,
+                onOfficeAction = onOfficeAction
             )
 
             Spacer(modifier = Modifier.height(10.dp))
-
             Text(
                 text = stringResource(R.string.label_work_effort),
                 style = MaterialTheme.typography.labelMedium,
@@ -2892,14 +2996,6 @@ private fun CurrentJobCard(
                 }
             }
 
-            Spacer(modifier = Modifier.height(10.dp))
-
-            StatBar(
-                type = StatType.PERFORMANCE,
-                value = job.performanceScore,
-                label = stringResource(R.string.stat_performance)
-            )
-
             if (canRetire) {
                 Spacer(modifier = Modifier.height(8.dp))
                 Text(
@@ -2914,7 +3010,6 @@ private fun CurrentJobCard(
             }
 
             Spacer(modifier = Modifier.height(12.dp))
-
             OutlinedButton(
                 onClick = onQuitJob,
                 modifier = Modifier.fillMaxWidth(),
@@ -2935,6 +3030,84 @@ private fun CurrentJobCard(
                     )
                 ) {
                     Text(stringResource(R.string.btn_retire))
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun OfficeActionGrid(
+    character: Character,
+    onOfficeAction: (OfficeAction) -> Unit
+) {
+    val alive = character.alive
+    val workDone = character.career.officeWorkActionDoneThisYear
+    val kissDone = character.career.kissUpDoneThisYear
+    val askDone = character.career.askPromotionDoneThisYear
+    val networkDone = character.career.networkColleagueDoneThisYear
+    val hasColleagues = character.career.colleagueRelationships.isNotEmpty()
+    val actions = listOf(
+        Triple(
+            OfficeAction.WORK_HARDER,
+            stringResource(R.string.office_action_work_hard),
+            alive && !workDone
+        ),
+        Triple(
+            OfficeAction.SLACK_OFF,
+            stringResource(R.string.office_action_slack_off),
+            alive && !workDone
+        ),
+        Triple(
+            OfficeAction.KISS_UP,
+            stringResource(R.string.office_action_kiss_up),
+            alive && !kissDone
+        ),
+        Triple(
+            OfficeAction.NETWORK_COLLEAGUE,
+            stringResource(R.string.office_action_network),
+            alive && !networkDone && hasColleagues
+        ),
+        Triple(
+            OfficeAction.ASK_PROMOTION,
+            stringResource(R.string.office_action_ask_promotion),
+            alive && !askDone
+        ),
+        Triple(
+            OfficeAction.REQUEST_RAISE,
+            stringResource(R.string.office_action_request_raise),
+            alive && !askDone
+        ),
+        Triple(
+            OfficeAction.SEARCH_JOBS,
+            stringResource(R.string.office_action_search_jobs),
+            alive
+        )
+    )
+    Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+        actions.chunked(2).forEach { row ->
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(6.dp)
+            ) {
+                row.forEach { (action, label, enabled) ->
+                    OutlinedButton(
+                        onClick = { onOfficeAction(action) },
+                        enabled = enabled,
+                        modifier = Modifier.weight(1f),
+                        shape = RoundedCornerShape(10.dp),
+                        contentPadding = PaddingValues(horizontal = 6.dp, vertical = 8.dp)
+                    ) {
+                        Text(
+                            text = label,
+                            maxLines = 2,
+                            textAlign = TextAlign.Center,
+                            style = MaterialTheme.typography.labelSmall
+                        )
+                    }
+                }
+                if (row.size == 1) {
+                    Spacer(modifier = Modifier.weight(1f))
                 }
             }
         }

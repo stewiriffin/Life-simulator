@@ -65,6 +65,7 @@ import com.maisha.game.domain.ProposalResult
 import com.maisha.game.domain.SeekFriendshipResult
 import com.maisha.game.domain.ClubActivityResult
 import com.maisha.game.domain.SchoolDisciplineResult
+import com.maisha.game.domain.OfficeActionResult
 import com.maisha.game.domain.ExamPrepResult
 import com.maisha.game.domain.EducationEngine
 import com.maisha.game.domain.SchoolActionResult
@@ -844,6 +845,45 @@ class LifeViewModel @Inject constructor(
                     character = updated,
                     careerMessage = context.getString(R.string.msg_work_effort_set)
                 )
+            }
+        }
+    }
+
+    fun onOfficeAction(action: com.maisha.game.data.model.OfficeAction) {
+        val character = _uiState.value.character ?: return
+        if (!character.alive) return
+        viewModelScope.launch {
+            when (val result = gameEngine.performOfficeAction(character, action)) {
+                is OfficeActionResult.Success -> {
+                    persist(result.character)
+                    _uiState.update {
+                        it.copy(
+                            character = result.character,
+                            careerMessage = result.message,
+                            netWorth = financeEngine.calculateNetWorth(result.character)
+                        )
+                    }
+                }
+                is OfficeActionResult.Denied -> {
+                    persist(result.character)
+                    _uiState.update {
+                        it.copy(
+                            character = result.character,
+                            careerMessage = result.message,
+                            netWorth = financeEngine.calculateNetWorth(result.character)
+                        )
+                    }
+                }
+                OfficeActionResult.AlreadyDone -> {
+                    _uiState.update {
+                        it.copy(careerMessage = context.getString(R.string.msg_office_already_done))
+                    }
+                }
+                OfficeActionResult.Ineligible -> {
+                    _uiState.update {
+                        it.copy(careerMessage = context.getString(R.string.msg_office_ineligible))
+                    }
+                }
             }
         }
     }

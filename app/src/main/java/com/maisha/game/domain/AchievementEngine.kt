@@ -8,6 +8,7 @@ import com.maisha.game.data.model.AchievementProgress
 import com.maisha.game.data.model.AssetType
 import com.maisha.game.data.model.ClubRank
 import com.maisha.game.data.model.Character
+import com.maisha.game.data.model.JobLadder
 import com.maisha.game.data.model.RelationType
 import com.maisha.game.data.model.SchoolStage
 import com.maisha.game.data.model.SkillType
@@ -103,8 +104,12 @@ class AchievementEngine @Inject constructor(
     private fun checkFirstJob(character: Character): Boolean =
         character.career.currentJob != null || character.career.jobHistory.isNotEmpty()
 
-    private fun checkCornerOffice(character: Character): Boolean =
-        (character.career.currentJob?.level ?: 0) >= 3
+    private fun checkCornerOffice(character: Character): Boolean {
+        val job = character.career.currentJob ?: return character.career.promotionsEarned >= 3
+        return job.level >= JobLadder.maxLevel(job.id) ||
+            character.career.promotionsEarned >= 3 ||
+            job.level >= 4
+    }
 
     private fun checkCareerChanger(character: Character): Boolean =
         distinctJobCount(character) >= 3

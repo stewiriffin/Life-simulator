@@ -652,6 +652,23 @@
     <string name="stat_relationship">Relationship</string>
     <string name="stat_condition">Condition</string>
     <string name="stat_performance">Performance</string>
+    <string name="stat_workplace_stress">Workplace stress</string>
+    <string name="stat_boss_relationship">Boss relationship</string>
+    <string name="section_office_meters">Performance &amp; stress</string>
+    <string name="section_office_actions">Office actions</string>
+    <string name="career_company_unknown">Your workplace</string>
+    <string name="format_colleagues">Coworkers: %1$s</string>
+    <string name="office_action_work_hard">Work hard</string>
+    <string name="office_action_slack_off">Slack off</string>
+    <string name="office_action_kiss_up">Kiss up to boss</string>
+    <string name="office_action_ask_promotion">Request promotion</string>
+    <string name="office_action_request_raise">Request raise</string>
+    <string name="office_action_search_jobs">Search for new job</string>
+    <string name="office_action_network">Coffee with coworker</string>
+    <string name="banner_promotion_ready">Promotion ready — ask your boss while standing is strong.</string>
+    <string name="banner_burnout_risk">Burnout risk — stress is critically high.</string>
+    <string name="msg_office_already_done">You already did that at work this year.</string>
+    <string name="msg_office_ineligible">You need an active job for that.</string>
     <string name="label_has_record">Has a record</string>
 
     <!-- Character stats sections -->

@@ -597,6 +597,15 @@ class GameEngine @Inject constructor(
             updatedCharacter = educationEngine.clearPendingCareerTrackOffer(updatedCharacter)
         }
 
+        if (choice.officePoliticsAction != null) {
+            val politics = runCatching {
+                com.maisha.game.data.model.OfficePoliticsAction.valueOf(choice.officePoliticsAction)
+            }.getOrNull()
+            if (politics != null) {
+                updatedCharacter = careerEngine.applyOfficePoliticsAction(updatedCharacter, politics)
+            }
+        }
+
         if (choice.triggersExpulsion && choice.expulsionHearingAction == null) {
             updatedCharacter = educationEngine.processExpulsion(updatedCharacter)
             updatedCharacter = relationshipEngine.applyExpulsionFamilyEffect(updatedCharacter)
@@ -791,6 +800,20 @@ class GameEngine @Inject constructor(
 
     fun setPlannedWorkEffort(character: Character, effort: WorkEffort): Character =
         careerEngine.setPlannedWorkEffort(character, effort)
+
+    fun performOfficeAction(
+        character: Character,
+        action: com.maisha.game.data.model.OfficeAction
+    ): OfficeActionResult = careerEngine.performOfficeAction(character, action)
+
+    fun workHarder(character: Character): OfficeActionResult =
+        careerEngine.workHarder(character)
+
+    fun slackOff(character: Character): OfficeActionResult =
+        careerEngine.slackOff(character)
+
+    fun askForPromotion(character: Character): OfficeActionResult =
+        careerEngine.askForPromotion(character)
 
     fun setPlannedStudyEffort(character: Character, effort: StudyEffort): Character =
         educationEngine.setPlannedStudyEffort(character, effort)
@@ -1313,6 +1336,10 @@ class GameEngine @Inject constructor(
         if (wasPromoted) {
             val event = careerEngine.buildPromotionEvent(afterPromotion)
             return afterPromotion to AgeUpResult.SingleEvent(event)
+        }
+
+        careerEngine.buildOfficePoliticsEvent(character)?.let { event ->
+            return character to AgeUpResult.SingleEvent(event)
         }
 
         return null

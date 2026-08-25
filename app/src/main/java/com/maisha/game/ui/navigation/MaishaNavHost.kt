@@ -298,6 +298,7 @@ fun MaishaNavHost(
                 onPassTaxPolicy = viewModel::onPassTaxPolicy,
                 onCareerMessageDismissed = viewModel::onCareerMessageDismissed,
                 onSetWorkEffort = viewModel::onSetWorkEffort,
+                onOfficeAction = viewModel::onOfficeAction,
                 onSetStudyEffort = viewModel::onSetStudyEffort,
                 onSyncExamSchedule = viewModel::onSyncExamSchedule,
                 onJoinSchoolClub = viewModel::onJoinSchoolClub,

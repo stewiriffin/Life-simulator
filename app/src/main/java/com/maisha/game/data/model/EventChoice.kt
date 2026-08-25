@@ -68,5 +68,10 @@ data class EventChoice(
     /**
      * Starts a [CareerTrack] by name (e.g. `SOFTWARE`) after graduation offers.
      */
-    val careerTrackStart: String? = null
+    val careerTrackStart: String? = null,
+    /**
+     * Office politics choice: [OfficePoliticsAction] name
+     * (e.g. `CONFRONT_BOSS`, `EMBEZZLE`, `WHISTLEBLOW`).
+     */
+    val officePoliticsAction: String? = null
 )

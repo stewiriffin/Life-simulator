@@ -341,4 +341,143 @@ class CareerEngineTest {
         assertTrue(afterDeploy.career.isDeployed)
         assertFalse(afterPeace.career.isDeployed)
     }
+
+    @Test
+    fun workHarder_raisesPerformanceAndStress() {
+        val employed = TestFixtures.character(
+            career = CareerState(
+                currentJob = TestFixtures.job(id = "software_developer", title = "Software Developer"),
+                performance = 60f,
+                stress = 30f,
+                bossRelationship = 10
+            )
+        )
+        val result = engine.workHarder(employed)
+        assertTrue(result is OfficeActionResult.Success)
+        val after = (result as OfficeActionResult.Success).character
+        assertTrue(after.career.performance > 60f)
+        assertTrue(after.career.stress > 30f)
+        assertTrue(after.career.officeWorkActionDoneThisYear)
+        assertEquals(OfficeActionResult.AlreadyDone, engine.workHarder(after))
+    }
+
+    @Test
+    fun askForPromotion_succeedsAtHighPerformanceAndBossTrust() {
+        val employed = TestFixtures.character(
+            career = CareerState(
+                currentJob = TestFixtures.job(
+                    id = "software_developer",
+                    title = "Junior Developer",
+                    level = 1,
+                    performanceScore = 92
+                ),
+                performance = 92f,
+                bossRelationship = 20,
+                yearsAtCurrentJob = 2
+            )
+        )
+        val result = engine.askForPromotion(employed)
+        assertTrue(result is OfficeActionResult.Success)
+        val after = (result as OfficeActionResult.Success).character
+        assertEquals(2, after.career.currentJob!!.level)
+        assertTrue(after.career.currentJob!!.title.contains("Mid") || after.career.currentJob!!.level == 2)
+    }
+
+    @Test
+    fun askForPromotion_deniedWithoutBossTrust() {
+        val employed = TestFixtures.character(
+            career = CareerState(
+                currentJob = TestFixtures.job(performanceScore = 95),
+                performance = 95f,
+                bossRelationship = -5
+            )
+        )
+        val result = engine.askForPromotion(employed)
+        assertTrue(result is OfficeActionResult.Denied)
+    }
+
+    @Test
+    fun evaluatePromotion_strongPerformanceWithBossTriggers() {
+        val employed = TestFixtures.character(
+            career = CareerState(
+                currentJob = TestFixtures.job(
+                    id = "software_developer",
+                    level = 1,
+                    performanceScore = 91
+                ),
+                performance = 91f,
+                bossRelationship = 12,
+                yearsAtCurrentJob = 1
+            )
+        )
+        val (promoted, wasPromoted) = engine.evaluatePromotion(employed)
+        assertTrue(wasPromoted)
+        assertEquals(2, promoted.career.currentJob!!.level)
+    }
+
+    @Test
+    fun applyOfficePolitics_lookForJobClearsEmployment() {
+        val employed = TestFixtures.character(
+            career = CareerState(
+                currentJob = TestFixtures.job(title = "Teacher"),
+                companyName = "Horizon Labs"
+            )
+        )
+        val after = engine.applyOfficePoliticsAction(
+            employed,
+            com.maisha.game.data.model.OfficePoliticsAction.LOOK_FOR_JOB
+        )
+        assertEquals(null, after.career.currentJob)
+        assertTrue(after.career.jobHistory.contains("Teacher"))
+    }
+
+    @Test
+    fun networkColleague_improvesWeakestBond() {
+        val employed = TestFixtures.character(
+            career = CareerState(
+                currentJob = TestFixtures.job(),
+                colleagueRelationships = mapOf("Alex" to 20, "Jordan" to 50),
+                companyName = "Nexus Group"
+            )
+        )
+        val result = engine.performOfficeAction(
+            employed,
+            com.maisha.game.data.model.OfficeAction.NETWORK_COLLEAGUE
+        )
+        assertTrue(result is OfficeActionResult.Success)
+        val after = (result as OfficeActionResult.Success).character
+        assertTrue(after.career.colleagueRelationships.getValue("Alex") > 20)
+        assertTrue(after.career.networkColleagueDoneThisYear)
+    }
+
+    @Test
+    fun ensureWorkplaceInitialized_backfillsCompanyAndColleagues() {
+        val employed = TestFixtures.character(
+            career = CareerState(
+                currentJob = TestFixtures.job(performanceScore = 70)
+            )
+        )
+        val after = engine.ensureWorkplaceInitialized(employed)
+        assertTrue(!after.career.companyName.isNullOrBlank())
+        assertTrue(after.career.colleagueRelationships.isNotEmpty())
+        assertEquals(70f, after.career.performance, 0.01f)
+    }
+
+    @Test
+    fun workYear_burnoutWhenStressHigh() {
+        val employed = TestFixtures.character(
+            stats = Stats(happiness = 60, health = 70, money = 0),
+            career = CareerState(
+                currentJob = TestFixtures.job(baseSalary = 100_000),
+                stress = 85f,
+                performance = 55f,
+                companyName = "Atlas Health",
+                colleagueRelationships = mapOf("Sam" to 40)
+            ),
+            countryCode = "KE"
+        )
+        val after = engine.workYear(employed, WorkEffort.NORMAL)
+        assertTrue(after.stats.health < 70)
+        assertTrue(after.eventLog.any { it.contains("burnout", ignoreCase = true) })
+    }
 }

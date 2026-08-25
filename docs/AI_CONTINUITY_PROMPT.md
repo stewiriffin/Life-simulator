@@ -2,7 +2,7 @@
 
 > **Purpose:** Paste this document (or point an AI agent at it) at the start of any new session so the assistant understands **what Maisha is**, **what has already been built**, **what just shipped**, **what is still missing**, and **how to work in this repo without undoing progress**.
 >
-> **Last updated:** 2026-08-25 (university depth: campus jobs, internships, loan repay, grad track offer)  
+> **Last updated:** 2026-08-25 (career ladder + office politics depth)  
 > **Repo path:** `/home/dr-rank/Documents/Apps/Life-simulator`  
 > **Remote:** `https://github.com/stewiriffin/Life-simulator` (`origin/main`)  
 > **Package:** `com.maisha.game`
@@ -352,6 +352,7 @@ Newest first:
 
 | Commit | Meaning |
 |--------|---------|
+| *(pending)* | Career ladder ranks, office politics actions/events, Career dashboard meters |
 | `74ec22c` | University majors, loans, campus jobs, internships, grad track, Career dashboard |
 | `c68bf45` | Detention deepen: serve hall, principal appeal, transfer hearing, rebel achievements |
 | `57bcd1e` | Misbehavior & detention: rebel activities, expulsion hearing, discipline badge |
