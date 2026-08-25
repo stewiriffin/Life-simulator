@@ -50,13 +50,39 @@ enum class ClubPracticeIntensity {
 
 /** University majors offered after secondary exams. */
 @Serializable
-enum class UniversityMajor(val courseLabel: String) {
-    LAW("Law"),
-    MEDICINE("Medicine"),
-    COMPUTER_SCIENCE("Computer Science"),
-    BUSINESS("Business"),
-    ENGINEERING("Engineering"),
-    NURSING("Nursing")
+enum class UniversityMajor(
+    val courseLabel: String,
+    /** Typical program length in years. */
+    val programYears: Int,
+    /** Career track this major unlocks more easily after graduation. */
+    val careerTrack: CareerTrack
+) {
+    COMPUTER_SCIENCE("Computer Science", 4, CareerTrack.SOFTWARE),
+    LAW("Law", 4, CareerTrack.LEGAL),
+    MEDICINE("Medicine", 5, CareerTrack.MEDICAL),
+    BUSINESS("Business", 3, CareerTrack.CORPORATE),
+    COMMUNICATIONS("Communications", 3, CareerTrack.ENTERTAINMENT),
+    ENGINEERING("Engineering", 4, CareerTrack.SOFTWARE),
+    NURSING("Nursing", 4, CareerTrack.MEDICAL)
+}
+
+/** How the player finances university tuition. */
+@Serializable
+enum class UniversityFunding {
+    CASH,
+    LOAN,
+    SCHOLARSHIP
+}
+
+/** Graduation distinction based on cumulative university GPA. */
+@Serializable
+enum class GraduationHonors {
+    NONE,
+    PASS,
+    CUM_LAUDE,
+    MAGNA_CUM_LAUDE,
+    SUMMA_CUM_LAUDE,
+    FIRST_CLASS
 }
 
 @Serializable
@@ -199,6 +225,26 @@ data class EducationState(
     val expelled: Boolean = false,
     val droppedOutFrom: SchoolStage? = null,
     val courseOfStudy: String? = null,
+    /** Structured major while in / after university (preferred over free-text [courseOfStudy]). */
+    val universityMajor: UniversityMajor? = null,
+    /** How tuition is being paid. */
+    val universityFunding: UniversityFunding? = null,
+    /** Outstanding student loan principal (integer currency units). */
+    val studentLoanBalance: Int = 0,
+    /** Annual tuition billed while enrolled (0 if scholarship covers it). */
+    val tuitionPerYear: Int = 0,
+    /** True when a merit scholarship waived tuition. */
+    val scholarshipActive: Boolean = false,
+    /** Honors awarded on graduation. */
+    val graduationHonors: GraduationHonors = GraduationHonors.NONE,
+    /** Campus work-study shift claimed this year while at university. */
+    val campusJobDoneThisYear: Boolean = false,
+    /** Major internship claimed this year while at university. */
+    val internshipDoneThisYear: Boolean = false,
+    /** Cumulative internship seasons completed (resume signal). */
+    val internshipYearsCompleted: Int = 0,
+    /** After graduating, offer matching career track once on Age Up / Career tab. */
+    val pendingCareerTrackOffer: Boolean = false,
     val schoolName: String? = null,
     val kcpePassed: Boolean? = null,
     val kcseGrade: String? = null,

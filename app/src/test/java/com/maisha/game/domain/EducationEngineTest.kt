@@ -100,13 +100,20 @@ class EducationEngineTest {
         val character = TestFixtures.character(
             education = EducationState(
                 stage = SchoolStage.SECONDARY,
-                kcseGrade = "B+"
-            )
+                kcseGrade = "B+",
+                schoolReputation = 60,
+                gpa = 3.4f
+            ),
+            stats = Stats(smarts = 72, happiness = 55, money = 100_000)
         )
         assertTrue(engine.isEligibleForUniversity(character))
         val after = engine.applyToUniversity(character, "Law")
         assertEquals(SchoolStage.UNIVERSITY, after.education.stage)
         assertEquals("Law", after.education.courseOfStudy)
+        assertEquals(
+            com.maisha.game.data.model.UniversityMajor.LAW,
+            after.education.universityMajor
+        )
     }
 
     @Test
@@ -1025,6 +1032,159 @@ class EducationEngineTest {
         )
         assertEquals(SchoolDisciplineResult.InsufficientFunds, engine.apologizeToPrincipal(student))
     }
+
+    @Test
+    fun enrollInUniversity_loanTracksDebtAndMajor() {
+        val character = universityEligible()
+        val result = engine.enrollInUniversity(
+            character,
+            com.maisha.game.data.model.UniversityMajor.COMPUTER_SCIENCE,
+            com.maisha.game.data.model.UniversityFunding.LOAN
+        )
+        assertTrue(result is EducationEngine.UniversityEnrollResult.Success)
+        val enrolled = (result as EducationEngine.UniversityEnrollResult.Success).character
+        assertEquals(SchoolStage.UNIVERSITY, enrolled.education.stage)
+        assertEquals(
+            com.maisha.game.data.model.UniversityMajor.COMPUTER_SCIENCE,
+            enrolled.education.universityMajor
+        )
+        assertTrue(enrolled.education.studentLoanBalance > 0)
+        assertTrue(enrolled.education.tuitionPerYear > 0)
+        assertEquals(4, engine.universityProgramYears(enrolled))
+    }
+
+    @Test
+    fun enrollInUniversity_cashRequiresFunds() {
+        val broke = universityEligible().copy(stats = Stats(smarts = 70, happiness = 50, money = 0))
+        val denied = engine.enrollInUniversity(
+            broke,
+            com.maisha.game.data.model.UniversityMajor.BUSINESS,
+            com.maisha.game.data.model.UniversityFunding.CASH
+        )
+        assertEquals(EducationEngine.UniversityEnrollResult.InsufficientFunds, denied)
+    }
+
+    @Test
+    fun advanceUniversityYear_graduatesWithHonorsAfterProgramYears() {
+        var character = universityEligible()
+        val enrolled = engine.enrollInUniversity(
+            character,
+            com.maisha.game.data.model.UniversityMajor.BUSINESS,
+            com.maisha.game.data.model.UniversityFunding.LOAN
+        ) as EducationEngine.UniversityEnrollResult.Success
+        character = enrolled.character.copy(
+            education = enrolled.character.education.copy(
+                gpa = 3.8f,
+                plannedStudyEffort = com.maisha.game.data.model.StudyEffort.HARD
+            )
+        )
+        repeat(3) {
+            character = engine.advanceUniversityYear(character)
+        }
+        assertEquals(SchoolStage.GRADUATED, character.education.stage)
+        assertTrue(
+            character.education.graduationHonors == com.maisha.game.data.model.GraduationHonors.CUM_LAUDE ||
+                character.education.graduationHonors == com.maisha.game.data.model.GraduationHonors.MAGNA_CUM_LAUDE ||
+                character.education.graduationHonors == com.maisha.game.data.model.GraduationHonors.SUMMA_CUM_LAUDE ||
+                character.education.graduationHonors == com.maisha.game.data.model.GraduationHonors.FIRST_CLASS
+        )
+    }
+
+    @Test
+    fun medicineMajor_requiresExceptionalSmarts() {
+        val mid = universityEligible().copy(stats = Stats(smarts = 70, happiness = 55, health = 70))
+        assertFalse(
+            engine.isMajorEligible(mid, com.maisha.game.data.model.UniversityMajor.MEDICINE)
+        )
+        val elite = mid.copy(stats = Stats(smarts = 80, happiness = 55, health = 70))
+        assertTrue(
+            engine.isMajorEligible(elite, com.maisha.game.data.model.UniversityMajor.MEDICINE)
+        )
+    }
+
+    @Test
+    fun buildUniversityEnrollmentEvent_includesFundingChoices() {
+        val event = engine.buildUniversityEnrollmentEvent(universityEligible())
+        assertTrue(event != null)
+        assertTrue(event!!.choices.any { it.universityFunding == "LOAN" })
+        assertTrue(event.choices.any { it.universityFunding == "SCHOLARSHIP" })
+        assertTrue(event.choices.any { it.label.contains("Skip") })
+    }
+
+    @Test
+    fun performCampusJob_paysAndReducesLoan() {
+        val enrolled = engine.enrollInUniversity(
+            universityEligible(),
+            com.maisha.game.data.model.UniversityMajor.BUSINESS,
+            com.maisha.game.data.model.UniversityFunding.LOAN
+        ) as EducationEngine.UniversityEnrollResult.Success
+        val withLoan = enrolled.character.copy(
+            education = enrolled.character.education.copy(studentLoanBalance = 80_000),
+            stats = enrolled.character.stats.copy(money = 0)
+        )
+        val result = engine.performCampusJob(withLoan)
+        assertTrue(result is EducationEngine.UniversityActionResult.Success)
+        val after = (result as EducationEngine.UniversityActionResult.Success).character
+        assertTrue(after.education.campusJobDoneThisYear)
+        assertTrue(after.education.studentLoanBalance < 80_000)
+        assertEquals(
+            EducationEngine.UniversityActionResult.AlreadyDone,
+            engine.performCampusJob(after)
+        )
+    }
+
+    @Test
+    fun performInternship_requiresYearTwo() {
+        val enrolled = engine.enrollInUniversity(
+            universityEligible(),
+            com.maisha.game.data.model.UniversityMajor.COMPUTER_SCIENCE,
+            com.maisha.game.data.model.UniversityFunding.LOAN
+        ) as EducationEngine.UniversityEnrollResult.Success
+        assertEquals(
+            EducationEngine.UniversityActionResult.Ineligible,
+            engine.performInternship(enrolled.character)
+        )
+        val yearTwo = enrolled.character.copy(
+            education = enrolled.character.education.copy(currentGrade = 2)
+        )
+        val result = engine.performInternship(yearTwo)
+        assertTrue(result is EducationEngine.UniversityActionResult.Success)
+        val after = (result as EducationEngine.UniversityActionResult.Success).character
+        assertEquals(1, after.education.internshipYearsCompleted)
+        assertTrue(after.education.gpa > yearTwo.education.gpa)
+    }
+
+    @Test
+    fun graduationSetsPendingCareerTrackOffer() {
+        var character = (
+            engine.enrollInUniversity(
+                universityEligible(),
+                com.maisha.game.data.model.UniversityMajor.BUSINESS,
+                com.maisha.game.data.model.UniversityFunding.LOAN
+            ) as EducationEngine.UniversityEnrollResult.Success
+            ).character
+        character = character.copy(
+            education = character.education.copy(currentGrade = 3, gpa = 3.6f)
+        )
+        character = engine.advanceUniversityYear(character)
+        assertEquals(SchoolStage.GRADUATED, character.education.stage)
+        assertTrue(character.education.pendingCareerTrackOffer)
+        val event = engine.buildGraduationCareerEvent(character)
+        assertTrue(event != null)
+        assertTrue(event!!.choices.any { it.careerTrackStart == "CORPORATE" })
+    }
+
+    private fun universityEligible() = TestFixtures.character(
+        age = 18,
+        education = EducationState(
+            stage = SchoolStage.SECONDARY,
+            currentGrade = 4,
+            kcseGrade = "B+",
+            gpa = 3.5f,
+            schoolReputation = 55
+        ),
+        stats = Stats(smarts = 70, happiness = 55, health = 65, money = 200_000)
+    )
 
     private fun secondaryStudent() = TestFixtures.character(
         age = 15,

@@ -43,6 +43,8 @@ object LifeArchetypeEngine {
             CareerTrack.PRO_SPORTS -> bump("archetype_athlete", 30 + character.career.trackLevel * 10)
             CareerTrack.MEDICAL -> bump("archetype_healer", 35 + character.career.trackLevel * 10)
             CareerTrack.LEGAL -> bump("archetype_counsel", 35 + character.career.trackLevel * 10)
+            CareerTrack.SOFTWARE -> bump("archetype_scholar", 30 + character.career.trackLevel * 10)
+            CareerTrack.CORPORATE -> bump("archetype_tycoon", 30 + character.career.trackLevel * 10)
             CareerTrack.NONE -> Unit
         }
 

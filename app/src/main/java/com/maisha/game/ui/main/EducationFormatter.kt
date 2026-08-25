@@ -42,7 +42,25 @@ object EducationFormatter {
             }
             SchoolStage.GRADUATED -> {
                 val course = education.courseOfStudy ?: res.getString(R.string.edu_your_studies)
-                res.getString(R.string.edu_graduated, course)
+                val base = res.getString(R.string.edu_graduated, course)
+                if (education.graduationHonors != com.maisha.game.data.model.GraduationHonors.NONE &&
+                    education.graduationHonors != com.maisha.game.data.model.GraduationHonors.PASS
+                ) {
+                    val honors = when (education.graduationHonors) {
+                        com.maisha.game.data.model.GraduationHonors.CUM_LAUDE ->
+                            res.getString(R.string.honors_cum_laude)
+                        com.maisha.game.data.model.GraduationHonors.MAGNA_CUM_LAUDE ->
+                            res.getString(R.string.honors_magna_cum_laude)
+                        com.maisha.game.data.model.GraduationHonors.SUMMA_CUM_LAUDE ->
+                            res.getString(R.string.honors_summa_cum_laude)
+                        com.maisha.game.data.model.GraduationHonors.FIRST_CLASS ->
+                            res.getString(R.string.honors_first_class)
+                        else -> null
+                    }
+                    if (honors != null) "$base · $honors" else base
+                } else {
+                    base
+                }
             }
         }
     }

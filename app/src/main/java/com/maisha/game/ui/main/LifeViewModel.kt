@@ -66,6 +66,7 @@ import com.maisha.game.domain.SeekFriendshipResult
 import com.maisha.game.domain.ClubActivityResult
 import com.maisha.game.domain.SchoolDisciplineResult
 import com.maisha.game.domain.ExamPrepResult
+import com.maisha.game.domain.EducationEngine
 import com.maisha.game.domain.SchoolActionResult
 import com.maisha.game.domain.SchoolInteractionResult
 import com.maisha.game.domain.StartDatingResult
@@ -1282,6 +1283,152 @@ class LifeViewModel @Inject constructor(
                 _uiState.update {
                     it.copy(careerMessage = context.getString(R.string.msg_track_start_failed))
                 }
+            }
+        }
+    }
+
+    fun onEnrollInUniversity(
+        major: com.maisha.game.data.model.UniversityMajor,
+        funding: com.maisha.game.data.model.UniversityFunding
+    ) {
+        val character = _uiState.value.character ?: return
+        if (!character.alive) return
+        viewModelScope.launch {
+            when (val result = gameEngine.enrollInUniversity(character, major, funding)) {
+                is EducationEngine.UniversityEnrollResult.Success -> {
+                    persist(result.character)
+                    processMidLifeAchievements(result.character)
+                    _uiState.update {
+                        it.copy(
+                            character = result.character,
+                            careerMessage = context.getString(
+                                R.string.msg_university_enrolled,
+                                result.message
+                            ),
+                            netWorth = financeEngine.calculateNetWorth(result.character),
+                            headerExpression = ExpressionResolver.resolveExpression(
+                                result.character,
+                                null
+                            )
+                        )
+                    }
+                }
+                EducationEngine.UniversityEnrollResult.Ineligible -> {
+                    _uiState.update {
+                        it.copy(
+                            careerMessage = context.getString(R.string.msg_university_ineligible)
+                        )
+                    }
+                }
+                EducationEngine.UniversityEnrollResult.InsufficientFunds -> {
+                    _uiState.update {
+                        it.copy(
+                            careerMessage = context.getString(
+                                R.string.msg_university_insufficient_funds
+                            )
+                        )
+                    }
+                }
+                EducationEngine.UniversityEnrollResult.ScholarshipDenied -> {
+                    _uiState.update {
+                        it.copy(
+                            careerMessage = context.getString(
+                                R.string.msg_university_scholarship_denied
+                            )
+                        )
+                    }
+                }
+            }
+        }
+    }
+
+    fun onCampusJob() {
+        val character = _uiState.value.character ?: return
+        if (!character.alive) return
+        viewModelScope.launch {
+            when (val result = gameEngine.performCampusJob(character)) {
+                is EducationEngine.UniversityActionResult.Success -> {
+                    persist(result.character)
+                    _uiState.update {
+                        it.copy(
+                            character = result.character,
+                            careerMessage = result.message,
+                            netWorth = financeEngine.calculateNetWorth(result.character)
+                        )
+                    }
+                }
+                EducationEngine.UniversityActionResult.AlreadyDone -> {
+                    _uiState.update {
+                        it.copy(careerMessage = context.getString(R.string.msg_campus_job_done))
+                    }
+                }
+                EducationEngine.UniversityActionResult.Ineligible -> {
+                    _uiState.update {
+                        it.copy(careerMessage = context.getString(R.string.msg_campus_job_ineligible))
+                    }
+                }
+            }
+        }
+    }
+
+    fun onUniversityInternship() {
+        val character = _uiState.value.character ?: return
+        if (!character.alive) return
+        viewModelScope.launch {
+            when (val result = gameEngine.performInternship(character)) {
+                is EducationEngine.UniversityActionResult.Success -> {
+                    persist(result.character)
+                    _uiState.update {
+                        it.copy(
+                            character = result.character,
+                            careerMessage = result.message,
+                            netWorth = financeEngine.calculateNetWorth(result.character)
+                        )
+                    }
+                }
+                EducationEngine.UniversityActionResult.AlreadyDone -> {
+                    _uiState.update {
+                        it.copy(careerMessage = context.getString(R.string.msg_internship_done))
+                    }
+                }
+                EducationEngine.UniversityActionResult.Ineligible -> {
+                    _uiState.update {
+                        it.copy(careerMessage = context.getString(R.string.msg_internship_ineligible))
+                    }
+                }
+            }
+        }
+    }
+
+    fun onRepayStudentLoan(amount: Int) {
+        val character = _uiState.value.character ?: return
+        if (!character.alive) return
+        viewModelScope.launch {
+            when (val result = gameEngine.repayStudentLoan(character, amount)) {
+                is FinanceEngine.StudentLoanRepayResult.Success -> {
+                    persist(result.character)
+                    _uiState.update {
+                        it.copy(
+                            character = result.character,
+                            careerMessage = context.getString(
+                                R.string.msg_loan_repaid,
+                                formatMoney(result.paid, result.character.countryCode)
+                            ),
+                            netWorth = financeEngine.calculateNetWorth(result.character)
+                        )
+                    }
+                }
+                FinanceEngine.StudentLoanRepayResult.InsufficientFunds -> {
+                    _uiState.update {
+                        it.copy(careerMessage = context.getString(R.string.msg_loan_repay_funds))
+                    }
+                }
+                FinanceEngine.StudentLoanRepayResult.NoBalance -> {
+                    _uiState.update {
+                        it.copy(careerMessage = context.getString(R.string.msg_loan_repay_none))
+                    }
+                }
+                FinanceEngine.StudentLoanRepayResult.InvalidAmount -> Unit
             }
         }
     }

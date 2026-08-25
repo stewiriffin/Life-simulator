@@ -22,6 +22,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Lock
+import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
@@ -70,6 +71,9 @@ import com.maisha.game.data.model.Job
 import com.maisha.game.data.model.PoliticalOffice
 import com.maisha.game.data.model.SchoolStage
 import com.maisha.game.data.model.TaxPolicyType
+import com.maisha.game.data.model.GraduationHonors
+import com.maisha.game.data.model.UniversityFunding
+import com.maisha.game.data.model.UniversityMajor
 import com.maisha.game.data.model.CareerTrack
 import com.maisha.game.data.model.ClubPracticeIntensity
 import com.maisha.game.data.model.ClubRank
@@ -164,6 +168,10 @@ fun CareerScreen(
     onServeDetention: () -> Unit = {},
     onApologizeToPrincipal: () -> Unit = {},
     onExamPrepChoice: (ExamPrepChoice) -> Unit = {},
+    onEnrollInUniversity: (UniversityMajor, UniversityFunding) -> Unit = { _, _ -> },
+    onCampusJob: () -> Unit = {},
+    onInternship: () -> Unit = {},
+    onRepayStudentLoan: (Int) -> Unit = {},
     onStartCareerTrack: (CareerTrack) -> Unit,
     onPracticeCareerTrack: () -> Unit,
     onCareerMessageDismissed: () -> Unit,
@@ -443,6 +451,19 @@ fun CareerScreen(
             }
 
             if (show(CareerCategory.SCHOOL)) {
+                item(
+                    key = "university_dashboard",
+                    contentType = CareerListContentType.Education
+                ) {
+                    UniversityDashboardCard(
+                        character = character,
+                        onEnrollInUniversity = onEnrollInUniversity,
+                        onCampusJob = onCampusJob,
+                        onInternship = onInternship,
+                        onRepayStudentLoan = onRepayStudentLoan,
+                        onStartCareerTrack = onStartCareerTrack
+                    )
+                }
                 item(
                     key = "education",
                     contentType = CareerListContentType.Education
@@ -978,6 +999,490 @@ private fun RetiredStateCard(
             }
         }
     }
+}
+
+@Composable
+private fun UniversityDashboardCard(
+    character: Character,
+    onEnrollInUniversity: (UniversityMajor, UniversityFunding) -> Unit,
+    onCampusJob: () -> Unit,
+    onInternship: () -> Unit,
+    onRepayStudentLoan: (Int) -> Unit,
+    onStartCareerTrack: (CareerTrack) -> Unit
+) {
+    val education = character.education
+    val canEnroll = remember(character.education, character.age, character.stats, character.alive) {
+        schoolUiEngine.canEnrollInUniversity(character)
+    }
+    val inUniversity = education.stage == SchoolStage.UNIVERSITY
+    val showLoan = education.studentLoanBalance > 0
+    val showHonors = education.stage == SchoolStage.GRADUATED &&
+        education.graduationHonors != GraduationHonors.NONE &&
+        education.graduationHonors != GraduationHonors.PASS
+    val showGradOffer = education.pendingCareerTrackOffer &&
+        education.stage == SchoolStage.GRADUATED &&
+        character.career.careerTrack == CareerTrack.NONE &&
+        education.universityMajor != null
+    if (!canEnroll && !inUniversity && !showLoan && !showHonors && !showGradOffer) return
+
+    val eligibleMajors = remember(character.education, character.stats, character.age) {
+        schoolUiEngine.eligibleUniversityMajors(character)
+    }
+    val lockedMajors = remember(character.education, character.stats, character.age) {
+        if (!schoolUiEngine.canEnrollInUniversity(character) &&
+            !schoolUiEngine.isEligibleForUniversity(character)
+        ) {
+            emptyList()
+        } else {
+            UniversityMajor.entries.filterNot { schoolUiEngine.isMajorEligible(character, it) }
+        }
+    }
+    var selectedMajor by remember(eligibleMajors) {
+        mutableStateOf(eligibleMajors.firstOrNull())
+    }
+    var selectedFunding by remember { mutableStateOf(UniversityFunding.LOAN) }
+    val tuition = selectedMajor?.let {
+        schoolUiEngine.tuitionForMajor(it, character.countryCode)
+    } ?: 0
+    val scholarshipChance = remember(character.education, character.stats) {
+        (schoolUiEngine.scholarshipSuccessChance(character) * 100).toInt()
+    }
+    val programYears = if (inUniversity) {
+        schoolUiEngine.universityProgramYears(character)
+    } else {
+        selectedMajor?.programYears ?: 0
+    }
+    val progressPercent = if (inUniversity) {
+        schoolUiEngine.universityProgressPercent(character)
+    } else {
+        0
+    }
+    val campusPay = remember(character.countryCode) {
+        schoolUiEngine.campusJobPay(character.countryCode)
+    }
+    val internStipend = remember(character.countryCode) {
+        schoolUiEngine.internshipStipend(character.countryCode)
+    }
+    val repayQuarter = (education.studentLoanBalance / 4).coerceAtLeast(0)
+        .coerceAtMost(character.stats.money)
+    val repayHalf = (education.studentLoanBalance / 2).coerceAtLeast(0)
+        .coerceAtMost(character.stats.money)
+
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        shape = MaishaRadius.cardShape,
+        colors = CardDefaults.cardColors(containerColor = Color.White)
+    ) {
+        Column(modifier = Modifier.padding(14.dp)) {
+            Text(
+                text = stringResource(R.string.section_university_dashboard),
+                style = MaterialTheme.typography.labelMedium,
+                color = GoldAccent
+            )
+
+            if (inUniversity) {
+                Spacer(modifier = Modifier.height(8.dp))
+                Text(
+                    text = education.universityMajor?.courseLabel
+                        ?: education.courseOfStudy
+                        ?: stringResource(R.string.edu_general_studies),
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.Bold
+                )
+                Text(
+                    text = stringResource(
+                        R.string.university_year_progress,
+                        education.currentGrade,
+                        programYears
+                    ),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+                Spacer(modifier = Modifier.height(8.dp))
+                Text(
+                    text = stringResource(R.string.university_progress_label),
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+                Spacer(modifier = Modifier.height(4.dp))
+                LinearProgressIndicator(
+                    progress = { progressPercent / 100f },
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(8.dp),
+                    color = TealPrimary,
+                    trackColor = CreamBg,
+                )
+                Spacer(modifier = Modifier.height(8.dp))
+                if (education.gpa > 0f) {
+                    Text(
+                        text = stringResource(R.string.university_standing_gpa, education.gpa),
+                        style = MaterialTheme.typography.bodySmall,
+                        color = TealPrimary
+                    )
+                }
+                if (education.internshipYearsCompleted > 0) {
+                    Text(
+                        text = stringResource(
+                            R.string.university_internships_done,
+                            education.internshipYearsCompleted
+                        ),
+                        style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+                education.universityFunding?.let { funding ->
+                    Spacer(modifier = Modifier.height(4.dp))
+                    Text(
+                        text = when (funding) {
+                            UniversityFunding.CASH ->
+                                stringResource(R.string.university_funding_status_cash)
+                            UniversityFunding.LOAN ->
+                                stringResource(R.string.university_funding_status_loan)
+                            UniversityFunding.SCHOLARSHIP ->
+                                stringResource(R.string.university_funding_status_scholarship)
+                        },
+                        style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+                if (education.tuitionPerYear > 0) {
+                    Text(
+                        text = stringResource(
+                            R.string.university_tuition_label,
+                            formatMoney(education.tuitionPerYear, character.countryCode)
+                        ),
+                        style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+                Spacer(modifier = Modifier.height(10.dp))
+                Text(
+                    text = stringResource(R.string.university_actions_title),
+                    style = MaterialTheme.typography.labelSmall,
+                    fontWeight = FontWeight.SemiBold
+                )
+                Spacer(modifier = Modifier.height(6.dp))
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(6.dp)
+                ) {
+                    OutlinedButton(
+                        onClick = onCampusJob,
+                        enabled = !education.campusJobDoneThisYear,
+                        modifier = Modifier.weight(1f),
+                        shape = RoundedCornerShape(10.dp),
+                        contentPadding = PaddingValues(horizontal = 6.dp, vertical = 6.dp)
+                    ) {
+                        Text(
+                            text = if (education.campusJobDoneThisYear) {
+                                stringResource(R.string.university_campus_job_done)
+                            } else {
+                                stringResource(
+                                    R.string.university_campus_job,
+                                    formatMoney(campusPay, character.countryCode)
+                                )
+                            },
+                            maxLines = 2,
+                            style = MaterialTheme.typography.labelSmall,
+                            textAlign = TextAlign.Center
+                        )
+                    }
+                    OutlinedButton(
+                        onClick = onInternship,
+                        enabled = !education.internshipDoneThisYear &&
+                            education.currentGrade >= 2,
+                        modifier = Modifier.weight(1f),
+                        shape = RoundedCornerShape(10.dp),
+                        contentPadding = PaddingValues(horizontal = 6.dp, vertical = 6.dp)
+                    ) {
+                        Text(
+                            text = when {
+                                education.currentGrade < 2 ->
+                                    stringResource(R.string.university_internship_locked)
+                                education.internshipDoneThisYear ->
+                                    stringResource(R.string.university_internship_done)
+                                else -> stringResource(
+                                    R.string.university_internship,
+                                    formatMoney(internStipend, character.countryCode)
+                                )
+                            },
+                            maxLines = 2,
+                            style = MaterialTheme.typography.labelSmall,
+                            textAlign = TextAlign.Center
+                        )
+                    }
+                }
+            }
+
+            if (showGradOffer) {
+                val track = education.universityMajor!!.careerTrack
+                Spacer(modifier = Modifier.height(10.dp))
+                Text(
+                    text = stringResource(R.string.university_grad_offer_title),
+                    style = MaterialTheme.typography.titleSmall,
+                    fontWeight = FontWeight.SemiBold
+                )
+                Text(
+                    text = stringResource(
+                        R.string.university_grad_offer_body,
+                        education.universityMajor!!.courseLabel,
+                        careerTrackLabel(track)
+                    ),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+                Spacer(modifier = Modifier.height(8.dp))
+                Button(
+                    onClick = { onStartCareerTrack(track) },
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(12.dp),
+                    colors = ButtonDefaults.buttonColors(containerColor = TealPrimary)
+                ) {
+                    Text(
+                        stringResource(
+                            R.string.btn_start_grad_track,
+                            careerTrackLabel(track)
+                        )
+                    )
+                }
+            }
+
+            if (canEnroll && eligibleMajors.isNotEmpty()) {
+                Spacer(modifier = Modifier.height(10.dp))
+                Text(
+                    text = stringResource(R.string.university_enroll_title),
+                    style = MaterialTheme.typography.titleSmall,
+                    fontWeight = FontWeight.SemiBold
+                )
+                Text(
+                    text = stringResource(R.string.university_enroll_hint),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+                Spacer(modifier = Modifier.height(8.dp))
+                Text(
+                    text = stringResource(R.string.university_pick_major),
+                    style = MaterialTheme.typography.labelSmall,
+                    fontWeight = FontWeight.SemiBold
+                )
+                Spacer(modifier = Modifier.height(6.dp))
+                Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                    eligibleMajors.chunked(2).forEach { rowMajors ->
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.spacedBy(6.dp)
+                        ) {
+                            rowMajors.forEach { major ->
+                                FilterChip(
+                                    selected = selectedMajor == major,
+                                    onClick = { selectedMajor = major },
+                                    label = {
+                                        Text(
+                                            text = major.courseLabel,
+                                            maxLines = 1,
+                                            overflow = TextOverflow.Ellipsis,
+                                            style = MaterialTheme.typography.labelSmall
+                                        )
+                                    },
+                                    modifier = Modifier.weight(1f)
+                                )
+                            }
+                            if (rowMajors.size == 1) {
+                                Spacer(modifier = Modifier.weight(1f))
+                            }
+                        }
+                    }
+                }
+                if (lockedMajors.isNotEmpty()) {
+                    Spacer(modifier = Modifier.height(6.dp))
+                    Text(
+                        text = stringResource(R.string.university_locked_majors),
+                        style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                    lockedMajors.take(3).forEach { major ->
+                        Text(
+                            text = "• ${major.courseLabel}: " +
+                                schoolUiEngine.majorEligibilityHint(character, major),
+                            style = MaterialTheme.typography.labelSmall,
+                            color = InkTertiary,
+                            modifier = Modifier.padding(top = 2.dp)
+                        )
+                    }
+                }
+                selectedMajor?.let { major ->
+                    Spacer(modifier = Modifier.height(6.dp))
+                    Text(
+                        text = stringResource(
+                            R.string.university_tuition_label,
+                            formatMoney(tuition, character.countryCode)
+                        ) + " · ${major.programYears} yr",
+                        style = MaterialTheme.typography.labelSmall,
+                        color = TealPrimary
+                    )
+                }
+                Spacer(modifier = Modifier.height(10.dp))
+                Text(
+                    text = stringResource(R.string.university_pick_funding),
+                    style = MaterialTheme.typography.labelSmall,
+                    fontWeight = FontWeight.SemiBold
+                )
+                Spacer(modifier = Modifier.height(6.dp))
+                FundingOptionRow(
+                    selected = selectedFunding == UniversityFunding.CASH,
+                    enabled = character.stats.money >= tuition && tuition > 0,
+                    label = stringResource(R.string.university_funding_cash),
+                    onClick = { selectedFunding = UniversityFunding.CASH }
+                )
+                FundingOptionRow(
+                    selected = selectedFunding == UniversityFunding.LOAN,
+                    enabled = true,
+                    label = stringResource(R.string.university_funding_loan),
+                    onClick = { selectedFunding = UniversityFunding.LOAN }
+                )
+                FundingOptionRow(
+                    selected = selectedFunding == UniversityFunding.SCHOLARSHIP,
+                    enabled = true,
+                    label = stringResource(R.string.university_funding_scholarship),
+                    supporting = stringResource(
+                        R.string.university_funding_scholarship_chance,
+                        scholarshipChance
+                    ),
+                    onClick = { selectedFunding = UniversityFunding.SCHOLARSHIP }
+                )
+                Spacer(modifier = Modifier.height(10.dp))
+                Button(
+                    onClick = {
+                        val major = selectedMajor ?: return@Button
+                        onEnrollInUniversity(major, selectedFunding)
+                    },
+                    enabled = selectedMajor != null &&
+                        (selectedFunding != UniversityFunding.CASH ||
+                            character.stats.money >= tuition),
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(12.dp),
+                    colors = ButtonDefaults.buttonColors(containerColor = TealPrimary)
+                ) {
+                    Text(stringResource(R.string.btn_enroll_university))
+                }
+            }
+
+            if (showLoan) {
+                Spacer(modifier = Modifier.height(8.dp))
+                Text(
+                    text = stringResource(
+                        R.string.university_loan_balance,
+                        formatMoney(education.studentLoanBalance, character.countryCode)
+                    ),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = CoralNegative
+                )
+                if (character.stats.money > 0) {
+                    Spacer(modifier = Modifier.height(6.dp))
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(6.dp)
+                    ) {
+                        if (repayQuarter > 0) {
+                            OutlinedButton(
+                                onClick = { onRepayStudentLoan(repayQuarter) },
+                                modifier = Modifier.weight(1f),
+                                shape = RoundedCornerShape(10.dp),
+                                contentPadding = PaddingValues(horizontal = 4.dp, vertical = 6.dp)
+                            ) {
+                                Text(
+                                    stringResource(
+                                        R.string.btn_repay_loan,
+                                        formatMoney(repayQuarter, character.countryCode)
+                                    ),
+                                    maxLines = 1,
+                                    style = MaterialTheme.typography.labelSmall
+                                )
+                            }
+                        }
+                        if (repayHalf > repayQuarter) {
+                            OutlinedButton(
+                                onClick = { onRepayStudentLoan(repayHalf) },
+                                modifier = Modifier.weight(1f),
+                                shape = RoundedCornerShape(10.dp),
+                                contentPadding = PaddingValues(horizontal = 4.dp, vertical = 6.dp)
+                            ) {
+                                Text(
+                                    stringResource(
+                                        R.string.btn_repay_loan,
+                                        formatMoney(repayHalf, character.countryCode)
+                                    ),
+                                    maxLines = 1,
+                                    style = MaterialTheme.typography.labelSmall
+                                )
+                            }
+                        }
+                    }
+                }
+            }
+            if (showHonors) {
+                Spacer(modifier = Modifier.height(4.dp))
+                Text(
+                    text = stringResource(
+                        R.string.university_honors,
+                        graduationHonorsLabel(education.graduationHonors)
+                    ),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = GoldAccent
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun FundingOptionRow(
+    selected: Boolean,
+    enabled: Boolean,
+    label: String,
+    supporting: String? = null,
+    onClick: () -> Unit
+) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .alpha(if (enabled) 1f else 0.45f)
+            .selectable(
+                selected = selected,
+                enabled = enabled,
+                role = Role.RadioButton,
+                onClick = onClick
+            )
+            .padding(vertical = 4.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        RadioButton(
+            selected = selected,
+            onClick = onClick.takeIf { enabled },
+            enabled = enabled
+        )
+        Column(modifier = Modifier.padding(start = 4.dp)) {
+            Text(text = label, style = MaterialTheme.typography.bodyMedium)
+            if (supporting != null) {
+                Text(
+                    text = supporting,
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun graduationHonorsLabel(honors: GraduationHonors): String = when (honors) {
+    GraduationHonors.NONE -> ""
+    GraduationHonors.PASS -> stringResource(R.string.honors_pass)
+    GraduationHonors.CUM_LAUDE -> stringResource(R.string.honors_cum_laude)
+    GraduationHonors.MAGNA_CUM_LAUDE -> stringResource(R.string.honors_magna_cum_laude)
+    GraduationHonors.SUMMA_CUM_LAUDE -> stringResource(R.string.honors_summa_cum_laude)
+    GraduationHonors.FIRST_CLASS -> stringResource(R.string.honors_first_class)
 }
 
 @Composable
@@ -2226,6 +2731,14 @@ private fun CareerTrackSectionCard(
                                 Text(stringResource(R.string.track_legal))
                             }
                         }
+                        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                            OutlinedButton(onClick = { onStartCareerTrack(CareerTrack.SOFTWARE) }) {
+                                Text(stringResource(R.string.track_software))
+                            }
+                            OutlinedButton(onClick = { onStartCareerTrack(CareerTrack.CORPORATE) }) {
+                                Text(stringResource(R.string.track_corporate))
+                            }
+                        }
                     }
                 }
                 else -> {
@@ -2258,6 +2771,8 @@ private fun careerTrackLabel(track: CareerTrack): String = when (track) {
     CareerTrack.PRO_SPORTS -> stringResource(R.string.track_pro_sports)
     CareerTrack.MEDICAL -> stringResource(R.string.track_medical)
     CareerTrack.LEGAL -> stringResource(R.string.track_legal)
+    CareerTrack.SOFTWARE -> stringResource(R.string.track_software)
+    CareerTrack.CORPORATE -> stringResource(R.string.track_corporate)
     CareerTrack.NONE -> ""
 }
 

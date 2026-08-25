@@ -2,7 +2,7 @@
 
 > **Purpose:** Paste this document (or point an AI agent at it) at the start of any new session so the assistant understands **what Maisha is**, **what has already been built**, **what just shipped**, **what is still missing**, and **how to work in this repo without undoing progress**.
 >
-> **Last updated:** 2026-08-25 (detention deepen: serve / appeal / transfer)  
+> **Last updated:** 2026-08-25 (university depth: campus jobs, internships, loan repay, grad track offer)  
 > **Repo path:** `/home/dr-rank/Documents/Apps/Life-simulator`  
 > **Remote:** `https://github.com/stewiriffin/Life-simulator` (`origin/main`)  
 > **Package:** `com.maisha.game`
@@ -318,12 +318,41 @@ Create/load life → enroll in school (auto at age 6+) → **Career tab → Scho
 
 ---
 
+## 10b. Latest major feature — University & higher education
+
+Structured university majors with tuition funding, student loans, multi-year programs, graduation honors, campus jobs/internships, and a Career-tab dashboard.
+
+### Models
+- `UniversityMajor` (CS, Law, Medicine, Business, Communications, Engineering, Nursing) with `programYears` + `careerTrack`
+- `UniversityFunding` (`CASH` / `LOAN` / `SCHOLARSHIP`), `GraduationHonors`
+- `EducationState`: major/funding/loan/tuition/scholarship/honors + `campusJobDoneThisYear`, `internshipDoneThisYear`, `internshipYearsCompleted`, `pendingCareerTrackOffer`
+- `StudentFinance` / `StudentLiabilitySnapshot` in `data/model/Finance.kt`
+- Career tracks: `SOFTWARE`, `CORPORATE` added beside MEDICAL / LEGAL / etc.
+- `EventChoice.careerTrackStart` for post-grad track offers
+
+### Engines
+- `EducationEngine.enrollInUniversity` + eligibility per major; tuition billing each year; honors on graduate
+- Campus work-study + major internship (year 2+); graduation career-track Age Up event
+- Age-up + KCSE result enrollment events offer major × funding choices
+- `FinanceEngine.tickStudentLoan` + `repayStudentLoan`; loans reduce net worth
+- `CareerEngine` track gates use majors (CS→SOFTWARE, Law→LEGAL, Medicine→MEDICAL, Business→CORPORATE, Comms→ENTERTAINMENT)
+
+### UI
+- **University Dashboard** on Career → School: major, year progress, funding/tuition, campus job, internship, loan repay buttons, locked-major hints, post-grad track CTA
+- Wired through `LifeViewModel` → `GameEngine` → engines
+
+### Player-facing path
+Finish secondary → enroll (Age Up or Career) with cash/loan/scholarship → campus job / internship during years → graduate with honors → career track offer → repay loans  
+
+---
+
 ## 11. Recent commit timeline (high signal)
 
 Newest first:
 
 | Commit | Meaning |
 |--------|---------|
+| *(pending push)* | University majors, loans, campus jobs, internships, grad track, Career dashboard |
 | `c68bf45` | Detention deepen: serve hall, principal appeal, transfer hearing, rebel achievements |
 | `57bcd1e` | Misbehavior & detention: rebel activities, expulsion hearing, discipline badge |
 | `68a1124` | Clubs: rivalry matches, letter jacket, fame, scout whispers, achievements |
@@ -387,7 +416,7 @@ These are **known unfinished** areas. Do not claim they are done.
 
 In priority order that matches recent player feedback:
 
-1. **Polish school life further** — richer NPC detail sheet, more activities, club interactions, university-specific social life, visual avatars on school people rows  
+1. **University social life** — classmates/office hours depth while enrolled in university  
 2. **Turn Wave 4 themes into systems** — hobbies/side hustles/crime/love with dedicated Actions/Career surfaces, not only JSON  
 3. **Weekly challenges UI** — surface `WeeklyChallengeEngine` clearly  
 4. **Childhood / teen action density** — Actions tab for ages where career is empty  
@@ -411,7 +440,7 @@ Always confirm with the user’s latest message if the request is ambiguous.
 
 ## 16. Copy-paste short briefing (for tiny context windows)
 
-> Maisha is an Android BitLife-style life sim (Compose, Hilt, Room, pure domain engines). Worldwide 15 countries. Latest shipped: school rewrite with `SchoolPerson` roster, yearly academic/social activities on Career→School, plus `school_life_events.json` (`56091a4`). Earlier: Wave 4 event packs, Wave 3 systems, stats-budget character creation that affects gameplay, BitLife art. Prefer agency/UI/systems over event spam. Docs folder was cleared except this continuity prompt. Commit/push/install only on request.
+> Maisha is an Android BitLife-style life sim (Compose, Hilt, Room, pure domain engines). Worldwide 15 countries. Latest: university majors (CS/Law/Medicine/Business/Comms) with cash/loan/scholarship funding, student-loan interest, graduation honors, and Career→School University Dashboard; plus school life rewrite (`56091a4`) and detention/clubs depth. Prefer agency/UI/systems over event spam. Docs folder was cleared except this continuity prompt. Commit/push/install only on request.
 
 ---
 

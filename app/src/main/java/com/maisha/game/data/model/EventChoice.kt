@@ -47,6 +47,15 @@ data class EventChoice(
      */
     val portfolioReturnPercent: Int? = null,
     /**
+     * University major id (e.g. `COMPUTER_SCIENCE`) for enrollment events.
+     * Used with optional [universityFunding].
+     */
+    val universityMajor: String? = null,
+    /**
+     * Funding mode for university enrollment: `CASH`, `LOAN`, or `SCHOLARSHIP`.
+     */
+    val universityFunding: String? = null,
+    /**
      * Exam prompt choice: `STUDY_HARD`, `STUDY_NORMAL`, `CRAM`, or `CHEAT`.
      * Handled by [com.maisha.game.domain.EducationEngine.resolveExamWithPrepChoice].
      */
@@ -55,5 +64,9 @@ data class EventChoice(
      * Expulsion hearing: `MERCY` (probation) or `DEFIANT` (expulsion).
      * Handled by [com.maisha.game.domain.EducationEngine.resolveExpulsionHearing].
      */
-    val expulsionHearingAction: String? = null
+    val expulsionHearingAction: String? = null,
+    /**
+     * Starts a [CareerTrack] by name (e.g. `SOFTWARE`) after graduation offers.
+     */
+    val careerTrackStart: String? = null
 )

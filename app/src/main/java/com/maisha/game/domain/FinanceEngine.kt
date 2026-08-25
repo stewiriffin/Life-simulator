@@ -12,6 +12,8 @@ import com.maisha.game.data.model.EconomicState
 import com.maisha.game.data.model.PortfolioStrategy
 import com.maisha.game.data.model.PoliticalOffice
 import com.maisha.game.data.model.RelationType
+import com.maisha.game.data.model.StudentFinance
+import com.maisha.game.data.model.StudentLiabilitySnapshot
 import com.maisha.game.data.model.TaxPolicyType
 import com.maisha.game.util.formatMoney
 import java.util.UUID
@@ -446,13 +448,83 @@ class FinanceEngine @Inject constructor() {
         return EconomyScaler.scaleAmount(rawCost, countryCode)
     }
 
-    /** Cash, assets, businesses, savings, and investment portfolio. */
+    /** Cash, assets, businesses, savings, and investment portfolio, minus student loans. */
     fun calculateNetWorth(character: Character): Int {
         val assetValue = character.assets.sumOf { it.currentValue }
         val businessValue = character.businesses.sumOf { it.valuation }
         return character.stats.money + assetValue + businessValue +
             character.investmentPortfolioValue.coerceAtLeast(0) +
-            character.savingsBalance.coerceAtLeast(0)
+            character.savingsBalance.coerceAtLeast(0) -
+            character.education.studentLoanBalance.coerceAtLeast(0)
+    }
+
+    fun studentLiabilitySnapshot(character: Character) =
+        StudentLiabilitySnapshot.from(character.education)
+
+    /**
+     * Accrues interest on student loans and auto-repays a slice of salary once employed.
+     */
+    fun tickStudentLoan(character: Character): Character {
+        var balance = character.education.studentLoanBalance
+        if (balance <= 0) return character
+
+        val interestPercent = Random.nextInt(
+            StudentFinance.LOAN_INTEREST_PERCENT_MIN,
+            StudentFinance.LOAN_INTEREST_PERCENT_MAX + 1
+        )
+        val interest = (balance * interestPercent / 100f).roundToInt().coerceAtLeast(1)
+        balance += interest
+
+        var money = character.stats.money
+        var log = "Student loan interest +$interestPercent% " +
+            "(${formatMoney(interest, character.countryCode)})."
+        val salary = character.career.currentJob?.baseSalary ?: 0
+        if (salary > 0 && character.alive) {
+            val payment = (salary * StudentFinance.LOAN_REPAY_SALARY_FRACTION)
+                .roundToInt()
+                .coerceAtMost(balance)
+                .coerceAtMost(money)
+            if (payment > 0) {
+                balance -= payment
+                money -= payment
+                log += " Auto-repaid ${formatMoney(payment, character.countryCode)} from wages."
+            }
+        }
+
+        return character.copy(
+            stats = character.stats.copy(money = money),
+            education = character.education.copy(studentLoanBalance = balance.coerceAtLeast(0)),
+            eventLog = EventLogCap.prepend(character.eventLog, log)
+        )
+    }
+
+    sealed class StudentLoanRepayResult {
+        data class Success(val character: Character, val paid: Int) : StudentLoanRepayResult()
+        data object NoBalance : StudentLoanRepayResult()
+        data object InsufficientFunds : StudentLoanRepayResult()
+        data object InvalidAmount : StudentLoanRepayResult()
+    }
+
+    /** Manual lump-sum student loan repayment from liquid cash. */
+    fun repayStudentLoan(character: Character, amount: Int): StudentLoanRepayResult {
+        if (amount <= 0) return StudentLoanRepayResult.InvalidAmount
+        val balance = character.education.studentLoanBalance
+        if (balance <= 0) return StudentLoanRepayResult.NoBalance
+        if (character.stats.money < amount) return StudentLoanRepayResult.InsufficientFunds
+        val paid = amount.coerceAtMost(balance)
+        return StudentLoanRepayResult.Success(
+            character.copy(
+                stats = character.stats.copy(money = character.stats.money - paid),
+                education = character.education.copy(
+                    studentLoanBalance = (balance - paid).coerceAtLeast(0)
+                ),
+                eventLog = EventLogCap.prepend(
+                    character.eventLog,
+                    "You paid ${formatMoney(paid, character.countryCode)} toward your student loan."
+                )
+            ),
+            paid
+        )
     }
 
     /** Moves liquid cash into safe savings (bank-style). */

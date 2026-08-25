@@ -6,6 +6,7 @@ import com.maisha.game.data.EconomyScaler
 import com.maisha.game.data.NamePool
 import com.maisha.game.data.model.AvatarConfig
 import com.maisha.game.data.model.Character
+import com.maisha.game.data.model.CareerTrack
 import com.maisha.game.data.model.EducationState
 import com.maisha.game.data.model.EventChoice
 import com.maisha.game.data.model.ClubPracticeIntensity
@@ -16,6 +17,7 @@ import com.maisha.game.data.model.ExamResult
 import com.maisha.game.data.model.ExamSchedule
 import com.maisha.game.data.model.ExamType
 import com.maisha.game.data.model.ExpulsionHearingChoice
+import com.maisha.game.data.model.GraduationHonors
 import com.maisha.game.data.model.Gender
 import com.maisha.game.data.model.LifeEvent
 import com.maisha.game.data.model.SchoolActivity
@@ -24,7 +26,9 @@ import com.maisha.game.data.model.SchoolPerson
 import com.maisha.game.data.model.SchoolPersonAction
 import com.maisha.game.data.model.SchoolRole
 import com.maisha.game.data.model.SchoolStage
+import com.maisha.game.data.model.StudentFinance
 import com.maisha.game.data.model.StudyEffort
+import com.maisha.game.data.model.UniversityFunding
 import com.maisha.game.data.model.UniversityMajor
 import com.maisha.game.data.model.VisaType
 import com.maisha.game.util.clampGpa
@@ -1036,57 +1040,128 @@ class EducationEngine @Inject constructor(
 
     private data class Quad(val happiness: Int, val health: Int, val smarts: Int, val gpa: Float)
 
-    /** Increments university year or graduates when [UNIVERSITY_YEARS] completed. Bills domestic tuition. */
+    /** Increments university year or graduates when the major's program years complete. */
     fun advanceUniversityYear(character: Character): Character {
         val education = character.education
         if (education.expelled || education.droppedOutFrom == SchoolStage.UNIVERSITY) return character
         if (education.stage != SchoolStage.UNIVERSITY) return character
 
-        val tuition = domesticUniversityTuition(character)
-        var updated = character
-        if (tuition > 0) {
-            val paid = minOf(tuition, character.stats.money)
-            val shortfall = tuition - paid
-            updated = character.copy(
-                stats = character.stats.copy(
-                    money = (character.stats.money - paid).coerceAtLeast(0),
-                    happiness = if (shortfall > 0) {
-                        clampStat(character.stats.happiness - 4)
-                    } else {
-                        character.stats.happiness
-                    }
-                ),
-                eventLog = EventLogCap.prepend(
-                    character.eventLog,
-                    if (shortfall > 0) {
-                        "University fees ${formatMoney(tuition, character.countryCode)} — " +
-                            "short by ${formatMoney(shortfall, character.countryCode)}."
-                    } else {
-                        "Paid ${formatMoney(tuition, character.countryCode)} in university tuition."
-                    }
-                )
-            )
-        }
+        val programYears = education.universityMajor?.programYears ?: UNIVERSITY_YEARS_DEFAULT
+        var updated = billUniversityTuition(character)
 
         val nextGrade = updated.education.currentGrade + 1
         val withEffort = applyUniversityStudyEffort(updated)
-        return if (nextGrade > UNIVERSITY_YEARS) {
+        return if (nextGrade > programYears) {
+            val honors = graduationHonorsFor(withEffort.education.gpa)
+            val honorsLabel = graduationHonorsLabel(honors)
             withEffort.copy(
                 education = clearActiveClubMembership(withEffort.education).copy(
                     stage = SchoolStage.GRADUATED,
-                    currentGrade = UNIVERSITY_YEARS,
-                    schoolPeople = emptyList()
+                    currentGrade = programYears,
+                    schoolPeople = emptyList(),
+                    graduationHonors = honors,
+                    tuitionPerYear = 0,
+                    campusJobDoneThisYear = false,
+                    internshipDoneThisYear = false,
+                    pendingCareerTrackOffer = withEffort.education.universityMajor != null
                 ),
                 eventLog = EventLogCap.prepend(
                     withEffort.eventLog,
-                    "You graduated from university."
+                    "You graduated from university" +
+                        if (honors != GraduationHonors.PASS && honors != GraduationHonors.NONE) {
+                            " — $honorsLabel!"
+                        } else {
+                            "."
+                        }
                 )
             )
         } else {
             withEffort.copy(
-                education = withEffort.education.copy(currentGrade = nextGrade)
+                education = withEffort.education.copy(
+                    currentGrade = nextGrade,
+                    campusJobDoneThisYear = false,
+                    internshipDoneThisYear = false
+                )
             )
         }
+    }
+
+    private fun billUniversityTuition(character: Character): Character {
+        if (character.education.scholarshipActive || character.education.tuitionPerYear <= 0) {
+            return character
+        }
+        // International enrollments already paid a large upfront fee.
+        if (character.currentVisa == VisaType.STUDENT && character.isLivingAbroad()) {
+            return character
+        }
+        val tuition = character.education.tuitionPerYear
+        return when (character.education.universityFunding) {
+            UniversityFunding.LOAN -> character.copy(
+                education = character.education.copy(
+                    studentLoanBalance = character.education.studentLoanBalance + tuition
+                ),
+                eventLog = EventLogCap.prepend(
+                    character.eventLog,
+                    "Student loan drew ${formatMoney(tuition, character.countryCode)} for tuition."
+                )
+            )
+            UniversityFunding.SCHOLARSHIP -> character
+            UniversityFunding.CASH, null -> {
+                val paid = minOf(tuition, character.stats.money)
+                val shortfall = tuition - paid
+                character.copy(
+                    stats = character.stats.copy(
+                        money = (character.stats.money - paid).coerceAtLeast(0),
+                        happiness = if (shortfall > 0) {
+                            clampStat(character.stats.happiness - 4)
+                        } else {
+                            character.stats.happiness
+                        }
+                    ),
+                    education = character.education.copy(
+                        studentLoanBalance = character.education.studentLoanBalance + shortfall
+                    ),
+                    eventLog = EventLogCap.prepend(
+                        character.eventLog,
+                        if (shortfall > 0) {
+                            "Tuition ${formatMoney(tuition, character.countryCode)} — " +
+                                "short by ${formatMoney(shortfall, character.countryCode)}; " +
+                                "rest added to your student loan."
+                        } else {
+                            "Paid ${formatMoney(tuition, character.countryCode)} in university tuition."
+                        }
+                    )
+                )
+            }
+        }
+    }
+
+    fun graduationHonorsFor(gpa: Float): GraduationHonors = when {
+        gpa >= 3.9f -> GraduationHonors.SUMMA_CUM_LAUDE
+        gpa >= 3.7f -> GraduationHonors.MAGNA_CUM_LAUDE
+        gpa >= 3.5f -> GraduationHonors.CUM_LAUDE
+        gpa >= 3.3f -> GraduationHonors.FIRST_CLASS
+        gpa >= 2.0f -> GraduationHonors.PASS
+        else -> GraduationHonors.PASS
+    }
+
+    fun graduationHonorsLabel(honors: GraduationHonors): String = when (honors) {
+        GraduationHonors.NONE -> ""
+        GraduationHonors.PASS -> "Pass"
+        GraduationHonors.CUM_LAUDE -> "Cum Laude"
+        GraduationHonors.MAGNA_CUM_LAUDE -> "Magna Cum Laude"
+        GraduationHonors.SUMMA_CUM_LAUDE -> "Summa Cum Laude"
+        GraduationHonors.FIRST_CLASS -> "First Class Honours"
+    }
+
+    fun universityProgramYears(character: Character): Int =
+        character.education.universityMajor?.programYears ?: UNIVERSITY_YEARS_DEFAULT
+
+    fun universityProgressPercent(character: Character): Int {
+        if (character.education.stage != SchoolStage.UNIVERSITY) return 0
+        val years = universityProgramYears(character).coerceAtLeast(1)
+        return ((character.education.currentGrade - 1).coerceAtLeast(0) * 100 / years)
+            .coerceIn(0, 100)
     }
 
     private fun applyUniversityStudyEffort(character: Character): Character {
@@ -1109,17 +1184,416 @@ class EducationEngine @Inject constructor(
         )
     }
 
-    private fun domesticUniversityTuition(character: Character): Int {
-        // International enrollments already paid a large upfront fee.
-        if (character.currentVisa == VisaType.STUDENT && character.isLivingAbroad()) return 0
-        return EconomyScaler.scaleAmount(DOMESTIC_UNIVERSITY_TUITION_KENYA, character.countryCode)
+    fun tuitionForMajor(major: UniversityMajor, countryCode: String): Int {
+        val multiplier = when (major) {
+            UniversityMajor.MEDICINE -> 1.6f
+            UniversityMajor.LAW, UniversityMajor.ENGINEERING -> 1.25f
+            UniversityMajor.COMPUTER_SCIENCE -> 1.15f
+            UniversityMajor.BUSINESS -> 1.1f
+            UniversityMajor.NURSING -> 1.05f
+            UniversityMajor.COMMUNICATIONS -> 0.9f
+        }
+        return (EconomyScaler.scaleAmount(StudentFinance.BASE_TUITION_KENYA, countryCode) * multiplier)
+            .roundToInt()
+    }
+
+    fun isMajorEligible(character: Character, major: UniversityMajor): Boolean {
+        if (!isEligibleForUniversity(character)) return false
+        val smarts = character.stats.smarts
+        val rep = character.education.schoolReputation
+        val health = character.stats.health
+        return when (major) {
+            UniversityMajor.MEDICINE ->
+                smarts >= MAJOR_MEDICINE_MIN_SMARTS && health >= MAJOR_MEDICINE_MIN_HEALTH
+            UniversityMajor.LAW ->
+                smarts >= MAJOR_LAW_MIN_SMARTS && rep >= MAJOR_LAW_MIN_REPUTATION
+            UniversityMajor.COMPUTER_SCIENCE, UniversityMajor.ENGINEERING ->
+                smarts >= MAJOR_CS_MIN_SMARTS
+            UniversityMajor.BUSINESS ->
+                smarts >= MAJOR_BUSINESS_MIN_SMARTS &&
+                    character.stats.happiness >= MAJOR_BUSINESS_MIN_HAPPINESS
+            UniversityMajor.NURSING -> health >= MAJOR_NURSING_MIN_HEALTH
+            UniversityMajor.COMMUNICATIONS -> smarts >= MAJOR_COMMS_MIN_SMARTS
+        }
+    }
+
+    fun eligibleUniversityMajors(character: Character): List<UniversityMajor> =
+        UniversityMajor.entries.filter { isMajorEligible(character, it) }
+
+    /** Short UI hint when a major is locked (empty when eligible). */
+    fun majorEligibilityHint(character: Character, major: UniversityMajor): String {
+        if (isMajorEligible(character, major)) return ""
+        if (!isEligibleForUniversity(character)) {
+            return "Need stronger exit grades / smarts to enroll."
+        }
+        val smarts = character.stats.smarts
+        val rep = character.education.schoolReputation
+        val health = character.stats.health
+        return when (major) {
+            UniversityMajor.MEDICINE ->
+                "Needs smarts ≥$MAJOR_MEDICINE_MIN_SMARTS and health ≥$MAJOR_MEDICINE_MIN_HEALTH " +
+                    "(you: $smarts / $health)."
+            UniversityMajor.LAW ->
+                "Needs smarts ≥$MAJOR_LAW_MIN_SMARTS and reputation ≥$MAJOR_LAW_MIN_REPUTATION " +
+                    "(you: $smarts / $rep)."
+            UniversityMajor.COMPUTER_SCIENCE, UniversityMajor.ENGINEERING ->
+                "Needs smarts ≥$MAJOR_CS_MIN_SMARTS (you: $smarts)."
+            UniversityMajor.BUSINESS ->
+                "Needs smarts ≥$MAJOR_BUSINESS_MIN_SMARTS and happiness ≥$MAJOR_BUSINESS_MIN_HAPPINESS."
+            UniversityMajor.NURSING ->
+                "Needs health ≥$MAJOR_NURSING_MIN_HEALTH (you: $health)."
+            UniversityMajor.COMMUNICATIONS ->
+                "Needs smarts ≥$MAJOR_COMMS_MIN_SMARTS (you: $smarts)."
+        }
+    }
+
+    fun scholarshipSuccessChance(character: Character): Float {
+        val gpa = character.education.gpa
+        val smarts = character.stats.smarts / 100f
+        val awards = character.education.clubAwardsWon.coerceAtMost(3) * 0.04f
+        return (0.08f + (gpa / 4f) * 0.45f + smarts * 0.3f + awards).coerceIn(0.05f, 0.75f)
+    }
+
+    fun canEnrollInUniversity(character: Character): Boolean {
+        if (!character.alive || character.education.expelled) return false
+        if (character.education.droppedOutFrom == SchoolStage.UNIVERSITY) return false
+        if (character.education.stage == SchoolStage.UNIVERSITY ||
+            character.education.stage == SchoolStage.GRADUATED
+        ) {
+            return false
+        }
+        if (character.age < UNIVERSITY_ENROLL_MIN_AGE) return false
+        return isEligibleForUniversity(character)
+    }
+
+    fun buildUniversityEnrollmentEvent(character: Character): LifeEvent? {
+        if (!canEnrollInUniversity(character)) return null
+        val majors = eligibleUniversityMajors(character).take(5)
+        if (majors.isEmpty()) return null
+        val choices = majors.flatMap { major ->
+            val tuition = tuitionForMajor(major, character.countryCode)
+            val tuitionLabel = formatMoney(tuition, character.countryCode)
+            buildList {
+                add(
+                    EventChoice(
+                        label = "${major.courseLabel} · Student loan",
+                        resultText = "You enroll in ${major.courseLabel} with a student loan " +
+                            "covering $tuitionLabel this year.",
+                        universityMajor = major.name,
+                        universityFunding = UniversityFunding.LOAN.name,
+                        statEffects = mapOf("happiness" to 3, "smarts" to 1)
+                    )
+                )
+                if (character.stats.money >= tuition) {
+                    add(
+                        EventChoice(
+                            label = "${major.courseLabel} · Pay cash ($tuitionLabel)",
+                            resultText = "You enroll in ${major.courseLabel} and pay year-one " +
+                                "tuition from savings.",
+                            universityMajor = major.name,
+                            universityFunding = UniversityFunding.CASH.name,
+                            statEffects = mapOf("happiness" to 2, "smarts" to 1)
+                        )
+                    )
+                }
+                add(
+                    EventChoice(
+                        label = "${major.courseLabel} · Apply for scholarship",
+                        resultText = "You apply for a merit scholarship into ${major.courseLabel}.",
+                        universityMajor = major.name,
+                        universityFunding = UniversityFunding.SCHOLARSHIP.name,
+                        statEffects = mapOf("happiness" to 4, "smarts" to 2)
+                    )
+                )
+            }
+        } + EventChoice(
+            label = "Skip university for now",
+            resultText = "You put higher education on hold.",
+            statEffects = mapOf("happiness" to -1)
+        )
+        return LifeEvent(
+            id = "university_enroll_${character.age}",
+            minAge = character.age,
+            maxAge = character.age,
+            text = "Secondary is done. University doors are open — pick a major and how " +
+                "you'll pay (cash, student loan, or scholarship).",
+            choices = choices,
+            tags = listOf(UNIVERSITY_ENROLL_TAG, "one_time", "education"),
+            weight = 11
+        )
+    }
+
+    sealed class UniversityEnrollResult {
+        data class Success(val character: Character, val message: String) : UniversityEnrollResult()
+        data object Ineligible : UniversityEnrollResult()
+        data object InsufficientFunds : UniversityEnrollResult()
+        data object ScholarshipDenied : UniversityEnrollResult()
     }
 
     /**
-     * Scores national exams from GPA, study effort, reputation, stress, preparedness, and luck.
-     *
-     * @return Updated character and [ExamResult] for UI/system events.
+     * Enrolls in [major] with [funding]. Scholarship rolls [scholarshipSuccessChance];
+     * cash requires liquid funds for year-one tuition.
      */
+    fun enrollInUniversity(
+        character: Character,
+        major: UniversityMajor,
+        funding: UniversityFunding,
+        universityCountryCode: String = character.countryCode
+    ): UniversityEnrollResult {
+        if (!canEnrollInUniversity(character)) return UniversityEnrollResult.Ineligible
+        if (!isMajorEligible(character, major)) return UniversityEnrollResult.Ineligible
+
+        var working = character
+        val studyAbroad = universityCountryCode != character.countryCode &&
+            !character.holdsCitizenship(universityCountryCode)
+        if (studyAbroad) {
+            val destination = CountryCatalog.getCountry(universityCountryCode)
+            working = relocationEngine.relocate(working, destination, VisaType.STUDENT)
+            val intl = internationalTuitionCost(universityCountryCode)
+            working = working.copy(
+                stats = working.stats.copy(money = working.stats.money - intl),
+                eventLog = EventLogCap.prepend(
+                    working.eventLog,
+                    "You enrolled as an international student in ${destination.displayName}."
+                )
+            )
+        }
+
+        val tuition = tuitionForMajor(major, working.countryCode)
+        var fundingMode = funding
+        var scholarship = false
+        var loan = working.education.studentLoanBalance
+        var money = working.stats.money
+        val clubBoost = clubScholarshipEstimate(working)
+
+        when (funding) {
+            UniversityFunding.SCHOLARSHIP -> {
+                val won = Random.nextFloat() < scholarshipSuccessChance(working)
+                if (!won) return UniversityEnrollResult.ScholarshipDenied
+                scholarship = true
+                fundingMode = UniversityFunding.SCHOLARSHIP
+            }
+            UniversityFunding.CASH -> {
+                if (money < tuition) return UniversityEnrollResult.InsufficientFunds
+                money -= tuition
+            }
+            UniversityFunding.LOAN -> {
+                loan += tuition
+            }
+        }
+        if (clubBoost > 0 && !studyAbroad) {
+            money += clubBoost
+        }
+
+        val message = buildString {
+            append("Enrolled in ${major.courseLabel} at ${universityNameFor(working.countryCode)}. ")
+            when (fundingMode) {
+                UniversityFunding.SCHOLARSHIP -> append("Merit scholarship covers tuition.")
+                UniversityFunding.CASH ->
+                    append("Paid year-one tuition ${formatMoney(tuition, working.countryCode)}.")
+                UniversityFunding.LOAN ->
+                    append("Student loan covers ${formatMoney(tuition, working.countryCode)} this year.")
+            }
+            if (clubBoost > 0 && !studyAbroad) {
+                append(" Club resume bonus: ${formatMoney(clubBoost, working.countryCode)}.")
+            }
+        }
+
+        val enrolled = ensureSchoolRoster(
+            working.copy(
+                stats = working.stats.copy(
+                    money = money,
+                    happiness = clampStat(working.stats.happiness + 5),
+                    smarts = clampStat(working.stats.smarts + 1)
+                ),
+                education = clearActiveClubMembership(working.education).copy(
+                    stage = SchoolStage.UNIVERSITY,
+                    currentGrade = 1,
+                    courseOfStudy = major.courseLabel,
+                    universityMajor = major,
+                    universityFunding = fundingMode,
+                    tuitionPerYear = if (scholarship) 0 else tuition,
+                    scholarshipActive = scholarship,
+                    studentLoanBalance = loan,
+                    graduationHonors = GraduationHonors.NONE,
+                    gpa = working.education.gpa.coerceAtLeast(2.5f),
+                    schoolName = universityNameFor(working.countryCode),
+                    academicActionDoneThisYear = false,
+                    socialActionDoneThisYear = false
+                ),
+                eventLog = EventLogCap.prepend(working.eventLog, message)
+            ),
+            forceRefresh = true
+        )
+        return UniversityEnrollResult.Success(enrolled, message)
+    }
+
+    /** Legacy string-course enrollment used by older event choices. */
+    fun applyToUniversity(
+        character: Character,
+        course: String,
+        universityCountryCode: String = character.countryCode
+    ): Character {
+        val major = UniversityMajor.entries.find {
+            it.courseLabel.equals(course, ignoreCase = true)
+        } ?: UniversityMajor.BUSINESS
+        val funding = when {
+            character.stats.money >= tuitionForMajor(major, character.countryCode) ->
+                UniversityFunding.CASH
+            Random.nextFloat() < scholarshipSuccessChance(character) ->
+                UniversityFunding.SCHOLARSHIP
+            else -> UniversityFunding.LOAN
+        }
+        return when (val result = enrollInUniversity(character, major, funding, universityCountryCode)) {
+            is UniversityEnrollResult.Success -> result.character
+            UniversityEnrollResult.ScholarshipDenied ->
+                (enrollInUniversity(character, major, UniversityFunding.LOAN, universityCountryCode)
+                    as? UniversityEnrollResult.Success)?.character ?: character
+            else -> character
+        }
+    }
+
+    fun internationalTuitionCost(universityCountryCode: String): Int {
+        val base = EconomyScaler.scaleAmount(StudentFinance.BASE_TUITION_KENYA, universityCountryCode)
+        return (base * INTERNATIONAL_STUDENT_MULTIPLIER).roundToInt()
+    }
+
+    fun campusJobPay(countryCode: String): Int =
+        EconomyScaler.scaleAmount(StudentFinance.CAMPUS_JOB_PAY_KENYA, countryCode)
+
+    fun internshipStipend(countryCode: String): Int =
+        EconomyScaler.scaleAmount(StudentFinance.INTERNSHIP_STIPEND_KENYA, countryCode)
+
+    sealed class UniversityActionResult {
+        data class Success(val character: Character, val message: String) : UniversityActionResult()
+        data object Ineligible : UniversityActionResult()
+        data object AlreadyDone : UniversityActionResult()
+    }
+
+    /** Part-time campus job — earns cash; half auto-pays student loans. */
+    fun performCampusJob(character: Character): UniversityActionResult {
+        if (!character.alive || character.education.stage != SchoolStage.UNIVERSITY) {
+            return UniversityActionResult.Ineligible
+        }
+        if (character.education.campusJobDoneThisYear) return UniversityActionResult.AlreadyDone
+
+        val pay = campusJobPay(character.countryCode)
+        var loan = character.education.studentLoanBalance
+        val toLoan = (pay * StudentFinance.CAMPUS_JOB_LOAN_FRACTION).roundToInt()
+            .coerceAtMost(loan)
+            .coerceAtLeast(0)
+        loan -= toLoan
+        val pocket = pay - toLoan
+        val message = buildString {
+            append("Campus work-study paid ${formatMoney(pay, character.countryCode)}.")
+            if (toLoan > 0) {
+                append(" ${formatMoney(toLoan, character.countryCode)} went to your student loan.")
+            }
+        }
+        return UniversityActionResult.Success(
+            character.copy(
+                stats = character.stats.copy(
+                    money = character.stats.money + pocket,
+                    happiness = clampStat(character.stats.happiness - 2),
+                    health = clampStat(character.stats.health - 1)
+                ),
+                education = character.education.copy(
+                    campusJobDoneThisYear = true,
+                    studentLoanBalance = loan.coerceAtLeast(0)
+                ),
+                eventLog = EventLogCap.prepend(character.eventLog, message)
+            ),
+            message
+        )
+    }
+
+    /**
+     * Major-aligned internship (year 2+). Raises GPA/smarts and resume internship count.
+     */
+    fun performInternship(character: Character): UniversityActionResult {
+        if (!character.alive || character.education.stage != SchoolStage.UNIVERSITY) {
+            return UniversityActionResult.Ineligible
+        }
+        if (character.education.currentGrade < 2) return UniversityActionResult.Ineligible
+        if (character.education.internshipDoneThisYear) return UniversityActionResult.AlreadyDone
+
+        val stipend = internshipStipend(character.countryCode)
+        val major = character.education.universityMajor?.courseLabel ?: "your field"
+        val message = "You completed a $major internship " +
+            "(+${formatMoney(stipend, character.countryCode)} stipend)."
+        return UniversityActionResult.Success(
+            character.copy(
+                stats = character.stats.copy(
+                    money = character.stats.money + stipend,
+                    smarts = clampStat(character.stats.smarts + 3),
+                    happiness = clampStat(character.stats.happiness + 2)
+                ),
+                education = character.education.copy(
+                    internshipDoneThisYear = true,
+                    internshipYearsCompleted = character.education.internshipYearsCompleted + 1,
+                    gpa = clampGpa(character.education.gpa + 0.15f),
+                    schoolReputation = (character.education.schoolReputation + 4).coerceIn(0, 100)
+                ),
+                eventLog = EventLogCap.prepend(character.eventLog, message)
+            ),
+            message
+        )
+    }
+
+    fun buildGraduationCareerEvent(character: Character): LifeEvent? {
+        if (!character.education.pendingCareerTrackOffer) return null
+        if (character.education.stage != SchoolStage.GRADUATED) return null
+        if (character.career.careerTrack != CareerTrack.NONE) return null
+        val major = character.education.universityMajor ?: return null
+        val track = major.careerTrack
+        if (track == CareerTrack.NONE) return null
+        val trackLabel = when (track) {
+            CareerTrack.SOFTWARE -> "software engineering"
+            CareerTrack.LEGAL -> "law"
+            CareerTrack.MEDICAL -> "medicine"
+            CareerTrack.CORPORATE -> "corporate / banking"
+            CareerTrack.ENTERTAINMENT -> "media / entertainment"
+            else -> track.name.lowercase()
+        }
+        val honorsNote = graduationHonorsLabel(character.education.graduationHonors)
+            .takeIf { it.isNotBlank() && character.education.graduationHonors != GraduationHonors.PASS }
+            ?.let { " ($it)" }
+            .orEmpty()
+        val internBoost = if (character.education.internshipYearsCompleted > 0) {
+            " Your ${character.education.internshipYearsCompleted} internship(s) help."
+        } else {
+            ""
+        }
+        return LifeEvent(
+            id = "university_grad_career_${major.name}",
+            minAge = character.age,
+            maxAge = character.age,
+            text = "You graduated$honorsNote in ${major.courseLabel}. " +
+                "Start the $trackLabel career track?$internBoost",
+            choices = listOf(
+                EventChoice(
+                    label = "Start $trackLabel track",
+                    resultText = "You begin the $trackLabel path with your degree behind you.",
+                    careerTrackStart = track.name,
+                    statEffects = mapOf("happiness" to 5, "smarts" to 1)
+                ),
+                EventChoice(
+                    label = "Explore other options first",
+                    resultText = "You keep your options open for now.",
+                    careerTrackStart = CareerTrack.NONE.name,
+                    statEffects = mapOf("happiness" to 1)
+                )
+            ),
+            tags = listOf("one_time", "education", "career", GRADUATION_CAREER_TAG),
+            weight = 12
+        )
+    }
+
+    fun clearPendingCareerTrackOffer(character: Character): Character =
+        character.copy(
+            education = character.education.copy(pendingCareerTrackOffer = false)
+        )
+
     fun takeExam(character: Character, examType: ExamType): Pair<Character, ExamResult> {
         val education = character.education
         val passChance = calculateExamPassChance(character)
@@ -1840,74 +2314,6 @@ class EducationEngine @Inject constructor(
     fun drivingTestPassChance(character: Character): Float =
         (0.25f + character.stats.smarts / 100f * 0.65f).coerceIn(0.20f, 0.95f)
 
-    /**
-     * Enrolls in university with [course] if [isEligibleForUniversity].
-     * When [universityCountryCode] differs from residence and the character is not a citizen there,
-     * relocates with a [VisaType.STUDENT] visa and charges international tuition.
-     */
-    fun applyToUniversity(
-        character: Character,
-        course: String,
-        universityCountryCode: String = character.countryCode
-    ): Character {
-        if (!isEligibleForUniversity(character)) return character
-        if (character.education.droppedOutFrom == SchoolStage.UNIVERSITY) return character
-
-        val studyAbroad = universityCountryCode != character.countryCode &&
-            !character.holdsCitizenship(universityCountryCode)
-
-        var enrolled = character
-        if (studyAbroad) {
-            val destination = CountryCatalog.getCountry(universityCountryCode)
-            enrolled = relocationEngine.relocate(enrolled, destination, VisaType.STUDENT)
-            val tuition = internationalTuitionCost(universityCountryCode)
-            enrolled = enrolled.copy(
-                stats = enrolled.stats.copy(
-                    money = enrolled.stats.money - tuition
-                ),
-                eventLog = listOf(
-                    "You enrolled as an international student in ${destination.displayName}. " +
-                        "Tuition and visa fees hit hard."
-                ) + enrolled.eventLog
-            )
-        }
-
-        val scholarship = clubScholarshipEstimate(enrolled)
-        val withScholarship = if (scholarship > 0 && !studyAbroad) {
-            enrolled.copy(
-                stats = enrolled.stats.copy(
-                    money = enrolled.stats.money + scholarship,
-                    happiness = clampStat(enrolled.stats.happiness + 4)
-                ),
-                eventLog = EventLogCap.prepend(
-                    enrolled.eventLog,
-                    "Your extracurricular resume unlocked a ${formatMoney(scholarship, enrolled.countryCode)} scholarship."
-                )
-            )
-        } else {
-            enrolled
-        }
-
-        return ensureSchoolRoster(
-            withScholarship.copy(
-                education = clearActiveClubMembership(withScholarship.education).copy(
-                    stage = SchoolStage.UNIVERSITY,
-                    currentGrade = 1,
-                    courseOfStudy = course,
-                    schoolName = universityNameFor(universityCountryCode),
-                    academicActionDoneThisYear = false,
-                    socialActionDoneThisYear = false
-                )
-            ),
-            forceRefresh = true
-        )
-    }
-
-    fun internationalTuitionCost(universityCountryCode: String): Int {
-        val base = EconomyScaler.scaleAmount(DOMESTIC_TUITION_KENYA, universityCountryCode)
-        return (base * INTERNATIONAL_STUDENT_MULTIPLIER).roundToInt()
-    }
-
     /** True when KCSE letter grade maps to at least [UNIVERSITY_MIN_POINTS]. */
     fun isEligibleForUniversity(character: Character): Boolean {
         val grade = character.education.kcseGrade ?: return false
@@ -2100,6 +2506,8 @@ class EducationEngine @Inject constructor(
                 },
                 detentionServedThisYear = false,
                 principalAppealDoneThisYear = false,
+                campusJobDoneThisYear = false,
+                internshipDoneThisYear = false,
                 // Clean year clears probation.
                 onProbation = if (
                     !character.education.pendingExpulsionHearing &&
@@ -3154,21 +3562,15 @@ class EducationEngine @Inject constructor(
         }
 
         if (examType == ExamType.KCSE && result.passed && isEligibleForUniversity(character)) {
-            UniversityMajor.entries.forEach { major ->
-                val majorEligible = when (major) {
-                    UniversityMajor.MEDICINE -> character.stats.smarts >= MAJOR_MEDICINE_MIN_SMARTS &&
-                        character.stats.health >= MAJOR_MEDICINE_MIN_HEALTH
-                    UniversityMajor.LAW -> character.stats.smarts >= MAJOR_LAW_MIN_SMARTS
-                    UniversityMajor.NURSING -> character.stats.health >= MAJOR_NURSING_MIN_HEALTH
-                    else -> true
-                }
-                if (!majorEligible) return@forEach
+            eligibleUniversityMajors(character).forEach { major ->
                 choices += EventChoice(
-                    label = "Apply for ${major.courseLabel} at university",
+                    label = "Apply for ${major.courseLabel} (student loan)",
                     statEffects = mapOf(
                         "smarts" to if (major == UniversityMajor.MEDICINE) 3 else 2,
                         "happiness" to 4
                     ),
+                    universityMajor = major.name,
+                    universityFunding = UniversityFunding.LOAN.name,
                     universityCourse = major.courseLabel,
                     resultText = "You enrolled in ${major.courseLabel} at " +
                         "${universityNameFor(character.countryCode)}."
@@ -3276,8 +3678,8 @@ class EducationEngine @Inject constructor(
         private const val SECONDARY_EXIT_EXAM_AGE = 17
         private const val PRIMARY_MAX_GRADE = 8
         private const val SECONDARY_MAX_GRADE = 4
-        private const val UNIVERSITY_YEARS = 4
-        private const val DOMESTIC_UNIVERSITY_TUITION_KENYA = 45_000
+        private const val UNIVERSITY_YEARS_DEFAULT = 4
+        private const val UNIVERSITY_ENROLL_MIN_AGE = 17
         private const val KCPE_PASS_SCORE = 50f
         private const val KCSE_PASS_SCORE = 45f
         private const val UNIVERSITY_MIN_POINTS = 7 // C+ equivalent
@@ -3286,8 +3688,14 @@ class EducationEngine @Inject constructor(
         private const val MAJOR_MEDICINE_MIN_SMARTS = 75
         private const val MAJOR_MEDICINE_MIN_HEALTH = 55
         private const val MAJOR_LAW_MIN_SMARTS = 68
+        private const val MAJOR_LAW_MIN_REPUTATION = 45
+        private const val MAJOR_CS_MIN_SMARTS = 62
+        private const val MAJOR_BUSINESS_MIN_SMARTS = 50
+        private const val MAJOR_BUSINESS_MIN_HAPPINESS = 40
         private const val MAJOR_NURSING_MIN_HEALTH = 50
-        private const val DOMESTIC_TUITION_KENYA = 80_000
+        private const val MAJOR_COMMS_MIN_SMARTS = 40
+        const val UNIVERSITY_ENROLL_TAG = "university_enroll"
+        const val GRADUATION_CAREER_TAG = "university_grad_career"
         /** International students pay this multiplier on local tuition. */
         const val INTERNATIONAL_STUDENT_MULTIPLIER = 3.5
 

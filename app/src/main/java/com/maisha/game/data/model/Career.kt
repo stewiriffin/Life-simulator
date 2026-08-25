@@ -62,14 +62,16 @@ enum class WorkEffort {
     GRIND
 }
 
-/** Long-form career ladder parallel to regular jobs (entertainment / pro sports). */
+/** Long-form career ladder parallel to regular jobs. */
 @Serializable
 enum class CareerTrack {
     NONE,
     ENTERTAINMENT,
     PRO_SPORTS,
     MEDICAL,
-    LEGAL
+    LEGAL,
+    SOFTWARE,
+    CORPORATE
 }
 
 /** After-school jobs for teens (14–17). */

@@ -189,6 +189,8 @@ class GameEngine @Inject constructor(
             resolveStatPressureEvent(updatedCharacter)
                 ?: resolveCareerEvent(updatedCharacter)
                 ?: resolveExpulsionHearingEvent(updatedCharacter)
+                ?: resolveGraduationCareerEvent(updatedCharacter)
+                ?: resolveUniversityEnrollmentEvent(updatedCharacter)
                 ?: resolveExamEvent(updatedCharacter)
                 ?: (updatedCharacter to rollEvents(updatedCharacter, triggeredEventIds).toAgeUpResult())
         }
@@ -534,11 +536,65 @@ class GameEngine @Inject constructor(
             }
         }
 
-        if (choice.universityCourse != null) {
+        if (choice.universityMajor != null) {
+            val major = runCatching {
+                com.maisha.game.data.model.UniversityMajor.valueOf(choice.universityMajor)
+            }.getOrNull()
+            val funding = runCatching {
+                com.maisha.game.data.model.UniversityFunding.valueOf(
+                    choice.universityFunding ?: "LOAN"
+                )
+            }.getOrDefault(com.maisha.game.data.model.UniversityFunding.LOAN)
+            if (major != null) {
+                when (
+                    val enrolled = educationEngine.enrollInUniversity(
+                        updatedCharacter,
+                        major,
+                        funding
+                    )
+                ) {
+                    is EducationEngine.UniversityEnrollResult.Success ->
+                        updatedCharacter = enrolled.character
+                    EducationEngine.UniversityEnrollResult.ScholarshipDenied,
+                    EducationEngine.UniversityEnrollResult.InsufficientFunds -> {
+                        val fallback = educationEngine.enrollInUniversity(
+                            updatedCharacter,
+                            major,
+                            com.maisha.game.data.model.UniversityFunding.LOAN
+                        )
+                        if (fallback is EducationEngine.UniversityEnrollResult.Success) {
+                            val reason = when (enrolled) {
+                                EducationEngine.UniversityEnrollResult.ScholarshipDenied ->
+                                    "Scholarship denied — enrolled on a student loan instead."
+                                else ->
+                                    "Not enough cash — enrolled on a student loan instead."
+                            }
+                            updatedCharacter = fallback.character.copy(
+                                eventLog = EventLogCap.prepend(
+                                    fallback.character.eventLog,
+                                    reason
+                                )
+                            )
+                        }
+                    }
+                    else -> Unit
+                }
+            }
+        } else if (choice.universityCourse != null) {
             updatedCharacter = educationEngine.applyToUniversity(
                 updatedCharacter,
                 choice.universityCourse
             )
+        }
+
+        if (choice.careerTrackStart != null) {
+            val track = runCatching {
+                com.maisha.game.data.model.CareerTrack.valueOf(choice.careerTrackStart)
+            }.getOrNull()
+            if (track != null && track != com.maisha.game.data.model.CareerTrack.NONE) {
+                updatedCharacter = careerEngine.startCareerTrack(updatedCharacter, track)
+            }
+            updatedCharacter = educationEngine.clearPendingCareerTrackOffer(updatedCharacter)
         }
 
         if (choice.triggersExpulsion && choice.expulsionHearingAction == null) {
@@ -793,6 +849,25 @@ class GameEngine @Inject constructor(
     fun leaveSchoolClub(character: Character): Character =
         educationEngine.leaveSchoolClub(character, fired = false)
 
+    fun enrollInUniversity(
+        character: Character,
+        major: com.maisha.game.data.model.UniversityMajor,
+        funding: com.maisha.game.data.model.UniversityFunding
+    ): EducationEngine.UniversityEnrollResult =
+        educationEngine.enrollInUniversity(character, major, funding)
+
+    fun performCampusJob(character: Character): EducationEngine.UniversityActionResult =
+        educationEngine.performCampusJob(character)
+
+    fun performInternship(character: Character): EducationEngine.UniversityActionResult =
+        educationEngine.performInternship(character)
+
+    fun repayStudentLoan(
+        character: Character,
+        amount: Int
+    ): FinanceEngine.StudentLoanRepayResult =
+        financeEngine.repayStudentLoan(character, amount)
+
     fun resolveExpulsionHearing(
         character: Character,
         choice: com.maisha.game.data.model.ExpulsionHearingChoice
@@ -835,8 +910,17 @@ class GameEngine @Inject constructor(
     fun calculateExamPassChance(character: Character): Float =
         educationEngine.calculateExamPassChance(character)
 
-    fun startCareerTrack(character: Character, track: com.maisha.game.data.model.CareerTrack): Character =
-        careerEngine.startCareerTrack(character, track)
+    fun startCareerTrack(character: Character, track: com.maisha.game.data.model.CareerTrack): Character {
+        val started = careerEngine.startCareerTrack(character, track)
+        return if (
+            started.career.careerTrack == track &&
+            started.education.pendingCareerTrackOffer
+        ) {
+            educationEngine.clearPendingCareerTrackOffer(started)
+        } else {
+            started
+        }
+    }
 
     fun practiceCareerTrack(character: Character): CareerTrackPracticeResult =
         careerEngine.practiceCareerTrack(character)
@@ -1101,6 +1185,7 @@ class GameEngine @Inject constructor(
             updated = financeEngine.degradeAssets(updated)
         }
         updated = financeEngine.applyCostOfLiving(updated)
+        updated = financeEngine.tickStudentLoan(updated)
         return updated
     }
 
@@ -1231,6 +1316,16 @@ class GameEngine @Inject constructor(
         }
 
         return null
+    }
+
+    private fun resolveUniversityEnrollmentEvent(character: Character): Pair<Character, AgeUpResult>? {
+        val event = educationEngine.buildUniversityEnrollmentEvent(character) ?: return null
+        return character to AgeUpResult.SingleEvent(event)
+    }
+
+    private fun resolveGraduationCareerEvent(character: Character): Pair<Character, AgeUpResult>? {
+        val event = educationEngine.buildGraduationCareerEvent(character) ?: return null
+        return character to AgeUpResult.SingleEvent(event)
     }
 
     private fun resolveExpulsionHearingEvent(character: Character): Pair<Character, AgeUpResult>? {

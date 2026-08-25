@@ -62,6 +62,42 @@ class FinanceEngineTest {
     }
 
     @Test
+    fun calculateNetWorth_subtractsStudentLoanBalance() {
+        val character = TestFixtures.character(
+            stats = com.maisha.game.data.model.Stats(money = 50_000),
+            education = com.maisha.game.data.model.EducationState(studentLoanBalance = 20_000)
+        )
+        assertEquals(30_000, engine.calculateNetWorth(character))
+    }
+
+    @Test
+    fun tickStudentLoan_accruesInterestAndRepaysFromSalary() {
+        val character = TestFixtures.character(
+            stats = com.maisha.game.data.model.Stats(money = 100_000),
+            education = com.maisha.game.data.model.EducationState(studentLoanBalance = 50_000),
+            career = com.maisha.game.data.model.CareerState(
+                currentJob = TestFixtures.job(baseSalary = 100_000)
+            )
+        )
+        val after = engine.tickStudentLoan(character)
+        assertTrue(after.education.studentLoanBalance < 50_000 + 10_000)
+        assertTrue(after.stats.money < character.stats.money)
+    }
+
+    @Test
+    fun repayStudentLoan_deductsCashAndBalance() {
+        val character = TestFixtures.character(
+            stats = com.maisha.game.data.model.Stats(money = 40_000),
+            education = com.maisha.game.data.model.EducationState(studentLoanBalance = 25_000)
+        )
+        val result = engine.repayStudentLoan(character, 20_000)
+        assertTrue(result is FinanceEngine.StudentLoanRepayResult.Success)
+        val updated = (result as FinanceEngine.StudentLoanRepayResult.Success).character
+        assertEquals(5_000, updated.education.studentLoanBalance)
+        assertEquals(20_000, updated.stats.money)
+    }
+
+    @Test
     fun recalculateValue_allowsRealEstateToAppreciate() {
         val house = TestFixtures.asset(
             type = AssetType.HOUSE,

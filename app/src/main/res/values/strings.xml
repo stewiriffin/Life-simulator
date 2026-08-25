@@ -1498,7 +1498,6 @@
     <string name="msg_exam_prep_already_done">You already prepped for exams this year.</string>
     <string name="msg_exam_prep_ineligible">No imminent exams to prepare for.</string>
     <string name="section_career_tracks">Career tracks</string>
-    <string name="career_track_pick_hint">Start a long-term entertainment or sports path.</string>
     <string name="track_entertainment">Entertainment</string>
     <string name="track_pro_sports">Pro sports</string>
     <string name="format_track_progress">%1$s · Level %2$d · %3$d%%</string>
@@ -1548,6 +1547,65 @@
     <!-- Wave 3 — career tracks -->
     <string name="track_medical">Medical</string>
     <string name="track_legal">Legal</string>
+    <string name="track_software">Software</string>
+    <string name="track_corporate">Corporate / Banking</string>
+    <string name="career_track_pick_hint">Start a long-term career path unlocked by school, clubs, or a university major.</string>
+
+    <!-- University & higher education -->
+    <string name="section_university_dashboard">University</string>
+    <string name="university_enroll_title">Enroll in university</string>
+    <string name="university_enroll_hint">Pick a major and how you\'ll pay tuition.</string>
+    <string name="university_pick_major">Major</string>
+    <string name="university_pick_funding">Tuition funding</string>
+    <string name="university_funding_cash">Pay with cash / savings</string>
+    <string name="university_funding_loan">Take out a student loan</string>
+    <string name="university_funding_scholarship">Apply for a scholarship</string>
+    <string name="university_funding_scholarship_chance">~%1$d%% chance (GPA + smarts)</string>
+    <string name="university_tuition_label">Tuition / year: %1$s</string>
+    <string name="university_year_progress">Year %1$d of %2$d</string>
+    <string name="university_progress_label">Program progress</string>
+    <string name="university_standing_gpa">Academic standing · GPA %1$.2f</string>
+    <string name="university_funding_status_cash">Paying tuition from cash</string>
+    <string name="university_funding_status_loan">Funded by student loan</string>
+    <string name="university_funding_status_scholarship">Merit scholarship (tuition waived)</string>
+    <string name="university_loan_balance">Student loan: %1$s</string>
+    <string name="university_honors">Graduated %1$s</string>
+    <string name="btn_enroll_university">Enroll</string>
+    <string name="msg_university_enrolled">%1$s</string>
+    <string name="msg_university_ineligible">You are not eligible to enroll right now.</string>
+    <string name="msg_university_insufficient_funds">Not enough cash for year-one tuition.</string>
+    <string name="msg_university_scholarship_denied">Scholarship denied — try a loan or pay cash.</string>
+    <string name="major_computer_science">Computer Science</string>
+    <string name="major_law">Law</string>
+    <string name="major_medicine">Medicine</string>
+    <string name="major_business">Business</string>
+    <string name="major_communications">Communications</string>
+    <string name="major_engineering">Engineering</string>
+    <string name="major_nursing">Nursing</string>
+    <string name="honors_pass">Pass</string>
+    <string name="honors_cum_laude">Cum Laude</string>
+    <string name="honors_magna_cum_laude">Magna Cum Laude</string>
+    <string name="honors_summa_cum_laude">Summa Cum Laude</string>
+    <string name="honors_first_class">First Class Honours</string>
+    <string name="university_actions_title">This year on campus</string>
+    <string name="university_campus_job">Campus job (%1$s)</string>
+    <string name="university_campus_job_done">Campus job done</string>
+    <string name="university_internship">Internship (%1$s)</string>
+    <string name="university_internship_done">Internship done</string>
+    <string name="university_internship_locked">Internship (year 2+)</string>
+    <string name="university_internships_done">Internships completed: %1$d</string>
+    <string name="university_locked_majors">Not eligible yet</string>
+    <string name="university_grad_offer_title">Career after graduation</string>
+    <string name="university_grad_offer_body">Your %1$s degree unlocks the %2$s track.</string>
+    <string name="btn_start_grad_track">Start %1$s</string>
+    <string name="btn_repay_loan">Repay %1$s</string>
+    <string name="msg_campus_job_done">You already worked a campus job this year.</string>
+    <string name="msg_campus_job_ineligible">Campus jobs are for enrolled university students.</string>
+    <string name="msg_internship_done">You already completed an internship this year.</string>
+    <string name="msg_internship_ineligible">Internships unlock from year 2 of your program.</string>
+    <string name="msg_loan_repaid">Paid %1$s toward your student loan.</string>
+    <string name="msg_loan_repay_funds">Not enough cash to repay that amount.</string>
+    <string name="msg_loan_repay_none">You have no student loan balance.</string>
 
     <!-- Wave 3 — family & legal -->
     <string name="btn_propose_with_prenup">Propose with prenup</string>

@@ -15,6 +15,7 @@ import com.maisha.game.data.model.Job
 import com.maisha.game.data.model.LifeEvent
 import com.maisha.game.data.model.SchoolClub
 import com.maisha.game.data.model.SchoolStage
+import com.maisha.game.data.model.UniversityMajor
 import com.maisha.game.data.model.VisaType
 import com.maisha.game.data.model.WorkEffort
 import com.maisha.game.util.clampPerformanceScore
@@ -753,10 +754,22 @@ class CareerEngine @Inject constructor(
             CareerTrack.PRO_SPORTS -> character.education.schoolClub == SchoolClub.FOOTBALL ||
                 character.education.clubResumeClub == SchoolClub.FOOTBALL ||
                 character.stats.health >= PRO_SPORTS_MIN_HEALTH
-            CareerTrack.MEDICAL -> character.education.courseOfStudy == "Medicine" ||
+            CareerTrack.MEDICAL -> character.education.universityMajor == UniversityMajor.MEDICINE ||
+                character.education.universityMajor == UniversityMajor.NURSING ||
+                character.education.courseOfStudy == "Medicine" ||
                 character.stats.smarts >= MEDICAL_MIN_SMARTS
-            CareerTrack.LEGAL -> character.education.courseOfStudy == "Law" ||
+            CareerTrack.LEGAL -> character.education.universityMajor == UniversityMajor.LAW ||
+                character.education.courseOfStudy == "Law" ||
                 character.stats.smarts >= LEGAL_MIN_SMARTS
+            CareerTrack.SOFTWARE ->
+                character.education.universityMajor == UniversityMajor.COMPUTER_SCIENCE ||
+                    character.education.universityMajor == UniversityMajor.ENGINEERING ||
+                    character.education.courseOfStudy == "Computer Science" ||
+                    character.stats.smarts >= SOFTWARE_MIN_SMARTS
+            CareerTrack.CORPORATE ->
+                character.education.universityMajor == UniversityMajor.BUSINESS ||
+                    character.education.courseOfStudy == "Business" ||
+                    character.stats.smarts >= CORPORATE_MIN_SMARTS
             CareerTrack.NONE -> false
         }
     }
@@ -768,6 +781,8 @@ class CareerEngine @Inject constructor(
             CareerTrack.PRO_SPORTS -> "pro sports"
             CareerTrack.MEDICAL -> "medical"
             CareerTrack.LEGAL -> "legal"
+            CareerTrack.SOFTWARE -> "software engineering"
+            CareerTrack.CORPORATE -> "corporate / banking"
             CareerTrack.NONE -> return character
         }
         return character.copy(
@@ -794,14 +809,15 @@ class CareerEngine @Inject constructor(
         val progressGain = TRACK_PRACTICE_GAIN + Random.nextInt(0, 6)
         val happinessDelta = when (track) {
             CareerTrack.PRO_SPORTS -> -2
-            CareerTrack.MEDICAL, CareerTrack.LEGAL -> -2
+            CareerTrack.MEDICAL, CareerTrack.LEGAL, CareerTrack.SOFTWARE -> -2
             else -> -1
         }
         var updated = character.copy(
             stats = character.stats.copy(
                 happiness = clampStat(character.stats.happiness + happinessDelta),
                 smarts = when (track) {
-                    CareerTrack.ENTERTAINMENT, CareerTrack.MEDICAL, CareerTrack.LEGAL ->
+                    CareerTrack.ENTERTAINMENT, CareerTrack.MEDICAL, CareerTrack.LEGAL,
+                    CareerTrack.SOFTWARE, CareerTrack.CORPORATE ->
                         clampStat(character.stats.smarts + 1)
                     else -> character.stats.smarts
                 },
@@ -888,6 +904,18 @@ class CareerEngine @Inject constructor(
             2 -> "You made partner at a regional firm."
             3 -> "You're a sought-after litigator."
             else -> "Your legal career advanced."
+        }
+        CareerTrack.SOFTWARE -> when (level) {
+            1 -> "You shipped your first production feature."
+            2 -> "You were promoted to senior engineer."
+            3 -> "You're a principal engineer with equity upside."
+            else -> "Your software career advanced."
+        }
+        CareerTrack.CORPORATE -> when (level) {
+            1 -> "You closed your first major client deal."
+            2 -> "You moved into management."
+            3 -> "You're a director with banking connections."
+            else -> "Your corporate career advanced."
         }
         CareerTrack.NONE -> "Your career track advanced."
     }
@@ -994,6 +1022,8 @@ class CareerEngine @Inject constructor(
         private const val MAX_TRACK_LEVEL = 3
         private const val MEDICAL_MIN_SMARTS = 65
         private const val LEGAL_MIN_SMARTS = 62
+        private const val SOFTWARE_MIN_SMARTS = 60
+        private const val CORPORATE_MIN_SMARTS = 55
         const val MIN_PART_TIME_AGE = 14
         const val MAX_PART_TIME_AGE = 17
     }
