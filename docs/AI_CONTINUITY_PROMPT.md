@@ -324,7 +324,7 @@ Newest first:
 
 | Commit | Meaning |
 |--------|---------|
-| `f05d8e0` | School clubs BitLife depth: ranks, intensity, awards, fundraisers, scholarships |
+| `40f57ac` | School clubs BitLife depth: ranks, intensity, awards, fundraisers, scholarships |
 | `1633d57` | Gamified exams: prep, stress, cheat stakes |
 | `5546774` | BitLife-style school person profiles and interactions |
 | `56091a4` | School life rewrite: classmates, activities, events, Career UI |
