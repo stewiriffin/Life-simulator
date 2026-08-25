@@ -355,7 +355,7 @@ Newest first:
 
 | Commit | Meaning |
 |--------|---------|
-| *(pending push)* | Student part-time + youth side hustles: energy, Hard-study balance, year-end pay, rest/quit, Jobs & Side Hustles UI |
+| `f0bbc8a` | Student part-time + youth side hustles: energy, Hard-study balance, year-end pay, rest/quit, Jobs & Side Hustles UI |
 | `30b316a` | Career ladder, office politics (PIP/credit/burnout/network), Career dashboard |
 | `74ec22c` | University majors, loans, campus jobs, internships, grad track, Career dashboard |
 | `c68bf45` | Detention deepen: serve hall, principal appeal, transfer hearing, rebel achievements |
