@@ -50,5 +50,10 @@ data class EventChoice(
      * Exam prompt choice: `STUDY_HARD`, `STUDY_NORMAL`, `CRAM`, or `CHEAT`.
      * Handled by [com.maisha.game.domain.EducationEngine.resolveExamWithPrepChoice].
      */
-    val examPrepAction: String? = null
+    val examPrepAction: String? = null,
+    /**
+     * Expulsion hearing: `MERCY` (probation) or `DEFIANT` (expulsion).
+     * Handled by [com.maisha.game.domain.EducationEngine.resolveExpulsionHearing].
+     */
+    val expulsionHearingAction: String? = null
 )

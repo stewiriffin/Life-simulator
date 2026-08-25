@@ -4,6 +4,7 @@ import com.maisha.game.data.model.ClubRank
 import com.maisha.game.data.model.EducationState
 import com.maisha.game.data.model.ExamType
 import com.maisha.game.data.model.RelationType
+import com.maisha.game.data.model.SchoolActivity
 import com.maisha.game.data.model.SchoolClub
 import com.maisha.game.data.model.SchoolStage
 import com.maisha.game.data.model.Stats
@@ -860,6 +861,104 @@ class EducationEngineTest {
             }
         }
         assertTrue("Officer near letter threshold should earn jacket", earned)
+    }
+
+    @Test
+    fun recordDetention_queuesHearingAtThreshold() {
+        var student = secondaryStudent().copy(
+            education = EducationState(
+                stage = SchoolStage.SECONDARY,
+                currentGrade = 1,
+                kcpePassed = true,
+                gpa = 2.5f,
+                schoolReputation = 50
+            ),
+            stats = Stats(happiness = 60)
+        )
+        repeat(3) {
+            student = engine.recordDetention(student, reason = "Test offense ${it + 1}.")
+        }
+        assertEquals(3, student.education.detentionCountThisYear)
+        assertTrue(student.education.pendingExpulsionHearing)
+        assertTrue(student.education.schoolReputation < 50)
+    }
+
+    @Test
+    fun resolveExpulsionHearing_mercySetsProbation() {
+        val hearing = secondaryStudent().copy(
+            education = EducationState(
+                stage = SchoolStage.SECONDARY,
+                currentGrade = 2,
+                kcpePassed = true,
+                gpa = 2.8f,
+                detentionCountThisYear = 3,
+                pendingExpulsionHearing = true,
+                schoolReputation = 40
+            ),
+            stats = Stats(happiness = 50)
+        )
+        val after = engine.resolveExpulsionHearing(
+            hearing,
+            com.maisha.game.data.model.ExpulsionHearingChoice.MERCY
+        )
+        assertTrue(after.education.onProbation)
+        assertFalse(after.education.pendingExpulsionHearing)
+        assertTrue(after.education.gpa < hearing.education.gpa)
+        assertFalse(after.education.expelled)
+    }
+
+    @Test
+    fun resolveExpulsionHearing_defiantExpels() {
+        val hearing = secondaryStudent().copy(
+            education = EducationState(
+                stage = SchoolStage.SECONDARY,
+                currentGrade = 2,
+                kcpePassed = true,
+                gpa = 2.8f,
+                detentionCountThisYear = 3,
+                pendingExpulsionHearing = true
+            )
+        )
+        val after = engine.resolveExpulsionHearing(
+            hearing,
+            com.maisha.game.data.model.ExpulsionHearingChoice.DEFIANT
+        )
+        assertTrue(after.education.expelled)
+        assertFalse(after.education.pendingExpulsionHearing)
+    }
+
+    @Test
+    fun skipClass_whenCaughtIncreasesDetentionCount() {
+        var caught = false
+        repeat(40) {
+            val student = secondaryStudent().copy(
+                education = EducationState(
+                    stage = SchoolStage.SECONDARY,
+                    currentGrade = 1,
+                    kcpePassed = true,
+                    gpa = 2.5f,
+                    schoolReputation = 55
+                ),
+                stats = Stats(happiness = 50, smarts = 50, health = 70)
+            )
+            when (val result = engine.performSchoolActivity(student, SchoolActivity.SKIP_CLASS)) {
+                is SchoolActionResult.Success -> {
+                    if (result.character.education.detentionCountThisYear > 0) {
+                        caught = true
+                        assertTrue(result.character.education.socialActionDoneThisYear)
+                    }
+                }
+                else -> Unit
+            }
+        }
+        assertTrue("Skip class should sometimes earn detention", caught)
+    }
+
+    @Test
+    fun pullPrank_isAvailableSocialActivity() {
+        val student = secondaryStudent()
+        assertTrue(engine.availableSchoolActivities(student).contains(SchoolActivity.PULL_PRANK))
+        assertTrue(engine.availableSchoolActivities(student).contains(SchoolActivity.TALK_BACK))
     }
 
     private fun secondaryStudent() = TestFixtures.character(

@@ -1148,6 +1148,24 @@ class LifeViewModel @Inject constructor(
         }
     }
 
+    fun onResolveExpulsionHearing(choice: com.maisha.game.data.model.ExpulsionHearingChoice) {
+        val character = _uiState.value.character ?: return
+        if (!character.alive) return
+        viewModelScope.launch {
+            val updated = gameEngine.resolveExpulsionHearing(character, choice)
+            persist(updated)
+            processMidLifeAchievements(updated)
+            _uiState.update {
+                it.copy(
+                    character = updated,
+                    careerMessage = context.getString(R.string.msg_hearing_resolved),
+                    netWorth = financeEngine.calculateNetWorth(updated),
+                    headerExpression = ExpressionResolver.resolveExpression(updated, null)
+                )
+            }
+        }
+    }
+
     fun onExamPrepChoice(choice: com.maisha.game.data.model.ExamPrepChoice) {
         val character = _uiState.value.character ?: return
         if (!character.alive) return

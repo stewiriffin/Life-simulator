@@ -187,8 +187,8 @@ class GameEngine @Inject constructor(
             updatedCharacter to rollEvents(updatedCharacter, triggeredEventIds).toAgeUpResult()
         } else {
             resolveStatPressureEvent(updatedCharacter)
-                ?: 
-            resolveCareerEvent(updatedCharacter)
+                ?: resolveCareerEvent(updatedCharacter)
+                ?: resolveExpulsionHearingEvent(updatedCharacter)
                 ?: resolveExamEvent(updatedCharacter)
                 ?: (updatedCharacter to rollEvents(updatedCharacter, triggeredEventIds).toAgeUpResult())
         }
@@ -519,6 +519,21 @@ class GameEngine @Inject constructor(
             }
         }
 
+        if (choice.expulsionHearingAction != null) {
+            val hearingChoice = runCatching {
+                com.maisha.game.data.model.ExpulsionHearingChoice.valueOf(choice.expulsionHearingAction)
+            }.getOrNull()
+            if (hearingChoice != null) {
+                updatedCharacter = educationEngine.resolveExpulsionHearing(
+                    updatedCharacter,
+                    hearingChoice
+                )
+                if (hearingChoice == com.maisha.game.data.model.ExpulsionHearingChoice.DEFIANT) {
+                    updatedCharacter = relationshipEngine.applyExpulsionFamilyEffect(updatedCharacter)
+                }
+            }
+        }
+
         if (choice.universityCourse != null) {
             updatedCharacter = educationEngine.applyToUniversity(
                 updatedCharacter,
@@ -526,7 +541,7 @@ class GameEngine @Inject constructor(
             )
         }
 
-        if (choice.triggersExpulsion) {
+        if (choice.triggersExpulsion && choice.expulsionHearingAction == null) {
             updatedCharacter = educationEngine.processExpulsion(updatedCharacter)
             updatedCharacter = relationshipEngine.applyExpulsionFamilyEffect(updatedCharacter)
         }
@@ -777,6 +792,11 @@ class GameEngine @Inject constructor(
 
     fun leaveSchoolClub(character: Character): Character =
         educationEngine.leaveSchoolClub(character, fired = false)
+
+    fun resolveExpulsionHearing(
+        character: Character,
+        choice: com.maisha.game.data.model.ExpulsionHearingChoice
+    ): Character = educationEngine.resolveExpulsionHearing(character, choice)
 
     fun performSchoolActivity(
         character: Character,
@@ -1205,6 +1225,11 @@ class GameEngine @Inject constructor(
         }
 
         return null
+    }
+
+    private fun resolveExpulsionHearingEvent(character: Character): Pair<Character, AgeUpResult>? {
+        val event = educationEngine.buildExpulsionHearingEvent(character) ?: return null
+        return character to AgeUpResult.SingleEvent(event)
     }
 
     private fun resolveExamEvent(character: Character): Pair<Character, AgeUpResult>? {

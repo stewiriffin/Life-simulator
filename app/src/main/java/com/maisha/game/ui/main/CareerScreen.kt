@@ -160,6 +160,7 @@ fun CareerScreen(
     onLeaveSchoolClub: () -> Unit = {},
     onPerformSchoolActivity: (SchoolActivity, String?) -> Unit = { _, _ -> },
     onSchoolPersonInteraction: (String, SchoolPersonAction) -> Unit = { _, _ -> },
+    onResolveExpulsionHearing: (com.maisha.game.data.model.ExpulsionHearingChoice) -> Unit = {},
     onExamPrepChoice: (ExamPrepChoice) -> Unit = {},
     onStartCareerTrack: (CareerTrack) -> Unit,
     onPracticeCareerTrack: () -> Unit,
@@ -461,7 +462,8 @@ fun CareerScreen(
                     SchoolLifeSectionCard(
                         character = character,
                         onPerformSchoolActivity = onPerformSchoolActivity,
-                        onSchoolPersonInteraction = onSchoolPersonInteraction
+                        onSchoolPersonInteraction = onSchoolPersonInteraction,
+                        onResolveExpulsionHearing = onResolveExpulsionHearing
                     )
                 }
                 item(
@@ -1042,6 +1044,10 @@ private fun EducationSectionCard(
                 style = MaterialTheme.typography.labelMedium,
                 color = GoldAccent
             )
+            if (schoolUiEngine.hasDisciplineWarning(character)) {
+                Spacer(modifier = Modifier.height(6.dp))
+                DisciplineStatusBanner(character = character)
+            }
             Spacer(modifier = Modifier.height(6.dp))
             Text(
                 text = EducationFormatter.formatStatus(education, resources, countryCode),
@@ -1276,7 +1282,8 @@ private fun EducationSectionCard(
 private fun SchoolLifeSectionCard(
     character: Character,
     onPerformSchoolActivity: (SchoolActivity, String?) -> Unit,
-    onSchoolPersonInteraction: (String, SchoolPersonAction) -> Unit
+    onSchoolPersonInteraction: (String, SchoolPersonAction) -> Unit,
+    onResolveExpulsionHearing: (com.maisha.game.data.model.ExpulsionHearingChoice) -> Unit
 ) {
     val enrolled = !character.education.expelled &&
         (character.education.stage == SchoolStage.PRIMARY ||
@@ -1308,6 +1315,47 @@ private fun SchoolLifeSectionCard(
                 style = MaterialTheme.typography.labelMedium,
                 color = GoldAccent
             )
+            if (schoolUiEngine.hasDisciplineWarning(character)) {
+                Spacer(modifier = Modifier.height(6.dp))
+                DisciplineStatusBanner(character = character)
+            }
+            if (character.education.pendingExpulsionHearing) {
+                Spacer(modifier = Modifier.height(8.dp))
+                Text(
+                    text = stringResource(R.string.expulsion_hearing_prompt),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.error
+                )
+                Spacer(modifier = Modifier.height(6.dp))
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(6.dp)
+                ) {
+                    Button(
+                        onClick = {
+                            onResolveExpulsionHearing(
+                                com.maisha.game.data.model.ExpulsionHearingChoice.MERCY
+                            )
+                        },
+                        modifier = Modifier.weight(1f),
+                        shape = RoundedCornerShape(12.dp),
+                        colors = ButtonDefaults.buttonColors(containerColor = TealPrimary)
+                    ) {
+                        Text(stringResource(R.string.btn_hearing_mercy))
+                    }
+                    OutlinedButton(
+                        onClick = {
+                            onResolveExpulsionHearing(
+                                com.maisha.game.data.model.ExpulsionHearingChoice.DEFIANT
+                            )
+                        },
+                        modifier = Modifier.weight(1f),
+                        shape = RoundedCornerShape(12.dp)
+                    ) {
+                        Text(stringResource(R.string.btn_hearing_defiant))
+                    }
+                }
+            }
             Spacer(modifier = Modifier.height(6.dp))
             Text(
                 text = stringResource(
@@ -1680,13 +1728,58 @@ private fun schoolRoleLabel(role: SchoolRole): String = when (role) {
 }
 
 @Composable
+private fun DisciplineStatusBanner(character: Character) {
+    val standing = schoolUiEngine.disciplineStandingLabel(character)
+    val severe = character.education.pendingExpulsionHearing ||
+        character.education.detentionCountThisYear >= 2 ||
+        character.education.schoolReputation < 30
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(10.dp),
+        colors = CardDefaults.cardColors(
+            containerColor = if (severe) {
+                MaterialTheme.colorScheme.error.copy(alpha = 0.12f)
+            } else {
+                GoldAccent.copy(alpha = 0.14f)
+            }
+        )
+    ) {
+        Column(modifier = Modifier.padding(horizontal = 10.dp, vertical = 8.dp)) {
+            Text(
+                text = stringResource(R.string.label_discipline_status),
+                style = MaterialTheme.typography.labelSmall,
+                color = if (severe) {
+                    MaterialTheme.colorScheme.error
+                } else {
+                    GoldAccent
+                },
+                fontWeight = FontWeight.SemiBold
+            )
+            Text(
+                text = stringResource(
+                    R.string.format_discipline_status,
+                    standing,
+                    character.education.detentionCountThisYear,
+                    schoolUiEngine.detentionHearingThreshold(character)
+                ),
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurface
+            )
+        }
+    }
+}
+
+@Composable
 private fun schoolActivityLabel(activity: SchoolActivity): String = when (activity) {
     SchoolActivity.STUDY_GROUP -> stringResource(R.string.school_activity_study_group)
     SchoolActivity.LIBRARY_STUDY -> stringResource(R.string.school_activity_library)
     SchoolActivity.ASK_TEACHER_HELP -> stringResource(R.string.school_activity_teacher_help)
     SchoolActivity.HANG_OUT -> stringResource(R.string.school_activity_hang_out)
     SchoolActivity.CONFRONT_BULLY -> stringResource(R.string.school_activity_confront_bully)
+    SchoolActivity.START_FIGHT -> stringResource(R.string.school_activity_start_fight)
     SchoolActivity.SKIP_CLASS -> stringResource(R.string.school_activity_skip_class)
+    SchoolActivity.PULL_PRANK -> stringResource(R.string.school_activity_pull_prank)
+    SchoolActivity.TALK_BACK -> stringResource(R.string.school_activity_talk_back)
     SchoolActivity.SCHOOL_DANCE -> stringResource(R.string.school_activity_dance)
     SchoolActivity.CLUB_PRACTICE -> stringResource(R.string.school_activity_club_practice)
     SchoolActivity.GROUP_PROJECT -> stringResource(R.string.school_activity_group_project)
@@ -1698,12 +1791,17 @@ private fun schoolActivityNeedsPersonPick(activity: SchoolActivity): Boolean =
         activity == SchoolActivity.ASK_TEACHER_HELP ||
         activity == SchoolActivity.HANG_OUT ||
         activity == SchoolActivity.CONFRONT_BULLY ||
+        activity == SchoolActivity.START_FIGHT ||
+        activity == SchoolActivity.TALK_BACK ||
         activity == SchoolActivity.SCHOOL_DANCE
 
 private fun schoolActivityBlocked(character: Character, activity: SchoolActivity): Boolean {
     val social = activity == SchoolActivity.HANG_OUT ||
         activity == SchoolActivity.CONFRONT_BULLY ||
+        activity == SchoolActivity.START_FIGHT ||
         activity == SchoolActivity.SKIP_CLASS ||
+        activity == SchoolActivity.PULL_PRANK ||
+        activity == SchoolActivity.TALK_BACK ||
         activity == SchoolActivity.SCHOOL_DANCE
     return if (social) {
         character.education.socialActionDoneThisYear
@@ -1715,8 +1813,10 @@ private fun schoolActivityBlocked(character: Character, activity: SchoolActivity
 private fun peopleForActivity(character: Character, activity: SchoolActivity): List<SchoolPerson> {
     val people = character.education.schoolPeople
     return when (activity) {
-        SchoolActivity.ASK_TEACHER_HELP -> people.filter { it.role == SchoolRole.TEACHER }
-        SchoolActivity.CONFRONT_BULLY -> people.filter { it.role == SchoolRole.BULLY }
+        SchoolActivity.ASK_TEACHER_HELP, SchoolActivity.TALK_BACK ->
+            people.filter { it.role == SchoolRole.TEACHER }
+        SchoolActivity.CONFRONT_BULLY, SchoolActivity.START_FIGHT ->
+            people.filter { it.role == SchoolRole.BULLY }
         SchoolActivity.SCHOOL_DANCE -> {
             val crush = people.filter { it.role == SchoolRole.CRUSH }
             if (crush.isNotEmpty()) crush

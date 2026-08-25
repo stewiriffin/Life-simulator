@@ -159,10 +159,20 @@ enum class SchoolActivity {
     ASK_TEACHER_HELP,
     HANG_OUT,
     CONFRONT_BULLY,
+    START_FIGHT,
     SKIP_CLASS,
+    PULL_PRANK,
+    TALK_BACK,
     SCHOOL_DANCE,
     CLUB_PRACTICE,
     GROUP_PROJECT
+}
+
+/** Choice at an expulsion hearing after repeated detentions. */
+@Serializable
+enum class ExpulsionHearingChoice {
+    MERCY,
+    DEFIANT
 }
 
 /**
@@ -223,7 +233,16 @@ data class EducationState(
     val academicActionDoneThisYear: Boolean = false,
     /** Social school activity used this year (hang out, dance, confront…). */
     val socialActionDoneThisYear: Boolean = false,
+    /** Lifetime detentions served (resume / legacy). */
     val detentionYears: Int = 0,
+    /** Detentions earned in the current school year — hearing triggers at threshold. */
+    val detentionCountThisYear: Int = 0,
+    /** Summoned to an expulsion hearing after too many detentions. */
+    val pendingExpulsionHearing: Boolean = false,
+    /** On probation after begging for mercy at a hearing. */
+    val onProbation: Boolean = false,
+    /** Consecutive failed school exams (year finals / national). */
+    val failedExamStreak: Int = 0,
     val pendingExams: List<ExamSchedule> = emptyList(),
     val examStress: Int = 0,
     /** School-card exam prep action used this year. */

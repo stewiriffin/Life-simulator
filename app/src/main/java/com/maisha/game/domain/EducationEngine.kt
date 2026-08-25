@@ -15,6 +15,7 @@ import com.maisha.game.data.model.ExamPrepChoice
 import com.maisha.game.data.model.ExamResult
 import com.maisha.game.data.model.ExamSchedule
 import com.maisha.game.data.model.ExamType
+import com.maisha.game.data.model.ExpulsionHearingChoice
 import com.maisha.game.data.model.Gender
 import com.maisha.game.data.model.LifeEvent
 import com.maisha.game.data.model.SchoolActivity
@@ -351,6 +352,133 @@ class EducationEngine @Inject constructor(
         SchoolClub.DRAMA -> "Rival Drama Night"
         SchoolClub.CODING -> "Hackathon Showdown"
         SchoolClub.MUSIC -> "Battle of the Bands"
+    }
+
+    // ── Misbehavior & detention ──────────────────────────────────────────
+
+    /** Threshold of detentions in one year before an expulsion hearing. Lower while on probation. */
+    fun detentionHearingThreshold(character: Character): Int =
+        if (character.education.onProbation) DETENTION_HEARING_THRESHOLD_PROBATION
+        else DETENTION_HEARING_THRESHOLD
+
+    fun disciplineStandingLabel(character: Character): String = when {
+        character.education.pendingExpulsionHearing -> "Expulsion hearing pending"
+        character.education.onProbation -> "On probation"
+        character.education.detentionCountThisYear >= 2 -> "At risk"
+        character.education.detentionCountThisYear >= 1 -> "Detention on record"
+        character.education.schoolReputation < 30 -> "Poor standing"
+        else -> "Clear"
+    }
+
+    fun hasDisciplineWarning(character: Character): Boolean =
+        character.education.pendingExpulsionHearing ||
+            character.education.onProbation ||
+            character.education.detentionCountThisYear > 0 ||
+            character.education.schoolReputation < 35
+
+    /**
+     * Records a detention from misbehavior. May queue an expulsion hearing.
+     */
+    fun recordDetention(
+        character: Character,
+        reason: String,
+        reputationHit: Int = 8,
+        happinessHit: Int = 3
+    ): Character {
+        if (!isEnrolled(character) || character.education.expelled) return character
+        val count = character.education.detentionCountThisYear + 1
+        val threshold = detentionHearingThreshold(character)
+        val hearing = character.education.pendingExpulsionHearing || count >= threshold
+        val message = buildString {
+            append(reason)
+            append(" Detention ($count/${threshold} this year).")
+            if (hearing && !character.education.pendingExpulsionHearing) {
+                append(" You've been summoned to an expulsion hearing.")
+            }
+        }
+        return character.copy(
+            stats = character.stats.copy(
+                happiness = clampStat(character.stats.happiness - happinessHit)
+            ),
+            education = character.education.copy(
+                detentionYears = character.education.detentionYears + 1,
+                detentionCountThisYear = count,
+                pendingExpulsionHearing = hearing,
+                schoolReputation = (character.education.schoolReputation - reputationHit)
+                    .coerceIn(0, 100)
+            ),
+            eventLog = EventLogCap.prepend(character.eventLog, message)
+        )
+    }
+
+    fun buildExpulsionHearingEvent(character: Character): LifeEvent? {
+        if (!character.education.pendingExpulsionHearing) return null
+        if (!isEnrolled(character) || character.education.expelled) return null
+        val count = character.education.detentionCountThisYear
+        return LifeEvent(
+            id = "expulsion_hearing_${character.age}_$count",
+            minAge = character.age,
+            maxAge = character.age,
+            text = "The principal calls you in. Your file shows $count detention(s) this year " +
+                "and a school reputation of ${character.education.schoolReputation}. " +
+                "This is an expulsion hearing. How do you face it?",
+            choices = listOf(
+                EventChoice(
+                    label = "Beg for mercy",
+                    resultText = "You apologize, promise to change, and hope for probation.",
+                    expulsionHearingAction = ExpulsionHearingChoice.MERCY.name
+                ),
+                EventChoice(
+                    label = "Act defiant",
+                    resultText = "You refuse to apologize. The board has had enough.",
+                    expulsionHearingAction = ExpulsionHearingChoice.DEFIANT.name,
+                    triggersExpulsion = true
+                )
+            ),
+            tags = listOf(EXPULSION_HEARING_TAG, "one_time", "education"),
+            weight = 12
+        )
+    }
+
+    fun resolveExpulsionHearing(
+        character: Character,
+        choice: ExpulsionHearingChoice
+    ): Character {
+        if (!character.education.pendingExpulsionHearing) return character
+        return when (choice) {
+            ExpulsionHearingChoice.MERCY -> {
+                character.copy(
+                    stats = character.stats.copy(
+                        happiness = clampStat(character.stats.happiness - 4)
+                    ),
+                    education = character.education.copy(
+                        pendingExpulsionHearing = false,
+                        onProbation = true,
+                        detentionCountThisYear = 0,
+                        gpa = clampGpa(character.education.gpa - 0.35f),
+                        schoolReputation = (character.education.schoolReputation - 5)
+                            .coerceIn(0, 100)
+                    ),
+                    eventLog = EventLogCap.prepend(
+                        character.eventLog,
+                        "You begged for mercy. Probation granted — GPA takes a hit. One more strike and you're out."
+                    )
+                )
+            }
+            ExpulsionHearingChoice.DEFIANT -> {
+                val expelled = processExpulsion(
+                    character.copy(
+                        education = character.education.copy(pendingExpulsionHearing = false)
+                    )
+                )
+                expelled.copy(
+                    eventLog = EventLogCap.prepend(
+                        expelled.eventLog,
+                        "You acted defiant at the hearing. Expulsion is immediate. Find another path — or drop out of the system entirely."
+                    )
+                )
+            }
+        }
     }
 
     /** Minimum club skill required to challenge a rival school. */
@@ -1454,7 +1582,8 @@ class EducationEngine @Inject constructor(
         } else {
             "You underperformed on year exams. GPA takes a hit."
         }
-        return character.copy(
+        val streak = if (passed) 0 else character.education.failedExamStreak + 1
+        var updated = character.copy(
             education = character.education.copy(
                 gpa = clampGpa(character.education.gpa + gpaDelta),
                 examStress = (character.education.examStress - 10).coerceAtLeast(0),
@@ -1462,6 +1591,7 @@ class EducationEngine @Inject constructor(
                     .coerceIn(0, 100),
                 lastExamSummary = summary,
                 plannedCheatOnExam = false,
+                failedExamStreak = streak,
                 pendingExams = character.education.pendingExams.map {
                     if (it.yearsUntilDue <= 0 && it.kind != ExamKind.NATIONAL_EXIT) {
                         it.copy(preparedness = 40, yearsUntilDue = 1)
@@ -1472,6 +1602,15 @@ class EducationEngine @Inject constructor(
             ),
             eventLog = EventLogCap.prepend(character.eventLog, message)
         )
+        if (streak >= 2) {
+            updated = recordDetention(
+                updated,
+                reason = "Repeated exam failures finally caught the principal's eye.",
+                reputationHit = 6,
+                happinessHit = 2
+            )
+        }
+        return updated
     }
 
     private fun applyPrepAdjustments(
@@ -1736,7 +1875,10 @@ class EducationEngine @Inject constructor(
                 courseOfStudy = null,
                 schoolPeople = emptyList(),
                 academicActionDoneThisYear = false,
-                socialActionDoneThisYear = false
+                socialActionDoneThisYear = false,
+                pendingExpulsionHearing = false,
+                onProbation = false,
+                detentionCountThisYear = 0
             )
         )
     }
@@ -1758,7 +1900,10 @@ class EducationEngine @Inject constructor(
                 examStress = 0,
                 schoolReputation = (education.schoolReputation - 20).coerceIn(0, 100),
                 academicActionDoneThisYear = false,
-                socialActionDoneThisYear = false
+                socialActionDoneThisYear = false,
+                pendingExpulsionHearing = false,
+                onProbation = false,
+                detentionCountThisYear = 0
             )
         )
     }
@@ -1809,7 +1954,22 @@ class EducationEngine @Inject constructor(
                 schoolPeople = people,
                 academicActionDoneThisYear = false,
                 socialActionDoneThisYear = false,
-                examPrepDoneThisYear = false
+                examPrepDoneThisYear = false,
+                // Reset yearly detention tally only when no hearing is queued.
+                detentionCountThisYear = if (character.education.pendingExpulsionHearing) {
+                    character.education.detentionCountThisYear
+                } else {
+                    0
+                },
+                // Clean year clears probation.
+                onProbation = if (
+                    !character.education.pendingExpulsionHearing &&
+                    character.education.detentionCountThisYear == 0
+                ) {
+                    false
+                } else {
+                    character.education.onProbation
+                }
             )
         )
         return refreshExamSchedule(resolveMidtermsQuietly(withPeople))
@@ -1879,10 +2039,13 @@ class EducationEngine @Inject constructor(
             SchoolActivity.GROUP_PROJECT,
             SchoolActivity.ASK_TEACHER_HELP,
             SchoolActivity.HANG_OUT,
-            SchoolActivity.SKIP_CLASS
+            SchoolActivity.SKIP_CLASS,
+            SchoolActivity.PULL_PRANK,
+            SchoolActivity.TALK_BACK
         )
         if (character.education.schoolPeople.any { it.role == SchoolRole.BULLY }) {
             list += SchoolActivity.CONFRONT_BULLY
+            list += SchoolActivity.START_FIGHT
         }
         if (character.education.stage == SchoolStage.SECONDARY &&
             character.age in 15..18
@@ -2004,7 +2167,7 @@ class EducationEngine @Inject constructor(
                         message = "You stood up to ${bully.name}. Word spreads that you won't be pushed around."
                     )
                 } else {
-                    succeedWithPerson(
+                    val bruised = succeedWithPerson(
                         character = character,
                         person = bully,
                         academic = false,
@@ -2016,36 +2179,168 @@ class EducationEngine @Inject constructor(
                         healthDelta = -4,
                         message = "Confronting ${bully.name} went badly. You got shoved and sent home early."
                     )
+                    if (bruised is SchoolActionResult.Success && Random.nextFloat() < 0.4f) {
+                        val detained = recordDetention(
+                            bruised.character,
+                            reason = "Staff broke up the hallway scene with ${bully.name}.",
+                            reputationHit = 6
+                        )
+                        SchoolActionResult.Success(detained, "Fight fallout — detention.")
+                    } else {
+                        bruised
+                    }
+                }
+            }
+            SchoolActivity.START_FIGHT -> {
+                val bully = target?.takeIf { it.role == SchoolRole.BULLY }
+                    ?: character.education.schoolPeople.find { it.role == SchoolRole.BULLY }
+                    ?: return SchoolActionResult.PersonNotFound
+                val power = character.stats.health * 0.55f + character.stats.looks * 0.15f
+                val winChance = (0.25f + power / 100f * 0.55f).coerceIn(0.15f, 0.85f)
+                val won = Random.nextFloat() < winChance
+                val caught = Random.nextFloat() < 0.55f
+                val base = if (won) {
+                    succeedWithPerson(
+                        character = character,
+                        person = bully,
+                        academic = false,
+                        gpaDelta = -0.04f,
+                        smarts = 0,
+                        happiness = 6,
+                        relationshipDelta = -20,
+                        reputation = if (caught) -2 else 4,
+                        healthDelta = -Random.nextInt(2, 6),
+                        message = "You threw hands with ${bully.name} and won the scrap."
+                    )
+                } else {
+                    succeedWithPerson(
+                        character = character,
+                        person = bully,
+                        academic = false,
+                        gpaDelta = -0.08f,
+                        smarts = 0,
+                        happiness = -8,
+                        relationshipDelta = -10,
+                        reputation = -6,
+                        healthDelta = -Random.nextInt(6, 12),
+                        message = "${bully.name} flattened you. Everyone saw it."
+                    )
+                }
+                if (base !is SchoolActionResult.Success) return base
+                if (caught || !won) {
+                    val detained = recordDetention(
+                        base.character.copy(
+                            education = base.character.education.copy(socialActionDoneThisYear = true)
+                        ),
+                        reason = "Fighting ${bully.name} on school grounds.",
+                        reputationHit = 10,
+                        happinessHit = 2
+                    )
+                    SchoolActionResult.Success(
+                        detained,
+                        if (won) "Won the fight — still got detention." else "Lost the fight and earned detention."
+                    )
+                } else {
+                    base
                 }
             }
             SchoolActivity.SKIP_CLASS -> {
-                val caught = Random.nextFloat() < 0.35f
+                val caught = Random.nextFloat() < if (character.education.onProbation) 0.55f else 0.38f
                 if (caught) {
-                    val updated = character.copy(
+                    val marked = character.copy(
                         stats = character.stats.copy(
-                            happiness = clampStat(character.stats.happiness - 2),
+                            happiness = clampStat(character.stats.happiness + 2),
+                            smarts = clampStat(character.stats.smarts - 2),
                             health = clampStat(character.stats.health + 1)
                         ),
                         education = character.education.copy(
-                            gpa = clampGpa(character.education.gpa - 0.15f),
-                            schoolReputation = (character.education.schoolReputation - 8)
-                                .coerceIn(0, 100),
-                            detentionYears = character.education.detentionYears + 1,
+                            gpa = clampGpa(character.education.gpa - 0.12f),
                             socialActionDoneThisYear = true
-                        ),
-                        eventLog = EventLogCap.prepend(
-                            character.eventLog,
-                            "You skipped class and got caught. Detention."
                         )
                     )
-                    SchoolActionResult.Success(updated, "Caught skipping. Detention and a lecture.")
+                    val detained = recordDetention(
+                        marked,
+                        reason = "You skipped class and got caught.",
+                        reputationHit = 8
+                    )
+                    SchoolActionResult.Success(detained, "Caught skipping. Detention and a lecture.")
                 } else {
                     succeedSocial(
                         character,
                         gpaDelta = -0.08f,
-                        happiness = 4,
+                        happiness = 5,
                         reputation = -3,
+                        smartsDelta = -1,
                         message = "You skipped class and got away with it — this time."
+                    )
+                }
+            }
+            SchoolActivity.PULL_PRANK -> {
+                val caught = Random.nextFloat() < if (character.education.onProbation) 0.6f else 0.42f
+                if (caught) {
+                    val entertained = character.copy(
+                        stats = character.stats.copy(
+                            happiness = clampStat(character.stats.happiness + 3),
+                            karma = clampStat(character.stats.karma - 3)
+                        ),
+                        education = character.education.copy(socialActionDoneThisYear = true)
+                    )
+                    val detained = recordDetention(
+                        entertained,
+                        reason = "Your prank blew up — staff identified you immediately.",
+                        reputationHit = 12,
+                        happinessHit = 4
+                    )
+                    SchoolActionResult.Success(detained, "Prank backfired. Detention.")
+                } else {
+                    succeedSocial(
+                        character,
+                        gpaDelta = -0.02f,
+                        happiness = 8,
+                        reputation = 2,
+                        karmaDelta = -2,
+                        message = "The prank was legendary. Hallways still buzzing."
+                    )
+                }
+            }
+            SchoolActivity.TALK_BACK -> {
+                val teacher = target?.takeIf { it.role == SchoolRole.TEACHER }
+                    ?: teachers(character).randomOrNull()
+                    ?: return SchoolActionResult.PersonNotFound
+                val detained = Random.nextFloat() < 0.7f
+                if (detained) {
+                    val snark = succeedWithPerson(
+                        character = character,
+                        person = teacher,
+                        academic = false,
+                        gpaDelta = -0.1f,
+                        smarts = 0,
+                        happiness = 3,
+                        relationshipDelta = -14,
+                        reputation = -6,
+                        message = "You talked back to ${teacher.name}."
+                    )
+                    if (snark is SchoolActionResult.Success) {
+                        val after = recordDetention(
+                            snark.character,
+                            reason = "Talking back to ${teacher.name}.",
+                            reputationHit = 7
+                        )
+                        SchoolActionResult.Success(after, "Mouthing off earned detention.")
+                    } else {
+                        snark
+                    }
+                } else {
+                    succeedWithPerson(
+                        character = character,
+                        person = teacher,
+                        academic = false,
+                        gpaDelta = -0.05f,
+                        smarts = 0,
+                        happiness = 2,
+                        relationshipDelta = -8,
+                        reputation = -3,
+                        message = "You talked back to ${teacher.name} and somehow avoided detention — for now."
                     )
                 }
             }
@@ -2180,7 +2475,7 @@ class EducationEngine @Inject constructor(
                     person.role == SchoolRole.TEACHER -> person.status ?: "Annoyed"
                     else -> "Feuding with you"
                 }
-                applyPersonInteraction(
+                val insulted = applyPersonInteraction(
                     character = character,
                     person = person,
                     relationshipDelta = -Random.nextInt(10, 18),
@@ -2200,6 +2495,19 @@ class EducationEngine @Inject constructor(
                         "You insulted ${person.name}. The hallway goes quiet."
                     }
                 )
+                if (person.role == SchoolRole.TEACHER &&
+                    insulted is SchoolInteractionResult.Success &&
+                    Random.nextFloat() < 0.65f
+                ) {
+                    val detained = recordDetention(
+                        insulted.character,
+                        reason = "Insulting teacher ${person.name}.",
+                        reputationHit = 9
+                    )
+                    SchoolInteractionResult.Success(detained, "Talking trash to a teacher — detention.")
+                } else {
+                    insulted
+                }
             }
             SchoolPersonAction.ASK_OUT -> {
                 val chance = askOutSuccessChance(character, person)
@@ -2237,15 +2545,12 @@ class EducationEngine @Inject constructor(
             SchoolPersonAction.SPREAD_RUMOR -> {
                 val caught = Random.nextFloat() < 0.32f
                 if (caught) {
-                    val updated = character.copy(
+                    val base = character.copy(
                         stats = character.stats.copy(
                             happiness = clampStat(character.stats.happiness - 4),
                             karma = clampStat(character.stats.karma - 4)
                         ),
                         education = character.education.copy(
-                            schoolReputation = (character.education.schoolReputation - 10)
-                                .coerceIn(0, 100),
-                            detentionYears = character.education.detentionYears + 1,
                             schoolPeople = character.education.schoolPeople.map { p ->
                                 if (p.id == person.id) {
                                     p.copy(
@@ -2259,14 +2564,15 @@ class EducationEngine @Inject constructor(
                                     p
                                 }
                             }
-                        ),
-                        eventLog = EventLogCap.prepend(
-                            character.eventLog,
-                            "You spread a rumor about ${person.name} and got caught. Detention."
                         )
                     )
+                    val detained = recordDetention(
+                        base,
+                        reason = "You spread a rumor about ${person.name} and got caught.",
+                        reputationHit = 10
+                    )
                     SchoolInteractionResult.Success(
-                        updated,
+                        detained,
                         "Caught spreading rumors about ${person.name}. Detention."
                     )
                 } else {
@@ -2601,11 +2907,15 @@ class EducationEngine @Inject constructor(
         gpaDelta: Float,
         happiness: Int,
         reputation: Int,
-        message: String
+        message: String,
+        smartsDelta: Int = 0,
+        karmaDelta: Int = 0
     ): SchoolActionResult {
         val updated = character.copy(
             stats = character.stats.copy(
-                happiness = clampStat(character.stats.happiness + happiness)
+                happiness = clampStat(character.stats.happiness + happiness),
+                smarts = clampStat(character.stats.smarts + smartsDelta),
+                karma = clampStat(character.stats.karma + karmaDelta)
             ),
             education = character.education.copy(
                 gpa = clampGpa(character.education.gpa + gpaDelta),
@@ -2872,13 +3182,19 @@ class EducationEngine @Inject constructor(
         private val SOCIAL_ACTIVITIES = setOf(
             SchoolActivity.HANG_OUT,
             SchoolActivity.CONFRONT_BULLY,
+            SchoolActivity.START_FIGHT,
             SchoolActivity.SKIP_CLASS,
+            SchoolActivity.PULL_PRANK,
+            SchoolActivity.TALK_BACK,
             SchoolActivity.SCHOOL_DANCE
         )
 
         const val SCHOOL_GIFT_BASE_COST_KENYA = 800
         const val SECRET_REVEAL_BOND = 80
         private const val ASK_OUT_MIN_AGE = 13
+        private const val DETENTION_HEARING_THRESHOLD = 3
+        private const val DETENTION_HEARING_THRESHOLD_PROBATION = 2
+        const val EXPULSION_HEARING_TAG = "expulsion_hearing"
 
         private val STUDENT_TRAITS = listOf(
             "Studious",

@@ -1422,7 +1422,16 @@
     <string name="school_activity_teacher_help">Ask teacher for help</string>
     <string name="school_activity_hang_out">Hang out after school</string>
     <string name="school_activity_confront_bully">Confront bully</string>
+    <string name="school_activity_start_fight">Start fight with bully</string>
     <string name="school_activity_skip_class">Skip class</string>
+    <string name="school_activity_pull_prank">Pull a prank</string>
+    <string name="school_activity_talk_back">Talk back to teacher</string>
+    <string name="label_discipline_status">Discipline</string>
+    <string name="format_discipline_status">%1$s · detentions %2$d/%3$d this year</string>
+    <string name="expulsion_hearing_prompt">Expulsion hearing: beg for mercy (probation) or act defiant (expulsion).</string>
+    <string name="btn_hearing_mercy">Beg for mercy</string>
+    <string name="btn_hearing_defiant">Act defiant</string>
+    <string name="msg_hearing_resolved">The hearing is over.</string>
     <string name="school_activity_dance">School dance</string>
     <string name="school_activity_club_practice">Club practice</string>
     <string name="school_activity_group_project">Group project</string>
