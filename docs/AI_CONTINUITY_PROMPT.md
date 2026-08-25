@@ -2,7 +2,7 @@
 
 > **Purpose:** Paste this document (or point an AI agent at it) at the start of any new session so the assistant understands **what Maisha is**, **what has already been built**, **what just shipped**, **what is still missing**, and **how to work in this repo without undoing progress**.
 >
-> **Last updated:** 2026-08-25 (school clubs extracurricular depth)  
+> **Last updated:** 2026-08-25 (school clubs rivalry / letter jacket / fame)  
 > **Repo path:** `/home/dr-rank/Documents/Apps/Life-simulator`  
 > **Remote:** `https://github.com/stewiriffin/Life-simulator` (`origin/main`)  
 > **Package:** `com.maisha.game`
@@ -140,7 +140,7 @@ School is **not** its own bottom tab. It lives under **Career**, category **SCHO
 
 1. **Education** card — stage, GPA, study effort, drop out  
 2. **School life** card — reputation, classmates/teachers, activities  
-3. **School clubs** card — Debate / Football / Drama / Coding / Music with ranks (Member → Treasurer/Starter → President/Team Captain), skill & prestige bars, Light/Normal/Intense practice, officer fundraisers, captain major events, awards/scholarship resume  
+3. **School clubs** card — Debate / Football / Drama / Coding / Music with ranks, skill/prestige/fame bars, Light/Normal/Intense practice, rival challenges, letter jacket, officer fundraisers, captain major events, awards/scholarship resume  
 4. Career tracks, jobs, business, politics elsewhere in the same screen  
 
 ---
@@ -324,6 +324,7 @@ Newest first:
 
 | Commit | Meaning |
 |--------|---------|
+| *(pending)* | Clubs: rivalry matches, letter jacket, fame, scout whispers, achievements |
 | `40f57ac` | School clubs BitLife depth: ranks, intensity, awards, fundraisers, scholarships |
 | `1633d57` | Gamified exams: prep, stress, cheat stakes |
 | `5546774` | BitLife-style school person profiles and interactions |

@@ -304,6 +304,7 @@ fun MaishaNavHost(
                 onPerformClubActivity = viewModel::onPerformClubActivity,
                 onClaimClubMajorEvent = viewModel::onClaimClubMajorEvent,
                 onHostClubFundraiser = viewModel::onHostClubFundraiser,
+                onChallengeRivalSchool = viewModel::onChallengeRivalSchool,
                 onLeaveSchoolClub = viewModel::onLeaveSchoolClub,
                 onPerformSchoolActivity = viewModel::onPerformSchoolActivity,
                 onSchoolPersonInteraction = viewModel::onSchoolPersonInteraction,

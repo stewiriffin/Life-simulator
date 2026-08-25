@@ -801,6 +801,67 @@ class EducationEngineTest {
         assertTrue(engine.clubScholarshipEstimate(left) > 0)
     }
 
+    @Test
+    fun challengeRivalSchool_requiresSkillAndMarksDone() {
+        val weak = secondaryStudent().copy(
+            education = EducationState(
+                stage = SchoolStage.SECONDARY,
+                currentGrade = 1,
+                kcpePassed = true,
+                gpa = 2.8f,
+                schoolClub = SchoolClub.FOOTBALL,
+                clubSkill = 10
+            ),
+            stats = Stats(happiness = 50, health = 70)
+        )
+        assertEquals(ClubActivityResult.Ineligible, engine.challengeRivalSchool(weak))
+
+        val ready = weak.copy(
+            education = weak.education.copy(clubSkill = 40, clubPrestige = 30, clubFame = 20)
+        )
+        val result = engine.challengeRivalSchool(ready)
+        assertTrue(result is ClubActivityResult.Success)
+        val after = (result as ClubActivityResult.Success).character
+        assertTrue(after.education.clubRivalryDoneThisYear)
+        assertEquals(ClubActivityResult.AlreadyDone, engine.challengeRivalSchool(after))
+    }
+
+    @Test
+    fun performClubActivity_canEarnLetterJacketAtOfficerSkill() {
+        val officer = secondaryStudent().copy(
+            education = EducationState(
+                stage = SchoolStage.SECONDARY,
+                currentGrade = 2,
+                kcpePassed = true,
+                gpa = 3.0f,
+                schoolClub = SchoolClub.MUSIC,
+                clubRank = ClubRank.OFFICER,
+                clubSkill = 52,
+                clubPrestige = 40,
+                clubLetterJacket = false,
+                clubActivityDoneThisYear = false
+            ),
+            stats = Stats(happiness = 50, health = 70, looks = 40, smarts = 60)
+        )
+        var earned = false
+        repeat(8) {
+            val base = officer.copy(
+                education = officer.education.copy(
+                    clubSkill = 52 + it,
+                    clubActivityDoneThisYear = false,
+                    clubLetterJacket = false
+                )
+            )
+            when (val result = engine.performClubActivity(base)) {
+                is ClubActivityResult.Success -> {
+                    if (result.character.education.clubLetterJacket) earned = true
+                }
+                else -> Unit
+            }
+        }
+        assertTrue("Officer near letter threshold should earn jacket", earned)
+    }
+
     private fun secondaryStudent() = TestFixtures.character(
         age = 15,
         education = EducationState(

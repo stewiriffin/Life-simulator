@@ -733,6 +733,12 @@
     <string name="achievement_straight_as_description">Maintain a GPA of 3.7 or higher.</string>
     <string name="achievement_dropout_title">Dropout</string>
     <string name="achievement_dropout_description">Leave school before finishing — a path less traveled.</string>
+    <string name="achievement_club_captain_title">Club Captain</string>
+    <string name="achievement_club_captain_description">Lead your school club as Team Captain or President.</string>
+    <string name="achievement_club_champion_title">Club Champion</string>
+    <string name="achievement_club_champion_description">Win a major club showcase or championship.</string>
+    <string name="achievement_letter_jacket_title">Letter Jacket</string>
+    <string name="achievement_letter_jacket_description">Earn your varsity letter through club excellence.</string>
     <string name="achievement_tied_the_knot_title">Tied the Knot</string>
     <string name="achievement_tied_the_knot_description">Get married to your partner.</string>
     <string name="achievement_first_child_title">First Child</string>
@@ -1372,6 +1378,8 @@
     <string name="format_club_status">%1$s · %2$s</string>
     <string name="label_club_skill">Club skill</string>
     <string name="label_club_prestige">Club prestige</string>
+    <string name="label_club_fame">Club fame</string>
+    <string name="label_club_letter_jacket">Letter jacket</string>
     <string name="format_club_major_event">Unlocked: %1$s</string>
     <string name="format_club_resume">Awards %1$d · Captain years %2$d</string>
     <string name="format_club_scholarship_hint">Est. scholarship: %1$s</string>
@@ -1384,6 +1392,8 @@
     <string name="btn_club_major_event">Enter major event</string>
     <string name="btn_club_fundraiser">Host fundraiser</string>
     <string name="btn_club_fundraiser_done">Fundraiser done</string>
+    <string name="btn_club_rivalry">Challenge: %1$s</string>
+    <string name="btn_club_rivalry_done">Rivalry done this year</string>
     <string name="btn_club_leave">Leave club</string>
     <string name="club_debate">Debate</string>
     <string name="club_football">Football</string>
@@ -1399,6 +1409,8 @@
     <string name="msg_club_event_ineligible">Reach Team Captain / President to unlock major events.</string>
     <string name="msg_club_fundraiser_already_done">You already hosted a fundraiser this year.</string>
     <string name="msg_club_fundraiser_ineligible">Only Treasurers / Starters and above can host fundraisers.</string>
+    <string name="msg_club_rivalry_already_done">You already faced a rival school this year.</string>
+    <string name="msg_club_rivalry_ineligible">Reach skill 25 to challenge a rival school.</string>
     <string name="section_school_life">School life</string>
     <string name="label_school_reputation">School reputation</string>
     <string name="format_school_reputation">Reputation %1$d</string>

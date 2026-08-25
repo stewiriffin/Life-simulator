@@ -211,6 +211,12 @@ data class EducationState(
     val clubResumeClub: SchoolClub? = null,
     /** Officer+ fundraiser used this year. */
     val clubFundraiserDoneThisYear: Boolean = false,
+    /** Inter-school rivalry / scrimmage used this year. */
+    val clubRivalryDoneThisYear: Boolean = false,
+    /** Extracurricular fame from wins and showcases (0–100); persists on resume. */
+    val clubFame: Int = 0,
+    /** Letter jacket / varsity mark earned through strong club performance. */
+    val clubLetterJacket: Boolean = false,
     val schoolPeople: List<SchoolPerson> = emptyList(),
     val schoolReputation: Int = 50,
     /** Academic school activity used this year (study group, library, project…). */

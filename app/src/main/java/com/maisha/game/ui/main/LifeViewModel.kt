@@ -1024,6 +1024,37 @@ class LifeViewModel @Inject constructor(
         }
     }
 
+    fun onChallengeRivalSchool() {
+        val character = _uiState.value.character ?: return
+        if (!character.alive) return
+        viewModelScope.launch {
+            when (val result = gameEngine.challengeRivalSchool(character)) {
+                is ClubActivityResult.Success -> {
+                    persist(result.character)
+                    processMidLifeAchievements(result.character)
+                    _uiState.update {
+                        it.copy(
+                            character = result.character,
+                            careerMessage = result.message,
+                            netWorth = financeEngine.calculateNetWorth(result.character),
+                            headerExpression = ExpressionResolver.resolveExpression(result.character, null)
+                        )
+                    }
+                }
+                ClubActivityResult.AlreadyDone -> {
+                    _uiState.update {
+                        it.copy(careerMessage = context.getString(R.string.msg_club_rivalry_already_done))
+                    }
+                }
+                else -> {
+                    _uiState.update {
+                        it.copy(careerMessage = context.getString(R.string.msg_club_rivalry_ineligible))
+                    }
+                }
+            }
+        }
+    }
+
     fun onLeaveSchoolClub() {
         val character = _uiState.value.character ?: return
         if (!character.alive) return

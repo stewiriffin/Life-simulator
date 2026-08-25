@@ -156,6 +156,7 @@ fun CareerScreen(
     onPerformClubActivity: (ClubPracticeIntensity) -> Unit = {},
     onClaimClubMajorEvent: () -> Unit = {},
     onHostClubFundraiser: () -> Unit = {},
+    onChallengeRivalSchool: () -> Unit = {},
     onLeaveSchoolClub: () -> Unit = {},
     onPerformSchoolActivity: (SchoolActivity, String?) -> Unit = { _, _ -> },
     onSchoolPersonInteraction: (String, SchoolPersonAction) -> Unit = { _, _ -> },
@@ -473,6 +474,7 @@ fun CareerScreen(
                         onPerformClubActivity = onPerformClubActivity,
                         onClaimClubMajorEvent = onClaimClubMajorEvent,
                         onHostClubFundraiser = onHostClubFundraiser,
+                        onChallengeRivalSchool = onChallengeRivalSchool,
                         onLeaveSchoolClub = onLeaveSchoolClub
                     )
                 }
@@ -1739,6 +1741,7 @@ private fun SchoolClubSectionCard(
     onPerformClubActivity: (ClubPracticeIntensity) -> Unit,
     onClaimClubMajorEvent: () -> Unit,
     onHostClubFundraiser: () -> Unit,
+    onChallengeRivalSchool: () -> Unit,
     onLeaveSchoolClub: () -> Unit
 ) {
     val eligible = character.age in EducationEngine.SCHOOL_CLUB_MIN_AGE..EducationEngine.SCHOOL_CLUB_MAX_AGE &&
@@ -1792,15 +1795,24 @@ private fun SchoolClubSectionCard(
                             fontWeight = FontWeight.SemiBold
                         )
                         if (character.education.clubAwardsWon > 0 ||
-                            character.education.clubYearsAsCaptain > 0
+                            character.education.clubYearsAsCaptain > 0 ||
+                            character.education.clubLetterJacket
                         ) {
                             Spacer(modifier = Modifier.height(4.dp))
                             Text(
-                                text = stringResource(
-                                    R.string.format_club_resume,
-                                    character.education.clubAwardsWon,
-                                    character.education.clubYearsAsCaptain
-                                ),
+                                text = buildString {
+                                    append(
+                                        stringResource(
+                                            R.string.format_club_resume,
+                                            character.education.clubAwardsWon,
+                                            character.education.clubYearsAsCaptain
+                                        )
+                                    )
+                                    if (character.education.clubLetterJacket) {
+                                        append(" · ")
+                                        append(stringResource(R.string.label_club_letter_jacket))
+                                    }
+                                },
                                 style = MaterialTheme.typography.labelSmall,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant
                             )
@@ -1827,6 +1839,12 @@ private fun SchoolClubSectionCard(
                             type = StatType.HAPPINESS,
                             value = character.education.clubPrestige,
                             label = stringResource(R.string.label_club_prestige)
+                        )
+                        Spacer(modifier = Modifier.height(6.dp))
+                        StatBar(
+                            type = StatType.LOOKS,
+                            value = character.education.clubFame,
+                            label = stringResource(R.string.label_club_fame)
                         )
                         if (character.education.clubRank == ClubRank.CAPTAIN) {
                             Spacer(modifier = Modifier.height(6.dp))
@@ -1887,6 +1905,26 @@ private fun SchoolClubSectionCard(
                                     stringResource(R.string.btn_club_practice)
                                 }
                             )
+                        }
+                        if (character.education.clubSkill >= 25) {
+                            Spacer(modifier = Modifier.height(6.dp))
+                            OutlinedButton(
+                                onClick = onChallengeRivalSchool,
+                                enabled = !character.education.clubRivalryDoneThisYear,
+                                modifier = Modifier.fillMaxWidth(),
+                                shape = RoundedCornerShape(12.dp)
+                            ) {
+                                Text(
+                                    if (character.education.clubRivalryDoneThisYear) {
+                                        stringResource(R.string.btn_club_rivalry_done)
+                                    } else {
+                                        stringResource(
+                                            R.string.btn_club_rivalry,
+                                            schoolUiEngine.clubRivalryTitle(activeClub)
+                                        )
+                                    }
+                                )
+                            }
                         }
                         if (character.education.clubRank.ordinal >= ClubRank.OFFICER.ordinal) {
                             Spacer(modifier = Modifier.height(6.dp))

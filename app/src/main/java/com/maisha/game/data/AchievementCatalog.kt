@@ -51,6 +51,27 @@ object AchievementCatalog {
             iconName = "door"
         ),
         Achievement(
+            id = "club_captain",
+            titleRes = R.string.achievement_club_captain_title,
+            descriptionRes = R.string.achievement_club_captain_description,
+            category = AchievementCategory.EDUCATION,
+            iconName = "star"
+        ),
+        Achievement(
+            id = "club_champion",
+            titleRes = R.string.achievement_club_champion_title,
+            descriptionRes = R.string.achievement_club_champion_description,
+            category = AchievementCategory.EDUCATION,
+            iconName = "trophy"
+        ),
+        Achievement(
+            id = "letter_jacket",
+            titleRes = R.string.achievement_letter_jacket_title,
+            descriptionRes = R.string.achievement_letter_jacket_description,
+            category = AchievementCategory.EDUCATION,
+            iconName = "star"
+        ),
+        Achievement(
             id = "tied_the_knot",
             titleRes = R.string.achievement_tied_the_knot_title,
             descriptionRes = R.string.achievement_tied_the_knot_description,

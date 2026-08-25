@@ -260,6 +260,7 @@ class EducationEngine @Inject constructor(
                 clubActivityDoneThisYear = if (sameClub) character.education.clubActivityDoneThisYear else false,
                 clubMajorEventReady = if (sameClub) character.education.clubMajorEventReady else false,
                 clubFundraiserDoneThisYear = if (sameClub) character.education.clubFundraiserDoneThisYear else false,
+                clubRivalryDoneThisYear = if (sameClub) character.education.clubRivalryDoneThisYear else false,
                 clubResumeClub = club
             ),
             eventLog = EventLogCap.prepend(
@@ -314,6 +315,7 @@ class EducationEngine @Inject constructor(
             clubActivityDoneThisYear = false,
             clubMajorEventReady = false,
             clubFundraiserDoneThisYear = false,
+            clubRivalryDoneThisYear = false,
             clubResumeClub = resume,
             schoolReputation = schoolReputation
         )
@@ -343,12 +345,29 @@ class EducationEngine @Inject constructor(
         SchoolClub.MUSIC -> "Inter-School Music Showcase"
     }
 
+    fun clubRivalryTitle(club: SchoolClub): String = when (club) {
+        SchoolClub.FOOTBALL -> "Rival School Derby"
+        SchoolClub.DEBATE -> "City Debate Dual"
+        SchoolClub.DRAMA -> "Rival Drama Night"
+        SchoolClub.CODING -> "Hackathon Showdown"
+        SchoolClub.MUSIC -> "Battle of the Bands"
+    }
+
+    /** Minimum club skill required to challenge a rival school. */
+    fun canChallengeRivalSchool(character: Character): Boolean =
+        isSchoolClubEligible(character) &&
+            character.education.schoolClub != null &&
+            !character.education.clubRivalryDoneThisYear &&
+            character.education.clubSkill >= CLUB_RIVALRY_MIN_SKILL
+
     /** Estimated scholarship cash from club awards / captain years (0 if none). */
     fun clubScholarshipEstimate(character: Character): Int {
         val awards = character.education.clubAwardsWon
         val captainYears = character.education.clubYearsAsCaptain
-        if (awards <= 0 && captainYears <= 0) return 0
-        val base = 8_000 + awards * 12_000 + captainYears * 4_000
+        val fameBonus = character.education.clubFame / 20
+        val jacketBonus = if (character.education.clubLetterJacket) 6_000 else 0
+        if (awards <= 0 && captainYears <= 0 && !character.education.clubLetterJacket) return 0
+        val base = 8_000 + awards * 12_000 + captainYears * 4_000 + jacketBonus + fameBonus * 1_000
         return EconomyScaler.scaleAmount(base, character.countryCode)
     }
 
@@ -430,6 +449,10 @@ class EducationEngine @Inject constructor(
             majorReady = true
         }
 
+        val earnedJacket = !character.education.clubLetterJacket &&
+            rank.ordinal >= ClubRank.OFFICER.ordinal &&
+            newSkill >= CLUB_LETTER_JACKET_SKILL
+
         val title = clubRankTitle(club, rank)
         val intensityLabel = when (intensity) {
             ClubPracticeIntensity.LIGHT -> "Light practice"
@@ -439,17 +462,28 @@ class EducationEngine @Inject constructor(
         val message = buildString {
             append("$intensityLabel paid off (+$skillGain skill).")
             if (promoted) append(" Promoted to $title!")
+            if (earnedJacket) append(" You earned your letter jacket!")
             if (injured) append(" You picked up an injury on the way.")
             if (rank == ClubRank.CAPTAIN && majorReady) {
                 append(" ${clubMajorEventTitle(club)} is on the calendar.")
             }
         }
 
+        val fameGain = when {
+            earnedJacket -> 12
+            promoted -> 4
+            intensity == ClubPracticeIntensity.INTENSE -> 2
+            else -> 1
+        }
+
         val updated = character.copy(
             stats = character.stats.copy(
-                happiness = clampStat(character.stats.happiness + happiness + intensityHappiness),
+                happiness = clampStat(
+                    character.stats.happiness + happiness + intensityHappiness + if (earnedJacket) 5 else 0
+                ),
                 health = clampStat(character.stats.health + health + injuryHealth),
-                smarts = clampStat(character.stats.smarts + smarts)
+                smarts = clampStat(character.stats.smarts + smarts),
+                looks = clampStat(character.stats.looks + if (earnedJacket) 4 else 0)
             ),
             education = character.education.copy(
                 clubSkill = newSkill,
@@ -458,6 +492,8 @@ class EducationEngine @Inject constructor(
                 clubActivityDoneThisYear = true,
                 clubMajorEventReady = majorReady,
                 clubResumeClub = club,
+                clubLetterJacket = character.education.clubLetterJacket || earnedJacket,
+                clubFame = (character.education.clubFame + fameGain).coerceIn(0, 100),
                 schoolReputation = (character.education.schoolReputation + if (promoted) 4 else 1)
                     .coerceIn(0, 100),
                 gpa = if (club == SchoolClub.DEBATE || club == SchoolClub.CODING) {
@@ -501,6 +537,7 @@ class EducationEngine @Inject constructor(
                     clubPrestige = (character.education.clubPrestige + 12).coerceIn(0, 100),
                     clubSkill = (character.education.clubSkill + 5).coerceIn(0, 100),
                     clubAwardsWon = character.education.clubAwardsWon + 1,
+                    clubFame = (character.education.clubFame + 18).coerceIn(0, 100),
                     clubResumeClub = club,
                     schoolReputation = (character.education.schoolReputation + 10).coerceIn(0, 100),
                     gpa = clampGpa(character.education.gpa + 0.1f)
@@ -572,6 +609,79 @@ class EducationEngine @Inject constructor(
         return ClubActivityResult.Success(updated, message)
     }
 
+    /**
+     * Inter-school rivalry / scrimmage — available once skill is solid enough (BitLife derby energy).
+     */
+    fun challengeRivalSchool(character: Character): ClubActivityResult {
+        if (!canChallengeRivalSchool(character)) {
+            return if (character.education.clubRivalryDoneThisYear) {
+                ClubActivityResult.AlreadyDone
+            } else {
+                ClubActivityResult.Ineligible
+            }
+        }
+        val club = character.education.schoolClub ?: return ClubActivityResult.Ineligible
+        val eventName = clubRivalryTitle(club)
+        val winChance = (
+            0.22f +
+                character.education.clubSkill / 100f * 0.45f +
+                character.education.clubPrestige / 100f * 0.2f +
+                character.education.clubFame / 100f * 0.15f +
+                if (character.education.clubLetterJacket) 0.05f else 0f
+            ).coerceIn(0.12f, 0.88f)
+        val won = Random.nextFloat() < winChance
+        val prize = EconomyScaler.scaleAmount(
+            when (club) {
+                SchoolClub.FOOTBALL -> 6_000
+                SchoolClub.CODING, SchoolClub.DEBATE -> 5_000
+                SchoolClub.DRAMA, SchoolClub.MUSIC -> 4_500
+            },
+            character.countryCode
+        )
+
+        return if (won) {
+            val message = "You crushed the $eventName! Prize: ${formatMoney(prize, character.countryCode)}."
+            val updated = character.copy(
+                stats = character.stats.copy(
+                    money = character.stats.money + prize,
+                    happiness = clampStat(character.stats.happiness + 7),
+                    looks = clampStat(character.stats.looks + 1),
+                    health = clampStat(
+                        character.stats.health + if (club == SchoolClub.FOOTBALL) -2 else 0
+                    )
+                ),
+                education = character.education.copy(
+                    clubRivalryDoneThisYear = true,
+                    clubSkill = (character.education.clubSkill + 4).coerceIn(0, 100),
+                    clubPrestige = (character.education.clubPrestige + 5).coerceIn(0, 100),
+                    clubFame = (character.education.clubFame + 8).coerceIn(0, 100),
+                    schoolReputation = (character.education.schoolReputation + 5).coerceIn(0, 100)
+                ),
+                eventLog = EventLogCap.prepend(character.eventLog, message)
+            )
+            ClubActivityResult.Success(updated, message)
+        } else {
+            val message = "The $eventName went sideways. Rival school took the bragging rights."
+            val updated = character.copy(
+                stats = character.stats.copy(
+                    happiness = clampStat(character.stats.happiness - 5),
+                    health = clampStat(
+                        character.stats.health + if (club == SchoolClub.FOOTBALL) -3 else 0
+                    )
+                ),
+                education = character.education.copy(
+                    clubRivalryDoneThisYear = true,
+                    clubSkill = (character.education.clubSkill + 1).coerceIn(0, 100),
+                    clubPrestige = (character.education.clubPrestige - 2).coerceIn(0, 100),
+                    clubFame = (character.education.clubFame - 2).coerceIn(0, 100),
+                    schoolReputation = (character.education.schoolReputation - 2).coerceIn(0, 100)
+                ),
+                eventLog = EventLogCap.prepend(character.eventLog, message)
+            )
+            ClubActivityResult.Success(updated, message)
+        }
+    }
+
     private fun clubMajorWinChance(character: Character): Float {
         val skill = character.education.clubSkill / 100f
         val prestige = character.education.clubPrestige / 100f
@@ -606,11 +716,39 @@ class EducationEngine @Inject constructor(
         } else {
             character.education.clubYearsAsCaptain
         }
-        return character.copy(
+        val fameDelta = when {
+            character.education.clubActivityDoneThisYear -> 2
+            character.education.clubLetterJacket -> 0
+            else -> -1
+        }
+        val looksBonus = when {
+            character.education.clubLetterJacket -> 1
+            character.education.clubFame >= 60 -> 1
+            else -> 0
+        }
+        // High fame can draw a scout / agent whisper for sports & arts.
+        val scoutLog = if (
+            character.education.clubFame >= 55 &&
+            character.education.clubRank.ordinal >= ClubRank.OFFICER.ordinal &&
+            Random.nextFloat() < 0.18f
+        ) {
+            when (club) {
+                SchoolClub.FOOTBALL -> "A talent scout watched practice and took notes on you."
+                SchoolClub.DRAMA, SchoolClub.MUSIC -> "An arts recruiter asked for your contact after the showcase."
+                SchoolClub.CODING -> "A tech internship recruiter liked your club project reel."
+                SchoolClub.DEBATE -> "A university debate coach sent you a recruitment flyer."
+            }
+        } else {
+            null
+        }
+        val withStats = character.copy(
             stats = character.stats.copy(
-                happiness = clampStat(character.stats.happiness + happiness + rankBonus),
+                happiness = clampStat(
+                    character.stats.happiness + happiness + rankBonus + if (scoutLog != null) 3 else 0
+                ),
                 health = clampStat(character.stats.health + health),
-                smarts = clampStat(character.stats.smarts + smarts)
+                smarts = clampStat(character.stats.smarts + smarts),
+                looks = clampStat(character.stats.looks + looksBonus)
             ),
             education = character.education.copy(
                 gpa = if (character.education.gpa > 0f) {
@@ -620,13 +758,21 @@ class EducationEngine @Inject constructor(
                 },
                 clubSkill = (character.education.clubSkill + 2).coerceIn(0, 100),
                 clubPrestige = (character.education.clubPrestige + 1).coerceIn(0, 100),
+                clubFame = (character.education.clubFame + fameDelta).coerceIn(0, 100),
                 clubActivityDoneThisYear = false,
                 clubFundraiserDoneThisYear = false,
+                clubRivalryDoneThisYear = false,
                 clubYearsAsCaptain = captainYears,
                 clubResumeClub = club,
                 clubMajorEventReady = character.education.clubRank == ClubRank.CAPTAIN
-            )
+            ),
+            eventLog = if (scoutLog != null) {
+                EventLogCap.prepend(character.eventLog, scoutLog)
+            } else {
+                character.eventLog
+            }
         )
+        return withStats
     }
 
     private data class Quad(val happiness: Int, val health: Int, val smarts: Int, val gpa: Float)
@@ -2718,6 +2864,8 @@ class EducationEngine @Inject constructor(
         private const val DEBATE_MIN_GPA = 1.8f
         private const val CLUB_OFFICER_SKILL = 40
         private const val CLUB_CAPTAIN_SKILL = 70
+        private const val CLUB_LETTER_JACKET_SKILL = 55
+        private const val CLUB_RIVALRY_MIN_SKILL = 25
         private const val CLASSMATE_COUNT = 5
         private const val TEACHER_COUNT = 3
 

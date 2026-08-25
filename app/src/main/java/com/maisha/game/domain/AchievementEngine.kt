@@ -6,6 +6,7 @@ import com.maisha.game.data.AchievementWealth
 import com.maisha.game.data.model.Achievement
 import com.maisha.game.data.model.AchievementProgress
 import com.maisha.game.data.model.AssetType
+import com.maisha.game.data.model.ClubRank
 import com.maisha.game.data.model.Character
 import com.maisha.game.data.model.RelationType
 import com.maisha.game.data.model.SchoolStage
@@ -49,6 +50,11 @@ class AchievementEngine @Inject constructor(
             "graduate" -> checkGraduate(character)
             "straight_as" -> checkStraightAs(character)
             "dropout" -> checkDropout(character)
+            "club_captain" ->
+                character.education.clubRank == ClubRank.CAPTAIN ||
+                    character.education.clubYearsAsCaptain > 0
+            "club_champion" -> character.education.clubAwardsWon > 0
+            "letter_jacket" -> character.education.clubLetterJacket
             "tied_the_knot" -> checkTiedTheKnot(character)
             "first_child" -> checkFirstChild(character)
             "growing_family" -> checkGrowingFamily(character)

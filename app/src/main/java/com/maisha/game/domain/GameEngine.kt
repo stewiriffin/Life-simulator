@@ -772,6 +772,9 @@ class GameEngine @Inject constructor(
     fun hostClubFundraiser(character: Character): ClubActivityResult =
         educationEngine.hostClubFundraiser(character)
 
+    fun challengeRivalSchool(character: Character): ClubActivityResult =
+        educationEngine.challengeRivalSchool(character)
+
     fun leaveSchoolClub(character: Character): Character =
         educationEngine.leaveSchoolClub(character, fired = false)
 
