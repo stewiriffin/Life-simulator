@@ -352,7 +352,7 @@ Newest first:
 
 | Commit | Meaning |
 |--------|---------|
-| *(pending)* | Career ladder ranks, office politics actions/events, Career dashboard meters |
+| `30b316a` | Career ladder, office politics (PIP/credit/burnout/network), Career dashboard |
 | `74ec22c` | University majors, loans, campus jobs, internships, grad track, Career dashboard |
 | `c68bf45` | Detention deepen: serve hall, principal appeal, transfer hearing, rebel achievements |
 | `57bcd1e` | Misbehavior & detention: rebel activities, expulsion hearing, discipline badge |
