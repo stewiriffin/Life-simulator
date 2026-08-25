@@ -506,6 +506,18 @@ class GameEngine @Inject constructor(
 
         updatedCharacter = educationEngine.applyGpaEffect(updatedCharacter, choice.gpaEffect)
 
+        if (choice.examPrepAction != null) {
+            val prepChoice = runCatching {
+                com.maisha.game.data.model.ExamPrepChoice.valueOf(choice.examPrepAction)
+            }.getOrNull()
+            if (prepChoice != null) {
+                updatedCharacter = educationEngine.resolveExamWithPrepChoice(
+                    updatedCharacter,
+                    prepChoice
+                )
+            }
+        }
+
         if (choice.universityCourse != null) {
             updatedCharacter = educationEngine.applyToUniversity(
                 updatedCharacter,
@@ -763,6 +775,20 @@ class GameEngine @Inject constructor(
     ): SchoolInteractionResult = educationEngine.handleSchoolPersonInteraction(character, personId, action)
 
     fun schoolGiftCost(character: Character): Int = educationEngine.schoolGiftCost(character)
+
+    fun performExamPrepAction(
+        character: Character,
+        choice: com.maisha.game.data.model.ExamPrepChoice
+    ): ExamPrepResult = educationEngine.performExamPrepAction(character, choice)
+
+    fun examPreparednessPercent(character: Character): Int =
+        educationEngine.examPreparednessPercent(character)
+
+    fun refreshExamSchedule(character: Character): Character =
+        educationEngine.refreshExamSchedule(character)
+
+    fun calculateExamPassChance(character: Character): Float =
+        educationEngine.calculateExamPassChance(character)
 
     fun startCareerTrack(character: Character, track: com.maisha.game.data.model.CareerTrack): Character =
         careerEngine.startCareerTrack(character, track)
@@ -1163,17 +1189,9 @@ class GameEngine @Inject constructor(
     }
 
     private fun resolveExamEvent(character: Character): Pair<Character, AgeUpResult>? {
-        if (educationEngine.shouldTriggerPrimaryExam(character)) {
-            val (afterExam, result) = educationEngine.takeExam(character, ExamType.KCPE)
-            val event = educationEngine.buildExamResultEvent(ExamType.KCPE, result, afterExam)
-            return afterExam to AgeUpResult.SingleEvent(event)
-        }
-        if (educationEngine.shouldTriggerSecondaryExam(character)) {
-            val (afterExam, result) = educationEngine.takeExam(character, ExamType.KCSE)
-            val event = educationEngine.buildExamResultEvent(ExamType.KCSE, result, afterExam)
-            return afterExam to AgeUpResult.SingleEvent(event)
-        }
-        return null
+        val scheduled = educationEngine.refreshExamSchedule(character)
+        val prompt = educationEngine.buildExamPromptEvent(scheduled) ?: return null
+        return scheduled to AgeUpResult.SingleEvent(prompt)
     }
 
     private fun applySiblingRelationshipEffect(

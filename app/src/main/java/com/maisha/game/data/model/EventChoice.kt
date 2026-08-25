@@ -45,5 +45,10 @@ data class EventChoice(
      * Immediate portfolio return percentage (e.g. -50 crash, +100 double).
      * Applied only when [Character.investmentPortfolioValue] > 0.
      */
-    val portfolioReturnPercent: Int? = null
+    val portfolioReturnPercent: Int? = null,
+    /**
+     * Exam prompt choice: `STUDY_HARD`, `STUDY_NORMAL`, `CRAM`, or `CHEAT`.
+     * Handled by [com.maisha.game.domain.EducationEngine.resolveExamWithPrepChoice].
+     */
+    val examPrepAction: String? = null
 )

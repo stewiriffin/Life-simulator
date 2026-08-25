@@ -64,6 +64,7 @@ import com.maisha.game.domain.ProposalResult
 import com.maisha.game.domain.SeekFriendshipResult
 import com.maisha.game.domain.SchoolActionResult
 import com.maisha.game.domain.SchoolInteractionResult
+import com.maisha.game.domain.ExamPrepResult
 import com.maisha.game.domain.StartDatingResult
 import com.maisha.game.domain.PurchaseResult
 import com.maisha.game.domain.RepairResult
@@ -858,6 +859,18 @@ class LifeViewModel @Inject constructor(
         }
     }
 
+    /** Ensures enrolled lives have a current exam schedule (for older saves). */
+    fun onSyncExamSchedule() {
+        val character = _uiState.value.character ?: return
+        if (!character.alive) return
+        viewModelScope.launch {
+            val updated = gameEngine.refreshExamSchedule(character)
+            if (updated == character) return@launch
+            persist(updated)
+            _uiState.update { it.copy(character = updated) }
+        }
+    }
+
     fun onPerformStudySession() {
         val character = _uiState.value.character ?: return
         if (!character.alive) return
@@ -977,6 +990,37 @@ class LifeViewModel @Inject constructor(
                 SchoolInteractionResult.Ineligible -> {
                     _uiState.update {
                         it.copy(careerMessage = context.getString(R.string.msg_school_person_action_ineligible))
+                    }
+                }
+            }
+        }
+    }
+
+    fun onExamPrepChoice(choice: com.maisha.game.data.model.ExamPrepChoice) {
+        val character = _uiState.value.character ?: return
+        if (!character.alive) return
+        viewModelScope.launch {
+            when (val result = gameEngine.performExamPrepAction(character, choice)) {
+                is ExamPrepResult.Success -> {
+                    persist(result.character)
+                    processMidLifeAchievements(result.character)
+                    _uiState.update {
+                        it.copy(
+                            character = result.character,
+                            careerMessage = result.message,
+                            netWorth = financeEngine.calculateNetWorth(result.character),
+                            headerExpression = ExpressionResolver.resolveExpression(result.character, null)
+                        )
+                    }
+                }
+                ExamPrepResult.AlreadyDone -> {
+                    _uiState.update {
+                        it.copy(careerMessage = context.getString(R.string.msg_exam_prep_already_done))
+                    }
+                }
+                ExamPrepResult.Ineligible -> {
+                    _uiState.update {
+                        it.copy(careerMessage = context.getString(R.string.msg_exam_prep_ineligible))
                     }
                 }
             }

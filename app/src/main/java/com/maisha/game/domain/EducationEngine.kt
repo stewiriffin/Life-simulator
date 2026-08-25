@@ -8,7 +8,10 @@ import com.maisha.game.data.model.AvatarConfig
 import com.maisha.game.data.model.Character
 import com.maisha.game.data.model.EducationState
 import com.maisha.game.data.model.EventChoice
+import com.maisha.game.data.model.ExamKind
+import com.maisha.game.data.model.ExamPrepChoice
 import com.maisha.game.data.model.ExamResult
+import com.maisha.game.data.model.ExamSchedule
 import com.maisha.game.data.model.ExamType
 import com.maisha.game.data.model.Gender
 import com.maisha.game.data.model.LifeEvent
@@ -51,6 +54,12 @@ sealed class SchoolInteractionResult {
     data object Ineligible : SchoolInteractionResult()
     data object PersonNotFound : SchoolInteractionResult()
     data object InsufficientFunds : SchoolInteractionResult()
+}
+
+sealed class ExamPrepResult {
+    data class Success(val character: Character, val message: String) : ExamPrepResult()
+    data object Ineligible : ExamPrepResult()
+    data object AlreadyDone : ExamPrepResult()
 }
 
 @Singleton
@@ -149,7 +158,17 @@ class EducationEngine @Inject constructor(
         ) {
             return character
         }
-        return character.copy(education = education.copy(plannedStudyEffort = effort))
+        val stressDelta = when (effort) {
+            StudyEffort.HARD -> 8
+            StudyEffort.NORMAL -> -2
+            StudyEffort.SLACK -> -6
+        }
+        return character.copy(
+            education = education.copy(
+                plannedStudyEffort = effort,
+                examStress = (education.examStress + stressDelta).coerceIn(0, 100)
+            )
+        ).let { refreshExamSchedule(it) }
     }
 
     private fun applyStudyEffort(
@@ -338,34 +357,670 @@ class EducationEngine @Inject constructor(
     }
 
     /**
-     * Scores KCPE/KCSE from GPA, smarts, and randomness; updates pass flags on [EducationState].
+     * Scores national exams from GPA, study effort, reputation, stress, preparedness, and luck.
      *
      * @return Updated character and [ExamResult] for UI/system events.
      */
     fun takeExam(character: Character, examType: ExamType): Pair<Character, ExamResult> {
         val education = character.education
-        val randomFactor = Random.nextFloat() * 15f
+        val passChance = calculateExamPassChance(character)
+        val randomFactor = Random.nextFloat() * 12f
+        val prepBoost = imminentPreparedness(character) * 0.25f
+        val stressDrag = education.examStress * 0.12f
+        val effortBoost = when (education.plannedStudyEffort) {
+            StudyEffort.HARD -> 8f
+            StudyEffort.NORMAL -> 3f
+            StudyEffort.SLACK -> -6f
+        }
         val score = (
-            education.gpa * 15f +
-                character.stats.smarts * 0.5f +
-                character.stats.happiness * 0.08f +
-                character.stats.health * 0.06f +
+            education.gpa * 14f +
+                character.stats.smarts * 0.4f +
+                character.stats.happiness * 0.05f +
+                character.stats.health * 0.05f +
+                education.schoolReputation * 0.12f +
+                prepBoost +
+                effortBoost -
+                stressDrag +
                 randomFactor
             ).coerceIn(0f, 100f)
 
         val grade = scoreToLetterGrade(score)
-        val passed = when (examType) {
+        val passedByScore = when (examType) {
             ExamType.KCPE -> score >= KCPE_PASS_SCORE
             ExamType.KCSE -> score >= KCSE_PASS_SCORE
         }
+        val passed = if (Random.nextFloat() < passChance) {
+            passedByScore || score >= (if (examType == ExamType.KCPE) KCPE_PASS_SCORE - 5f else KCSE_PASS_SCORE - 5f)
+        } else {
+            false
+        }
+        val finalGrade = if (passed) grade else if (score >= 45f) grade else "F"
 
         val updatedEducation = when (examType) {
-            ExamType.KCPE -> education.copy(kcpePassed = passed)
-            ExamType.KCSE -> if (passed) education.copy(kcseGrade = grade) else education
+            ExamType.KCPE -> education.copy(
+                kcpePassed = passed,
+                examStress = (education.examStress - 15).coerceAtLeast(0),
+                plannedCheatOnExam = false,
+                lastExamSummary = "National exit: ${if (passed) "Passed" else "Failed"} $finalGrade (${score.roundToInt()}%)",
+                pendingExams = education.pendingExams.filterNot {
+                    it.kind == ExamKind.NATIONAL_EXIT && it.yearsUntilDue <= 0
+                }
+            )
+            ExamType.KCSE -> if (passed) {
+                education.copy(
+                    kcseGrade = finalGrade,
+                    examStress = (education.examStress - 15).coerceAtLeast(0),
+                    plannedCheatOnExam = false,
+                    lastExamSummary = "National exit: Passed $finalGrade (${score.roundToInt()}%)",
+                    pendingExams = education.pendingExams.filterNot {
+                        it.kind == ExamKind.NATIONAL_EXIT && it.yearsUntilDue <= 0
+                    }
+                )
+            } else {
+                education.copy(
+                    examStress = (education.examStress + 5).coerceIn(0, 100),
+                    plannedCheatOnExam = false,
+                    lastExamSummary = "National exit: Failed $finalGrade (${score.roundToInt()}%)"
+                )
+            }
         }
 
         val updatedCharacter = character.copy(education = updatedEducation)
-        return updatedCharacter to ExamResult(passed = passed, grade = grade, score = score)
+        return updatedCharacter to ExamResult(passed = passed, grade = finalGrade, score = score)
+    }
+
+    /** Composite 0–100 readiness shown on the School exam banner. */
+    fun examPreparednessPercent(character: Character): Int {
+        if (!isEnrolled(character)) return 0
+        val education = character.education
+        val gpaPart = ((education.gpa / 4f) * 35f)
+        val effortPart = when (education.plannedStudyEffort) {
+            StudyEffort.HARD -> 20f
+            StudyEffort.NORMAL -> 12f
+            StudyEffort.SLACK -> 3f
+        }
+        val repPart = education.schoolReputation * 0.15f
+        val prepPart = imminentPreparedness(character) * 0.25f
+        val stressPenalty = education.examStress * 0.22f
+        return (gpaPart + effortPart + repPart + prepPart - stressPenalty)
+            .roundToInt()
+            .coerceIn(0, 100)
+    }
+
+    fun calculateExamPassChance(character: Character): Float {
+        val education = character.education
+        val gpaFactor = (education.gpa / 4f) * 0.32f
+        val effortFactor = when (education.plannedStudyEffort) {
+            StudyEffort.HARD -> 0.18f
+            StudyEffort.NORMAL -> 0.11f
+            StudyEffort.SLACK -> 0.02f
+        }
+        val repFactor = (education.schoolReputation / 100f) * 0.14f
+        val prepFactor = (imminentPreparedness(character) / 100f) * 0.22f
+        val smartsFactor = (character.stats.smarts / 100f) * 0.12f
+        val stressPenalty = (education.examStress / 100f) * 0.28f
+        return (0.22f + gpaFactor + effortFactor + repFactor + prepFactor + smartsFactor - stressPenalty)
+            .coerceIn(0.05f, 0.95f)
+    }
+
+    fun hasImminentExam(character: Character): Boolean =
+        character.education.pendingExams.any { it.yearsUntilDue <= 0 }
+
+    fun imminentExams(character: Character): List<ExamSchedule> =
+        character.education.pendingExams.filter { it.yearsUntilDue <= 0 }
+
+    /**
+     * School-card prep before Age Up. One prep action per year.
+     * Raises preparedness / adjusts stress; does not sit the exam yet.
+     */
+    fun performExamPrepAction(character: Character, choice: ExamPrepChoice): ExamPrepResult {
+        var working = character
+        if (isEnrolled(working) && working.education.pendingExams.isEmpty()) {
+            working = refreshExamSchedule(working)
+        }
+        if (!isEnrolled(working) || !working.alive) return ExamPrepResult.Ineligible
+        if (working.criminalRecord.currentlyIncarcerated) return ExamPrepResult.Ineligible
+        if (!hasImminentExam(working)) return ExamPrepResult.Ineligible
+        if (working.education.examPrepDoneThisYear) return ExamPrepResult.AlreadyDone
+
+        return when (choice) {
+            ExamPrepChoice.STUDY_HARD -> ExamPrepResult.Success(
+                applyPrepAdjustments(
+                    character = working,
+                    prepDelta = 18,
+                    stressDelta = -10,
+                    gpaDelta = 0.12f,
+                    happinessDelta = -3,
+                    healthDelta = -1,
+                    message = "You studied hard. Stress eased and you feel sharper for the exam."
+                ),
+                "You studied hard. Preparedness up, stress down."
+            )
+            ExamPrepChoice.STUDY_NORMAL -> ExamPrepResult.Success(
+                applyPrepAdjustments(
+                    character = working,
+                    prepDelta = 10,
+                    stressDelta = -2,
+                    gpaDelta = 0.06f,
+                    happinessDelta = -1,
+                    healthDelta = 0,
+                    message = "You put in a normal study session. Solid progress."
+                ),
+                "Balanced study session. Steady progress."
+            )
+            ExamPrepChoice.CRAM -> ExamPrepResult.Success(
+                applyPrepAdjustments(
+                    character = working,
+                    prepDelta = 14,
+                    stressDelta = 16,
+                    gpaDelta = 0.10f,
+                    happinessDelta = -2,
+                    healthDelta = -3,
+                    message = "You crammed all night. Knowledge stuck — so did the headache."
+                ),
+                "All-nighter cram. Preparedness up, stress spiked."
+            )
+            ExamPrepChoice.CHEAT -> {
+                val caught = Random.nextFloat() < CHEAT_CATCH_CHANCE
+                if (!caught) {
+                    ExamPrepResult.Success(
+                        applyPrepAdjustments(
+                            character = working,
+                            prepDelta = 28,
+                            stressDelta = 8,
+                            gpaDelta = 0.05f,
+                            happinessDelta = 1,
+                            healthDelta = 0,
+                            karmaDelta = -4,
+                            plannedCheat = true,
+                            message = "You lined up a cheat sheet. Risky — but you feel 'ready'."
+                        ),
+                        "Cheat prep ready. Catch risk rises on exam day."
+                    )
+                } else {
+                    val expel = Random.nextFloat() < CHEAT_EXPEL_CHANCE
+                    val after = if (expel) {
+                        processExpulsion(
+                            working.copy(
+                                stats = working.stats.copy(
+                                    karma = clampStat(working.stats.karma - 8),
+                                    happiness = clampStat(working.stats.happiness - 10)
+                                ),
+                                education = working.education.copy(
+                                    examPrepDoneThisYear = true,
+                                    examStress = (working.education.examStress + 20).coerceIn(0, 100),
+                                    detentionYears = working.education.detentionYears + 1
+                                )
+                            )
+                        )
+                    } else {
+                        working.copy(
+                            stats = working.stats.copy(
+                                karma = clampStat(working.stats.karma - 6),
+                                happiness = clampStat(working.stats.happiness - 6)
+                            ),
+                            education = working.education.copy(
+                                examPrepDoneThisYear = true,
+                                examStress = (working.education.examStress + 15).coerceIn(0, 100),
+                                schoolReputation = (working.education.schoolReputation - 12)
+                                    .coerceIn(0, 100),
+                                detentionYears = working.education.detentionYears + 1,
+                                gpa = clampGpa(working.education.gpa - 0.2f)
+                            ),
+                            eventLog = EventLogCap.prepend(
+                                working.eventLog,
+                                "Caught cheating while preparing. Detention."
+                            )
+                        )
+                    }
+                    ExamPrepResult.Success(
+                        after,
+                        if (expel) "Caught cheating — expelled." else "Caught cheating. Detention."
+                    )
+                }
+            }
+        }
+    }
+
+    /**
+     * Resolves an age-up exam prompt choice: applies prep effects, then sits the exam.
+     * Cheat on the day (or prior planned cheat) can yield an instant top grade — or detention/expulsion.
+     */
+    fun resolveExamWithPrepChoice(character: Character, choice: ExamPrepChoice): Character {
+        var working = if (isEnrolled(character) && character.education.pendingExams.isEmpty()) {
+            refreshExamSchedule(character)
+        } else {
+            character
+        }
+
+        // Exam-day cheat is resolved here (not via prep-only path).
+        if (choice == ExamPrepChoice.CHEAT || working.education.plannedCheatOnExam) {
+            val dayCatchChance = if (working.education.plannedCheatOnExam) {
+                CHEAT_DAY_CATCH_CHANCE_PLANNED
+            } else {
+                CHEAT_DAY_CATCH_CHANCE
+            }
+            if (Random.nextFloat() < dayCatchChance) {
+                return resolveCaughtCheatingOnExamDay(working)
+            }
+            return resolveSuccessfulCheatExam(working)
+        }
+
+        val afterPrep = when (
+            val prep = performExamPrepAction(
+                working.copy(education = working.education.copy(examPrepDoneThisYear = false)),
+                choice
+            )
+        ) {
+            is ExamPrepResult.Success -> prep.character
+            else -> working
+        }
+        if (afterPrep.education.expelled) return afterPrep
+
+        return sitScheduledExam(afterPrep, choice)
+    }
+
+    private fun resolveCaughtCheatingOnExamDay(character: Character): Character {
+        val expel = Random.nextFloat() < CHEAT_EXPEL_CHANCE
+        val base = character.copy(
+            stats = character.stats.copy(
+                karma = clampStat(character.stats.karma - 10),
+                happiness = clampStat(character.stats.happiness - 12)
+            ),
+            education = character.education.copy(
+                plannedCheatOnExam = false,
+                examPrepDoneThisYear = true,
+                examStress = (character.education.examStress + 25).coerceIn(0, 100),
+                schoolReputation = (character.education.schoolReputation - 18).coerceIn(0, 100),
+                detentionYears = character.education.detentionYears + 1,
+                gpa = clampGpa(character.education.gpa - 0.35f),
+                lastExamSummary = if (expel) {
+                    "Caught cheating — expelled"
+                } else {
+                    "Caught cheating — detention"
+                }
+            )
+        )
+        val after = if (expel) processExpulsion(base) else base
+        return after.copy(
+            eventLog = EventLogCap.prepend(
+                after.eventLog,
+                if (expel) {
+                    "Invigilators caught you cheating. You were expelled."
+                } else {
+                    "Caught cheating in the exam hall. Detention and a ruined grade."
+                }
+            )
+        )
+    }
+
+    private fun resolveSuccessfulCheatExam(character: Character): Character {
+        val boosted = character.copy(
+            stats = character.stats.copy(
+                karma = clampStat(character.stats.karma - 5),
+                happiness = clampStat(character.stats.happiness + 4)
+            ),
+            education = character.education.copy(
+                plannedCheatOnExam = false,
+                examPrepDoneThisYear = true,
+                examStress = (character.education.examStress - 8).coerceAtLeast(0),
+                gpa = clampGpa(character.education.gpa + 0.4f),
+                schoolReputation = (character.education.schoolReputation + 2).coerceIn(0, 100)
+            )
+        )
+        return when {
+            shouldTriggerPrimaryExam(boosted) -> {
+                val forced = takeExamWithForcedResult(boosted, ExamType.KCPE, passed = true, grade = "A", score = 92f)
+                annotateExamResult(forced.first, forced.second, com.maisha.game.data.ExamNames.primaryExamName(boosted.countryCode))
+            }
+            shouldTriggerSecondaryExam(boosted) -> {
+                val forced = takeExamWithForcedResult(boosted, ExamType.KCSE, passed = true, grade = "A", score = 90f)
+                annotateExamResult(forced.first, forced.second, com.maisha.game.data.ExamNames.secondaryExamName(boosted.countryCode))
+            }
+            else -> {
+                val summary = "Cheated through finals — A (undetected)"
+                boosted.copy(
+                    education = boosted.education.copy(lastExamSummary = summary),
+                    eventLog = EventLogCap.prepend(
+                        boosted.eventLog,
+                        "You cheated through year exams and walked out with top marks. For now."
+                    )
+                )
+            }
+        }
+    }
+
+    private fun sitScheduledExam(character: Character, choice: ExamPrepChoice): Character {
+        return when {
+            shouldTriggerPrimaryExam(character) -> {
+                val (scored, result) = takeExam(character, ExamType.KCPE)
+                annotateExamResult(
+                    scored,
+                    result,
+                    com.maisha.game.data.ExamNames.primaryExamName(scored.countryCode)
+                )
+            }
+            shouldTriggerSecondaryExam(character) -> {
+                val (scored, result) = takeExam(character, ExamType.KCSE)
+                annotateExamResult(
+                    scored,
+                    result,
+                    com.maisha.game.data.ExamNames.secondaryExamName(scored.countryCode)
+                )
+            }
+            else -> resolveYearFinals(character, choice)
+        }
+    }
+
+    private fun takeExamWithForcedResult(
+        character: Character,
+        examType: ExamType,
+        passed: Boolean,
+        grade: String,
+        score: Float
+    ): Pair<Character, ExamResult> {
+        val education = character.education
+        val updatedEducation = when (examType) {
+            ExamType.KCPE -> education.copy(
+                kcpePassed = passed,
+                examStress = (education.examStress - 15).coerceAtLeast(0),
+                pendingExams = education.pendingExams.filterNot {
+                    it.kind == ExamKind.NATIONAL_EXIT && it.yearsUntilDue <= 0
+                }
+            )
+            ExamType.KCSE -> education.copy(
+                kcseGrade = if (passed) grade else education.kcseGrade,
+                examStress = (education.examStress - 15).coerceAtLeast(0),
+                pendingExams = education.pendingExams.filterNot {
+                    it.kind == ExamKind.NATIONAL_EXIT && it.yearsUntilDue <= 0
+                }
+            )
+        }
+        return character.copy(education = updatedEducation) to
+            ExamResult(passed = passed, grade = grade, score = score)
+    }
+
+    private fun annotateExamResult(
+        character: Character,
+        result: ExamResult,
+        examName: String
+    ): Character {
+        val summary = "$examName: ${if (result.passed) "Passed" else "Failed"} ${result.grade} (${result.score.roundToInt()}%)"
+        return character.copy(
+            education = character.education.copy(
+                lastExamSummary = summary,
+                plannedCheatOnExam = false
+            ),
+            eventLog = EventLogCap.prepend(character.eventLog, examOutcomeLog(examName, result))
+        )
+    }
+
+    /** Prompt event with Study hard / normal / Cram / Cheat — replaces auto exam sit. */
+    fun buildExamPromptEvent(character: Character): LifeEvent? {
+        if (!isEnrolled(character) || character.education.expelled) return null
+        val nationalDue = shouldTriggerPrimaryExam(character) || shouldTriggerSecondaryExam(character)
+        val finalsDue = character.education.pendingExams.any {
+            it.kind == ExamKind.FINALS && it.yearsUntilDue <= 0
+        }
+        if (!nationalDue && !finalsDue) return null
+        val title = when {
+            shouldTriggerPrimaryExam(character) ->
+                com.maisha.game.data.ExamNames.primaryExamName(character.countryCode)
+            shouldTriggerSecondaryExam(character) ->
+                com.maisha.game.data.ExamNames.secondaryExamName(character.countryCode)
+            else -> character.education.pendingExams.firstOrNull {
+                it.kind == ExamKind.FINALS && it.yearsUntilDue <= 0
+            }?.title ?: "Year exams"
+        }
+        val prep = examPreparednessPercent(character)
+        val stress = character.education.examStress
+        val chance = (calculateExamPassChance(character) * 100).roundToInt()
+        val outlook = examOutlookTip(prep, stress, character.education.plannedCheatOnExam)
+        return LifeEvent(
+            id = "exam_prompt_${character.age}_${title.replace(' ', '_').lowercase()}",
+            minAge = character.age,
+            maxAge = character.age,
+            text = "$title are here. Preparedness $prep%. Stress $stress. Pass chance ~$chance%. $outlook How do you play it?",
+            choices = listOf(
+                EventChoice(
+                    label = "Study hard",
+                    resultText = "You lock in and give it everything.",
+                    examPrepAction = ExamPrepChoice.STUDY_HARD.name
+                ),
+                EventChoice(
+                    label = "Study normally",
+                    resultText = "You stick to a balanced plan.",
+                    examPrepAction = ExamPrepChoice.STUDY_NORMAL.name
+                ),
+                EventChoice(
+                    label = "Cram all night",
+                    resultText = "Coffee, notes, sunrise.",
+                    examPrepAction = ExamPrepChoice.CRAM.name
+                ),
+                EventChoice(
+                    label = "Cheat on the exam",
+                    resultText = "You gamble on a shortcut.",
+                    examPrepAction = ExamPrepChoice.CHEAT.name
+                )
+            ),
+            tags = listOf(EXAM_SYSTEM_TAG, EXAM_PROMPT_TAG, "one_time"),
+            weight = 10
+        )
+    }
+
+    fun examOutlookTip(preparedness: Int, stress: Int, plannedCheat: Boolean): String {
+        if (plannedCheat) return "A cheat plan is in motion — high reward, high risk."
+        return when {
+            preparedness >= 75 && stress < 50 -> "You look ready."
+            preparedness >= 55 -> "You're in the mix if you stay focused."
+            stress >= 70 -> "Stress is eating your focus."
+            else -> "You are underprepared."
+        }
+    }
+
+    fun refreshExamSchedule(character: Character): Character {
+        if (!isEnrolled(character) || character.education.expelled) {
+            return if (character.education.pendingExams.isEmpty()) {
+                character
+            } else {
+                character.copy(education = character.education.copy(pendingExams = emptyList()))
+            }
+        }
+        val education = character.education
+        val priorPrep = education.pendingExams.associate { it.kind to it.preparedness }
+        val exams = mutableListOf<ExamSchedule>()
+        val stage = education.stage
+
+        fun prepFor(kind: ExamKind, default: Int = 40) =
+            priorPrep[kind] ?: default
+
+        when (stage) {
+            SchoolStage.PRIMARY -> {
+                exams += ExamSchedule(
+                    id = "midterm_primary_${education.currentGrade}",
+                    kind = ExamKind.MIDTERM,
+                    title = "Midterms",
+                    yearsUntilDue = 0,
+                    preparedness = prepFor(ExamKind.MIDTERM)
+                )
+                if (education.currentGrade >= PRIMARY_MAX_GRADE - 1 && education.kcpePassed != true) {
+                    val due = if (shouldTriggerPrimaryExam(character) ||
+                        education.currentGrade >= PRIMARY_MAX_GRADE
+                    ) {
+                        0
+                    } else {
+                        1
+                    }
+                    exams += ExamSchedule(
+                        id = "national_primary",
+                        kind = ExamKind.NATIONAL_EXIT,
+                        title = com.maisha.game.data.ExamNames.primaryExamName(character.countryCode),
+                        yearsUntilDue = due,
+                        preparedness = prepFor(ExamKind.NATIONAL_EXIT, 35)
+                    )
+                } else {
+                    exams += ExamSchedule(
+                        id = "finals_primary_${education.currentGrade}",
+                        kind = ExamKind.FINALS,
+                        title = "End-of-year finals",
+                        yearsUntilDue = 0,
+                        preparedness = prepFor(ExamKind.FINALS)
+                    )
+                }
+            }
+            SchoolStage.SECONDARY -> {
+                exams += ExamSchedule(
+                    id = "midterm_secondary_${education.currentGrade}",
+                    kind = ExamKind.MIDTERM,
+                    title = "Midterms",
+                    yearsUntilDue = 0,
+                    preparedness = prepFor(ExamKind.MIDTERM)
+                )
+                if (education.currentGrade >= SECONDARY_MAX_GRADE - 1 && education.kcseGrade == null) {
+                    val due = if (shouldTriggerSecondaryExam(character) ||
+                        education.currentGrade >= SECONDARY_MAX_GRADE
+                    ) {
+                        0
+                    } else {
+                        1
+                    }
+                    exams += ExamSchedule(
+                        id = "national_secondary",
+                        kind = ExamKind.NATIONAL_EXIT,
+                        title = com.maisha.game.data.ExamNames.secondaryExamName(character.countryCode),
+                        yearsUntilDue = due,
+                        preparedness = prepFor(ExamKind.NATIONAL_EXIT, 35)
+                    )
+                } else {
+                    exams += ExamSchedule(
+                        id = "finals_secondary_${education.currentGrade}",
+                        kind = ExamKind.FINALS,
+                        title = "End-of-year finals",
+                        yearsUntilDue = 0,
+                        preparedness = prepFor(ExamKind.FINALS)
+                    )
+                }
+            }
+            SchoolStage.UNIVERSITY -> {
+                exams += ExamSchedule(
+                    id = "midterm_uni_${education.currentGrade}",
+                    kind = ExamKind.MIDTERM,
+                    title = "Midterm papers",
+                    yearsUntilDue = 0,
+                    preparedness = prepFor(ExamKind.MIDTERM)
+                )
+                exams += ExamSchedule(
+                    id = "finals_uni_${education.currentGrade}",
+                    kind = ExamKind.FINALS,
+                    title = "Final exams",
+                    yearsUntilDue = 0,
+                    preparedness = prepFor(ExamKind.FINALS)
+                )
+            }
+            else -> Unit
+        }
+
+        var stress = education.examStress
+        if (exams.any { it.yearsUntilDue <= 0 }) {
+            stress = (stress + 4).coerceIn(0, 100)
+        }
+        if (education.plannedStudyEffort == StudyEffort.HARD) {
+            stress = (stress + 2).coerceIn(0, 100)
+        }
+
+        return character.copy(
+            education = education.copy(
+                pendingExams = exams,
+                examStress = stress
+            )
+        )
+    }
+
+    private fun resolveYearFinals(character: Character, choice: ExamPrepChoice): Character {
+        val chance = calculateExamPassChance(character)
+        val passed = Random.nextFloat() < chance
+        val gpaDelta = when {
+            choice == ExamPrepChoice.CHEAT && passed -> 0.35f
+            passed -> 0.18f
+            else -> -0.15f
+        }
+        val summary = if (passed) {
+            "Year finals: Passed (~${(chance * 100).roundToInt()}% chance)"
+        } else {
+            "Year finals: Failed"
+        }
+        val message = if (passed) {
+            "You passed your year exams."
+        } else {
+            "You underperformed on year exams. GPA takes a hit."
+        }
+        return character.copy(
+            education = character.education.copy(
+                gpa = clampGpa(character.education.gpa + gpaDelta),
+                examStress = (character.education.examStress - 10).coerceAtLeast(0),
+                schoolReputation = (character.education.schoolReputation + if (passed) 3 else -4)
+                    .coerceIn(0, 100),
+                lastExamSummary = summary,
+                plannedCheatOnExam = false,
+                pendingExams = character.education.pendingExams.map {
+                    if (it.yearsUntilDue <= 0 && it.kind != ExamKind.NATIONAL_EXIT) {
+                        it.copy(preparedness = 40, yearsUntilDue = 1)
+                    } else {
+                        it
+                    }
+                }
+            ),
+            eventLog = EventLogCap.prepend(character.eventLog, message)
+        )
+    }
+
+    private fun applyPrepAdjustments(
+        character: Character,
+        prepDelta: Int,
+        stressDelta: Int,
+        gpaDelta: Float,
+        happinessDelta: Int,
+        healthDelta: Int,
+        message: String,
+        karmaDelta: Int = 0,
+        plannedCheat: Boolean = false
+    ): Character {
+        val updatedExams = character.education.pendingExams.map { exam ->
+            if (exam.yearsUntilDue <= 0) {
+                exam.copy(preparedness = (exam.preparedness + prepDelta).coerceIn(0, 100))
+            } else {
+                exam
+            }
+        }
+        return character.copy(
+            stats = character.stats.copy(
+                happiness = clampStat(character.stats.happiness + happinessDelta),
+                health = clampStat(character.stats.health + healthDelta),
+                karma = clampStat(character.stats.karma + karmaDelta),
+                smarts = clampStat(
+                    character.stats.smarts + if (prepDelta >= 14) 2 else if (prepDelta >= 8) 1 else 0
+                )
+            ),
+            education = character.education.copy(
+                pendingExams = updatedExams,
+                examStress = (character.education.examStress + stressDelta).coerceIn(0, 100),
+                gpa = clampGpa(character.education.gpa + gpaDelta),
+                examPrepDoneThisYear = true,
+                plannedCheatOnExam = character.education.plannedCheatOnExam || plannedCheat
+            ),
+            eventLog = EventLogCap.prepend(character.eventLog, message)
+        )
+    }
+
+    private fun imminentPreparedness(character: Character): Float {
+        val imminent = imminentExams(character)
+        if (imminent.isEmpty()) return 40f
+        return imminent.map { it.preparedness }.average().toFloat()
+    }
+
+    private fun examOutcomeLog(examName: String, result: ExamResult): String {
+        val outcome = if (result.passed) "passed" else "did not pass"
+        return "$examName results: you $outcome with ${result.grade} (${result.score.roundToInt()}%)."
     }
 
     /**
@@ -586,6 +1241,8 @@ class EducationEngine @Inject constructor(
                 courseOfStudy = null,
                 schoolPeople = emptyList(),
                 schoolClub = null,
+                pendingExams = emptyList(),
+                examStress = 0,
                 schoolReputation = (education.schoolReputation - 20).coerceIn(0, 100),
                 academicActionDoneThisYear = false,
                 socialActionDoneThisYear = false
@@ -634,12 +1291,46 @@ class EducationEngine @Inject constructor(
                 )
             }
         }
-        return character.copy(
+        val withPeople = character.copy(
             education = character.education.copy(
                 schoolPeople = people,
                 academicActionDoneThisYear = false,
-                socialActionDoneThisYear = false
+                socialActionDoneThisYear = false,
+                examPrepDoneThisYear = false
             )
+        )
+        return refreshExamSchedule(resolveMidtermsQuietly(withPeople))
+    }
+
+    /** Quiet midterm resolution — feeds GPA/stress without a dialog. */
+    private fun resolveMidtermsQuietly(character: Character): Character {
+        val midterms = character.education.pendingExams.filter {
+            it.kind == ExamKind.MIDTERM && it.yearsUntilDue <= 0
+        }
+        if (midterms.isEmpty()) return character
+        val avgPrep = midterms.map { it.preparedness }.average().toFloat()
+        val passed = avgPrep + (100 - character.education.examStress) * 0.25f +
+            character.education.gpa * 8f >= 55f
+        val gpaDelta = if (passed) 0.08f else -0.1f
+        val stressDelta = if (passed) -4 else 6
+        val note = if (passed) {
+            "Midterms went fine."
+        } else {
+            "Midterms stung. More revision needed before finals."
+        }
+        return character.copy(
+            education = character.education.copy(
+                gpa = clampGpa(character.education.gpa + gpaDelta),
+                examStress = (character.education.examStress + stressDelta).coerceIn(0, 100),
+                pendingExams = character.education.pendingExams.map { exam ->
+                    if (exam.kind == ExamKind.MIDTERM && exam.yearsUntilDue <= 0) {
+                        exam.copy(yearsUntilDue = 1, preparedness = 45)
+                    } else {
+                        exam
+                    }
+                }
+            ),
+            eventLog = EventLogCap.prepend(character.eventLog, note)
         )
     }
 
@@ -647,18 +1338,21 @@ class EducationEngine @Inject constructor(
         if (!isEnrolled(character)) return character
         if (!forceRefresh && character.education.schoolPeople.isNotEmpty()) {
             val enriched = character.education.schoolPeople.map { enrichSchoolPersonIfNeeded(it) }
-            return if (enriched == character.education.schoolPeople) {
+            val withPeople = if (enriched == character.education.schoolPeople) {
                 character
             } else {
                 character.copy(education = character.education.copy(schoolPeople = enriched))
             }
+            return refreshExamSchedule(withPeople)
         }
         val people = generateSchoolRoster(character)
-        return character.copy(
-            education = character.education.copy(schoolPeople = people),
-            eventLog = EventLogCap.prepend(
-                character.eventLog,
-                "You met new people at ${character.education.schoolName ?: "school"}."
+        return refreshExamSchedule(
+            character.copy(
+                education = character.education.copy(schoolPeople = people),
+                eventLog = EventLogCap.prepend(
+                    character.eventLog,
+                    "You met new people at ${character.education.schoolName ?: "school"}."
+                )
             )
         )
     }
@@ -1365,8 +2059,16 @@ class EducationEngine @Inject constructor(
         happiness: Int,
         reputation: Int,
         message: String,
-        health: Int = 0
+        health: Int = 0,
+        examPrepDelta: Int = 6
     ): SchoolActionResult {
+        val updatedExams = character.education.pendingExams.map { exam ->
+            if (exam.yearsUntilDue <= 0) {
+                exam.copy(preparedness = (exam.preparedness + examPrepDelta).coerceIn(0, 100))
+            } else {
+                exam
+            }
+        }
         val updated = character.copy(
             stats = character.stats.copy(
                 smarts = clampStat(character.stats.smarts + smarts),
@@ -1377,6 +2079,8 @@ class EducationEngine @Inject constructor(
                 gpa = clampGpa(character.education.gpa + gpaDelta),
                 schoolReputation = (character.education.schoolReputation + reputation)
                     .coerceIn(0, 100),
+                pendingExams = updatedExams,
+                examStress = (character.education.examStress - 2).coerceAtLeast(0),
                 academicActionDoneThisYear = true
             ),
             eventLog = EventLogCap.prepend(character.eventLog, message)
@@ -1585,8 +2289,13 @@ class EducationEngine @Inject constructor(
         const val KCPE_RESULT_EVENT_ID = "kcpe_results_system"
         const val KCSE_RESULT_EVENT_ID = "kcse_results_system"
         const val EXAM_SYSTEM_TAG = "exam_system"
+        const val EXAM_PROMPT_TAG = "exam_prompt"
         const val MIN_DRIVING_AGE = 18
         const val DRIVING_TEST_FEE_KENYA = 12_000
+        private const val CHEAT_CATCH_CHANCE = 0.35f
+        private const val CHEAT_DAY_CATCH_CHANCE = 0.40f
+        private const val CHEAT_DAY_CATCH_CHANCE_PLANNED = 0.55f
+        private const val CHEAT_EXPEL_CHANCE = 0.12f
 
         private const val PRIMARY_ENROLL_AGE = 6
         private const val SECONDARY_ENROLL_AGE = 14

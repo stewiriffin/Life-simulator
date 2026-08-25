@@ -449,4 +449,71 @@ class EducationEngineTest {
         )
         assertEquals(SchoolInteractionResult.InsufficientFunds, result)
     }
+
+    @Test
+    fun refreshExamSchedule_addsImminentExamsWhileEnrolled() {
+        val character = engine.refreshExamSchedule(
+            TestFixtures.character(
+                age = 12,
+                education = EducationState(
+                    stage = SchoolStage.PRIMARY,
+                    currentGrade = 5,
+                    gpa = 2.5f
+                )
+            )
+        )
+        assertTrue(character.education.pendingExams.isNotEmpty())
+        assertTrue(character.education.pendingExams.any { it.yearsUntilDue <= 0 })
+    }
+
+    @Test
+    fun performExamPrepAction_studyHardRaisesPreparedness() {
+        val base = engine.refreshExamSchedule(
+            TestFixtures.character(
+                age = 12,
+                education = EducationState(
+                    stage = SchoolStage.PRIMARY,
+                    currentGrade = 6,
+                    gpa = 2.4f,
+                    examStress = 40
+                )
+            )
+        )
+        val before = base.education.pendingExams.first { it.yearsUntilDue <= 0 }.preparedness
+        val result = engine.performExamPrepAction(
+            base,
+            com.maisha.game.data.model.ExamPrepChoice.STUDY_HARD
+        )
+        assertTrue(result is ExamPrepResult.Success)
+        val after = (result as ExamPrepResult.Success).character
+        val prep = after.education.pendingExams.first { it.yearsUntilDue <= 0 }.preparedness
+        assertTrue(prep > before)
+        assertTrue(after.education.examPrepDoneThisYear)
+        assertTrue(after.education.examStress < base.education.examStress)
+    }
+
+    @Test
+    fun calculateExamPassChance_hardStudyBeatsSlack() {
+        val hard = engine.refreshExamSchedule(
+            TestFixtures.character(
+                age = 13,
+                stats = Stats(smarts = 70),
+                education = EducationState(
+                    stage = SchoolStage.PRIMARY,
+                    currentGrade = 8,
+                    gpa = 3.2f,
+                    schoolReputation = 70,
+                    plannedStudyEffort = com.maisha.game.data.model.StudyEffort.HARD,
+                    examStress = 20
+                )
+            )
+        )
+        val slack = hard.copy(
+            education = hard.education.copy(
+                plannedStudyEffort = com.maisha.game.data.model.StudyEffort.SLACK,
+                examStress = 80
+            )
+        )
+        assertTrue(engine.calculateExamPassChance(hard) > engine.calculateExamPassChance(slack))
+    }
 }

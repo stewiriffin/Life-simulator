@@ -46,6 +46,38 @@ enum class ExamType {
     KCSE
 }
 
+/** Kind of school exam on the yearly schedule. */
+@Serializable
+enum class ExamKind {
+    MIDTERM,
+    FINALS,
+    NATIONAL_EXIT
+}
+
+/**
+ * A scheduled exam the player can prepare for.
+ *
+ * @property yearsUntilDue 0 = imminent / this school year.
+ * @property preparedness How ready the player is (0–100), raised by prep actions.
+ */
+@Serializable
+data class ExamSchedule(
+    val id: String,
+    val kind: ExamKind,
+    val title: String,
+    val yearsUntilDue: Int = 0,
+    val preparedness: Int = 40
+)
+
+/** Player choice when an exam prompt fires (or from the School card). */
+@Serializable
+enum class ExamPrepChoice {
+    STUDY_HARD,
+    STUDY_NORMAL,
+    CRAM,
+    CHEAT
+}
+
 @Serializable
 data class ExamResult(
     val passed: Boolean,
@@ -125,6 +157,8 @@ enum class SchoolActivity {
  * @property kcseGrade Letter grade string; gates university via points threshold.
  * @property schoolPeople Classmates, teachers, bullies, and crushes while enrolled.
  * @property schoolReputation Standing with staff and peers (0–100).
+ * @property pendingExams Upcoming midterms, finals, and national exit exams.
+ * @property examStress Pressure from hard studying and imminent exams (0–100).
  */
 @Serializable
 data class EducationState(
@@ -147,5 +181,13 @@ data class EducationState(
     val academicActionDoneThisYear: Boolean = false,
     /** Social school activity used this year (hang out, dance, confront…). */
     val socialActionDoneThisYear: Boolean = false,
-    val detentionYears: Int = 0
+    val detentionYears: Int = 0,
+    val pendingExams: List<ExamSchedule> = emptyList(),
+    val examStress: Int = 0,
+    /** School-card exam prep action used this year. */
+    val examPrepDoneThisYear: Boolean = false,
+    /** Set when cheat prep succeeds unnoticed — raises catch risk on exam day. */
+    val plannedCheatOnExam: Boolean = false,
+    /** Short summary of the last exam outcome for the School card. */
+    val lastExamSummary: String? = null
 )

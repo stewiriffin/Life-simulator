@@ -71,6 +71,7 @@ import com.maisha.game.data.model.PoliticalOffice
 import com.maisha.game.data.model.SchoolStage
 import com.maisha.game.data.model.TaxPolicyType
 import com.maisha.game.data.model.CareerTrack
+import com.maisha.game.data.model.ExamPrepChoice
 import com.maisha.game.data.model.SchoolActivity
 import com.maisha.game.data.model.SchoolClub
 import com.maisha.game.data.model.SchoolPerson
@@ -148,9 +149,11 @@ fun CareerScreen(
     onPassTaxPolicy: (TaxPolicyType) -> Unit,
     onSetWorkEffort: (com.maisha.game.data.model.WorkEffort) -> Unit,
     onSetStudyEffort: (StudyEffort) -> Unit,
+    onSyncExamSchedule: () -> Unit = {},
     onJoinSchoolClub: (SchoolClub) -> Unit,
     onPerformSchoolActivity: (SchoolActivity, String?) -> Unit = { _, _ -> },
     onSchoolPersonInteraction: (String, SchoolPersonAction) -> Unit = { _, _ -> },
+    onExamPrepChoice: (ExamPrepChoice) -> Unit = {},
     onStartCareerTrack: (CareerTrack) -> Unit,
     onPracticeCareerTrack: () -> Unit,
     onCareerMessageDismissed: () -> Unit,
@@ -437,8 +440,11 @@ fun CareerScreen(
                     EducationSectionCard(
                         education = character.education,
                         countryCode = character.countryCode,
+                        character = character,
                         onDropOut = { dropOutConfirm.request(Unit) },
-                        onSetStudyEffort = onSetStudyEffort
+                        onSetStudyEffort = onSetStudyEffort,
+                        onExamPrepChoice = onExamPrepChoice,
+                        onSyncExamSchedule = onSyncExamSchedule
                     )
                 }
                 item(
@@ -960,8 +966,11 @@ private fun RetiredStateCard(
 private fun EducationSectionCard(
     education: EducationState,
     countryCode: String,
+    character: Character,
     onDropOut: () -> Unit,
-    onSetStudyEffort: (StudyEffort) -> Unit
+    onSetStudyEffort: (StudyEffort) -> Unit,
+    onExamPrepChoice: (ExamPrepChoice) -> Unit,
+    onSyncExamSchedule: () -> Unit
 ) {
     val resources = LocalContext.current.resources
     val canDropOut = education.stage == SchoolStage.SECONDARY ||
@@ -976,6 +985,36 @@ private fun EducationSectionCard(
         StudyEffort.SLACK -> stringResource(R.string.study_effort_outlook_slack)
         StudyEffort.NORMAL -> stringResource(R.string.study_effort_outlook_normal)
         StudyEffort.HARD -> stringResource(R.string.study_effort_outlook_hard)
+    }
+
+    LaunchedEffect(education.stage, education.currentGrade, education.pendingExams.size) {
+        if (studyEffortEnabled && education.pendingExams.isEmpty()) {
+            onSyncExamSchedule()
+        }
+    }
+
+    val imminentExams = education.pendingExams.filter { it.yearsUntilDue <= 0 }
+    val upcomingExams = education.pendingExams.filter { it.yearsUntilDue == 1 }
+    val showExamBanner = studyEffortEnabled &&
+        (imminentExams.isNotEmpty() || upcomingExams.isNotEmpty() || education.examStress >= 35)
+    val preparedness = remember(character.education, character.stats) {
+        schoolUiEngine.examPreparednessPercent(character)
+    }
+    val passChance = remember(character.education, character.stats) {
+        (schoolUiEngine.calculateExamPassChance(character) * 100).toInt()
+    }
+    val outlook = remember(preparedness, education.examStress, education.plannedCheatOnExam) {
+        schoolUiEngine.examOutlookTip(
+            preparedness,
+            education.examStress,
+            education.plannedCheatOnExam
+        )
+    }
+    val bannerColor = when {
+        education.plannedCheatOnExam || education.examStress >= 70 || preparedness < 40 ->
+            CoralNegative.copy(alpha = 0.14f)
+        preparedness >= 70 -> SuccessGreen.copy(alpha = 0.14f)
+        else -> GoldAccent.copy(alpha = 0.14f)
     }
 
     Card(
@@ -1007,6 +1046,160 @@ private fun EducationSectionCard(
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
             }
+            education.lastExamSummary?.let { summary ->
+                Spacer(modifier = Modifier.height(4.dp))
+                Text(
+                    text = stringResource(R.string.format_last_exam, summary),
+                    style = MaterialTheme.typography.labelSmall,
+                    color = TealPrimary
+                )
+            }
+
+            if (showExamBanner) {
+                Spacer(modifier = Modifier.height(10.dp))
+                Card(
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(12.dp),
+                    colors = CardDefaults.cardColors(containerColor = bannerColor)
+                ) {
+                    Column(modifier = Modifier.padding(12.dp)) {
+                        Text(
+                            text = stringResource(R.string.exam_alert_title),
+                            style = MaterialTheme.typography.labelMedium,
+                            fontWeight = FontWeight.Bold,
+                            color = when {
+                                preparedness < 40 || education.examStress >= 70 -> CoralNegative
+                                preparedness >= 70 -> SuccessGreen
+                                else -> GoldAccent
+                            }
+                        )
+                        Text(
+                            text = when {
+                                imminentExams.isNotEmpty() -> stringResource(
+                                    R.string.exam_alert_imminent,
+                                    imminentExams.joinToString { it.title }
+                                )
+                                upcomingExams.isNotEmpty() -> stringResource(
+                                    R.string.exam_alert_upcoming,
+                                    upcomingExams.joinToString { it.title }
+                                )
+                                else -> stringResource(R.string.exam_alert_stress_only)
+                            },
+                            style = MaterialTheme.typography.bodySmall,
+                            modifier = Modifier.padding(top = 4.dp)
+                        )
+                        Text(
+                            text = outlook,
+                            style = MaterialTheme.typography.bodySmall,
+                            fontWeight = FontWeight.Medium,
+                            color = MaterialTheme.colorScheme.onSurface,
+                            modifier = Modifier.padding(top = 4.dp)
+                        )
+                        Spacer(modifier = Modifier.height(8.dp))
+                        StatBar(
+                            type = StatType.SMARTS,
+                            value = preparedness,
+                            label = stringResource(R.string.label_exam_preparedness)
+                        )
+                        Spacer(modifier = Modifier.height(6.dp))
+                        StatBar(
+                            type = StatType.HAPPINESS,
+                            value = education.examStress,
+                            label = stringResource(R.string.label_exam_stress)
+                        )
+                        Spacer(modifier = Modifier.height(4.dp))
+                        Text(
+                            text = stringResource(R.string.format_exam_pass_chance, passChance),
+                            style = MaterialTheme.typography.labelSmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                        if (education.plannedCheatOnExam) {
+                            Text(
+                                text = stringResource(R.string.exam_cheat_plan_active),
+                                style = MaterialTheme.typography.labelSmall,
+                                color = CoralNegative,
+                                modifier = Modifier.padding(top = 4.dp)
+                            )
+                        }
+                        if (!education.examPrepDoneThisYear && imminentExams.isNotEmpty()) {
+                            Spacer(modifier = Modifier.height(8.dp))
+                            Text(
+                                text = stringResource(R.string.section_exam_prep),
+                                style = MaterialTheme.typography.labelSmall,
+                                fontWeight = FontWeight.SemiBold
+                            )
+                            Spacer(modifier = Modifier.height(6.dp))
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.spacedBy(6.dp)
+                            ) {
+                                OutlinedButton(
+                                    onClick = { onExamPrepChoice(ExamPrepChoice.STUDY_HARD) },
+                                    modifier = Modifier.weight(1f),
+                                    shape = RoundedCornerShape(10.dp),
+                                    contentPadding = PaddingValues(horizontal = 4.dp, vertical = 6.dp)
+                                ) {
+                                    Text(
+                                        stringResource(R.string.exam_prep_study_hard),
+                                        maxLines = 1,
+                                        style = MaterialTheme.typography.labelSmall
+                                    )
+                                }
+                                OutlinedButton(
+                                    onClick = { onExamPrepChoice(ExamPrepChoice.STUDY_NORMAL) },
+                                    modifier = Modifier.weight(1f),
+                                    shape = RoundedCornerShape(10.dp),
+                                    contentPadding = PaddingValues(horizontal = 4.dp, vertical = 6.dp)
+                                ) {
+                                    Text(
+                                        stringResource(R.string.exam_prep_study_normal),
+                                        maxLines = 1,
+                                        style = MaterialTheme.typography.labelSmall
+                                    )
+                                }
+                            }
+                            Spacer(modifier = Modifier.height(6.dp))
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.spacedBy(6.dp)
+                            ) {
+                                OutlinedButton(
+                                    onClick = { onExamPrepChoice(ExamPrepChoice.CRAM) },
+                                    modifier = Modifier.weight(1f),
+                                    shape = RoundedCornerShape(10.dp),
+                                    contentPadding = PaddingValues(horizontal = 4.dp, vertical = 6.dp)
+                                ) {
+                                    Text(
+                                        stringResource(R.string.exam_prep_cram),
+                                        maxLines = 1,
+                                        style = MaterialTheme.typography.labelSmall
+                                    )
+                                }
+                                OutlinedButton(
+                                    onClick = { onExamPrepChoice(ExamPrepChoice.CHEAT) },
+                                    modifier = Modifier.weight(1f),
+                                    shape = RoundedCornerShape(10.dp),
+                                    contentPadding = PaddingValues(horizontal = 4.dp, vertical = 6.dp)
+                                ) {
+                                    Text(
+                                        stringResource(R.string.exam_prep_cheat),
+                                        maxLines = 1,
+                                        style = MaterialTheme.typography.labelSmall
+                                    )
+                                }
+                            }
+                        } else if (education.examPrepDoneThisYear) {
+                            Spacer(modifier = Modifier.height(6.dp))
+                            Text(
+                                text = stringResource(R.string.exam_prep_used),
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
+                    }
+                }
+            }
+
             if (studyEffortEnabled) {
                 Spacer(modifier = Modifier.height(10.dp))
                 Text(
