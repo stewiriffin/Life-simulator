@@ -50,6 +50,7 @@ import com.maisha.game.data.model.PrisonActivity
 import com.maisha.game.data.model.SchoolStage
 import com.maisha.game.data.model.SkillType
 import com.maisha.game.data.local.OnboardingTips
+import com.maisha.game.data.model.PartTimeDemand
 import com.maisha.game.data.model.PartTimeJob
 import com.maisha.game.domain.CareerEngine
 import com.maisha.game.domain.CrimeEngine
@@ -94,7 +95,7 @@ import com.maisha.game.ui.theme.TealPrimary
 import com.maisha.game.util.formatMoney
 
 private const val CRIME_UI_MIN_AGE = 16
-private const val SIDE_HUSTLE_UI_MIN_AGE = 16
+private const val SIDE_HUSTLE_UI_MIN_AGE = 14
 
 private enum class ActionCategory {
     ALL, CARE, EARN, GROW, LIVE, RISK
@@ -151,6 +152,8 @@ fun ActionsScreen(
     onAdoptChild: () -> Unit = {},
     onRequestExpungement: () -> Unit = {},
     onWorkPartTime: (com.maisha.game.data.model.PartTimeJob) -> Unit = {},
+    onQuitPartTimeJob: () -> Unit = {},
+    onRestStudentEnergy: () -> Unit = {},
     onActionMessageDismissed: () -> Unit,
     onDismissLeisureTip: () -> Unit = {},
     modifier: Modifier = Modifier
@@ -202,11 +205,11 @@ fun ActionsScreen(
         !incarcerated &&
         !awaitingTrial
     val crimeEngine = remember { CrimeEngine() }
-    val showTeenJobs = character.alive &&
-        character.age in CareerEngine.MIN_PART_TIME_AGE..CareerEngine.MAX_PART_TIME_AGE &&
+    val careerEngine = remember { CareerEngine(HealthEngine(), RelocationEngine()) }
+    val showStudentPartTime = character.alive &&
         !incarcerated &&
         !awaitingTrial &&
-        !character.career.partTimeWorkedThisYear
+        careerEngine.canWorkPartTime(character)
     val showAdoptChild = character.alive &&
         character.age >= RelationshipEngine.MIN_ADOPT_AGE &&
         !incarcerated &&
@@ -250,11 +253,15 @@ fun ActionsScreen(
     val crimeStatus = CrimeStatusMapper.map(character.criminalRecord)
 
     val showPrisonActions = incarcerated && character.alive
+    val showJobsAndHustles = character.alive &&
+        !incarcerated &&
+        !awaitingTrial &&
+        (showStudentPartTime || showSideHustleActions)
     val hasCare = untreated.isNotEmpty() || showLifestyleActions || showLeisureActions || showStudySession
-    val hasEarn = showSideHustleActions || showSocialMediaActions || showSkillActions
+    val hasEarn = showJobsAndHustles || showSocialMediaActions || showSkillActions
     val hasGrow = showSkillActions || showBucketList || showAdoptPetActions || showSocialMediaActions || showStudySession
     val hasLive = showDrivingTest || showPhilanthropy || showImmigrationOffice || showLeisureActions ||
-        showTeenJobs || showAdoptChild || showExpungement
+        showStudentPartTime || showAdoptChild || showExpungement
     val hasRisk = showCrimeActions || incarcerated || awaitingTrial || showPrisonActions
     val hasContent = hasCare || hasEarn || hasGrow || hasLive || hasRisk
     val leisureActivities = remember(character.age, character.criminalRecord) {
@@ -264,13 +271,16 @@ fun ActionsScreen(
         leisureActivities.size,
         showStudySession,
         untreated.size,
-        showSideHustleActions,
+        showJobsAndHustles,
         showSkillActions
     ) {
         var count = leisureActivities.size
         if (showStudySession) count++
         count += untreated.size
-        if (showSideHustleActions) count += JobPool.getAllSideHustleTypes().size
+        if (showJobsAndHustles) {
+            if (showStudentPartTime) count += PartTimeJob.entries.size
+            if (showSideHustleActions) count += JobPool.getAllSideHustleTypes().size
+        }
         if (showSkillActions) count += SkillType.entries.size
         count
     }
@@ -564,17 +574,119 @@ fun ActionsScreen(
                     }
                 }
 
-                if (show(ActionCategory.EARN) && showSideHustleActions) {
-                    item { SectionHeader(title = stringResource(R.string.section_side_hustles)) }
-                    items(JobPool.getAllSideHustleTypes(), key = { it.name }) { hustleType ->
-                        SideHustleActionCard(
-                            character = character,
-                            hustleType = hustleType,
-                            questHint = questHintIf(yearQuests, ActionFamily.SIDE_HUSTLE, questHintLabel),
-                            onClick = {
-                                pendingAction.request(PendingAction.SideHustle(hustleType))
+                if ((show(ActionCategory.EARN) || show(ActionCategory.LIVE)) && showJobsAndHustles) {
+                    item { SectionHeader(title = stringResource(R.string.section_jobs_side_hustles)) }
+                    item(key = "jobs_hustles_energy") {
+                        Card(
+                            modifier = Modifier.fillMaxWidth(),
+                            shape = MaishaRadius.cardShape,
+                            colors = CardDefaults.cardColors(containerColor = Color.White)
+                        ) {
+                            Column(modifier = Modifier.padding(14.dp)) {
+                                Text(
+                                    text = stringResource(
+                                        R.string.jobs_hustles_energy,
+                                        character.career.energyLevel
+                                    ),
+                                    style = MaterialTheme.typography.labelLarge,
+                                    fontWeight = FontWeight.SemiBold,
+                                    color = TealPrimary
+                                )
+                                Spacer(modifier = Modifier.height(6.dp))
+                                StatBar(
+                                    type = StatType.HEALTH,
+                                    value = character.career.energyLevel,
+                                    modifier = Modifier.fillMaxWidth()
+                                )
+                                character.career.activePartTimeJob?.let { active ->
+                                    Spacer(modifier = Modifier.height(8.dp))
+                                    Text(
+                                        text = stringResource(
+                                            R.string.jobs_hustles_active,
+                                            active.displayLabel
+                                        ),
+                                        style = MaterialTheme.typography.bodySmall,
+                                        color = InkTertiary
+                                    )
+                                }
+                                if (showStudentPartTime) {
+                                    Spacer(modifier = Modifier.height(6.dp))
+                                    Text(
+                                        text = stringResource(R.string.jobs_hustles_balance_hint),
+                                        style = MaterialTheme.typography.labelSmall,
+                                        color = InkTertiary
+                                    )
+                                    Spacer(modifier = Modifier.height(4.dp))
+                                    Text(
+                                        text = stringResource(R.string.jobs_hustles_year_end_hint),
+                                        style = MaterialTheme.typography.labelSmall,
+                                        color = InkTertiary
+                                    )
+                                }
+                                val canRest = showStudentPartTime &&
+                                    !character.career.energyRestedThisYear &&
+                                    character.career.energyLevel < 95
+                                if (canRest) {
+                                    Spacer(modifier = Modifier.height(10.dp))
+                                    androidx.compose.material3.OutlinedButton(
+                                        onClick = onRestStudentEnergy,
+                                        modifier = Modifier.fillMaxWidth()
+                                    ) {
+                                        Text(stringResource(R.string.btn_rest_energy))
+                                    }
+                                }
+                                if (character.career.activePartTimeJob != null) {
+                                    Spacer(modifier = Modifier.height(8.dp))
+                                    androidx.compose.material3.OutlinedButton(
+                                        onClick = onQuitPartTimeJob,
+                                        modifier = Modifier.fillMaxWidth()
+                                    ) {
+                                        Text(stringResource(R.string.btn_quit_part_time))
+                                    }
+                                }
                             }
-                        )
+                        }
+                    }
+                    if (showStudentPartTime) {
+                        PartTimeJob.entries.forEach { job ->
+                            item(key = "part_time_${job.name}") {
+                                val available = careerEngine.isPartTimeListingAvailable(character, job)
+                                val (minPay, maxPay) = careerEngine.partTimePayoutRange(
+                                    job,
+                                    character.countryCode
+                                )
+                                ActionCard(
+                                    icon = AppIcons.Money,
+                                    title = partTimeJobTitle(job),
+                                    description = partTimeDemandLabel(job.demand),
+                                    metaLabel = when {
+                                        character.career.partTimeWorkedThisYear ->
+                                            stringResource(R.string.msg_part_time_already)
+                                        !available -> stringResource(R.string.msg_side_hustle_prerequisites)
+                                        else -> stringResource(
+                                            R.string.part_time_payout_range,
+                                            formatMoney(minPay, character.countryCode),
+                                            formatMoney(maxPay, character.countryCode)
+                                        )
+                                    },
+                                    enabled = available,
+                                    accent = ActionCardAccent.GOLD,
+                                    onClick = { if (available) onWorkPartTime(job) }
+                                )
+                            }
+                        }
+                    }
+                    if (showSideHustleActions) {
+                        items(JobPool.getAllSideHustleTypes(), key = { "hustle_${it.name}" }) { hustleType ->
+                            SideHustleActionCard(
+                                character = character,
+                                hustleType = hustleType,
+                                questHint = questHintIf(yearQuests, ActionFamily.SIDE_HUSTLE, questHintLabel),
+                                onClick = {
+                                    pendingAction.request(PendingAction.SideHustle(hustleType))
+                                }
+                            )
+                        }
                     }
                 }
 
@@ -860,27 +972,6 @@ fun ActionsScreen(
                                         pendingAction.request(PendingAction.Donate(amount))
                                     }
                                 }
-                            )
-                        }
-                    }
-                }
-
-                if (show(ActionCategory.LIVE) && showTeenJobs) {
-                    item { SectionHeader(title = stringResource(R.string.section_teen_jobs)) }
-                    listOf(
-                        PartTimeJob.RETAIL to R.string.part_time_retail,
-                        PartTimeJob.FAST_FOOD to R.string.part_time_fast_food,
-                        PartTimeJob.BABYSITTING to R.string.part_time_babysitting,
-                        PartTimeJob.TUTORING to R.string.part_time_tutoring
-                    ).forEach { (job, labelRes) ->
-                        item(key = "part_time_${job.name}") {
-                            ActionCard(
-                                icon = AppIcons.Money,
-                                title = stringResource(labelRes),
-                                description = stringResource(R.string.section_teen_jobs),
-                                metaLabel = stringResource(R.string.meta_earn_cash),
-                                accent = ActionCardAccent.GOLD,
-                                onClick = { onWorkPartTime(job) }
                             )
                         }
                     }
@@ -1608,12 +1699,32 @@ private fun SideHustleActionCard(
 }
 
 @Composable
+private fun partTimeJobTitle(job: PartTimeJob): String = when (job) {
+    PartTimeJob.RETAIL -> stringResource(R.string.part_time_retail)
+    PartTimeJob.FAST_FOOD -> stringResource(R.string.part_time_fast_food)
+    PartTimeJob.BARISTA -> stringResource(R.string.part_time_barista)
+    PartTimeJob.BABYSITTING -> stringResource(R.string.part_time_babysitting)
+    PartTimeJob.TUTORING -> stringResource(R.string.part_time_tutoring)
+    PartTimeJob.FREELANCE_CODER -> stringResource(R.string.part_time_freelance_coder)
+}
+
+@Composable
+private fun partTimeDemandLabel(demand: PartTimeDemand): String = when (demand) {
+    PartTimeDemand.HIGH -> stringResource(R.string.part_time_demand_high)
+    PartTimeDemand.MEDIUM -> stringResource(R.string.part_time_demand_medium)
+    PartTimeDemand.LOW -> stringResource(R.string.part_time_demand_low)
+}
+
+@Composable
 private fun sideHustleTitle(type: HustleType): String = when (type) {
     HustleType.RIDE_SHARE -> stringResource(R.string.hustle_ride_share_title)
     HustleType.FREELANCE_CODING -> stringResource(R.string.hustle_freelance_coding_title)
     HustleType.TUTORING -> stringResource(R.string.hustle_tutoring_title)
     HustleType.FOOD_DELIVERY -> stringResource(R.string.hustle_food_delivery_title)
     HustleType.RESELLING -> stringResource(R.string.hustle_reselling_title)
+    HustleType.HANDMADE_CRAFTS -> stringResource(R.string.hustle_handmade_crafts_title)
+    HustleType.STREAMING -> stringResource(R.string.hustle_streaming_title)
+    HustleType.SCRIPT_CODING -> stringResource(R.string.hustle_script_coding_title)
 }
 
 @Composable
@@ -1623,6 +1734,9 @@ private fun sideHustleDescription(type: HustleType): String = when (type) {
     HustleType.TUTORING -> stringResource(R.string.hustle_tutoring_desc)
     HustleType.FOOD_DELIVERY -> stringResource(R.string.hustle_food_delivery_desc)
     HustleType.RESELLING -> stringResource(R.string.hustle_reselling_desc)
+    HustleType.HANDMADE_CRAFTS -> stringResource(R.string.hustle_handmade_crafts_desc)
+    HustleType.STREAMING -> stringResource(R.string.hustle_streaming_desc)
+    HustleType.SCRIPT_CODING -> stringResource(R.string.hustle_script_coding_desc)
 }
 
 @Composable
@@ -1632,6 +1746,9 @@ private fun sideHustleRequirementLabel(type: HustleType): String = when (type) {
     HustleType.TUTORING -> stringResource(R.string.hustle_tutoring_req)
     HustleType.RESELLING -> stringResource(R.string.hustle_reselling_req)
     HustleType.FOOD_DELIVERY -> stringResource(R.string.msg_side_hustle_prerequisites)
+    HustleType.HANDMADE_CRAFTS -> stringResource(R.string.hustle_handmade_crafts_req)
+    HustleType.STREAMING -> stringResource(R.string.hustle_streaming_req)
+    HustleType.SCRIPT_CODING -> stringResource(R.string.hustle_script_coding_req)
 }
 
 @Composable

@@ -6,13 +6,13 @@ import com.maisha.game.data.model.CriminalRecord
 import com.maisha.game.data.model.EducationState
 import com.maisha.game.data.model.HustleType
 import com.maisha.game.data.model.Job
+import com.maisha.game.data.model.PartTimeJob
 import com.maisha.game.data.model.SchoolStage
 import com.maisha.game.data.model.Stats
 import com.maisha.game.data.model.WorkEffort
-import com.maisha.game.domain.SideHustleFailure
-import com.maisha.game.domain.SideHustleResult
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
+import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
@@ -202,6 +202,7 @@ class CareerEngineTest {
                 assertTrue(result.character.stats.happiness < 80)
                 assertTrue(result.character.stats.health < 80)
                 assertTrue(result.character.career.sideHustleDoneThisYear)
+                assertTrue(result.character.career.energyLevel < 100)
             }
             is SideHustleResult.Failed -> error("Expected success but got ${result.reason}")
         }
@@ -479,5 +480,87 @@ class CareerEngineTest {
         val after = engine.workYear(employed, WorkEffort.NORMAL)
         assertTrue(after.stats.health < 70)
         assertTrue(after.eventLog.any { it.contains("burnout", ignoreCase = true) })
+    }
+
+    @Test
+    fun workPartTime_universityStudentSetsActiveJobAndDrainsEnergy() {
+        val student = TestFixtures.character(
+            age = 19,
+            stats = Stats(money = 0, happiness = 60, health = 70, smarts = 65),
+            education = EducationState(stage = SchoolStage.UNIVERSITY, currentGrade = 2, gpa = 3.1f),
+            career = CareerState(energyLevel = 100)
+        )
+        val result = engine.workPartTime(student, PartTimeJob.BARISTA)
+        assertTrue(result is PartTimeJobResult.Success)
+        val after = (result as PartTimeJobResult.Success).character
+        assertEquals(PartTimeJob.BARISTA, after.career.activePartTimeJob)
+        assertTrue(after.career.partTimeWorkedThisYear)
+        assertTrue(after.career.energyLevel < 100)
+        assertTrue(after.stats.money > 0)
+    }
+
+    @Test
+    fun workPartTime_rejectsWithoutSchoolEnrollment() {
+        val adult = TestFixtures.character(
+            age = 20,
+            education = EducationState(stage = SchoolStage.GRADUATED),
+            career = CareerState(energyLevel = 100)
+        )
+        assertTrue(engine.workPartTime(adult, PartTimeJob.RETAIL) is PartTimeJobResult.Ineligible)
+    }
+
+    @Test
+    fun executeSideHustle_youthCraftsAvailableAt14() {
+        val teen = TestFixtures.character(
+            age = 14,
+            stats = Stats(money = 0, happiness = 70, health = 80, smarts = 50)
+        )
+        when (val result = engine.executeSideHustle(teen, HustleType.HANDMADE_CRAFTS)) {
+            is SideHustleResult.Success -> {
+                assertTrue(result.payout > 0)
+                assertTrue(result.character.career.energyLevel < 100)
+            }
+            is SideHustleResult.Failed -> error("Expected crafts success but got ${result.reason}")
+        }
+    }
+
+    @Test
+    fun quitPartTimeJob_clearsActiveRole() {
+        val student = TestFixtures.character(
+            age = 17,
+            education = EducationState(stage = SchoolStage.SECONDARY, currentGrade = 3, gpa = 3.0f),
+            career = CareerState(activePartTimeJob = PartTimeJob.BARISTA, partTimeWorkedThisYear = true)
+        )
+        val result = engine.quitPartTimeJob(student)
+        assertTrue(result is QuitPartTimeResult.Success)
+        assertNull((result as QuitPartTimeResult.Success).character.career.activePartTimeJob)
+    }
+
+    @Test
+    fun restToRecoverEnergy_raisesEnergyOnce() {
+        val student = TestFixtures.character(
+            age = 18,
+            education = EducationState(stage = SchoolStage.UNIVERSITY, currentGrade = 1, gpa = 3.0f),
+            career = CareerState(energyLevel = 40)
+        )
+        val first = engine.restToRecoverEnergy(student)
+        assertTrue(first is StudentEnergyRestResult.Success)
+        val after = (first as StudentEnergyRestResult.Success).character
+        assertTrue(after.career.energyLevel > 40)
+        assertTrue(engine.restToRecoverEnergy(after) is StudentEnergyRestResult.AlreadyRested)
+    }
+
+    @Test
+    fun finishStudentWorkYear_paysResidualThenClearsJob() {
+        val student = TestFixtures.character(
+            age = 17,
+            stats = Stats(money = 1_000, happiness = 50, health = 70, smarts = 55),
+            education = EducationState(stage = SchoolStage.SECONDARY, currentGrade = 3, gpa = 3.0f),
+            career = CareerState(activePartTimeJob = PartTimeJob.TUTORING, energyLevel = 50)
+        )
+        val after = engine.finishStudentWorkYear(student)
+        assertNull(after.career.activePartTimeJob)
+        assertTrue(after.stats.money > 1_000)
+        assertTrue(after.career.energyLevel > 50)
     }
 }

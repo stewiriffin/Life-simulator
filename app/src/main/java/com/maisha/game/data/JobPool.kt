@@ -300,6 +300,26 @@ object JobPool {
             basePayoutMin = 3_000,
             basePayoutMax = 12_000,
             minSmarts = 40
+        ),
+        SideHustleSpec(
+            type = HustleType.HANDMADE_CRAFTS,
+            basePayoutMin = 2_000,
+            basePayoutMax = 9_000,
+            minAge = 14
+        ),
+        SideHustleSpec(
+            type = HustleType.STREAMING,
+            basePayoutMin = 1_500,
+            basePayoutMax = 18_000,
+            minAge = 16,
+            minSmarts = 35
+        ),
+        SideHustleSpec(
+            type = HustleType.SCRIPT_CODING,
+            basePayoutMin = 4_000,
+            basePayoutMax = 22_000,
+            minAge = 16,
+            minSmarts = 60
         )
     )
 

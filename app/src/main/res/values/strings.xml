@@ -1633,14 +1633,39 @@
     <string name="msg_adopt_too_young">You must be at least 25 to adopt.</string>
     <string name="msg_adopt_funds">Not enough cash for adoption fees.</string>
 
-    <!-- Wave 3 — teen jobs -->
+    <!-- Wave 3 — student jobs & side hustles -->
     <string name="section_teen_jobs">Teen jobs</string>
-    <string name="part_time_retail">Retail shift</string>
-    <string name="part_time_fast_food">Fast-food shift</string>
-    <string name="part_time_babysitting">Babysitting</string>
-    <string name="part_time_tutoring">Tutoring</string>
+    <string name="section_jobs_side_hustles">Jobs &amp; Side Hustles</string>
+    <string name="jobs_hustles_energy">Energy %1$d/100</string>
+    <string name="jobs_hustles_active">Active: %1$s — earnings claimed this year</string>
+    <string name="jobs_hustles_balance_hint">Hard studying + a demanding job lowers GPA and raises stress on Age Up.</string>
+    <string name="part_time_retail">Retail Associate</string>
+    <string name="part_time_fast_food">Fast Food Crew</string>
+    <string name="part_time_barista">Barista</string>
+    <string name="part_time_babysitting">Babysitter</string>
+    <string name="part_time_tutoring">Tutor</string>
+    <string name="part_time_freelance_coder">Freelance Coder</string>
+    <string name="part_time_demand_high">High demand</string>
+    <string name="part_time_demand_medium">Medium demand</string>
+    <string name="part_time_demand_low">Light hours</string>
     <string name="msg_part_time_success">Shift complete — you earned %1$s.</string>
     <string name="msg_part_time_already">You already worked a part-time job this year.</string>
+    <string name="msg_part_time_quit">You quit your part-time job to focus on school.</string>
+    <string name="msg_energy_rest_success">Rested — recovered %1$d energy.</string>
+    <string name="msg_energy_rest_already">You already took a rest day this year.</string>
+    <string name="btn_quit_part_time">Quit part-time job</string>
+    <string name="btn_rest_energy">Rest &amp; recover energy</string>
+    <string name="part_time_payout_range">Earn %1$s–%2$s</string>
+    <string name="jobs_hustles_year_end_hint">Keep the job until Age Up for a year-end paycheck. Rest to soften study/work stress.</string>
+    <string name="hustle_handmade_crafts_title">Handmade Crafts</string>
+    <string name="hustle_handmade_crafts_desc">Sell jewelry, art, or crafts on local marketplaces.</string>
+    <string name="hustle_handmade_crafts_req">Age 14+</string>
+    <string name="hustle_streaming_title">Game Streaming</string>
+    <string name="hustle_streaming_desc">Stream games or short clips for tips and subs.</string>
+    <string name="hustle_streaming_req">Age 16+, 35+ smarts</string>
+    <string name="hustle_script_coding_title">Script Coding Gigs</string>
+    <string name="hustle_script_coding_desc">Write small paid scripts and micro-tools online.</string>
+    <string name="hustle_script_coding_req">Age 16+, 60+ smarts</string>
 
     <!-- Wave 3 — assets -->
     <string name="btn_renovate">Renovate</string>

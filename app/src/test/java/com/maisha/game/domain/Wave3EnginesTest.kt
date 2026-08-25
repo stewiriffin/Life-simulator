@@ -56,13 +56,19 @@ class Wave3EnginesTest {
     fun workPartTime_paysTeenOncePerYear() {
         val teen = TestFixtures.character(
             age = 16,
-            stats = Stats(money = 0, happiness = 50, health = 70, smarts = 60)
+            stats = Stats(money = 0, happiness = 50, health = 70, smarts = 60),
+            education = EducationState(
+                stage = SchoolStage.SECONDARY,
+                currentGrade = 3,
+                gpa = 3.0f
+            )
         )
         val first = careerEngine.workPartTime(teen, PartTimeJob.RETAIL)
         assertTrue(first is PartTimeJobResult.Success)
         val after = (first as PartTimeJobResult.Success).character
         assertTrue(after.stats.money > 0)
         assertTrue(after.career.partTimeWorkedThisYear)
+        assertEquals(PartTimeJob.RETAIL, after.career.activePartTimeJob)
         assertTrue(careerEngine.workPartTime(after, PartTimeJob.TUTORING) is PartTimeJobResult.AlreadyWorked)
     }
 

@@ -84,7 +84,9 @@ import com.maisha.game.data.model.SchoolPerson
 import com.maisha.game.data.model.SchoolPersonAction
 import com.maisha.game.data.model.SchoolRole
 import com.maisha.game.data.model.StudyEffort
+import com.maisha.game.data.model.HustleType
 import com.maisha.game.data.model.OfficeAction
+import com.maisha.game.data.model.PartTimeJob
 import com.maisha.game.data.model.WorkEffort
 import com.maisha.game.domain.BusinessEngine
 import com.maisha.game.domain.CareerEngine
@@ -109,6 +111,7 @@ import com.maisha.game.ui.illustrations.EmptyStateIllustrationView
 import com.maisha.game.ui.theme.CoralNegative
 import com.maisha.game.ui.theme.CreamBg
 import com.maisha.game.ui.theme.GoldAccent
+import com.maisha.game.ui.theme.InkPrimary
 import com.maisha.game.ui.theme.InkTertiary
 import com.maisha.game.ui.theme.LifeGreen
 import com.maisha.game.ui.theme.MaishaRadius
@@ -177,6 +180,10 @@ fun CareerScreen(
     onRepayStudentLoan: (Int) -> Unit = {},
     onStartCareerTrack: (CareerTrack) -> Unit,
     onPracticeCareerTrack: () -> Unit,
+    onWorkPartTime: (PartTimeJob) -> Unit = {},
+    onExecuteSideHustle: (HustleType) -> Unit = {},
+    onQuitPartTimeJob: () -> Unit = {},
+    onRestStudentEnergy: () -> Unit = {},
     onCareerMessageDismissed: () -> Unit,
     modifier: Modifier = Modifier
 ) {
@@ -518,6 +525,19 @@ fun CareerScreen(
                         onPracticeCareerTrack = onPracticeCareerTrack
                     )
                 }
+                item(
+                    key = "jobs_side_hustles",
+                    contentType = CareerListContentType.Education
+                ) {
+                    JobsAndSideHustlesCard(
+                        character = character,
+                        careerEngine = careerEngine,
+                        onWorkPartTime = onWorkPartTime,
+                        onExecuteSideHustle = onExecuteSideHustle,
+                        onQuitPartTimeJob = onQuitPartTimeJob,
+                        onRestStudentEnergy = onRestStudentEnergy
+                    )
+                }
             }
 
             if (show(CareerCategory.POLITICS)) {
@@ -554,6 +574,26 @@ fun CareerScreen(
             }
 
             if (show(CareerCategory.WORK)) {
+                // Avoid duplicate card when category filter is ALL (School section already shows it).
+                if (!show(CareerCategory.SCHOOL) &&
+                    (careerEngine.canWorkPartTime(character) ||
+                        (character.alive && character.age >= CareerEngine.MIN_PART_TIME_AGE &&
+                            !isRetired && currentJob == null))
+                ) {
+                    item(
+                        key = "jobs_side_hustles_work",
+                        contentType = CareerListContentType.WorkState
+                    ) {
+                        JobsAndSideHustlesCard(
+                            character = character,
+                            careerEngine = careerEngine,
+                            onWorkPartTime = onWorkPartTime,
+                            onExecuteSideHustle = onExecuteSideHustle,
+                            onQuitPartTimeJob = onQuitPartTimeJob,
+                            onRestStudentEnergy = onRestStudentEnergy
+                        )
+                    }
+                }
                 when {
                     isRetired -> {
                         item(
@@ -2688,6 +2728,161 @@ private fun schoolClubLabel(club: SchoolClub): String = when (club) {
     SchoolClub.DRAMA -> stringResource(R.string.club_drama)
     SchoolClub.CODING -> stringResource(R.string.club_coding)
     SchoolClub.MUSIC -> stringResource(R.string.club_music)
+}
+
+@Composable
+private fun JobsAndSideHustlesCard(
+    character: Character,
+    careerEngine: CareerEngine,
+    onWorkPartTime: (PartTimeJob) -> Unit,
+    onExecuteSideHustle: (HustleType) -> Unit,
+    onQuitPartTimeJob: () -> Unit,
+    onRestStudentEnergy: () -> Unit
+) {
+    val showPartTime = careerEngine.canWorkPartTime(character)
+    val showHustles = character.alive &&
+        character.age >= CareerEngine.MIN_PART_TIME_AGE &&
+        !character.criminalRecord.currentlyIncarcerated &&
+        !character.career.isRetired
+    if (!showPartTime && !showHustles) return
+
+    val youthHustles = listOf(
+        HustleType.HANDMADE_CRAFTS,
+        HustleType.STREAMING,
+        HustleType.SCRIPT_CODING,
+        HustleType.FOOD_DELIVERY
+    )
+    val canRest = showPartTime &&
+        !character.career.energyRestedThisYear &&
+        character.career.energyLevel < 95
+
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        shape = MaishaRadius.cardShape,
+        colors = CardDefaults.cardColors(containerColor = Color.White)
+    ) {
+        Column(
+            modifier = Modifier.padding(16.dp),
+            verticalArrangement = Arrangement.spacedBy(10.dp)
+        ) {
+            Text(
+                text = stringResource(R.string.section_jobs_side_hustles),
+                style = MaterialTheme.typography.titleSmall,
+                fontWeight = FontWeight.SemiBold,
+                color = TealPrimary
+            )
+            Text(
+                text = stringResource(
+                    R.string.jobs_hustles_energy,
+                    character.career.energyLevel
+                ),
+                style = MaterialTheme.typography.labelMedium,
+                color = InkTertiary
+            )
+            StatBar(
+                type = StatType.HEALTH,
+                value = character.career.energyLevel,
+                modifier = Modifier.fillMaxWidth()
+            )
+            character.career.activePartTimeJob?.let { active ->
+                Text(
+                    text = stringResource(R.string.jobs_hustles_active, active.displayLabel),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = LifeGreen
+                )
+            }
+            if (showPartTime) {
+                Text(
+                    text = stringResource(R.string.jobs_hustles_balance_hint),
+                    style = MaterialTheme.typography.labelSmall,
+                    color = InkTertiary
+                )
+                Text(
+                    text = stringResource(R.string.jobs_hustles_year_end_hint),
+                    style = MaterialTheme.typography.labelSmall,
+                    color = InkTertiary
+                )
+                if (canRest) {
+                    OutlinedButton(
+                        onClick = onRestStudentEnergy,
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Text(stringResource(R.string.btn_rest_energy))
+                    }
+                }
+                if (character.career.activePartTimeJob != null) {
+                    OutlinedButton(
+                        onClick = onQuitPartTimeJob,
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Text(stringResource(R.string.btn_quit_part_time))
+                    }
+                }
+                PartTimeJob.entries.chunked(2).forEach { row ->
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        row.forEach { job ->
+                            val available = careerEngine.isPartTimeListingAvailable(character, job)
+                            val (minPay, maxPay) = careerEngine.partTimePayoutRange(
+                                job,
+                                character.countryCode
+                            )
+                            OutlinedButton(
+                                onClick = { onWorkPartTime(job) },
+                                enabled = available,
+                                modifier = Modifier.weight(1f)
+                            ) {
+                                Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                                    Text(
+                                        text = job.displayLabel,
+                                        maxLines = 1,
+                                        overflow = TextOverflow.Ellipsis,
+                                        style = MaterialTheme.typography.labelSmall
+                                    )
+                                    Text(
+                                        text = stringResource(
+                                            R.string.part_time_payout_range,
+                                            formatMoney(minPay, character.countryCode),
+                                            formatMoney(maxPay, character.countryCode)
+                                        ),
+                                        style = MaterialTheme.typography.labelSmall,
+                                        color = InkTertiary,
+                                        maxLines = 1,
+                                        overflow = TextOverflow.Ellipsis
+                                    )
+                                }
+                            }
+                        }
+                        if (row.size == 1) Spacer(modifier = Modifier.weight(1f))
+                    }
+                }
+            }
+            if (showHustles) {
+                Text(
+                    text = stringResource(R.string.section_side_hustles),
+                    style = MaterialTheme.typography.labelLarge,
+                    fontWeight = FontWeight.Medium,
+                    color = InkPrimary
+                )
+                youthHustles.forEach { type ->
+                    val available = careerEngine.isSideHustleAvailable(character, type)
+                    OutlinedButton(
+                        onClick = { onExecuteSideHustle(type) },
+                        enabled = available,
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Text(
+                            text = type.name.replace('_', ' ').lowercase()
+                                .replaceFirstChar { it.titlecase() },
+                            style = MaterialTheme.typography.labelMedium
+                        )
+                    }
+                }
+            }
+        }
+    }
 }
 
 @Composable

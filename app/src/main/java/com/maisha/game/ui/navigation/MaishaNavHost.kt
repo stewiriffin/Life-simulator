@@ -364,6 +364,8 @@ fun MaishaNavHost(
                 onAdoptChild = viewModel::onAdoptChild,
                 onRequestExpungement = viewModel::onRequestExpungement,
                 onWorkPartTime = viewModel::onWorkPartTime,
+                onQuitPartTimeJob = viewModel::onQuitPartTimeJob,
+                onRestStudentEnergy = viewModel::onRestStudentEnergy,
                 onActionMessageDismissed = viewModel::onActionMessageDismissed,
                 onLifePulseMessageDismissed = viewModel::onLifePulseMessageDismissed,
                 onYearRecapDismissed = viewModel::onYearRecapDismissed,

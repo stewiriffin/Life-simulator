@@ -80,6 +80,8 @@ import com.maisha.game.domain.BucketAdoptResult
 import com.maisha.game.domain.AdoptChildResult
 import com.maisha.game.domain.ExpungementResult
 import com.maisha.game.domain.PartTimeJobResult
+import com.maisha.game.domain.QuitPartTimeResult
+import com.maisha.game.domain.StudentEnergyRestResult
 import com.maisha.game.domain.RenovateResult
 import com.maisha.game.domain.WeeklyChallengeEngine
 import com.maisha.game.data.model.PartTimeJob
@@ -1636,23 +1638,78 @@ class LifeViewModel @Inject constructor(
                 is PartTimeJobResult.Success -> {
                     persist(result.character)
                     checkWeeklyChallengeRibbons(result.character)
+                    val message = context.getString(
+                        R.string.msg_part_time_success,
+                        formatMoney(result.payout, result.character.countryCode)
+                    )
                     _uiState.update {
                         it.copy(
                             character = result.character,
-                            actionMessage = context.getString(
-                                R.string.msg_part_time_success,
-                                formatMoney(result.payout, result.character.countryCode)
-                            ),
+                            actionMessage = message,
+                            careerMessage = message,
                             netWorth = financeEngine.calculateNetWorth(result.character)
                         )
                     }
                 }
                 PartTimeJobResult.AlreadyWorked -> {
+                    val message = context.getString(R.string.msg_part_time_already)
                     _uiState.update {
-                        it.copy(actionMessage = context.getString(R.string.msg_part_time_already))
+                        it.copy(actionMessage = message, careerMessage = message)
                     }
                 }
                 PartTimeJobResult.Ineligible -> Unit
+            }
+        }
+    }
+
+    fun onQuitPartTimeJob() {
+        val character = _uiState.value.character ?: return
+        if (!character.alive) return
+        viewModelScope.launch {
+            when (val result = gameEngine.quitPartTimeJob(character)) {
+                is QuitPartTimeResult.Success -> {
+                    persist(result.character)
+                    val message = context.getString(R.string.msg_part_time_quit)
+                    _uiState.update {
+                        it.copy(
+                            character = result.character,
+                            actionMessage = message,
+                            careerMessage = message,
+                            netWorth = financeEngine.calculateNetWorth(result.character)
+                        )
+                    }
+                }
+                QuitPartTimeResult.Ineligible -> Unit
+            }
+        }
+    }
+
+    fun onRestStudentEnergy() {
+        val character = _uiState.value.character ?: return
+        if (!character.alive) return
+        viewModelScope.launch {
+            when (val result = gameEngine.restToRecoverEnergy(character)) {
+                is StudentEnergyRestResult.Success -> {
+                    persist(result.character)
+                    val message = context.getString(
+                        R.string.msg_energy_rest_success,
+                        result.energyGained
+                    )
+                    _uiState.update {
+                        it.copy(
+                            character = result.character,
+                            actionMessage = message,
+                            careerMessage = message
+                        )
+                    }
+                }
+                StudentEnergyRestResult.AlreadyRested -> {
+                    val message = context.getString(R.string.msg_energy_rest_already)
+                    _uiState.update {
+                        it.copy(actionMessage = message, careerMessage = message)
+                    }
+                }
+                StudentEnergyRestResult.Ineligible -> Unit
             }
         }
     }

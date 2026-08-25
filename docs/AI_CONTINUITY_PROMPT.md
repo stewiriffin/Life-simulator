@@ -2,7 +2,7 @@
 
 > **Purpose:** Paste this document (or point an AI agent at it) at the start of any new session so the assistant understands **what Maisha is**, **what has already been built**, **what just shipped**, **what is still missing**, and **how to work in this repo without undoing progress**.
 >
-> **Last updated:** 2026-08-25 (career ladder + office politics depth)  
+> **Last updated:** 2026-08-25 (student part-time jobs & youth side hustles)  
 > **Repo path:** `/home/dr-rank/Documents/Apps/Life-simulator`  
 > **Remote:** `https://github.com/stewiriffin/Life-simulator` (`origin/main`)  
 > **Package:** `com.maisha.game`
@@ -141,7 +141,8 @@ School is **not** its own bottom tab. It lives under **Career**, category **SCHO
 1. **Education** card — stage, GPA, study effort, drop out  
 2. **School life** card — reputation, classmates/teachers, activities  
 3. **School clubs** card — Debate / Football / Drama / Coding / Music with ranks, skill/prestige/fame bars, Light/Normal/Intense practice, rival challenges, letter jacket, officer fundraisers, captain major events, awards/scholarship resume  
-4. Career tracks, jobs, business, politics elsewhere in the same screen  
+4. **Jobs & Side Hustles** card — student part-time listings (16+, secondary/uni), energy bar, rest/quit, youth hustles  
+5. Career tracks, jobs, business, politics elsewhere in the same screen  
 
 ---
 
@@ -153,7 +154,7 @@ These are the rule brains. Prefer editing the right engine instead of stuffing l
 |--------|----------------|
 | `GameEngine` | Age-up orchestration, facades into other engines |
 | `EducationEngine` | Enroll, grades, exams, university, clubs, **school roster + activities**, study effort |
-| `CareerEngine` | Jobs, performance, promotions, tracks, military, `requires_job` gates |
+| `CareerEngine` | Jobs, performance, promotions, tracks, military, student part-time + energy, side hustles, `requires_job` gates |
 | `RelationshipEngine` | Family/dating/friends/enemies, interactions, gates (`requires_spouse`, etc.) |
 | `FinanceEngine` | Money, assets, rentals, portfolio tags |
 | `CrimeEngine` | Crimes, arrest, incarceration, trial-related rules |
@@ -208,6 +209,8 @@ Relevant commits: `c8e955c`, `21b94db`, `0cbf506`, `eaf0adf`, `d811187`, `222589
 
 ### Career & money
 - Country job pools; education gates; performance / promotion / firing  
+- **Student part-time jobs** (16+, secondary/university): demand levels, `energyLevel`, year-end paycheck, Hard-study balance in `EducationEngine`  
+- Youth side hustles (crafts / streaming / script coding) on Actions · Earn and Career  
 - Businesses, politics, career tracks (entertainment / pro sports)  
 - Assets, upkeep, investments, living standard, portfolio strategies, wills  
 - Side hustles / leisure / skills  
@@ -352,6 +355,7 @@ Newest first:
 
 | Commit | Meaning |
 |--------|---------|
+| *(pending push)* | Student part-time + youth side hustles: energy, Hard-study balance, year-end pay, rest/quit, Jobs & Side Hustles UI |
 | `30b316a` | Career ladder, office politics (PIP/credit/burnout/network), Career dashboard |
 | `74ec22c` | University majors, loans, campus jobs, internships, grad track, Career dashboard |
 | `c68bf45` | Detention deepen: serve hall, principal appeal, transfer hearing, rebel achievements |
@@ -418,9 +422,9 @@ These are **known unfinished** areas. Do not claim they are done.
 In priority order that matches recent player feedback:
 
 1. **University social life** — classmates/office hours depth while enrolled in university  
-2. **Turn Wave 4 themes into systems** — hobbies/side hustles/crime/love with dedicated Actions/Career surfaces, not only JSON  
-3. **Weekly challenges UI** — surface `WeeklyChallengeEngine` clearly  
-4. **Childhood / teen action density** — Actions tab for ages where career is empty  
+2. **Weekly challenges UI** — surface `WeeklyChallengeEngine` clearly  
+3. **Childhood / teen action density** — more Actions for ages where career is empty  
+4. **Wave 4 love/crime systems** — deepen beyond event packs where still thin  
 5. **Production prep** only when asked (ads, audio, store listing)
 
 Always confirm with the user’s latest message if the request is ambiguous.
@@ -441,7 +445,7 @@ Always confirm with the user’s latest message if the request is ambiguous.
 
 ## 16. Copy-paste short briefing (for tiny context windows)
 
-> Maisha is an Android BitLife-style life sim (Compose, Hilt, Room, pure domain engines). Worldwide 15 countries. Latest: career ladders + office politics (performance/stress/boss bonds, PIP/credit/burnout, Career dashboard) (`30b316a`); university majors/loans/campus jobs (`74ec22c`); school life + detention/clubs depth. Prefer agency/UI/systems over event spam. Docs folder was cleared except this continuity prompt. Commit/push/install only on request.
+> Maisha is an Android BitLife-style life sim (Compose, Hilt, Room, pure domain engines). Worldwide 15 countries. Latest: student part-time jobs + youth side hustles (energy, study/work balance, year-end pay, Jobs & Side Hustles UI on Actions/Career); career ladders + office politics (`30b316a`); university majors/loans (`74ec22c`); school life depth. Prefer agency/UI/systems over event spam. Docs folder was cleared except this continuity prompt. Commit/push/install only on request.
 
 ---
 

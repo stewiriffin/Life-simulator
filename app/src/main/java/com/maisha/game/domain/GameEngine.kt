@@ -117,7 +117,8 @@ class GameEngine @Inject constructor(
             career = character.career.copy(
                 sideHustleDoneThisYear = false,
                 workEffortThisYear = null,
-                partTimeWorkedThisYear = false
+                partTimeWorkedThisYear = false,
+                energyRestedThisYear = false
             )
         )
         updatedCharacter = applyAvatarVisualEvolution(updatedCharacter, previousAge)
@@ -138,6 +139,7 @@ class GameEngine @Inject constructor(
             updatedCharacter = educationEngine.tickSchoolYear(updatedCharacter)
             updatedCharacter = educationEngine.enrollIfEligible(updatedCharacter)
             updatedCharacter = processEducationProgression(updatedCharacter, preStage)
+            updatedCharacter = careerEngine.finishStudentWorkYear(updatedCharacter)
             updatedCharacter = processCareerProgression(updatedCharacter)
         }
 
@@ -1008,6 +1010,12 @@ class GameEngine @Inject constructor(
     /** Delegates to [CareerEngine.workPartTime]. */
     fun workPartTime(character: Character, job: com.maisha.game.data.model.PartTimeJob): PartTimeJobResult =
         careerEngine.workPartTime(character, job)
+
+    fun quitPartTimeJob(character: Character): QuitPartTimeResult =
+        careerEngine.quitPartTimeJob(character)
+
+    fun restToRecoverEnergy(character: Character): StudentEnergyRestResult =
+        careerEngine.restToRecoverEnergy(character)
 
     /** Delegates to [FinanceEngine.renovateAsset]. */
     fun renovateAsset(character: Character, assetId: String): RenovateResult =

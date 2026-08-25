@@ -56,6 +56,12 @@ data class CareerState(
     val trackProgress: Int = 0,
     /** Teen part-time job payout claimed this in-game year. */
     val partTimeWorkedThisYear: Boolean = false,
+    /** Active student part-time role for study/work balance (cleared on Age Up after school tick). */
+    val activePartTimeJob: PartTimeJob? = null,
+    /** Student energy pool (0–100); drained by shifts and hustles, recovers yearly. */
+    val energyLevel: Int = 100,
+    /** Mid-year rest used to recover student energy (once per year). */
+    val energyRestedThisYear: Boolean = false,
     /** Employer display name while employed. */
     val companyName: String? = null,
     /** Fine-grained job performance (0–100); kept in sync with [Job.performanceScore]. */
@@ -131,13 +137,29 @@ enum class CareerTrack {
     CORPORATE
 }
 
-/** After-school jobs for teens (14–17). */
+/**
+ * Student / teen part-time roles (secondary + university).
+ * [demand] drives study-balance stress when paired with hard studying.
+ */
 @Serializable
-enum class PartTimeJob {
-    RETAIL,
-    FAST_FOOD,
-    BABYSITTING,
-    TUTORING
+enum class PartTimeJob(
+    val displayLabel: String,
+    val demand: PartTimeDemand
+) {
+    FAST_FOOD("Fast Food Crew", PartTimeDemand.HIGH),
+    BARISTA("Barista", PartTimeDemand.MEDIUM),
+    RETAIL("Retail Associate", PartTimeDemand.MEDIUM),
+    BABYSITTING("Babysitter", PartTimeDemand.MEDIUM),
+    TUTORING("Tutor", PartTimeDemand.LOW),
+    FREELANCE_CODER("Freelance Coder", PartTimeDemand.HIGH)
+}
+
+/** How draining a [PartTimeJob] is alongside school. */
+@Serializable
+enum class PartTimeDemand {
+    LOW,
+    MEDIUM,
+    HIGH
 }
 
 @Serializable
@@ -146,7 +168,13 @@ enum class HustleType {
     FREELANCE_CODING,
     TUTORING,
     FOOD_DELIVERY,
-    RESELLING
+    RESELLING,
+    /** Student-friendly: sell handmade crafts. */
+    HANDMADE_CRAFTS,
+    /** Student-friendly: stream games / content. */
+    STREAMING,
+    /** Student-friendly: small paid scripts / freelance micro-gigs. */
+    SCRIPT_CODING
 }
 
 /**

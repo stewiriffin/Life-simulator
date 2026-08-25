@@ -26,6 +26,7 @@ import com.maisha.game.data.model.SchoolPerson
 import com.maisha.game.data.model.SchoolPersonAction
 import com.maisha.game.data.model.SchoolRole
 import com.maisha.game.data.model.SchoolStage
+import com.maisha.game.data.model.PartTimeDemand
 import com.maisha.game.data.model.StudentFinance
 import com.maisha.game.data.model.StudyEffort
 import com.maisha.game.data.model.UniversityFunding
@@ -236,13 +237,14 @@ class EducationEngine @Inject constructor(
             health = clampStat(character.stats.health + healthStudyPenalty)
         )
 
-        return character.copy(
+        val withEffort = character.copy(
             stats = newStats,
             education = education.copy(
                 currentGrade = if (incrementGrade) education.currentGrade + 1 else education.currentGrade,
                 gpa = newGpa
             )
-        ).let { applySchoolClubYear(it) }
+        )
+        return applyStudentWorkBalance(withEffort, studyChoice).let { applySchoolClubYear(it) }
     }
 
     fun isSchoolClubEligible(character: Character): Boolean {
@@ -1169,7 +1171,7 @@ class EducationEngine @Inject constructor(
         val smartsDelta = EffortResolver.studySmartsDelta(effort)
         val happinessDelta = EffortResolver.studyHappinessDelta(effort)
         val gpaDelta = EffortResolver.studyGpaDelta(effort)
-        return character.copy(
+        val withEffort = character.copy(
             stats = character.stats.copy(
                 smarts = clampStat(character.stats.smarts + smartsDelta),
                 happiness = clampStat(character.stats.happiness + happinessDelta)
@@ -1182,6 +1184,115 @@ class EducationEngine @Inject constructor(
                 }
             )
         )
+        return applyStudentWorkBalance(withEffort, effort)
+    }
+
+    /**
+     * Hard study + demanding part-time work raises stress and hurts GPA/health.
+     * Keeping energy ≥ [CareerEngine.MANAGED_ENERGY_THRESHOLD] softens the hit ("managed carefully").
+     * Light jobs with Normal/Slack study can even feel sustainable.
+     */
+    fun applyStudentWorkBalance(character: Character, studyChoice: StudyEffort): Character {
+        val job = character.career.activePartTimeJob ?: return character
+        val stage = character.education.stage
+        if (stage != SchoolStage.SECONDARY && stage != SchoolStage.UNIVERSITY) return character
+
+        var gpaDelta = 0f
+        var healthDelta = 0
+        var happinessDelta = 0
+        var stressDelta = 0f
+        var examStressDelta = 0
+        var note: String? = null
+        val managed = character.career.energyLevel >= CareerEngine.MANAGED_ENERGY_THRESHOLD
+
+        when {
+            studyChoice == StudyEffort.HARD && job.demand == PartTimeDemand.HIGH -> {
+                gpaDelta = -0.18f
+                healthDelta = -5
+                happinessDelta = -6
+                stressDelta = 14f
+                examStressDelta = 8
+                note = "Hard studying plus a demanding ${job.displayLabel} job drained you — GPA and stress suffered."
+            }
+            studyChoice == StudyEffort.HARD && job.demand == PartTimeDemand.MEDIUM -> {
+                gpaDelta = -0.10f
+                healthDelta = -3
+                happinessDelta = -3
+                stressDelta = 9f
+                examStressDelta = 5
+                note = "Juggling hard study with ${job.displayLabel} work stretched you thin."
+            }
+            studyChoice == StudyEffort.HARD && job.demand == PartTimeDemand.LOW -> {
+                gpaDelta = -0.04f
+                happinessDelta = -1
+                stressDelta = 4f
+                examStressDelta = 2
+            }
+            job.demand == PartTimeDemand.HIGH -> {
+                healthDelta = -2
+                stressDelta = 6f
+                examStressDelta = 3
+            }
+            studyChoice == StudyEffort.NORMAL && job.demand == PartTimeDemand.MEDIUM -> {
+                stressDelta = 3f
+            }
+            studyChoice != StudyEffort.HARD && job.demand == PartTimeDemand.LOW &&
+                character.career.energyLevel >= 50 -> {
+                happinessDelta = 2
+                stressDelta = -2f
+                note = "You balanced light ${job.displayLabel} hours with school well."
+            }
+            else -> Unit
+        }
+
+        if (character.career.energyLevel < 40) {
+            gpaDelta -= 0.06f
+            healthDelta -= 2
+            stressDelta += 5f
+            examStressDelta += 3
+            if (note == null || note.contains("balanced", ignoreCase = true).not()) {
+                note = "Running on empty while working ${job.displayLabel} hurt your grades."
+            }
+        } else if (managed && studyChoice == StudyEffort.HARD &&
+            (job.demand == PartTimeDemand.HIGH || job.demand == PartTimeDemand.MEDIUM)
+        ) {
+            gpaDelta *= 0.55f
+            healthDelta = (healthDelta * 0.6f).roundToInt()
+            happinessDelta = (happinessDelta * 0.65f).roundToInt()
+            stressDelta *= 0.6f
+            examStressDelta = (examStressDelta * 0.6f).roundToInt()
+            note = "Hard study and ${job.displayLabel} clashed, but pacing your energy limited the damage."
+        }
+
+        if (gpaDelta == 0f && healthDelta == 0 && happinessDelta == 0 &&
+            stressDelta == 0f && examStressDelta == 0
+        ) {
+            return character
+        }
+
+        val education = character.education
+        val updated = character.copy(
+            stats = character.stats.copy(
+                health = clampStat(character.stats.health + healthDelta),
+                happiness = clampStat(character.stats.happiness + happinessDelta)
+            ),
+            career = character.career.copy(
+                stress = (character.career.stress + stressDelta).coerceIn(0f, 100f)
+            ),
+            education = education.copy(
+                gpa = if (education.gpa > 0f) {
+                    clampGpa(education.gpa + gpaDelta)
+                } else {
+                    education.gpa
+                },
+                examStress = (education.examStress + examStressDelta).coerceIn(0, 100)
+            )
+        )
+        return if (note != null) {
+            updated.copy(eventLog = EventLogCap.prepend(updated.eventLog, note))
+        } else {
+            updated
+        }
     }
 
     fun tuitionForMajor(major: UniversityMajor, countryCode: String): Int {

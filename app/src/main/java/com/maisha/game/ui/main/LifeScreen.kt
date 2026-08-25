@@ -219,6 +219,8 @@ fun LifeScreen(
     onAdoptChild: () -> Unit = {},
     onRequestExpungement: () -> Unit = {},
     onWorkPartTime: (com.maisha.game.data.model.PartTimeJob) -> Unit = {},
+    onQuitPartTimeJob: () -> Unit = {},
+    onRestStudentEnergy: () -> Unit = {},
     onActionMessageDismissed: () -> Unit,
     onLifePulseMessageDismissed: () -> Unit,
     onYearRecapDismissed: () -> Unit,
@@ -452,6 +454,10 @@ fun LifeScreen(
                 onRepayStudentLoan = onRepayStudentLoan,
                 onStartCareerTrack = onStartCareerTrack,
                 onPracticeCareerTrack = onPracticeCareerTrack,
+                onWorkPartTime = onWorkPartTime,
+                onExecuteSideHustle = onExecuteSideHustle,
+                onQuitPartTimeJob = onQuitPartTimeJob,
+                onRestStudentEnergy = onRestStudentEnergy,
                 onCareerMessageDismissed = onCareerMessageDismissed,
                 modifier = Modifier.padding(innerPadding)
             )
@@ -506,6 +512,8 @@ fun LifeScreen(
                 onAdoptChild = onAdoptChild,
                 onRequestExpungement = onRequestExpungement,
                 onWorkPartTime = onWorkPartTime,
+                onQuitPartTimeJob = onQuitPartTimeJob,
+                onRestStudentEnergy = onRestStudentEnergy,
                 onActionMessageDismissed = onActionMessageDismissed,
                 onDismissLeisureTip = onDismissLeisureTip,
                 modifier = Modifier.padding(innerPadding)

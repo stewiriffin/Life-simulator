@@ -5,9 +5,11 @@ import com.maisha.game.domain.ExamPrepResult
 import com.maisha.game.domain.SchoolActionResult
 import com.maisha.game.domain.SchoolDisciplineResult
 import com.maisha.game.domain.SchoolInteractionResult
+import com.maisha.game.data.model.CareerState
 import com.maisha.game.data.model.ClubRank
 import com.maisha.game.data.model.EducationState
 import com.maisha.game.data.model.ExamType
+import com.maisha.game.data.model.PartTimeJob
 import com.maisha.game.data.model.RelationType
 import com.maisha.game.data.model.SchoolActivity
 import com.maisha.game.data.model.SchoolClub
@@ -342,6 +344,59 @@ class EducationEngineTest {
         )
         val updated = engine.setPlannedStudyEffort(student, com.maisha.game.data.model.StudyEffort.HARD)
         assertEquals(com.maisha.game.data.model.StudyEffort.HARD, updated.education.plannedStudyEffort)
+    }
+
+    @Test
+    fun applyStudentWorkBalance_hardStudyPlusHighDemandJobHurtsGpa() {
+        val student = TestFixtures.character(
+            age = 17,
+            stats = Stats(happiness = 60, health = 70, smarts = 55),
+            education = EducationState(
+                stage = SchoolStage.SECONDARY,
+                currentGrade = 3,
+                gpa = 3.4f,
+                plannedStudyEffort = com.maisha.game.data.model.StudyEffort.HARD
+            ),
+            career = CareerState(
+                activePartTimeJob = PartTimeJob.FAST_FOOD,
+                energyLevel = 35
+            )
+        )
+        val after = engine.applyStudentWorkBalance(
+            student,
+            com.maisha.game.data.model.StudyEffort.HARD
+        )
+        assertTrue(after.education.gpa < 3.4f)
+        assertTrue(after.career.stress > student.career.stress)
+        assertTrue(after.stats.health < 70)
+    }
+
+    @Test
+    fun applyStudentWorkBalance_managedEnergySoftensHardJobPenalty() {
+        val drained = TestFixtures.character(
+            age = 17,
+            stats = Stats(happiness = 60, health = 70, smarts = 55),
+            education = EducationState(
+                stage = SchoolStage.SECONDARY,
+                currentGrade = 3,
+                gpa = 3.4f
+            ),
+            career = CareerState(
+                activePartTimeJob = PartTimeJob.FAST_FOOD,
+                energyLevel = 30
+            )
+        )
+        val paced = drained.copy(career = drained.career.copy(energyLevel = 80))
+        val hardHit = engine.applyStudentWorkBalance(
+            drained,
+            com.maisha.game.data.model.StudyEffort.HARD
+        )
+        val softHit = engine.applyStudentWorkBalance(
+            paced,
+            com.maisha.game.data.model.StudyEffort.HARD
+        )
+        assertTrue(softHit.education.gpa > hardHit.education.gpa)
+        assertTrue(softHit.career.stress < hardHit.career.stress)
     }
 
     @Test

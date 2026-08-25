@@ -14,6 +14,7 @@ import com.maisha.game.data.model.JobLadder
 import com.maisha.game.data.model.OfficeAction
 import com.maisha.game.data.model.OfficePoliticsAction
 import com.maisha.game.data.model.PartTimeJob
+import com.maisha.game.data.model.PartTimeDemand
 import com.maisha.game.data.model.Job
 import com.maisha.game.data.model.LifeEvent
 import com.maisha.game.data.model.SchoolClub
@@ -60,6 +61,17 @@ sealed class PartTimeJobResult {
     data class Success(val character: Character, val payout: Int) : PartTimeJobResult()
     data object Ineligible : PartTimeJobResult()
     data object AlreadyWorked : PartTimeJobResult()
+}
+
+sealed class StudentEnergyRestResult {
+    data class Success(val character: Character, val energyGained: Int) : StudentEnergyRestResult()
+    data object Ineligible : StudentEnergyRestResult()
+    data object AlreadyRested : StudentEnergyRestResult()
+}
+
+sealed class QuitPartTimeResult {
+    data class Success(val character: Character) : QuitPartTimeResult()
+    data object Ineligible : QuitPartTimeResult()
 }
 
 sealed class OfficeActionResult {
@@ -413,14 +425,20 @@ class CareerEngine @Inject constructor(
         )
         val payout = calculateSideHustlePayout(character, spec)
         val (happinessPenalty, healthPenalty) = calculateSideHustleBurnout(character)
+        val energyCost = sideHustleEnergyCost(hustleType)
+        val newEnergy = (character.career.energyLevel - energyCost).coerceIn(0, 100)
+        val lowEnergyExtra = if (newEnergy < 40) 2 else 0
 
         val updated = character.copy(
             stats = character.stats.copy(
                 money = character.stats.money + payout,
-                happiness = clampStat(character.stats.happiness - happinessPenalty),
-                health = clampStat(character.stats.health - healthPenalty)
+                happiness = clampStat(character.stats.happiness - happinessPenalty - lowEnergyExtra),
+                health = clampStat(character.stats.health - healthPenalty - lowEnergyExtra / 2)
             ),
-            career = character.career.copy(sideHustleDoneThisYear = true),
+            career = character.career.copy(
+                sideHustleDoneThisYear = true,
+                energyLevel = newEnergy
+            ),
             eventLog = EventLogCap.prepend(
                 character.eventLog,
                 "Side hustle (${hustleLabel(hustleType)}): earned ${formatMoney(payout, character.countryCode)}."
@@ -1417,6 +1435,18 @@ class CareerEngine @Inject constructor(
         HustleType.TUTORING -> "tutoring"
         HustleType.FOOD_DELIVERY -> "food delivery"
         HustleType.RESELLING -> "reselling"
+        HustleType.HANDMADE_CRAFTS -> "handmade crafts"
+        HustleType.STREAMING -> "streaming"
+        HustleType.SCRIPT_CODING -> "script coding"
+    }
+
+    private fun sideHustleEnergyCost(type: HustleType): Int = when (type) {
+        HustleType.HANDMADE_CRAFTS -> 12
+        HustleType.STREAMING -> 18
+        HustleType.SCRIPT_CODING -> 22
+        HustleType.FOOD_DELIVERY, HustleType.RESELLING -> 20
+        HustleType.TUTORING -> 16
+        HustleType.RIDE_SHARE, HustleType.FREELANCE_CODING -> 25
     }
 
     fun canStartCareerTrack(character: Character, track: CareerTrack): Boolean {
@@ -1594,21 +1624,23 @@ class CareerEngine @Inject constructor(
         CareerTrack.NONE -> "Your career track advanced."
     }
 
-    /** Teen after-school job (once per year, ages 14–17). */
+    /**
+     * Student / teen part-time role (once per year while in secondary or university, age 16+).
+     * Sets [CareerState.activePartTimeJob] for study/work balance on Age Up.
+     */
     fun workPartTime(character: Character, job: PartTimeJob): PartTimeJobResult {
-        if (!character.alive || character.criminalRecord.currentlyIncarcerated) {
-            return PartTimeJobResult.Ineligible
-        }
-        if (character.age !in MIN_PART_TIME_AGE..MAX_PART_TIME_AGE) {
-            return PartTimeJobResult.Ineligible
-        }
+        if (!canWorkPartTime(character)) return PartTimeJobResult.Ineligible
         if (character.career.partTimeWorkedThisYear) return PartTimeJobResult.AlreadyWorked
+        if (job == PartTimeJob.FREELANCE_CODER && character.stats.smarts < FREELANCE_CODER_MIN_SMARTS) {
+            return PartTimeJobResult.Ineligible
+        }
+        if (character.career.energyLevel < MIN_ENERGY_TO_WORK) return PartTimeJobResult.Ineligible
 
         val spec = partTimeSpec(job)
-        val smartsBonus = if (job == PartTimeJob.TUTORING) {
-            0.85f + character.stats.smarts / 100f * 0.3f
-        } else {
-            1f
+        val smartsBonus = when (job) {
+            PartTimeJob.TUTORING, PartTimeJob.FREELANCE_CODER ->
+                0.85f + character.stats.smarts / 100f * 0.3f
+            else -> 1f
         }
         val payout = EconomyScaler.scaleAmount(
             (Random.nextInt(spec.minPayout, spec.maxPayout + 1) * smartsBonus).roundToInt(),
@@ -1617,35 +1649,168 @@ class CareerEngine @Inject constructor(
         val happinessDelta = when (job) {
             PartTimeJob.TUTORING -> 2
             PartTimeJob.BABYSITTING -> 1
+            PartTimeJob.BARISTA -> 1
             PartTimeJob.FAST_FOOD -> -1
+            PartTimeJob.FREELANCE_CODER -> 0
             PartTimeJob.RETAIL -> 0
+        }
+        val newEnergy = (character.career.energyLevel - spec.energyCost).coerceIn(0, 100)
+        val stressBump = when (job.demand) {
+            PartTimeDemand.HIGH -> 8f
+            PartTimeDemand.MEDIUM -> 4f
+            PartTimeDemand.LOW -> 2f
         }
         val updated = character.copy(
             stats = character.stats.copy(
                 money = character.stats.money + payout,
                 happiness = clampStat(character.stats.happiness + happinessDelta),
-                smarts = if (job == PartTimeJob.TUTORING) {
+                health = clampStat(
+                    character.stats.health - if (newEnergy < 40) 2 else 0
+                ),
+                smarts = if (job == PartTimeJob.TUTORING || job == PartTimeJob.FREELANCE_CODER) {
                     clampStat(character.stats.smarts + 1)
                 } else {
                     character.stats.smarts
                 }
             ),
-            career = character.career.copy(partTimeWorkedThisYear = true),
+            career = character.career.copy(
+                partTimeWorkedThisYear = true,
+                activePartTimeJob = job,
+                energyLevel = newEnergy,
+                stress = (character.career.stress + stressBump).coerceIn(0f, 100f)
+            ),
             eventLog = EventLogCap.prepend(
                 character.eventLog,
-                "You worked a ${spec.label} shift and earned ${formatMoney(payout, character.countryCode)}."
+                "You took a ${job.displayLabel} role and earned ${formatMoney(payout, character.countryCode)}."
             )
         )
         return PartTimeJobResult.Success(updated, payout)
     }
 
-    private data class PartTimeSpec(val label: String, val minPayout: Int, val maxPayout: Int)
+    /** Secondary / university students aged 16+ without a full-time job. */
+    fun canWorkPartTime(character: Character): Boolean {
+        if (!character.alive || character.criminalRecord.currentlyIncarcerated) return false
+        if (character.criminalRecord.awaitingTrial) return false
+        if (character.age < MIN_PART_TIME_AGE) return false
+        if (character.career.isRetired || character.career.currentJob != null) return false
+        val stage = character.education.stage
+        return stage == SchoolStage.SECONDARY || stage == SchoolStage.UNIVERSITY
+    }
+
+    fun isPartTimeListingAvailable(character: Character, job: PartTimeJob): Boolean {
+        if (!canWorkPartTime(character)) return false
+        if (character.career.partTimeWorkedThisYear) return false
+        if (character.career.energyLevel < MIN_ENERGY_TO_WORK) return false
+        if (job == PartTimeJob.FREELANCE_CODER && character.stats.smarts < FREELANCE_CODER_MIN_SMARTS) {
+            return false
+        }
+        return true
+    }
+
+    /** Scaled min/max hire payout for UI hints. */
+    fun partTimePayoutRange(job: PartTimeJob, countryCode: String): Pair<Int, Int> {
+        val spec = partTimeSpec(job)
+        return EconomyScaler.scaleAmount(spec.minPayout, countryCode) to
+            EconomyScaler.scaleAmount(spec.maxPayout, countryCode)
+    }
+
+    /** Drop the active student role mid-year (stops Age Up balance penalty; no second hire this year). */
+    fun quitPartTimeJob(character: Character): QuitPartTimeResult {
+        if (character.career.activePartTimeJob == null) return QuitPartTimeResult.Ineligible
+        if (!character.alive) return QuitPartTimeResult.Ineligible
+        val label = character.career.activePartTimeJob!!.displayLabel
+        return QuitPartTimeResult.Success(
+            character.copy(
+                stats = character.stats.copy(
+                    happiness = clampStat(character.stats.happiness + 2)
+                ),
+                career = character.career.copy(
+                    activePartTimeJob = null,
+                    stress = (character.career.stress - 4f).coerceIn(0f, 100f)
+                ),
+                eventLog = EventLogCap.prepend(
+                    character.eventLog,
+                    "You quit your $label job to focus on school."
+                )
+            )
+        )
+    }
+
+    /** Mid-year rest to recover energy before Age Up (once per year while a student). */
+    fun restToRecoverEnergy(character: Character): StudentEnergyRestResult {
+        if (!character.alive) return StudentEnergyRestResult.Ineligible
+        if (character.career.energyRestedThisYear) return StudentEnergyRestResult.AlreadyRested
+        val stage = character.education.stage
+        if (stage != SchoolStage.SECONDARY && stage != SchoolStage.UNIVERSITY) {
+            return StudentEnergyRestResult.Ineligible
+        }
+        if (character.career.energyLevel >= 95) return StudentEnergyRestResult.Ineligible
+        val gain = REST_ENERGY_GAIN.coerceAtMost(100 - character.career.energyLevel)
+        val updated = character.copy(
+            stats = character.stats.copy(
+                happiness = clampStat(character.stats.happiness - 1),
+                health = clampStat(character.stats.health + 1)
+            ),
+            career = character.career.copy(
+                energyLevel = character.career.energyLevel + gain,
+                energyRestedThisYear = true,
+                stress = (character.career.stress - 3f).coerceIn(0f, 100f)
+            ),
+            eventLog = EventLogCap.prepend(
+                character.eventLog,
+                "You rested and recovered energy for school and work."
+            )
+        )
+        return StudentEnergyRestResult.Success(updated, gain)
+    }
+
+    /**
+     * Year-end residual paycheck for an active student job, then clear the role and recover energy.
+     */
+    fun finishStudentWorkYear(character: Character): Character {
+        var updated = character
+        val job = character.career.activePartTimeJob
+        if (job != null) {
+            val spec = partTimeSpec(job)
+            val lo = (spec.minPayout * 0.45f).roundToInt().coerceAtLeast(1)
+            val hi = (spec.maxPayout * 0.55f).roundToInt().coerceAtLeast(lo)
+            val residual = EconomyScaler.scaleAmount(
+                Random.nextInt(lo, hi + 1),
+                character.countryCode
+            )
+            updated = updated.copy(
+                stats = updated.stats.copy(money = updated.stats.money + residual),
+                eventLog = EventLogCap.prepend(
+                    updated.eventLog,
+                    "Year-end ${job.displayLabel} paycheck: ${formatMoney(residual, character.countryCode)}."
+                )
+            )
+        }
+        val recovered = (updated.career.energyLevel + YEARLY_ENERGY_RECOVERY).coerceIn(0, 100)
+        if (job == null && updated.career.energyLevel == recovered) {
+            return updated
+        }
+        return updated.copy(
+            career = updated.career.copy(
+                activePartTimeJob = null,
+                energyLevel = recovered
+            )
+        )
+    }
+
+    private data class PartTimeSpec(
+        val minPayout: Int,
+        val maxPayout: Int,
+        val energyCost: Int
+    )
 
     private fun partTimeSpec(job: PartTimeJob): PartTimeSpec = when (job) {
-        PartTimeJob.RETAIL -> PartTimeSpec("retail", 800, 2_200)
-        PartTimeJob.FAST_FOOD -> PartTimeSpec("fast-food", 700, 1_800)
-        PartTimeJob.BABYSITTING -> PartTimeSpec("babysitting", 1_000, 2_800)
-        PartTimeJob.TUTORING -> PartTimeSpec("tutoring", 1_500, 4_000)
+        PartTimeJob.RETAIL -> PartTimeSpec(800, 2_200, 25)
+        PartTimeJob.FAST_FOOD -> PartTimeSpec(700, 1_800, 40)
+        PartTimeJob.BARISTA -> PartTimeSpec(900, 2_400, 28)
+        PartTimeJob.BABYSITTING -> PartTimeSpec(1_000, 2_800, 22)
+        PartTimeJob.TUTORING -> PartTimeSpec(1_500, 4_000, 18)
+        PartTimeJob.FREELANCE_CODER -> PartTimeSpec(2_000, 5_500, 35)
     }
 
     companion object {
@@ -1688,7 +1853,7 @@ class CareerEngine @Inject constructor(
         private const val HEALTH_HIRE_WEIGHT = 0.07f
         const val CULTURE_SHOCK_YEARS = 3
         const val CULTURE_SHOCK_HIRE_PENALTY = 0.10f
-        private const val MIN_SIDE_HUSTLE_AGE = 16
+        private const val MIN_SIDE_HUSTLE_AGE = 14
         private const val SIDE_HUSTLE_HAPPINESS_MIN = 2
         private const val SIDE_HUSTLE_HAPPINESS_MAX = 5
         private const val SIDE_HUSTLE_HEALTH_MIN = 1
@@ -1704,7 +1869,15 @@ class CareerEngine @Inject constructor(
         private const val LEGAL_MIN_SMARTS = 62
         private const val SOFTWARE_MIN_SMARTS = 60
         private const val CORPORATE_MIN_SMARTS = 55
-        const val MIN_PART_TIME_AGE = 14
-        const val MAX_PART_TIME_AGE = 17
+        /** Minimum age for student part-time listings. */
+        const val MIN_PART_TIME_AGE = 16
+        /** @deprecated Prefer [canWorkPartTime]; kept for UI that still references the old teen window. */
+        const val MAX_PART_TIME_AGE = 30
+        private const val FREELANCE_CODER_MIN_SMARTS = 55
+        private const val MIN_ENERGY_TO_WORK = 20
+        private const val YEARLY_ENERGY_RECOVERY = 40
+        private const val REST_ENERGY_GAIN = 28
+        /** Energy at/above this softens Hard-study + job penalties. */
+        const val MANAGED_ENERGY_THRESHOLD = 65
     }
 }
