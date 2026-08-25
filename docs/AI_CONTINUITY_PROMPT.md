@@ -2,7 +2,7 @@
 
 > **Purpose:** Paste this document (or point an AI agent at it) at the start of any new session so the assistant understands **what Maisha is**, **what has already been built**, **what just shipped**, **what is still missing**, and **how to work in this repo without undoing progress**.
 >
-> **Last updated:** 2026-08-25 (fame, talent & alternative career tracks)  
+> **Last updated:** 2026-08-25 (university / corporate / part-time marketplace UI)  
 > **Repo path:** `/home/dr-rank/Documents/Apps/Life-simulator`  
 > **Remote:** `https://github.com/stewiriffin/Life-simulator` (`origin/main`)  
 > **Package:** `com.maisha.game`
@@ -141,7 +141,7 @@ School is **not** its own bottom tab. It lives under **Career**, category **SCHO
 1. **Education** card — stage, GPA, study effort, drop out  
 2. **School life** card — reputation, classmates/teachers, activities  
 3. **School clubs** card — Debate / Football / Drama / Coding / Music with ranks, skill/prestige/fame bars, Light/Normal/Intense practice, rival challenges, letter jacket, officer fundraisers, captain major events, awards/scholarship resume  
-4. **Jobs & Side Hustles** card — student part-time listings (16+, secondary/uni), energy bar, rest/quit, youth hustles  
+4. **Jobs & Side Hustles / marketplace** — part-time market cards (wage, energy/hours, Apply Now), active hustle management, youth hustles  
 5. **Fame & Talent Hub** — athleticism / musical talent / fame meters, gym & music training, street busk / exhibition match gigs, idle fame decay, leave pathway, endorsements, pro athlete & entertainment pathways  
  
 6. Career tracks, jobs, business, politics elsewhere in the same screen  
@@ -357,6 +357,7 @@ Newest first:
 
 | Commit | Meaning |
 |--------|---------|
+| `4b16211` | Career UI polish: university major grid + funding sheet, corporate dashboard, part-time marketplace |
 | `dd3170e` | Fame & Talent Hub: athleticism/musicalTalent/fame, pathways, busk/match gigs, idle decay, leave track, endorsements, paparazzi |
 | `f0bbc8a` | Student part-time + youth side hustles: energy, Hard-study balance, year-end pay, rest/quit, Jobs & Side Hustles UI |
 | `30b316a` | Career ladder, office politics (PIP/credit/burnout/network), Career dashboard |
@@ -448,7 +449,7 @@ Always confirm with the user’s latest message if the request is ambiguous.
 
 ## 16. Copy-paste short briefing (for tiny context windows)
 
-> Maisha is an Android BitLife-style life sim (Compose, Hilt, Room, pure domain engines). Worldwide 15 countries. Latest: Fame & Talent Hub (`dd3170e`: athleticism/musical talent/fame, pathways, gigs, idle decay, endorsements/paparazzi); student part-time jobs (`f0bbc8a`); career ladders (`30b316a`); university (`74ec22c`). Prefer agency/UI/systems over event spam. Commit/push/install only on request.
+> Maisha is an Android BitLife-style life sim (Compose, Hilt, Room, pure domain engines). Worldwide 15 countries. Latest: Career UI polish (`4b16211`: university enroll dialog, corporate dashboard, part-time marketplace); Fame & Talent Hub (`dd3170e`); student jobs (`f0bbc8a`); career ladders (`30b316a`). Prefer agency/UI/systems over event spam. Commit/push/install only on request.
 
 ---
 
