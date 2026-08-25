@@ -441,7 +441,7 @@ Always confirm with the user’s latest message if the request is ambiguous.
 
 ## 16. Copy-paste short briefing (for tiny context windows)
 
-> Maisha is an Android BitLife-style life sim (Compose, Hilt, Room, pure domain engines). Worldwide 15 countries. Latest: university majors with cash/loan/scholarship, campus jobs & internships, student-loan repay, graduation career-track offer, Career→School University Dashboard (`74ec22c`); plus school life rewrite and detention/clubs depth. Prefer agency/UI/systems over event spam. Docs folder was cleared except this continuity prompt. Commit/push/install only on request.
+> Maisha is an Android BitLife-style life sim (Compose, Hilt, Room, pure domain engines). Worldwide 15 countries. Latest: career ladders + office politics (performance/stress/boss bonds, PIP/credit/burnout, Career dashboard) (`30b316a`); university majors/loans/campus jobs (`74ec22c`); school life + detention/clubs depth. Prefer agency/UI/systems over event spam. Docs folder was cleared except this continuity prompt. Commit/push/install only on request.
 
 ---
 
